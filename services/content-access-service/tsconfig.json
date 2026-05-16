@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@libs/common": ["../../libs/common/src/index.ts"],
+      "@libs/common/*": ["../../libs/common/src/*"],
+      "@libs/contracts": ["../../libs/contracts/src/index.ts"],
+      "@libs/contracts/*": ["../../libs/contracts/src/*"],
+      "@libs/testing": ["../../libs/testing/src/index.ts"],
+      "@libs/testing/*": ["../../libs/testing/src/*"]
+    }
+  },
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

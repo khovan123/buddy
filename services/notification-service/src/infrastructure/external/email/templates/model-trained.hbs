@@ -1,0 +1,318 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv='x-ua-compatible' content='ie=edge' />
+    <title>ML Model Training Report</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <style type='text/css'>
+      body, table, td, a {
+        -ms-text-size-adjust: 100%;
+        -webkit-text-size-adjust: 100%;
+      }
+      table, td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+      body {
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f0f2f5;
+      }
+      .container {
+        max-width: 640px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-top: 40px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+      .header {
+        padding: 36px 24px;
+        text-align: center;
+        color: #ffffff;
+      }
+      .header-completed {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+      }
+      .header-rejected {
+        background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+      }
+      .header-error {
+        background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+      }
+      .content {
+        padding: 32px;
+        color: #374151;
+        line-height: 1.6;
+      }
+      .footer {
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #9ca3af;
+        background-color: #f9fafb;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+      }
+      h2 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 24px 0 12px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e5e7eb;
+      }
+      .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-top: 8px;
+      }
+      .badge-completed { background: #d1fae5; color: #065f46; }
+      .badge-rejected  { background: #fef3c7; color: #92400e; }
+      .badge-error     { background: #fee2e2; color: #991b1b; }
+      .metrics-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+        font-size: 14px;
+      }
+      .metrics-table th {
+        text-align: left;
+        padding: 10px 12px;
+        background-color: #f9fafb;
+        color: #6b7280;
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .metrics-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #f3f4f6;
+        color: #374151;
+      }
+      .metrics-table .label { color: #6b7280; }
+      .metrics-table .value {
+        font-weight: 600;
+        font-family: 'Courier New', monospace;
+        text-align: right;
+      }
+      .eval-section {
+        background: #f9fafb;
+        border-radius: 8px;
+        padding: 16px;
+        margin: 12px 0;
+      }
+      .eval-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+      }
+      .eval-grid {
+        display: flex;
+        gap: 16px;
+      }
+      .eval-item {
+        flex: 1;
+        text-align: center;
+      }
+      .eval-value {
+        font-size: 20px;
+        font-weight: 700;
+        font-family: 'Courier New', monospace;
+      }
+      .eval-label {
+        font-size: 11px;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .highlight { color: #6366f1; font-weight: 600; }
+      .reason-box {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        padding: 12px 16px;
+        border-radius: 0 8px 8px 0;
+        margin: 16px 0;
+        font-size: 14px;
+        color: #92400e;
+      }
+      .error-box {
+        background: #fee2e2;
+        border-left: 4px solid #ef4444;
+        padding: 12px 16px;
+        border-radius: 0 8px 8px 0;
+        margin: 16px 0;
+        font-size: 14px;
+        color: #991b1b;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <!-- Header -->
+      <div class='header {{#if isCompleted}}header-completed{{/if}}{{#if isRejected}}header-rejected{{/if}}{{#if isError}}header-error{{/if}}'>
+        <h1>{{statusLabel}}</h1>
+        <span class='badge {{#if isCompleted}}badge-completed{{/if}}{{#if isRejected}}badge-rejected{{/if}}{{#if isError}}badge-error{{/if}}'>
+          {{status}}
+        </span>
+      </div>
+
+      <div class='content'>
+        <!-- Model Info -->
+        <h2>📦 Model Information</h2>
+        <table class='metrics-table'>
+          <tr>
+            <td class='label'>Version</td>
+            <td class='value'>{{version}}</td>
+          </tr>
+          <tr>
+            <td class='label'>Timestamp</td>
+            <td class='value'>{{timestamp}}</td>
+          </tr>
+          <tr>
+            <td class='label'>Epochs</td>
+            <td class='value'>{{epochs}}</td>
+          </tr>
+          <tr>
+            <td class='label'>Fine-tune Rounds</td>
+            <td class='value'>{{fineTuneRounds}}</td>
+          </tr>
+        </table>
+
+        {{#if isError}}
+        <div class='error-box'>
+          <strong>Error:</strong> {{reason}}
+        </div>
+        {{/if}}
+
+        {{#if isRejected}}
+        <div class='reason-box'>
+          <strong>Rejected:</strong> HitRate@50 did not meet minimum threshold of <strong>{{threshold}}</strong>.
+        </div>
+        {{/if}}
+
+        {{#unless isError}}
+        <!-- Training Data -->
+        <h2>📊 Training Data</h2>
+        <table class='metrics-table'>
+          <tr>
+            <td class='label'>Total Pairs</td>
+            <td class='value'>{{totalPairs}}</td>
+          </tr>
+          <tr>
+            <td class='label'>Positive Pairs</td>
+            <td class='value'>{{positivePairs}}</td>
+          </tr>
+        </table>
+
+        <!-- Training Metrics -->
+        <h2>🎯 Training Metrics</h2>
+        <table class='metrics-table'>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th style='text-align: right;'>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class='label'>Final Loss</td>
+              <td class='value'>{{finalLoss}}</td>
+            </tr>
+            <tr>
+              <td class='label'>Final Accuracy</td>
+              <td class='value'>{{finalAccuracy}}%</td>
+            </tr>
+            <tr>
+              <td class='label'>Validation Loss</td>
+              <td class='value'>{{valLoss}}</td>
+            </tr>
+            <tr>
+              <td class='label'>Validation Accuracy</td>
+              <td class='value'>{{valAccuracy}}%</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Evaluation: Baseline vs Final -->
+        <h2>📈 Evaluation (HitRate@50 / MRR)</h2>
+
+        <div class='eval-section'>
+          <div class='eval-title'>Baseline (Before Fine-tuning)</div>
+          <table class='metrics-table'>
+            <tr>
+              <td class='label'>HitRate@50</td>
+              <td class='value'>{{evalBaseline.hitrateAt50}}</td>
+            </tr>
+            <tr>
+              <td class='label'>MRR</td>
+              <td class='value'>{{evalBaseline.mrr}}</td>
+            </tr>
+            <tr>
+              <td class='label'>Users Evaluated</td>
+              <td class='value'>{{evalBaseline.usersEvaluated}}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class='eval-section'>
+          <div class='eval-title'>Final (After Fine-tuning)</div>
+          <table class='metrics-table'>
+            <tr>
+              <td class='label'>HitRate@50</td>
+              <td class='value'>{{evalFinal.hitrateAt50}}</td>
+            </tr>
+            <tr>
+              <td class='label'>MRR</td>
+              <td class='value'>{{evalFinal.mrr}}</td>
+            </tr>
+            <tr>
+              <td class='label'>Users Evaluated</td>
+              <td class='value'>{{evalFinal.usersEvaluated}}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Vocab Sizes -->
+        <h2>🔤 Vocabulary Sizes</h2>
+        <table class='metrics-table'>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th style='text-align: right;'>Size</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each vocabSizes}}
+            <tr>
+              <td class='label'>{{@key}}</td>
+              <td class='value'>{{this}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+        {{/unless}}
+      </div>
+
+      <div class='footer'>
+        <p>© 2026 UniBuddy ML Pipeline. Automated training report.</p>
+        <p>This email was sent automatically by the recommendation-service after model training.</p>
+      </div>
+    </div>
+  </body>
+</html>

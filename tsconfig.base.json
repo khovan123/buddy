@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "nodenext",
+    "rootDir": "./",
+    "outDir": "./dist",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
+    "incremental": true,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "removeComments": false,
+
+    "paths": {
+      "@libs/common": ["./libs/common/src/index.ts"],
+      "@libs/common/*": ["./libs/common/src/*"],
+      "@libs/contracts": ["./libs/contracts/src/index.ts"],
+      "@libs/contracts/*": ["./libs/contracts/src/*"],
+      "@libs/testing": ["./libs/testing/src/index.ts"],
+      "@libs/testing/*": ["./libs/testing/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist",".code-review-graph"]
+}

@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../infrastructure/persistence/prisma/generated"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MediaProcessingStatus {
+  PENDING
+  PROCESSING
+  AVAILABLE
+  FAILED
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+model MediaFile {
+  id               String                @id @default(uuid())
+  
+  // ─── Cloud Storage Fields ─────────────────────────────────────────
+  s3Key            String                @map("s3_key")
+  bucket           String
+  fileSizeBytes    BigInt                @map("file_size_bytes") // Dùng BigInt vì video có thể > 2GB
+  originalFilename String                @map("original_filename")
+  mimeType         String                @map("mime_type")
+
+  // ─── Tracking & Status ──────────────────────────────────────────
+  uploadedBy       String                @map("uploaded_by")
+  status           MediaProcessingStatus @default(PENDING)
+
+  // ─── Content Linkage ──────────────────────────────────────────
+  contentId        String?               @map("content_id")
+  contentType      String?               @map("content_type") // 'resource' | 'tutorial'
+  
+  // ─── Result URLs ────────────────────────────────────────────────
+  streamingUrl     String?               @map("streaming_url")
+  trailerUrl       String?               @map("trailer_url")
+  downloadUrl      String?               @map("download_url")
+  
+  // ─── Audit & Error Handling ─────────────────────────────────────
+  processingError  String?               @map("processing_error")
+  deletedAt        DateTime?             @map("deleted_at")
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
+
+  // ─── Preview Generation ──────────────────────────────────────────
+  previewS3Key     String?               @map("preview_s3_key")
+  previewStatus    MediaProcessingStatus @default(PENDING) @map("preview_status")
+
+  @@index([status])
+  @@index([uploadedBy])
+  @@index([contentId])
+  @@index([previewS3Key])
+  @@index([bucket, s3Key]) // Đánh index để hỗ trợ tìm kiếm ngược từ S3 Key nếu cần
+  @@map("media_files")
+}
+
+model Outbox {
+  id         String      @id @default(uuid())
+  correlationId String   @map("correlation_id")
+  payload    Json
+  exchange   String
+  routingKey String      @map("routing_key")
+  status     OutboxStatus @default(PENDING)
+  occurredAt DateTime    @default(now()) @map("occurred_at")
+  processedAt DateTime?  @map("processed_at")
+  retryCount Int         @default(0) @map("retry_count")
+
+  @@index([status, occurredAt])
+  @@index([correlationId])
+  @@map("outbox")
+}

@@ -1,0 +1,216 @@
+import type { CollectionCardData } from "@/components/molecules/collection-card"
+import type { ProfileItem } from "@/components/molecules/profile-card"
+import type { ResourceCardData } from "@/components/molecules/resource-card"
+import type { TutorialCardData } from "@/components/molecules/tutorial-card"
+import type { LibraryAsset } from "@/features/library/components/library-asset-card"
+import { LibraryAssetKind } from "@/features/library/components/library-asset-card"
+
+import type {
+  CollectionQueryItem,
+  ResourceQueryItem,
+  TutorialQueryItem,
+} from "./types"
+
+// ── Card Mappers (ResourceCard / TutorialCard / CollectionCard) ──
+
+const vndFormat = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+})
+
+export function mapResourceToCard(
+  item: ResourceQueryItem
+): ResourceCardData {
+  return {
+    id: item.id,
+    category: item.hightlights?.[0] ?? "Resource",
+    title: item.title,
+    rating: "—",
+    reviews: String(item._count?.resourceOrders ?? 0),
+    price: vndFormat.format(item.price),
+    href: `/explore/resources/${item.slug}`,
+    thumbnailUrl: item.thumbnailUrl,
+    bestseller: (item._count?.resourceOrders ?? 0) > 100,
+    author: item.uploader
+      ? { name: item.uploader.nickname, avatar: item.uploader.avatarUrl }
+      : undefined,
+  }
+}
+
+export function mapTutorialToCard(
+  item: TutorialQueryItem
+): TutorialCardData {
+  const lessonCount = item._count?.tutorialMedia ?? 1
+  return {
+    id: item.id,
+    category: item.hightlights?.[0] ?? "Tutorial",
+    title: item.title,
+    duration: `${lessonCount} lesson${lessonCount > 1 ? "s" : ""}`,
+    level: "—",
+    rating: "—",
+    reviews: String(item._count?.tutorialOrders ?? 0),
+    price: vndFormat.format(item.price),
+    discount: item.discountBundle
+      ? `${item.discountBundle}% OFF`
+      : undefined,
+    href: `/explore/tutorials/${item.slug}`,
+    thumbnailUrl: item.thumbnailUrl,
+    author: item.uploader
+      ? { name: item.uploader.nickname, avatar: item.uploader.avatarUrl }
+      : undefined,
+  }
+}
+
+export function mapCollectionToCard(
+  item: CollectionQueryItem,
+  type: "resource" | "tutorial"
+): CollectionCardData {
+  const isResource = type === "resource"
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    count: isResource
+      ? `${item._count?.resources ?? 0} Resources`
+      : `${item._count?.tutorials ?? 0} Lessons`,
+    rating: "—",
+    reviews: "—",
+    price: "—",
+    discount: item.discount ? `${item.discount}% OFF` : undefined,
+    href: isResource
+      ? `/explore/resources/collections/${item.slug}`
+      : `/explore/tutorials/collections/${item.slug}`,
+    thumbnailUrl: item.thumbnailUrl,
+    author: item.uploader
+      ? { name: item.uploader.nickname, avatar: item.uploader.avatarUrl }
+      : undefined,
+  }
+}
+
+// ── ProfileItem Mappers (profile pages) ─────────────────────
+
+export function mapTutorialToProfileItem(
+  item: TutorialQueryItem
+): ProfileItem {
+  return {
+    title: item.title || "Untitled",
+    description: item.description || "No description provided.",
+    price: item.price === 0 ? "Free" : `$${item.price ?? 0}`,
+    rating: "5.0",
+    reviews: "0",
+    type: "Tutorial",
+    badge: undefined,
+    thumbnailUrl: item?.thumbnailUrl,
+  }
+}
+
+export function mapResourceToProfileItem(
+  item: ResourceQueryItem
+): ProfileItem {
+  return {
+    title: item.title || "Untitled",
+    description: item.summary || "No description provided.",
+    price: item.price === 0 ? "Free" : `$${item.price ?? 0}`,
+    rating: "5.0",
+    reviews: "0",
+    type: "Resource",
+    badge: undefined,
+    thumbnailUrl: item?.thumbnailUrl,
+  }
+}
+
+export function mapTutorialCollectionToProfileItem(
+  item: CollectionQueryItem
+): ProfileItem {
+  return {
+    title: item.title || "Untitled",
+    description: item.description || "No description provided.",
+    price: item.discount === 100 ? "Free" : "—",
+    rating: "5.0",
+    reviews: "0",
+    type: `Tutorial Series (${item._count?.tutorials ?? 0} items)`,
+    badge: item.discount ? `${item.discount}% OFF` : undefined,
+    thumbnailUrl: item?.thumbnailUrl,
+  }
+}
+
+export function mapResourceCollectionToProfileItem(
+  item: CollectionQueryItem
+): ProfileItem {
+  return {
+    title: item.title || "Untitled",
+    description: item.description || "No description provided.",
+    price: item.discount === 100 ? "Free" : "—",
+    rating: "5.0",
+    reviews: "0",
+    type: `Resource Series (${item._count?.resources ?? 0} items)`,
+    badge: item.discount ? `${item.discount}% OFF` : undefined,
+    thumbnailUrl: item?.thumbnailUrl,
+  }
+}
+
+// ── LibraryAsset Mappers (library page) ─────────────────────
+
+const PLACEHOLDER_IMAGE =
+  "https://images.unsplash.com/photo-1515879218367-8466d910aaa4"
+
+export function mapResourceToLibraryAsset(
+  item: ResourceQueryItem
+): LibraryAsset {
+  return {
+    slug: item.slug,
+    title: item.title,
+    description: item.summary || "No description",
+    author: item.uploader?.nickname || item.userId,
+    authorAvatar: item.uploader?.avatarUrl,
+    image: item?.thumbnailUrl || PLACEHOLDER_IMAGE,
+    kind: LibraryAssetKind.Components,
+    sourcePath: "",
+  }
+}
+
+export function mapTutorialToLibraryAsset(
+  item: TutorialQueryItem
+): LibraryAsset {
+  return {
+    slug: item.slug,
+    title: item.title,
+    description: item.description || "No description",
+    author: item.uploader?.nickname || item.userId,
+    authorAvatar: item.uploader?.avatarUrl,
+    image: item?.thumbnailUrl || PLACEHOLDER_IMAGE,
+    kind: LibraryAssetKind.Tutorial,
+    sourcePath: "",
+  }
+}
+
+// ── Library Collection Mapper ───────────────────────────────
+
+export function mapCollectionToLibraryCard(
+  item: CollectionQueryItem,
+  type: "resource" | "tutorial"
+): CollectionCardData {
+  const isResource = type === "resource"
+  const itemCount = isResource
+    ? (item._count?.resources ?? 0)
+    : (item._count?.tutorials ?? 0)
+
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description || "No description",
+    count: `${itemCount} ${isResource ? "Files" : "Lessons"}`,
+    rating: "5.0",
+    reviews: "0",
+    price: item.discount === 100 ? "Free" : "—",
+    discount: item.discount ? `${item.discount}% OFF` : undefined,
+    href: isResource
+      ? `/library/resources/collections/${item.slug}`
+      : `/library/tutorials/collections/${item.slug}`,
+    thumbnailUrl: item?.thumbnailUrl || PLACEHOLDER_IMAGE,
+    author: item.uploader
+      ? { name: item.uploader.nickname, avatar: item.uploader.avatarUrl }
+      : undefined,
+  }
+}
+

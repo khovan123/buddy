@@ -1,0 +1,11 @@
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+notebooks/
+scripts/
+*.ipynb
+*.png
+.venv/
+.env

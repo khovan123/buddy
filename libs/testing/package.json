@@ -1,0 +1,12 @@
+{
+  "name": "@libs/testing",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "lint": "eslint \"{src,test}/**/*.ts\"",
+    "lint:fix": "eslint --fix \"{src,test}/**/*.ts\""
+  }
+}

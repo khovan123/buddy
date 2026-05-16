@@ -1,0 +1,150 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../infrastructure/persistence/prisma/generated"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TransactionType {
+  TOP_UP
+  PURCHASE_DEBIT
+  PURCHASE_CREDIT
+  WITHDRAW
+  REFUND_DEBIT
+  REFUND_CREDIT
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum PaymentProvider {
+  PAYOS
+  PAYPAL
+  BANK_TRANSFER
+}
+
+enum ProductType {
+  RESOURCE
+  TUTORIAL
+  RESOURCE_COLLECTION
+  TUTORIAL_COLLECTION
+  TUTORIAL_BUNDLE
+  TUTORIAL_BUNDLE_COLLECTION
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+model Wallet {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  balanceInCents BigInt   @default(0) @map("balance_in_cents")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  transactions WalletTransaction[]
+
+  @@map("wallets")
+}
+
+model WalletTransaction {
+  id            String            @id @default(uuid())
+  walletId      String            @map("wallet_id")
+  userId        String            @map("user_id")
+  type          TransactionType
+  status        TransactionStatus @default(PENDING)
+  provider      PaymentProvider?
+  amountInCents BigInt            @map("amount_in_cents")
+  currency      String            @default("VND")
+  externalRef   String?           @unique @map("external_ref")
+  idempotencyKey String?          @unique @map("idempotency_key")
+  metadata      Json?
+  createdAt     DateTime          @default(now()) @map("created_at")
+  confirmedAt   DateTime?         @map("confirmed_at")
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, status])
+  @@index([userId, createdAt])
+  @@map("wallet_transactions")
+}
+
+model Outbox {
+  id            String       @id @default(uuid())
+  correlationId String       @map("correlation_id")
+  type          String
+  payload       Json
+  exchange      String
+  routingKey    String       @map("routing_key")
+  status        OutboxStatus @default(PENDING)
+  occurredAt    DateTime     @default(now()) @map("occurred_at")
+  processedAt   DateTime?    @map("processed_at")
+  retryCount    Int          @default(0) @map("retry_count")
+
+  @@index([status, occurredAt])
+  @@index([correlationId])
+  @@map("outbox")
+}
+
+model UserResourceOwnership {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  resourceId String   @map("resource_id")
+  grantedAt  DateTime @default(now()) @map("granted_at")
+
+  @@unique([userId, resourceId])
+  @@index([userId])
+  @@map("user_resource_ownership")
+}
+
+model PayoutAccount {
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  bankBin           String   @map("bank_bin")
+  bankAccountNumber String   @map("bank_account_number")
+  bankAccountName   String   @map("bank_account_name")
+  bankName          String   @map("bank_name")
+  verified          Boolean  @default(false)
+  verifiedAt        DateTime? @map("verified_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("payout_accounts")
+}
+
+enum SubscriptionPlan {
+  CREATOR_FREE
+  CREATOR_PRO
+  STUDENT_FREE
+  STUDENT_PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+model Subscription {
+  id        String             @id @default(uuid())
+  userId    String             @unique @map("user_id")
+  plan      SubscriptionPlan
+  status    SubscriptionStatus @default(ACTIVE)
+  startsAt  DateTime           @default(now()) @map("starts_at")
+  expiresAt DateTime?          @map("expires_at")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  @@index([userId, status])
+  @@map("subscriptions")
+}

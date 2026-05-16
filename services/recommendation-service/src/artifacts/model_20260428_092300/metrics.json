@@ -1,0 +1,18 @@
+{
+  "status": "completed",
+  "total_pairs": 23415,
+  "positive_pairs": 5163,
+  "epochs": 80,
+  "final_loss": 0.5783331990242004,
+  "final_accuracy": 0.8468396067619324,
+  "val_loss": 1.258087396621704,
+  "val_accuracy": 0.7155669331550598,
+  "vocab_sizes": {
+    "user_id": 201,
+    "item_id": 501,
+    "major_id": 6,
+    "course_id": 31,
+    "career_id": 11,
+    "item_type": 4
+  }
+}

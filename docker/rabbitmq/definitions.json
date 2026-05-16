@@ -1,0 +1,85 @@
+{
+  "vhosts": [{ "name": "microservices" }],
+  "exchanges": [
+    {
+      "name": "auth.events",
+      "vhost": "microservices",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "user.events",
+      "vhost": "microservices",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "notification.events",
+      "vhost": "microservices",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "dead.letter",
+      "vhost": "microservices",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "auth.user.registered",
+      "vhost": "microservices",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dead.letter",
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "notification.send.email",
+      "vhost": "microservices",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dead.letter",
+        "x-message-ttl": 86400000
+      }
+    },
+    {
+      "name": "user.profile.updated",
+      "vhost": "microservices",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-dead-letter-exchange": "dead.letter",
+        "x-message-ttl": 86400000
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "auth.events",
+      "vhost": "microservices",
+      "destination": "auth.user.registered",
+      "destination_type": "queue",
+      "routing_key": "user.registered"
+    },
+    {
+      "source": "auth.events",
+      "vhost": "microservices",
+      "destination": "notification.send.email",
+      "destination_type": "queue",
+      "routing_key": "user.registered"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "status": "completed",
+  "timestamp": "2026-04-30T17:08:00.930699+00:00",
+  "total_pairs": 11306,
+  "positive_pairs": 2714,
+  "epochs": 20,
+  "fine_tune_rounds": 3,
+  "final_loss": 1.0598292350769043,
+  "final_accuracy": 0.7383900880813599,
+  "val_loss": 1.067556619644165,
+  "val_accuracy": 0.7586206793785095,
+  "vocab_sizes": {
+    "user_id": 51,
+    "item_id": 431,
+    "major_id": 7,
+    "course_id": 46,
+    "career_id": 9,
+    "item_type": 4
+  },
+  "output_dir": "./artifacts/model_20260430_170713",
+  "fine_tuned": true,
+  "eval_baseline": {
+    "hitrate@50": 0.14,
+    "mrr": 0.0043,
+    "users_evaluated": 50
+  },
+  "eval_final": {
+    "hitrate@50": 0.12,
+    "mrr": 0.0143,
+    "users_evaluated": 50
+  }
+}

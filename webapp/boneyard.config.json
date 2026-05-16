@@ -1,0 +1,18 @@
+{
+  "devServer": "http://localhost:8000",
+  "urls": ["/bones-fixture"],
+  "breakpoints": [375, 768, 1280],
+  "out": "./src/bones",
+  "wait": 800,
+
+  "color": "hsl(240 5.9% 90%)",
+  "darkColor": "hsl(240 3.7% 25%)",
+  "animate": "shimmer",
+  "shimmerColor": "hsl(240 4.8% 95.9%)",
+  "darkShimmerColor": "hsl(240 3.7% 32%)",
+  "speed": "2s",
+  "shimmerAngle": 110,
+  "stagger": 80,
+  "transition": 300,
+  "resolveEnvVars": true
+}

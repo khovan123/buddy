@@ -1,0 +1,59 @@
+{
+  "$schema": "https://v2-9-6.turborepo.dev/schema.json",
+  "globalDependencies": ["**/.env.*"],
+  "globalPassThroughEnv": ["NODE_ENV"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["src/**/*.ts", "package.json", "tsconfig.json", "prisma/schema.prisma"],
+      "outputs": ["dist/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "dev:prod": {
+      "cache": false,
+      "persistent": true
+    },
+    "start:dist": {
+      "cache": false,
+      "persistent": true
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
+    },
+    "test:unit": {
+      "outputs": ["coverage/**"]
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:e2e": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "lint": {
+      "outputs": []
+    },
+    "lint:fix": {
+      "outputs": []
+    },
+    "prisma:generate": {
+      "inputs": ["src/prisma/schema.prisma"],
+      "outputs": ["src/infrastructure/persistence/prisma/generated/**"],
+      "cache": true
+    },
+    "prisma:migrate:create": {
+      "cache": false
+    },
+    "prisma:db:push": {
+      "cache": false
+    },
+    "prisma:migrate:deploy:prod": {
+      "cache": false
+    }
+  }
+}

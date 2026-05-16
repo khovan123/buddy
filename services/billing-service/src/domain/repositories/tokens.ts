@@ -1,0 +1,4 @@
+export const WALLET_REPOSITORY = Symbol('WALLET_REPOSITORY');
+export const PAYMENT_GATEWAYS = Symbol('PAYMENT_GATEWAYS');
+export const CONTENT_VALIDATOR = Symbol('CONTENT_VALIDATOR');
+export const PAYOUT_GATEWAY = Symbol('PAYOUT_GATEWAY');

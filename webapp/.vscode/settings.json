@@ -1,0 +1,57 @@
+{
+  "files.eol": "\n",
+  "postman.settings.dotenv-detection-notification-visibility": false,
+  "[javascript]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll.eslint": "explicit",
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true
+  },
+  "[typescript]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll.eslint": "explicit",
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true
+  },
+  "[typescriptreact]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll.eslint": "explicit"
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true
+  },
+  "[javascriptreact]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit",
+      "source.fixAll.eslint": "explicit"
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true
+  },
+  "[json]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit"
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.formatOnSave": true
+  },
+  "editor.detectIndentation": false,
+  "editor.formatOnSave": true,
+  "git.ignoreLimitWarning": true,
+  "python-envs.defaultEnvManager": "ms-python.python:system",
+}

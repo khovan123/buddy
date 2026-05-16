@@ -1,0 +1,99 @@
+<html>
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv='x-ua-compatible' content='ie=edge' />
+    <title>Welcome to UniBuddy!</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1' />
+    <style type='text/css'>
+      body, table, td, a {
+        -ms-text-size-adjust: 100%;
+        -webkit-text-size-adjust: 100%;
+      }
+      table, td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+      }
+      body {
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f0f2f5;
+      }
+      .container {
+        max-width: 640px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 12px;
+        overflow: hidden;
+        margin-top: 40px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+      .header {
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        padding: 36px 24px;
+        text-align: center;
+        color: #ffffff;
+      }
+      .content {
+        padding: 32px;
+        color: #374151;
+        line-height: 1.6;
+      }
+      .footer {
+        padding: 20px;
+        text-align: center;
+        font-size: 12px;
+        color: #9ca3af;
+        background-color: #f9fafb;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+      }
+      p {
+        margin: 16px 0;
+      }
+      .button {
+        display: inline-block;
+        padding: 12px 24px;
+        background-color: #6366f1;
+        color: #ffffff !important;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        margin-top: 20px;
+      }
+      .highlight {
+        color: #6366f1;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <h1>Welcome to <span style='color: #fbbf24;'>UniBuddy</span>!</h1>
+      </div>
+      <div class='content'>
+        <p>Hi <span class='highlight'>{{nickname}}</span>,</p>
+        <p>Congratulations! Your UniBuddy account has been successfully created. We are thrilled to have you join our community.</p>
+        <p>Your account is ready to use with the email address: <strong>{{email}}</strong>.</p>
+        <p>Start exploring all the amazing features UniBuddy has to offer by logging in now:</p>
+        <div style='text-align: center;'>
+          <a href='{{loginUrl}}' class='button'>Go to Login Page</a>
+        </div>
+        <p style='font-size: 14px; margin-top: 30px; color: #6b7280;'>If the button above doesn't work, you can copy and paste this link into your browser:
+          <br />
+          <a href='{{loginUrl}}' style='color: #6366f1;'>{{loginUrl}}</a>
+        </p>
+      </div>
+      <div class='footer'>
+        <p>© 2026 UniBuddy MS. All rights reserved.</p>
+        <p>You are receiving this email because you signed up for an account at unibuddy.com. If this wasn't you, please ignore this email.</p>
+      </div>
+    </div>
+  </body>
+</html>

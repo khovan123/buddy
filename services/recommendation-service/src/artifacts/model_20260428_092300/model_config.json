@@ -1,0 +1,65 @@
+{
+  "model_type": "two_tower",
+  "embedding_dim": 64,
+  "temperature": 15.0,
+  "vocab_sizes": {
+    "user_id": 201,
+    "item_id": 501,
+    "major_id": 6,
+    "course_id": 31,
+    "career_id": 11,
+    "item_type": 4
+  },
+  "type_map": {
+    "RESOURCE": 0,
+    "TUTORIAL": 1,
+    "COLLECTION": 2
+  },
+  "user_features": {
+    "user_id": {
+      "dtype": "int32",
+      "vocab_field": "user_id"
+    },
+    "user_major_id": {
+      "dtype": "int32",
+      "vocab_field": "major_id"
+    },
+    "user_course_id": {
+      "dtype": "int32",
+      "vocab_field": "course_id"
+    },
+    "user_semester": {
+      "dtype": "float32",
+      "vocab_field": null
+    },
+    "user_career_id": {
+      "dtype": "int32",
+      "vocab_field": "career_id"
+    }
+  },
+  "item_features": {
+    "item_id": {
+      "dtype": "int32",
+      "vocab_field": "item_id"
+    },
+    "item_type": {
+      "dtype": "int32",
+      "vocab_field": null,
+      "mapping": "type_map"
+    },
+    "item_major_id": {
+      "dtype": "int32",
+      "vocab_field": "major_id"
+    },
+    "item_course_id": {
+      "dtype": "int32",
+      "vocab_field": "course_id"
+    },
+    "item_semester": {
+      "dtype": "float32",
+      "vocab_field": null
+    }
+  },
+  "normalization": "L2 (UnitNormalization on tower output)",
+  "similarity": "cosine (dot product of L2-normalized vectors)"
+}

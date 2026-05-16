@@ -1,0 +1,205 @@
+version: '3.9'
+
+services:
+  # ─── Services ─────────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    container_name: ms_api_gateway
+    ports:
+      - '3000:3000'
+    env_file:
+      - services/api-gateway/.env
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:3001
+      USER_SERVICE_URL: http://user-service:3002
+      NOTIFICATION_SERVICE_URL: http://notification-service:3003
+      REDIS_HOST: redis
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_TRACES_EXPORTER: otlp
+    networks:
+      - ms_network
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+    container_name: ms_auth_service
+    ports:
+      - '3001:3001'
+    env_file:
+      - services/auth-service/.env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/microservices
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_TRACES_EXPORTER: otlp
+    networks:
+      - ms_network
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: .
+      dockerfile: services/user-service/Dockerfile
+    container_name: ms_user_service
+    ports:
+      - '3002:3002'
+    env_file:
+      - services/user-service/.env
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/user_db
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/microservices
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_TRACES_EXPORTER: otlp
+    networks:
+      - ms_network
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    container_name: ms_notification_service
+    ports:
+      - '3003:3003'
+    env_file:
+      - services/notification-service/.env
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/notification_db
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/microservices
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_TRACES_EXPORTER: otlp
+    networks:
+      - ms_network
+    restart: unless-stopped
+
+  content-service:
+    build:
+      context: .
+      dockerfile: services/content-service/Dockerfile
+    container_name: ms_content_service
+    ports:
+      - '3004:3004'
+    env_file:
+      - services/content-service/.env
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/notification_db
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/microservices
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_TRACES_EXPORTER: otlp
+    networks:
+      - ms_network
+    restart: unless-stopped
+
+  upload-service:
+    build:
+      context: .
+      dockerfile: services/upload-service/Dockerfile
+    container_name: ms_upload_service
+    ports:
+      - '3005:3005'
+    env_file:
+      - services/upload-service/.env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/microservices
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_TRACES_EXPORTER: otlp
+    depends_on:
+      upload-service-migrate:
+        condition: service_completed_successfully
+    networks:
+      - ms_network
+    restart: unless-stopped
+
+  billing-service:
+    build:
+      context: .
+      dockerfile: services/billing-service/Dockerfile
+    container_name: ms_billing_service
+    ports:
+      - '3006:3006'
+    env_file:
+      - services/billing-service/.env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/microservices
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_TRACES_EXPORTER: otlp
+    depends_on:      
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy      
+    networks:
+      - ms_network
+    restart: unless-stopped
+
+  content-access-service:
+    build:
+      context: .
+      dockerfile: services/content-access-service/Dockerfile
+    container_name: ms_content_access_service
+    ports:
+      - '3007:3007'
+    env_file:
+      - services/content-access-service/.env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/microservices
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_TRACES_EXPORTER: otlp
+    depends_on:      
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy      
+    networks:
+      - ms_network
+    restart: unless-stopped
+
+  upload-service-migrate:
+    build:
+      context: .
+      dockerfile: services/upload-service/Dockerfile
+      target: builder
+    container_name: ms_upload_service_migrate
+    env_file:
+      - services/upload-service/.env
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/microservices
+    command: sh -c "cd services/upload-service && npx prisma migrate deploy --config ../../libs/common/src/config/prisma.config.ts"
+    networks:
+      - ms_network
+    restart: "no"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    container_name: ms_jaeger
+    ports:
+      - '16686:16686'
+      - '4317:4317'
+      - '4318:4318'
+    environment:
+      COLLECTOR_OTLP_ENABLED: 'true'
+      COLLECTOR_ZIPKIN_HOST_PORT: ':9411'
+    networks:
+      - ms_network
+
+networks:
+  ms_network:
+    driver: bridge

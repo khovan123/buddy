@@ -1,0 +1,31 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../infrastructure/persistence/prisma/generated"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ResourceType {
+  RESOURCE
+  COLLECTION
+  TUTORIAL
+}
+
+model UserResourceAccess {
+  id           String       @id @default(uuid())
+  userId       String       @map("user_id")
+  resourceId   String       @map("resource_id")
+  resourceType ResourceType @map("resource_type")
+  purchaseId   String?      @map("purchase_id")
+  grantedAt    DateTime     @default(now()) @map("granted_at")
+  deletedAt    DateTime?    @map("deleted_at")
+
+  @@unique([userId, resourceId])
+  @@index([userId, resourceType])
+  @@index([userId, deletedAt])
+  @@index([purchaseId])
+  @@map("user_resource_access")
+}
