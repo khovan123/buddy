@@ -33,6 +33,8 @@ COPY services/recommendation-service/artifacts/ ./artifacts/
 
 ENV PYTHONUNBUFFERED=1
 ENV ARTIFACTS_DIR=/app/artifacts
+ENV TOKENIZERS_PARALLELISM=false
+ENV TF_ENABLE_ONEDNN_OPTS=0
 
 EXPOSE 3009
 

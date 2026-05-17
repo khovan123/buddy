@@ -58,10 +58,23 @@ async def lifespan(app: FastAPI):
     app.state.consumer = None
     app.state.scheduler = None
 
+    # ── Pre-load sentence-transformers in MAIN thread ─────────────────────
+    # PyTorch (pulled by sentence-transformers) segfaults (exit 139) when
+    # loaded in a daemon thread while TensorFlow is already initialised.
+    # Trigger the lazy singleton here so the model is warm before any
+    # background thread touches it.
+    try:
+        from rag.embedder import _get_model
+        _get_model()
+        logger.info("Embedding model pre-loaded in main thread")
+    except Exception as e:
+        logger.warning(f"Embedding model pre-load failed (non-fatal): {e}")
+
     def _background_init():
         """Run all heavy init in a single background thread."""
         try:
-            # 1. RAG module (sentence-transformers + Qdrant)
+            # 1. RAG module (Qdrant connection + pipeline wiring)
+            # NOTE: sentence-transformers model is already loaded above
             global rag_pipeline, rag_indexer
             try:
                 from rag.vector_store import VectorStore
