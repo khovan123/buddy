@@ -1,461 +1,289 @@
 <div align="right">
-  <a href="README.md"><img alt="English" src="https://img.shields.io/badge/Language-English-blue?style=for-the-badge&logo=google-translate"></a>
-  <a href="README-vi.md"><img alt="Tiếng Việt" src="https://img.shields.io/badge/Ngôn_ngữ-Tiếng_Việt-red?style=for-the-badge&logo=google-translate"></a>
+  <a href="README.md"><img alt="English" src="https://img.shields.io/badge/Language-English-111827?style=flat-square&logo=google-translate&logoColor=white"></a>
+  <a href="README-vi.md"><img alt="Tieng Viet" src="https://img.shields.io/badge/Ngon_ngu-Tieng_Viet-dc2626?style=flat-square&logo=google-translate&logoColor=white"></a>
 </div>
 
 <div align="center">
-  <h1>🎓 Buddy</h1>
-  <p><strong>A distributed learning platform with AI-powered recommendations, HLS video streaming, and a RAG-based study assistant — built on production-grade microservices.</strong></p>
 
-  <p>
-    <img alt="Version" src="https://img.shields.io/badge/version-v1.0.0-blue.svg" />
-    <img alt="NestJS" src="https://img.shields.io/badge/nestjs-%23E0234E.svg?style=flat&logo=nestjs&logoColor=white" />
-    <img alt="Next.js" src="https://img.shields.io/badge/next.js-000000?style=flat&logo=nextdotjs&logoColor=white" />
-    <img alt="TypeScript" src="https://img.shields.io/badge/typescript-%23007ACC.svg?style=flat&logo=typescript&logoColor=white" />
-    <img alt="Python" src="https://img.shields.io/badge/python-3670A0?style=flat&logo=python&logoColor=ffdd54" />
-    <img alt="TensorFlow" src="https://img.shields.io/badge/tensorflow-%23FF6F00.svg?style=flat&logo=tensorflow&logoColor=white" />
-    <img alt="Docker" src="https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white" />
-    <img alt="Azure" src="https://img.shields.io/badge/azure-%230072C6.svg?style=flat&logo=microsoftazure&logoColor=white" />
-  </p>
+# Buddy
 
-  <p>
-    <a href="#-introduction">Introduction</a> •
-    <a href="#-core-features">Features</a> •
-    <a href="#-system-architecture">Architecture</a> •
-    <a href="#-tech-stack">Tech Stack</a> •
-    <a href="#-getting-started">Getting Started</a> •
-    <a href="#-deployment">Deployment</a>
-  </p>
+### AI learning platform built as a production-grade microservices system
+
+<p>
+  <a href="#why-this-project-stands-out">Why it stands out</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#engineering-highlights">Engineering</a> ·
+  <a href="#run-locally">Run locally</a> ·
+  <a href="#documentation">Docs</a>
+</p>
+
+<p>
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.4-3178c6?style=for-the-badge&logo=typescript&logoColor=white">
+  <img alt="React" src="https://img.shields.io/badge/ReactJS-19-61dafb?style=for-the-badge&logo=react&logoColor=111111">
+  <img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-111111?style=for-the-badge&logo=nextdotjs&logoColor=white">
+  <img alt="NestJS" src="https://img.shields.io/badge/NestJS-11-e0234e?style=for-the-badge&logo=nestjs&logoColor=white">
+  <img alt="Python" src="https://img.shields.io/badge/Python-ML-3776ab?style=for-the-badge&logo=python&logoColor=white">
+</p>
+
+<p>
+  <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-47a248?style=for-the-badge&logo=mongodb&logoColor=white">
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-4169e1?style=for-the-badge&logo=postgresql&logoColor=white">
+  <img alt="Prisma" src="https://img.shields.io/badge/Prisma-7-2d3748?style=for-the-badge&logo=prisma&logoColor=white">
+  <img alt="Redis" src="https://img.shields.io/badge/Redis-dc382d?style=for-the-badge&logo=redis&logoColor=white">
+  <img alt="RabbitMQ" src="https://img.shields.io/badge/RabbitMQ-ff6600?style=for-the-badge&logo=rabbitmq&logoColor=white">
+</p>
+
+<p>
+  <img alt="TensorFlow" src="https://img.shields.io/badge/TensorFlow-ff6f00?style=for-the-badge&logo=tensorflow&logoColor=white">
+  <img alt="Qdrant" src="https://img.shields.io/badge/Qdrant-vector_search-dc244c?style=for-the-badge">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-ready-2496ed?style=for-the-badge&logo=docker&logoColor=white">
+  <img alt="Azure" src="https://img.shields.io/badge/Azure-Container_Apps-0078d4?style=for-the-badge&logo=microsoftazure&logoColor=white">
+  <img alt="Vercel" src="https://img.shields.io/badge/Vercel-webapp-000000?style=for-the-badge&logo=vercel&logoColor=white">
+</p>
+
 </div>
 
 ---
 
-## 🌟 Introduction
+## Snapshot
 
-**Buddy** is a full-stack, distributed learning platform designed for university students and content creators. Think of it as a self-hosted Udemy with **AI superpowers** — creators publish tutorials and resources, students enroll in courses, and an AI assistant helps learners study by answering questions grounded in the actual course materials.
+Buddy is a full-stack learning marketplace where creators publish video tutorials and resources, students buy or enroll in content, and an AI assistant answers questions from the actual course material.
 
-The platform is built as a **monorepo** containing 10 independently deployable microservices (NestJS + FastAPI), a modern Next.js 16 webapp, and shared libraries — all orchestrated via Turborepo, RabbitMQ, and Docker Compose.
+It is intentionally built beyond CRUD: the system uses 10 deployable services, event-driven messaging, HLS media processing, payments, recommendations, RAG search, observability, and cloud deployment workflows.
 
-### Why Buddy?
+| Area            | What is implemented                                                                              |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| **Platform**    | Course marketplace, creator profiles, library, follows, ratings, reviews, notifications          |
+| **AI**          | RAG assistant with Qdrant retrieval, Gemini generation, Redis cache, citations, streaming UI     |
+| **ML**          | TensorFlow two-tower recommendation model, FAISS indexing, drift monitoring, retraining triggers |
+| **Media**       | FFmpeg HLS transcoding, trailer extraction, S3 presigned access, Cloudinary thumbnails           |
+| **Reliability** | API gateway with bulkheads, circuit breakers, retries, and partial-failure composition           |
+| **Money**       | Wallets, transactions, PayPal, PayOS, ownership records, subscriptions, payouts                  |
 
-| Problem | Buddy's Solution |
-| :--- | :--- |
-| Students drown in scattered PDFs and videos | **Unified Library** — all resources organized by course, collection, and major |
-| Video content requires expensive CDN | **HLS Streaming** — FFmpeg transcodes to `.m3u8`, served via Supabase S3 presigned URLs |
-| "What was covered in lecture 5?" | **RAG AI Assistant** — asks questions against your enrolled course materials with cited sources |
-| "What should I learn next?" | **Two-Tower ML Model** — personalized recommendations based on profile, behavior, and popularity |
-| Payment complexity for content creators | **Wallet System** — PayPal + PayOS integration with transaction history and payouts |
+## Why This Project Stands Out
 
----
+```txt
+Recruiter scan:
 
-## ✨ Core Features
-
-### 1. 📚 Content Management & Streaming
-
-Creators publish rich learning content with automated media processing.
-
-* **Tutorials:** Video-based lessons with HLS adaptive streaming. FFmpeg transcodes raw uploads into `.m3u8` segments in background BullMQ workers.
-* **Resources:** Uploadable documents (PDF, DOCX, PPTX) with in-browser preview. Files are stored in Supabase S3 with time-limited presigned URLs for secure access.
-* **Collections:** Curated playlists of tutorials and resources, organized by learning phases.
-* **Courses & Majors:** Hierarchical organization — Majors → Courses → Tutorials/Resources.
-* **Trailer Generation:** Automatically extracts the first 15 seconds of tutorial video as a Cloudinary-hosted trailer.
-
-### 2. 🤖 AI Study Assistant (RAG)
-
-Ask questions about your course materials and get grounded, cited answers.
-
-* **Pipeline:** `Retrieve → Generate → Cache` — Qdrant vector search finds relevant chunks, Gemini generates the answer, Redis caches responses.
-* **Semantic Search:** Content is chunked, embedded via `sentence-transformers`, and indexed in Qdrant for vector similarity search.
-* **Source Citations:** Every AI response includes clickable source references linking back to the original tutorial or resource.
-* **Streaming UI:** Real-time response streaming in a chat interface with markdown rendering.
-
-### 3. 🎯 Smart Recommendations
-
-A Python-based ML engine that learns what each student needs.
-
-* **Two-Tower Model:** TensorFlow/Keras neural network with separate User Tower (user_id, major, semester, career) and Item Tower (item_id, type, major, course) — computes cosine similarity for personalized ranking.
-* **Multi-Signal Scoring:** Combines profile-based matching, behavioral signals (views, enrollments), and popularity scores.
-* **Drift Monitoring:** Tracks out-of-vocabulary rates and automatically triggers model retraining when drift exceeds thresholds.
-* **FAISS Indexing:** Approximate nearest neighbor search for sub-millisecond inference at scale, rebuilt periodically.
-
-### 4. 💳 Billing & Monetization
-
-Full payment lifecycle for content creators and students.
-
-* **Wallet System:** Each user has a wallet with deposit/withdrawal capabilities and full transaction history.
-* **Payment Gateways:** Dual integration with **PayPal** (international) and **PayOS** (Vietnam domestic).
-* **Resource Ownership:** Purchase tracking via `UserResourceOwnership` — buy once, access forever.
-* **Subscription Model:** Configurable subscription plans with automated billing cycles.
-* **Payout Accounts:** Creators link bank accounts for revenue withdrawal.
-
-### 5. 👥 Social & Interaction
-
-Community features that drive engagement.
-
-* **Follow System:** Follow creators to get notified about new content.
-* **Ratings & Reviews:** Rate tutorials and resources with aggregated scoring.
-* **Real-time Notifications:** Socket.io-powered notifications for enrollments, purchases, and social events.
-* **User Profiles:** Rich profiles with career information, highlight skills, and profile metadata.
-
-### 6. 🔍 Explore & Discovery
-
-Multiple pathways to find the right content.
-
-* **Explore Page:** Browse trending tutorials, popular resources, and curated collections.
-* **Career Skills:** Filter content by career path and required skills.
-* **SEO Optimization:** Server-rendered pages with metadata for organic discovery.
-* **Content Library:** Personal library of saved and purchased content.
-
----
-
-## 🏗️ System Architecture
-
-```
-                            ┌──────────────────────┐
-                            │      Webapp           │
-                            │  Next.js 16 (Vercel)  │
-                            └──────────┬───────────┘
-                                       │
-                            ┌──────────▼───────────┐
-                            │    API Gateway        │
-                            │  Reverse Proxy +      │
-                            │  Resilience Stack     │
-                            │  (:3000)              │
-                            └──────────┬───────────┘
-                                       │
-          ┌──────────┬────────┬────────┼────────┬──────────┬──────────┐
-          │          │        │        │        │          │          │
-    ┌─────▼──┐ ┌────▼───┐ ┌──▼──┐ ┌───▼──┐ ┌───▼──┐ ┌────▼───┐ ┌───▼──────┐
-    │  Auth  │ │ User   │ │Cont-│ │Upload│ │Bill- │ │Notif-  │ │Content   │
-    │Service │ │Service │ │ent  │ │Serv. │ │ing   │ │ication │ │Access    │
-    │ :3001  │ │ :3002  │ │:3004│ │:3005 │ │:3006 │ │ :3003  │ │ :3007    │
-    └────────┘ └────────┘ └─────┘ └──────┘ └──────┘ └────────┘ └──────────┘
-          │          │        │        │        │          │          │
-    ┌─────┴──────────┴────────┴────────┴────────┴──────────┴──────────┘
-    │                         RabbitMQ (Event Bus)
-    └──────────────────────────────────────────────────────────────────┘
-          │          │                    │
-    ┌─────▼──┐ ┌────▼───┐         ┌──────▼──────┐      ┌──────────┐
-    │Postgres│ │MongoDB │         │Interact.    │      │  Recom.  │
-    │  (SQL) │ │(NoSQL) │         │Service :3008│      │  Service │
-    └────────┘ └────────┘         └─────────────┘      │  :3009   │
-                                                       │ (Python) │
-                                                       └─────┬────┘
-                                                             │
-                                                       ┌─────▼────┐
-                                                       │  Qdrant  │
-                                                       │ (Vector) │
-                                                       └──────────┘
+  distributed systems        10 independently deployable services
+  AI product engineering     RAG + recommendation model, not a thin chatbot wrapper
+  production thinking        auth, billing, observability, queues, resilience, CI/CD
+  frontend depth             ReactJS 19, Next.js 16, shadcn/ui, streaming assistant UX
+  data depth                 MongoDB, PostgreSQL, Prisma, Mongoose, Redis, Qdrant
+  deployment readiness       Docker Compose locally, Vercel + Azure Container Apps in cloud
 ```
 
-### API Gateway — Resilience Stack
+## Architecture
 
-The gateway implements three layers of protection for every downstream call:
+```mermaid
+flowchart TB
+  User[Student / Creator] --> Web[Next.js 16 Webapp]
+  Web --> Gateway[API Gateway<br/>bulkhead · circuit breaker · retry]
 
+  Gateway --> Auth[Auth Service]
+  Gateway --> UserSvc[User Service]
+  Gateway --> Content[Content Service]
+  Gateway --> Upload[Upload Service]
+  Gateway --> Billing[Billing Service]
+  Gateway --> Access[Content Access Service]
+  Gateway --> Interaction[Interaction Service]
+  Gateway --> Notify[Notification Service]
+  Gateway --> Recommend[Recommendation Service<br/>FastAPI · ML · RAG]
+
+  Auth --> Postgres[(PostgreSQL)]
+  Billing --> Postgres
+  Upload --> Postgres
+  Access --> Postgres
+
+  UserSvc --> Mongo[(MongoDB)]
+  Content --> Mongo
+  Interaction --> Mongo
+  Notify --> Mongo
+  Recommend --> Mongo
+
+  Upload --> S3[Supabase S3]
+  Upload --> Cloudinary[Cloudinary]
+  Recommend --> Qdrant[(Qdrant)]
+  Recommend --> FAISS[(FAISS Index)]
+
+  Auth <--> Rabbit[RabbitMQ Event Bus]
+  Content <--> Rabbit
+  Billing <--> Rabbit
+  Notify <--> Rabbit
+  Interaction <--> Rabbit
+
+  Gateway --> Observability[OpenTelemetry<br/>Prometheus · Grafana · Jaeger]
 ```
-Request  →  Bulkhead (isolate concurrency)  →  Circuit Breaker (fail-fast)  →  Retry (idempotent only)  →  Downstream
+
+## Engineering Highlights
+
+### Resilient Gateway
+
+The API gateway protects downstream services with three defensive layers:
+
+```txt
+request -> bulkhead -> circuit breaker -> retry for idempotent reads -> service
 ```
 
-| Pattern | Purpose |
-| :--- | :--- |
-| **Bulkhead** | Per-service concurrency limits (20 default, 10 for upload) — prevents one slow service from exhausting all connections |
-| **Circuit Breaker** | 3-state (Closed → Open → Half-Open) — stops cascading failures after 5 consecutive errors |
-| **Retry** | Exponential backoff (500ms → 1s) — **only for GET** requests to prevent duplicate writes |
-| **API Composition** | `Promise.allSettled()` for parallel multi-service aggregation with partial failure tolerance |
+| Pattern             | Purpose                                                                            |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| **Bulkhead**        | Isolates service concurrency so one slow dependency cannot exhaust the gateway     |
+| **Circuit breaker** | Fails fast after repeated downstream errors, then probes recovery                  |
+| **Retry**           | Uses exponential backoff for safe `GET` requests only                              |
+| **API composition** | Aggregates multi-service responses with `Promise.allSettled()` and partial results |
 
-### Clean Architecture (per service)
+### AI Study Assistant
 
-```
-services/<name>/src/
-├── presentation/       # HTTP controllers, DTOs, Event handlers
-├── application/        # CQRS — Commands & Queries handlers
-├── domain/             # Pure TypeScript entities, value objects, repository interfaces
-├── infrastructure/     # Database, messaging, external adapters
-└── shared/             # Internal DTOs, mappers
+```txt
+course material -> chunking -> embeddings -> Qdrant retrieval -> Gemini generation -> Redis cache -> streamed answer
 ```
 
-> **Rule:** Domain layer has zero NestJS dependencies. All framework coupling is in Infrastructure.
+- Answers are grounded in enrolled tutorials and uploaded resources.
+- Retrieval uses semantic embeddings through `sentence-transformers`.
+- Responses include source references back to the original learning material.
+- The UI streams markdown responses in real time.
 
-### Hybrid Database Strategy
+### Recommendation Engine
 
-| Database | Use Case | Services |
-| :--- | :--- | :--- |
-| **PostgreSQL** | Transactional data (ACID) | Auth, Billing, Upload, Content-Access |
-| **MongoDB** | Flexible schemas, rich queries | Content, User, Interaction, Notification |
-| **Qdrant** | Vector similarity search | Recommendation (RAG) |
-| **Redis** | Caching, BullMQ job queues | All services |
+- Two-tower TensorFlow/Keras model separates user and item representations.
+- Profile, behavior, and popularity signals are combined for ranking.
+- FAISS powers fast nearest-neighbor lookup.
+- Drift checks track out-of-vocabulary rates and trigger retraining when needed.
 
----
+### Media Pipeline
 
-## 🛠️ Tech Stack
+- Raw videos are converted to HLS `.m3u8` streams with FFmpeg workers.
+- Tutorial trailers are extracted automatically from the first 15 seconds.
+- Files are served through time-limited Supabase S3 presigned URLs.
+- Cloudinary stores public thumbnails and preview assets.
 
-### Backend (Microservices)
+## Tech Stack
 
-| Layer | Technology |
-| :--- | :--- |
-| **Framework** | NestJS 11 (Fastify adapter) |
-| **Language** | TypeScript 5.4 |
-| **ORM** | Prisma 7 (PostgreSQL), Mongoose (MongoDB) |
-| **Messaging** | RabbitMQ (event-driven, Saga choreography) |
-| **Caching** | Redis 7 + BullMQ (job queues) |
-| **Auth** | JWT (access + refresh tokens) |
-| **Storage** | Supabase S3 (videos, resources), Cloudinary (thumbnails, trailers) |
-| **Video** | FFmpeg → HLS transcoding in BullMQ workers |
-| **Observability** | OpenTelemetry → Jaeger (tracing) + Prometheus → Grafana (metrics) |
-| **Build** | Turborepo + SWC (fast TypeScript compilation) |
+| Layer                | Stack                                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| **Frontend**         | ReactJS 19, Next.js 16, TypeScript, Tailwind CSS v4, shadcn/ui, Radix UI, Base UI, Framer Motion, Spline  |
+| **Client state**     | Redux Toolkit, React Redux, Redux Persist, Zustand, React Hook Form, Zod                                  |
+| **Backend**          | NestJS 11, Fastify, TypeScript 5.4, CQRS, Clean Architecture, REST APIs                                   |
+| **AI / ML**          | FastAPI, TensorFlow/Keras, Sentence Transformers, Qdrant, FAISS, Gemini, streaming RAG responses          |
+| **Data**             | PostgreSQL, MongoDB, Redis, Prisma 7, Mongoose, Prisma Accelerate adapter                                 |
+| **Messaging / Jobs** | RabbitMQ, BullMQ, event-driven workflows, background media processing                                     |
+| **Storage / Media**  | Supabase S3, Cloudinary, FFmpeg, HLS `.m3u8` streaming, presigned URLs                                    |
+| **Observability**    | OpenTelemetry, Prometheus, Grafana, Jaeger, service metrics and traces                                    |
+| **Delivery**         | Docker, Docker Compose, Turborepo, GitHub Actions, Vercel, Azure Container Registry, Azure Container Apps |
 
-### AI & ML Engine
+## Service Map
 
-| Component | Technology |
-| :--- | :--- |
-| **Framework** | FastAPI + Uvicorn |
-| **ML Model** | TensorFlow/Keras (Two-Tower architecture) |
-| **Embeddings** | Sentence-Transformers (`all-MiniLM-L6-v2`) |
-| **Vector DB** | Qdrant + FAISS (approximate nearest neighbor) |
-| **LLM** | Google Gemini (generative AI for RAG) |
-| **Scoring** | Multi-signal engine (profile + behavioral + popularity) |
+| Service                  | Port | Storage          | Responsibility                               |
+| ------------------------ | ---: | ---------------- | -------------------------------------------- |
+| `api-gateway`            | 3000 | -                | Reverse proxy, resilience, API composition   |
+| `auth-service`           | 3001 | PostgreSQL       | Registration, login, JWT, refresh rotation   |
+| `user-service`           | 3002 | MongoDB          | Profiles, follows, careers, skills, ratings  |
+| `notification-service`   | 3003 | MongoDB          | Socket.io notifications and email events     |
+| `content-service`        | 3004 | MongoDB          | Courses, tutorials, resources, collections   |
+| `upload-service`         | 3005 | PostgreSQL       | Presigned uploads, HLS transcoding, trailers |
+| `billing-service`        | 3006 | PostgreSQL       | Wallets, payments, subscriptions, payouts    |
+| `content-access-service` | 3007 | PostgreSQL       | Ownership checks and access grants           |
+| `interaction-service`    | 3008 | MongoDB          | Views, saves, engagement tracking            |
+| `recommendation-service` | 3009 | MongoDB + Qdrant | Recommendations, RAG, trending, scoring      |
 
-### Frontend (Webapp)
+## Monorepo Shape
 
-| Layer | Technology |
-| :--- | :--- |
-| **Framework** | Next.js 16 (App Router, Turbopack) |
-| **UI** | React 19, Radix UI, shadcn/ui |
-| **Styling** | Tailwind CSS v4, Framer Motion |
-| **State** | Redux Toolkit + Zustand + Redux Persist |
-| **Forms** | React Hook Form + Zod validation |
-| **3D** | Spline (landing page visuals) |
-| **Real-time** | Socket.io client |
-| **Auth** | NextAuth.js v4 |
-
-### Infrastructure
-
-| Component | Technology |
-| :--- | :--- |
-| **Containers** | Docker + Docker Compose |
-| **CI/CD** | GitHub Actions (backend) + Vercel (webapp) |
-| **Cloud** | Azure Container Apps + Azure Container Registry |
-| **Monitoring** | Prometheus + Grafana + Jaeger |
-
----
-
-## 🗂️ Monorepo Structure
-
-```
+```txt
 buddy/
-├── services/                       # Backend microservices
-│   ├── api-gateway/                # Reverse proxy + resilience (:3000)
-│   ├── auth-service/               # JWT auth, refresh tokens (:3001)
-│   ├── user-service/               # Profiles, follows, ratings (:3002)
-│   ├── notification-service/       # Real-time + email notifications (:3003)
-│   ├── content-service/            # Tutorials, courses, resources (:3004)
-│   ├── upload-service/             # S3 + Cloudinary + FFmpeg (:3005)
-│   ├── billing-service/            # Wallets, PayPal, PayOS (:3006)
-│   ├── content-access-service/     # Ownership & access control (:3007)
-│   ├── interaction-service/        # Views, saves, engagement (:3008)
-│   └── recommendation-service/     # Python ML + RAG engine (:3009)
-│
-├── webapp/                         # Next.js 16 frontend
-│   └── src/
-│       ├── app/                    # App Router pages
-│       │   ├── (intro)/            # Landing, pricing, FAQ, about
-│       │   ├── (private)/          # Dashboard, library, explore, ask (RAG), profile, settings
-│       │   └── (public)/           # Auth pages
-│       ├── features/               # Feature modules (auth, billing, content, rag, user, ...)
-│       ├── components/             # UI components (atoms, molecules, organisms)
-│       ├── bones/                  # Design system configuration (boneyard-js)
-│       └── lib/                    # Redux store, socket, utilities
-│
-├── libs/                           # Shared libraries
-│   ├── common/                     # Guards, config, resilience, observability, logger
-│   ├── contracts/                  # Shared DTOs, events (single source of truth)
-│   └── testing/                    # Jest global mocks
-│
-├── docker-compose.yml              # Local infrastructure
-├── Dockerfile                      # Multi-stage build (shared across services)
-├── turbo.json                      # Turborepo pipeline config
-└── .github/workflows/ci.yml       # GitHub Actions CI/CD
+  services/
+    api-gateway/
+    auth-service/
+    user-service/
+    notification-service/
+    content-service/
+    upload-service/
+    billing-service/
+    content-access-service/
+    interaction-service/
+    recommendation-service/
+  webapp/
+    src/app/
+    src/features/
+    src/components/
+    src/lib/
+  libs/
+    common/
+    contracts/
+    testing/
+  docs/
+  docker-compose.yml
+  turbo.json
 ```
 
----
-
-## 🔗 Service Map
-
-| Service | Port | Database | Responsibilities |
-| :--- | :---: | :--- | :--- |
-| **api-gateway** | 3000 | — | Reverse proxy, circuit breaker, bulkhead, retry, API composition |
-| **auth-service** | 3001 | PostgreSQL | Registration, login, JWT tokens, refresh rotation |
-| **user-service** | 3002 | MongoDB | User profiles, careers, skills, follows, ratings |
-| **notification-service** | 3003 | MongoDB | Socket.io real-time push, email notifications |
-| **content-service** | 3004 | MongoDB | Tutorials, courses, majors, resources, collections, saved content |
-| **upload-service** | 3005 | PostgreSQL | Presigned URL generation, FFmpeg HLS transcoding, trailer extraction |
-| **billing-service** | 3006 | PostgreSQL | Wallets, transactions, PayPal/PayOS webhooks, subscriptions, payouts |
-| **content-access-service** | 3007 | PostgreSQL | Resource ownership verification, access grants |
-| **interaction-service** | 3008 | MongoDB | View tracking, content saves, engagement metrics |
-| **recommendation-service** | 3009 | MongoDB + Qdrant | Two-Tower ML model, RAG pipeline, trending, scoring engine |
-
----
-
-## 🚀 Getting Started
+## Run Locally
 
 ### Prerequisites
 
-- **Node.js** >= 20.0.0 (< 23.0.0)
-- **npm** >= 10.0.0
-- **Docker** & **Docker Compose**
-- **Python** 3.10+ (for recommendation-service)
+- Node.js `>=20 <23`
+- npm `>=10`
+- Docker and Docker Compose
+- Python `3.10+`
 
-### 1. Clone & Install
+### Start the platform
 
 ```bash
 git clone https://github.com/khovan123/buddy.git
 cd buddy
 npm install
-```
 
-### 2. Start Infrastructure
-
-```bash
-# Start PostgreSQL, MongoDB, Redis, RabbitMQ, Qdrant, Prometheus, Grafana, Jaeger
 docker-compose up -d
-```
-
-### 3. Generate Prisma Clients
-
-```bash
 npm run prisma:generate
-```
-
-### 4. Run Database Migrations
-
-```bash
 npm run prisma:db:push
-```
-
-### 5. Start All Services
-
-```bash
-# Start all services in development mode (Turborepo orchestrated)
 npm run dev
 ```
 
-Or start individual services:
+### Useful URLs
 
-```bash
-# Single backend service
-npm run dev --workspace=services/content-service
+| Surface             | URL                             |
+| ------------------- | ------------------------------- |
+| Webapp              | http://localhost:8000           |
+| API Gateway         | http://localhost:3000           |
+| API Docs            | http://localhost:8000/api-docs  |
+| Grafana             | http://localhost:3100           |
+| Prometheus          | http://localhost:9090           |
+| Jaeger              | http://localhost:16686          |
+| RabbitMQ Management | http://localhost:15672          |
+| Qdrant Dashboard    | http://localhost:6333/dashboard |
 
-# Webapp
-cd webapp && npm run dev
+## Deployment
+
+```txt
+GitHub
+  -> Vercel for webapp previews and production
+  -> GitHub Actions for changed-service Docker builds
+  -> Azure Container Registry
+  -> Azure Container Apps
 ```
 
-### 6. Access
+The backend workflow uses path-based filtering so only affected services are rebuilt and deployed on production pushes.
 
-| Service | URL |
-| :--- | :--- |
-| **Webapp** | http://localhost:8000 |
-| **API Gateway** | http://localhost:3000 |
-| **API Docs** | http://localhost:8000/api-docs |
-| **Grafana** | http://localhost:3100 |
-| **Prometheus** | http://localhost:9090 |
-| **Jaeger** | http://localhost:16686 |
-| **RabbitMQ Management** | http://localhost:15672 |
-| **Qdrant Dashboard** | http://localhost:6333/dashboard |
+## Tradeoffs
 
----
+| Strength                             | Cost                                                             |
+| ------------------------------------ | ---------------------------------------------------------------- |
+| Real distributed architecture        | Local setup requires multiple infrastructure services            |
+| Event-driven workflows               | Debugging requires tracing and message visibility                |
+| RAG + recommendations in one product | More moving parts than a standard marketplace                    |
+| HLS processing pipeline              | Video jobs need worker capacity and storage lifecycle management |
 
-## ☁️ Deployment
+## Documentation
 
-### Architecture Overview
+| Document                                                                   | Description                                  |
+| -------------------------------------------------------------------------- | -------------------------------------------- |
+| [docs/SPEC.md](docs/SPEC.md)                                               | Technical specification and coding standards |
+| [docs/deployment.md](docs/deployment.md)                                   | Vercel and Azure deployment guide            |
+| [docs/api-gateway-architecture.MD](docs/api-gateway-architecture.MD)       | API gateway resilience design                |
+| [docs/upload-service-architecture.md](docs/upload-service-architecture.md) | Upload and video processing architecture     |
 
-```
-┌─────────────┐     ┌──────────────────┐     ┌─────────────────────┐
-│   GitHub     │────▶│  Vercel          │     │  Azure Container    │
-│   Repository │     │  (webapp)        │     │  Apps (services)    │
-│              │     └──────────────────┘     └─────────────────────┘
-│              │                                       ▲
-│              │────▶ GitHub Actions ──▶ ACR ───────────┘
-└─────────────┘
-```
-
-### Webapp → Vercel
-
-Deployed automatically via Vercel Git Integration.
-
-- **Root Directory:** `webapp`
-- **Push to `production`** → Production deployment
-- **Pull Request** → Preview deployment (unique URL)
-
-### Backend → Azure Container Apps
-
-Deployed via GitHub Actions with path-based filtering — only changed services are rebuilt.
-
-```
-Push to production → Lint & Test → Build Docker (changed only) → Push to ACR → Deploy to Azure
-```
-
-| Trigger | Condition |
-| :--- | :--- |
-| **Test** | Changes in `services/`, `libs/`, or `package*.json` |
-| **Build + Deploy** | Push to `production` — per-service path filtering |
-
-See [docs/deployment.md](docs/deployment.md) for full configuration details.
-
----
-
-## 📊 Observability
-
-The platform includes a full observability stack out of the box:
-
-| Tool | Purpose | Port |
-| :--- | :--- | :---: |
-| **Jaeger** | Distributed tracing (OpenTelemetry) | 16686 |
-| **Prometheus** | Metrics collection & alerting | 9090 |
-| **Grafana** | Dashboards & visualization | 3100 |
-
-Every service is auto-instrumented via `@opentelemetry/sdk-node` with:
-- HTTP request tracing with correlation IDs
-- Prisma query instrumentation
-- Host metrics (CPU, memory, network)
-- OTLP export to Jaeger and Prometheus
-
----
-
-## ⚖️ Pros & Cons
-
-### ✅ Pros
-
-* **Production Architecture:** Clean Architecture + CQRS + Event-Driven — not a tutorial project.
-* **Full Resilience Stack:** Bulkhead, Circuit Breaker, Retry with proper idempotency handling.
-* **AI-Native:** RAG pipeline with vector search and Two-Tower ML model — not just API wrappers.
-* **Observability Built-In:** Tracing, metrics, and dashboards from day one.
-* **Monorepo DX:** Turborepo + shared libs + single Dockerfile = fast iteration across 10 services.
-
-### ❌ Cons
-
-* **Complex Local Setup:** Requires Docker, PostgreSQL, MongoDB, Redis, RabbitMQ, and Qdrant running simultaneously.
-* **GPU Optional:** The recommendation service uses CPU inference by default. GPU acceleration requires manual TensorFlow configuration.
-* **No Mobile App Yet:** The webapp is responsive but there is no native iOS/Android app.
-
----
-
-## 📖 Documentation
-
-| Document | Description |
-| :--- | :--- |
-| [SPEC.md](docs/SPEC.md) | Full technical specification & coding standards |
-| [deployment.md](docs/deployment.md) | Deployment guide for Vercel & Azure |
-| [api-gateway-architecture.MD](docs/api-gateway-architecture.MD) | API Gateway resilience patterns deep-dive |
-| [upload-service-architecture.md](docs/upload-service-architecture.md) | Upload & video processing architecture |
-
----
-
-## 📄 License
+## License
 
 This project is private and not licensed for public distribution.
 
----
-
 <div align="center">
-  <sub>Built with 💜 by <a href="https://github.com/khovan123">khovan123</a> — Engineering learning, one microservice at a time.</sub>
+  <sub>Built by <a href="https://github.com/khovan123">khovan123</a> · full-stack engineering, AI systems, and production architecture.</sub>
 </div>

@@ -35,5 +35,5 @@
       "@libs/testing/*": ["./libs/testing/src/*"]
     }
   },
-  "exclude": ["node_modules", "dist",".code-review-graph"]
+  "exclude": ["node_modules", "dist", "webapp", ".code-review-graph"]
 }

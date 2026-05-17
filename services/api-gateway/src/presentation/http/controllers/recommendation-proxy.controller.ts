@@ -237,6 +237,7 @@ export class RecommendationProxyController {
       path: '/v1/rag/ask',
       method: 'POST',
       body,
+      timeoutMs: 180_000, // 3 min — cold-start loads SentenceTransformer model
     });
   }
 
@@ -253,6 +254,7 @@ export class RecommendationProxyController {
       path: '/v1/rag/index',
       method: 'POST',
       body,
+      timeoutMs: 300_000, // 5 min — full re-index embeds all catalog items
     });
   }
 

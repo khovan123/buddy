@@ -40,9 +40,66 @@ catalog_store = CatalogStore()
 scoring_engine = ScoringEngine(user_store, popularity_store, catalog_store)
 redis_client = redis.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=10, socket_timeout=10)
 
-# RAG singletons (lazy-initialised in lifespan to defer heavy model load)
+# RAG singletons (initialised only when a RAG operation needs Qdrant)
 rag_pipeline = None
 rag_indexer = None
+rag_vector_store = None
+rag_lock = threading.Lock()
+
+
+def get_rag_module():
+    """Initialise RAG lazily using Qdrant Cloud from QDRANT_URL.
+
+    Uses double-checked locking with **atomic assignment**: the globals
+    are only set after ALL components have been successfully created.
+    This prevents a partial init from leaving the module in a broken
+    state that poisons subsequent requests.
+    """
+    global rag_pipeline, rag_indexer, rag_vector_store
+
+    if rag_pipeline and rag_indexer and rag_vector_store:
+        return rag_pipeline, rag_indexer, rag_vector_store
+
+    with rag_lock:
+        # Re-check after acquiring lock
+        if rag_pipeline and rag_indexer and rag_vector_store:
+            return rag_pipeline, rag_indexer, rag_vector_store
+
+        from rag.indexer import RAGIndexer
+        from rag.pipeline import RAGPipeline
+        from rag.retriever import Retriever
+        from rag.vector_store import VectorStore
+
+        # Build all components FIRST — if any step throws, the
+        # globals remain None so the next call retries from scratch.
+        _vs = VectorStore()
+        _idx = RAGIndexer(catalog_store, _vs)
+        _ret = Retriever(_vs)
+        _pipe = RAGPipeline(_ret, redis_client)
+
+        # Atomic assignment only after everything succeeded
+        rag_vector_store = _vs
+        rag_indexer = _idx
+        rag_pipeline = _pipe
+        logger.info("RAG module initialised lazily via QDRANT_URL")
+
+        return rag_pipeline, rag_indexer, rag_vector_store
+
+
+class LazyRAGIndexer:
+    """Proxy that defers Qdrant Cloud initialisation until indexing is needed."""
+
+    def index_all(self):
+        _, indexer, _ = get_rag_module()
+        return indexer.index_all()
+
+    def index_item(self, item: dict):
+        _, indexer, _ = get_rag_module()
+        return indexer.index_item(item)
+
+    def remove_item(self, item_id: str):
+        _, indexer, _ = get_rag_module()
+        return indexer.remove_item(item_id)
 
 
 @asynccontextmanager
@@ -61,27 +118,13 @@ async def lifespan(app: FastAPI):
     def _background_init():
         """Run all heavy init in a single background thread."""
         try:
-            # 1. RAG module (sentence-transformers + Qdrant)
-            global rag_pipeline, rag_indexer
-            try:
-                from rag.vector_store import VectorStore
-                from rag.indexer import RAGIndexer
-                from rag.retriever import Retriever
-                from rag.pipeline import RAGPipeline
-
-                vector_store = VectorStore()
-                rag_indexer = RAGIndexer(catalog_store, vector_store)
-                retriever = Retriever(vector_store)
-                rag_pipeline = RAGPipeline(retriever, redis_client)
-                logger.info("RAG module initialised")
-            except Exception as e:
-                logger.warning(f"RAG module init failed (non-fatal): {e}")
-
-            # 2. RabbitMQ consumer
+            # 1. RabbitMQ consumer
+            # RAG/Qdrant is initialised lazily when indexing actually runs.
             model_manager = scoring_engine.model_manager
+            lazy_rag_indexer = LazyRAGIndexer()
             consumer = EventConsumer(
                 user_store, popularity_store, catalog_store,
-                model_manager=model_manager, rag_indexer=rag_indexer,
+                model_manager=model_manager, rag_indexer=lazy_rag_indexer,
             )
             app.state.consumer = consumer
             consumer_thread = threading.Thread(
@@ -89,13 +132,45 @@ async def lifespan(app: FastAPI):
             )
             consumer_thread.start()
 
-            # 3. Model scheduler
+            # 2. Model scheduler
             drift_monitor = DriftMonitor(catalog_store, model_manager, scoring_engine)
-            scheduler = ModelScheduler(model_manager, drift_monitor, rag_indexer=rag_indexer)
+            scheduler = ModelScheduler(
+                model_manager,
+                catalog_store=catalog_store,
+                drift_monitor=drift_monitor,
+                rag_indexer=lazy_rag_indexer,
+            )
             app.state.scheduler = scheduler
             scheduler.start()
 
-            logger.info("Background init complete (RAG + consumer + scheduler)")
+            logger.info("Background init complete (consumer + scheduler)")
+
+            # 3. Pre-warm embedding model so first RAG request is fast
+            try:
+                from rag.embedder import preload_model
+                logger.info("Pre-warming embedding model...")
+                if preload_model():
+                    logger.info("Embedding model ready")
+                else:
+                    logger.warning("Embedding model preload failed (RAG will retry lazily)")
+            except Exception as e:
+                logger.warning(f"Embedding preload error (non-fatal): {e}")
+
+            # 4. Auto-index vectors if the store is empty
+            try:
+                _, indexer, vs = get_rag_module()
+                info = vs.get_collection_info()
+                if info.get("vectors_count", 0) == 0:
+                    logger.info("Vector store empty — triggering auto-index...")
+                    index_thread = threading.Thread(
+                        target=_auto_index, args=(indexer,), daemon=True,
+                    )
+                    index_thread.start()
+                else:
+                    logger.info(f"Vector store has {info['vectors_count']} vectors — skipping auto-index")
+            except Exception as e:
+                logger.warning(f"Auto-index check failed (non-fatal): {e}")
+
         except Exception as e:
             logger.error(f"Background init failed: {e}")
 
@@ -135,6 +210,19 @@ def _start_consumer(consumer: EventConsumer) -> None:
         consumer.start_consuming()
     except Exception as e:
         logger.error(f"Consumer failed: {e}")
+
+
+def _auto_index(indexer) -> None:
+    """Run RAG indexing in a background thread.
+
+    Called during startup when the vector store is empty so the RAG
+    pipeline is immediately usable after deployment.
+    """
+    try:
+        result = indexer.index_all()
+        logger.info(f"Auto-index completed: {result}")
+    except Exception as e:
+        logger.error(f"Auto-index failed: {e}")
 
 
 app = FastAPI(
@@ -531,8 +619,11 @@ async def rag_ask(body: RAGRequest):
     Returns:
         RAGResponse with ``answer``, ``sources``, and timing metrics.
     """
-    if not rag_pipeline:
-        return JSONResponse(status_code=503, content={"message": "RAG module not available"})
+    try:
+        pipeline, _, _ = get_rag_module()
+    except Exception as e:
+        logger.warning(f"RAG module init failed: {e}")
+        return JSONResponse(status_code=503, content={"message": "RAG module not available", "error": str(e)})
 
     filters = {}
     if body.majorId:
@@ -540,13 +631,20 @@ async def rag_ask(body: RAGRequest):
     if body.courseId:
         filters["courseId"] = body.courseId
 
-    result = rag_pipeline.ask(
-        query=body.query,
-        user_id=body.userId,
-        filters=filters or None,
-        top_k=body.topK,
-    )
-    return result
+    try:
+        result = pipeline.ask(
+            query=body.query,
+            user_id=body.userId,
+            filters=filters or None,
+            top_k=body.topK,
+        )
+        return result
+    except Exception as e:
+        logger.error(f"RAG pipeline.ask() failed: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"message": "RAG query failed", "error": str(e)},
+        )
 
 
 @rag_router.post("/index")
@@ -556,14 +654,17 @@ async def rag_index():
     Returns:
         Dict with ``items_read``, ``items_indexed``, ``chunks_indexed``.
     """
-    if not rag_indexer:
-        return JSONResponse(status_code=503, content={"message": "RAG module not available"})
+    try:
+        _, indexer, _ = get_rag_module()
+    except Exception as e:
+        logger.warning(f"RAG module init failed: {e}")
+        return JSONResponse(status_code=503, content={"message": "RAG module not available", "error": str(e)})
 
     import threading
 
     def _index():
         try:
-            result = rag_indexer.index_all()
+            result = indexer.index_all()
             logger.info(f"RAG full re-index completed: {result}")
         except Exception as e:
             logger.error(f"RAG re-index failed: {e}")
@@ -575,22 +676,28 @@ async def rag_index():
 
 @rag_router.get("/health")
 async def rag_health():
-    """RAG module health check."""
-    if not rag_pipeline:
-        return JSONResponse(status_code=503, content={"status": "unavailable", "reason": "RAG module not initialised"})
-    return {"status": "ok"}
+    """RAG module health check — includes embedding model readiness."""
+    try:
+        get_rag_module()
+    except Exception as e:
+        return JSONResponse(status_code=503, content={"status": "unavailable", "reason": str(e)})
+
+    # Check embedding layer (the actual bottleneck)
+    from rag.embedder import embedding_health
+    embed_ok = embedding_health()
+
+    return {
+        "status": "ok" if embed_ok else "degraded",
+        "embedding_model": "loaded" if embed_ok else "not_loaded",
+    }
 
 
 @rag_router.get("/stats")
 async def rag_stats():
     """Return vector store collection statistics."""
-    if not rag_indexer:
-        return JSONResponse(status_code=503, content={"status": "unavailable"})
-
     try:
-        from rag.vector_store import VectorStore
-        vs = VectorStore()
-        info = vs.get_collection_info()
+        _, _, vector_store = get_rag_module()
+        info = vector_store.get_collection_info()
         return {"status": "ok", "collection": info}
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "error": str(e)})

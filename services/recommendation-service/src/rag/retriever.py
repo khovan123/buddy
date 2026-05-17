@@ -8,7 +8,6 @@ with optional metadata filtering.
 import logging
 from dataclasses import dataclass
 
-from rag.embedder import embed_query
 from rag.vector_store import VectorStore, SearchResult
 from rag.config_rag import RAG_TOP_K
 
@@ -58,6 +57,8 @@ class Retriever:
             List of RetrievedChunk objects ordered by descending relevance.
         """
         k = top_k or RAG_TOP_K
+
+        from rag.embedder import embed_query
 
         query_embedding = embed_query(query)
         results: list[SearchResult] = self._vector.search(

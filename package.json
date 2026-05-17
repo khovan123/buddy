@@ -1,11 +1,12 @@
 {
-  "name": "unibuddy-ms",
+  "name": "buddy",
   "version": "1.0.0",
   "private": true,
   "workspaces": [
     "libs/*",
     "services/*",
-    "scripts/*"
+    "scripts/*",
+    "webapp"
   ],
   "packageManager": "npm@11.6.4",
   "scripts": {

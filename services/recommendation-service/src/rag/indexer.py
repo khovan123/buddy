@@ -11,7 +11,6 @@ Only indexes items with status == AVAILABLE (no drafts or pending content).
 import logging
 
 from rag.chunker import chunk_item, chunk_items, Chunk
-from rag.embedder import embed_texts
 from rag.vector_store import VectorStore
 
 logger = logging.getLogger(__name__)
@@ -56,6 +55,8 @@ class RAGIndexer:
         if not chunks:
             return {"items_read": len(all_items), "items_indexed": len(items), "chunks_indexed": 0}
 
+        from rag.embedder import embed_texts
+
         texts = [c.text for c in chunks]
         embeddings = embed_texts(texts)
 
@@ -93,6 +94,8 @@ class RAGIndexer:
         chunks = chunk_item(item)
         if not chunks:
             return 0
+
+        from rag.embedder import embed_texts
 
         texts = [c.text for c in chunks]
         embeddings = embed_texts(texts)

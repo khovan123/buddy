@@ -22,8 +22,6 @@ from qdrant_client.models import (
 
 from rag.chunker import Chunk
 from rag.config_rag import (
-    QDRANT_HOST,
-    QDRANT_PORT,
     QDRANT_COLLECTION,
     EMBEDDING_DIM,
     QDRANT_URL,
@@ -53,10 +51,9 @@ class VectorStore:
 
     def __init__(self):
         """Connect to Qdrant and ensure the collection exists."""
-        if QDRANT_URL:
-            self._client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=60)
-        else:
-            self._client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT, timeout=60)
+        if not QDRANT_URL:
+            raise ValueError("QDRANT_URL is required for Qdrant Cloud")
+        self._client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY, timeout=60)
         self._collection = QDRANT_COLLECTION
         self._ensure_collection()
 

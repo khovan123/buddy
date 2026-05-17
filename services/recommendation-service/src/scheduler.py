@@ -16,8 +16,9 @@ logger = logging.getLogger(__name__)
 class ModelScheduler:
     """Schedules periodic FAISS index rebuilds and drift-check retrain cycles."""
 
-    def __init__(self, model_manager, drift_monitor=None, rag_indexer=None):
+    def __init__(self, model_manager, catalog_store=None, drift_monitor=None, rag_indexer=None):
         self._model_manager = model_manager
+        self._catalog_store = catalog_store
         self._drift_monitor = drift_monitor
         self._rag_indexer = rag_indexer
         self._timers: list[threading.Timer] = []
@@ -54,9 +55,14 @@ class ModelScheduler:
 
     def _run_faiss_rebuild(self) -> None:
         try:
+            if not self._catalog_store:
+                logger.warning("Scheduled FAISS rebuild skipped: catalog store is not configured")
+                return
+
             logger.info("Scheduled FAISS index rebuild starting...")
-            self._model_manager.rebuild_index()
-            logger.info("Scheduled FAISS rebuild complete")
+            items = self._catalog_store.get_all_items()
+            count = self._model_manager.rebuild_index(items)
+            logger.info(f"Scheduled FAISS rebuild complete: {count} items indexed")
         except Exception as e:
             logger.error(f"Scheduled FAISS rebuild failed: {e}")
         finally:
