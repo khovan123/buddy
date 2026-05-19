@@ -25,7 +25,7 @@ import { EXCHANGES } from '../config/rabbitmq.config';
             { name: EXCHANGES.DEAD_LETTER, type: 'direct' },
           ],
           uri: url,
-          connectionInitOptions: { wait: false },
+          connectionInitOptions: { wait: true },
           enableControllerDiscovery: true,
         };
       },

@@ -8,6 +8,7 @@ and wires up the RabbitMQ consumer, model scheduler, and CORS middleware on star
 
 import logging
 import threading
+import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
@@ -18,6 +19,7 @@ from fastapi import APIRouter, FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.concurrency import run_in_threadpool
 
 from config import HOST, PORT, RECOMMENDATION_CACHE_TTL, REDIS_URL, ALLOWED_ORIGINS
 from models import RecommendResponse, TrendingResponse, HealthResponse, RAGRequest, RAGResponse
@@ -31,6 +33,8 @@ from ml.drift_monitor import DriftMonitor
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+HEALTH_CHECK_TIMEOUT_SECONDS = 5
 
 # ─── Global singletons (all read from recommendation_db only) ──────────────────
 
@@ -289,13 +293,26 @@ async def health():
         HealthResponse: Contains ``status``, current ``phase``,
         ``totalInteractions``, ``totalUsers``, and ``totalItems``.
     """
-    return {
-        "status": "healthy",
-        "phase": scoring_engine.detect_phase(),
-        "totalInteractions": user_store.get_total_interactions(),
-        "totalUsers": user_store.get_total_users_with_interactions(),
-        "totalItems": popularity_store.get_total_items(),
-    }
+    def _build_health_response() -> dict:
+        return {
+            "status": "healthy",
+            "phase": scoring_engine.detect_phase(),
+            "totalInteractions": user_store.get_total_interactions(),
+            "totalUsers": user_store.get_total_users_with_interactions(),
+            "totalItems": popularity_store.get_total_items(),
+        }
+
+    try:
+        return await asyncio.wait_for(
+            run_in_threadpool(_build_health_response),
+            timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("Health check timed out")
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "reason": "health_check_timeout"},
+        )
 
 
 @health_router.get("/liveness")
@@ -323,8 +340,14 @@ async def readiness():
         response with the error detail.
     """
     try:
-        user_store._db.command("ping")
+        await asyncio.wait_for(
+            run_in_threadpool(user_store._db.command, "ping"),
+            timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
+        )
         return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+    except asyncio.TimeoutError:
+        logger.error("Readiness check timed out")
+        return JSONResponse(status_code=503, content={"status": "unavailable", "error": "readiness_timeout"})
     except Exception as e:
         logger.error(f"Readiness check failed: {e}")
         return JSONResponse(status_code=503, content={"status": "unavailable", "error": str(e)})
@@ -362,18 +385,23 @@ async def recommend(
     # Check Redis cache
     cache_key = f"rec:{userId}:{contentType}:{limit}"
     try:
-        cached = redis_client.get(cache_key)
+        cached = await run_in_threadpool(redis_client.get, cache_key)
         if cached:
             return json.loads(cached)
     except Exception as e:
         logger.warning(f"Redis get failed: {e}")
 
     # Generate recommendations
-    result = scoring_engine.recommend(userId, limit, contentType)
+    result = await run_in_threadpool(scoring_engine.recommend, userId, limit, contentType)
 
     # Cache result
     try:
-        redis_client.setex(cache_key, RECOMMENDATION_CACHE_TTL, json.dumps(result))
+        await run_in_threadpool(
+            redis_client.setex,
+            cache_key,
+            RECOMMENDATION_CACHE_TTL,
+            json.dumps(result),
+        )
     except Exception as e:
         logger.warning(f"Redis set failed: {e}")
 
@@ -399,7 +427,7 @@ async def trending(
     Returns:
         TrendingResponse: Trending items with interaction totals and ratings.
     """
-    items = popularity_store.get_popular_items(majorId, limit)
+    items = await run_in_threadpool(popularity_store.get_popular_items, majorId, limit)
 
     return {
         "majorId": majorId,
@@ -549,7 +577,7 @@ async def reload_model():
     Returns:
         dict: ``{"status": "loaded" | "no_model", "version": ...}``.
     """
-    loaded = scoring_engine.reload_model()
+    loaded = await run_in_threadpool(scoring_engine.reload_model)
     return {
         "status": "loaded" if loaded else "no_model",
         "version": scoring_engine.model_manager.active_version,
@@ -564,9 +592,10 @@ async def model_versions():
         dict: ``{"activeVersion": ..., "versions": [...]}`` where each
         version entry includes accuracy, loss, and timestamp.
     """
+    versions = await run_in_threadpool(scoring_engine.model_manager.list_versions)
     return {
         "activeVersion": scoring_engine.model_manager.active_version,
-        "versions": scoring_engine.model_manager.list_versions(),
+        "versions": versions,
     }
 
 
@@ -580,7 +609,7 @@ async def model_info():
     Returns:
         dict: Model metadata and runtime state.
     """
-    return scoring_engine.model_manager.get_model_info()
+    return await run_in_threadpool(scoring_engine.model_manager.get_model_info)
 
 
 @rec_router.post("/model/rebuild-index")
@@ -593,8 +622,11 @@ async def rebuild_index():
     Returns:
         dict: ``{"status": "rebuilt", "items_indexed": N}``.
     """
-    items = catalog_store.get_all_items()
-    count = scoring_engine.model_manager.rebuild_index(items)
+    def _rebuild() -> int:
+        items = catalog_store.get_all_items()
+        return scoring_engine.model_manager.rebuild_index(items)
+
+    count = await run_in_threadpool(_rebuild)
     return {"status": "rebuilt", "items_indexed": count}
 
 
@@ -620,7 +652,7 @@ async def rag_ask(body: RAGRequest):
         RAGResponse with ``answer``, ``sources``, and timing metrics.
     """
     try:
-        pipeline, _, _ = get_rag_module()
+        pipeline, _, _ = await run_in_threadpool(get_rag_module)
     except Exception as e:
         logger.warning(f"RAG module init failed: {e}")
         return JSONResponse(status_code=503, content={"message": "RAG module not available", "error": str(e)})
@@ -632,7 +664,8 @@ async def rag_ask(body: RAGRequest):
         filters["courseId"] = body.courseId
 
     try:
-        result = pipeline.ask(
+        result = await run_in_threadpool(
+            pipeline.ask,
             query=body.query,
             user_id=body.userId,
             filters=filters or None,
@@ -655,7 +688,7 @@ async def rag_index():
         Dict with ``items_read``, ``items_indexed``, ``chunks_indexed``.
     """
     try:
-        _, indexer, _ = get_rag_module()
+        _, indexer, _ = await run_in_threadpool(get_rag_module)
     except Exception as e:
         logger.warning(f"RAG module init failed: {e}")
         return JSONResponse(status_code=503, content={"message": "RAG module not available", "error": str(e)})
@@ -678,13 +711,13 @@ async def rag_index():
 async def rag_health():
     """RAG module health check — includes embedding model readiness."""
     try:
-        get_rag_module()
+        await run_in_threadpool(get_rag_module)
     except Exception as e:
         return JSONResponse(status_code=503, content={"status": "unavailable", "reason": str(e)})
 
     # Check embedding layer (the actual bottleneck)
     from rag.embedder import embedding_health
-    embed_ok = embedding_health()
+    embed_ok = await run_in_threadpool(embedding_health)
 
     return {
         "status": "ok" if embed_ok else "degraded",
@@ -696,8 +729,11 @@ async def rag_health():
 async def rag_stats():
     """Return vector store collection statistics."""
     try:
-        _, _, vector_store = get_rag_module()
-        info = vector_store.get_collection_info()
+        def _get_stats() -> dict:
+            _, _, vector_store = get_rag_module()
+            return vector_store.get_collection_info()
+
+        info = await run_in_threadpool(_get_stats)
         return {"status": "ok", "collection": info}
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "error": str(e)})

@@ -124,6 +124,12 @@ class ScoringEngine:
                 if it["itemType"] == content_type
             }
             candidates = [c for c in candidates if c["itemId"] in catalog_items]
+        else:
+            candidate_ids = [c["itemId"] for c in candidates]
+            catalog_items = self.catalog_store.get_items_by_ids(candidate_ids)
+
+        candidate_ids = [c["itemId"] for c in candidates]
+        popularity_by_item = self.popularity_store.get_item_stats_many(candidate_ids)
 
         # 3. Exclude purchased
         purchased = set()
@@ -140,7 +146,7 @@ class ScoringEngine:
             ann_score = cand["score"]  # cosine similarity from FAISS
 
             # Popularity component
-            item_stats = self.popularity_store.get_item_stats(item_id)
+            item_stats = popularity_by_item.get(item_id)
             pp_score, pp_reasons = score_popularity(item_stats)
 
             # Blend: 70% ML + 30% popularity
@@ -153,7 +159,7 @@ class ScoringEngine:
 
             scored.append({
                 "itemId": item_id,
-                "itemType": self._get_item_type(item_id),
+                "itemType": catalog_items.get(item_id, {}).get("itemType", "RESOURCE"),
                 "score": round(total_score, 4),
                 "reasons": reasons[:5],
             })
@@ -190,6 +196,10 @@ class ScoringEngine:
         if user_interaction_profile:
             purchased = set(user_interaction_profile.get("purchasedItemIds", []))
 
+        popularity_by_item = self.popularity_store.get_item_stats_many(
+            [candidate["itemId"] for candidate in candidates]
+        )
+
         scored = []
         for candidate in candidates:
             if candidate["itemId"] in purchased:
@@ -198,7 +208,7 @@ class ScoringEngine:
             ml_score = self.model_manager.score_ml(user_profile, candidate)
             total_score = 0.7 * ml_score * 10.0
 
-            item_stats = self.popularity_store.get_item_stats(candidate["itemId"])
+            item_stats = popularity_by_item.get(candidate["itemId"])
             pp_score, pp_reasons = score_popularity(item_stats)
             total_score += 0.3 * pp_score
 
@@ -283,6 +293,10 @@ class ScoringEngine:
         if user_interaction_profile:
             purchased = set(user_interaction_profile.get("purchasedItemIds", []))
 
+        popularity_by_item = self.popularity_store.get_item_stats_many(
+            [candidate["itemId"] for candidate in candidates]
+        )
+
         scored: list[dict] = []
         for candidate in candidates:
             if candidate["itemId"] in purchased:
@@ -309,7 +323,7 @@ class ScoringEngine:
 
             # Layer 3: Popularity
             if ppw > 0:
-                item_stats = self.popularity_store.get_item_stats(candidate["itemId"])
+                item_stats = popularity_by_item.get(candidate["itemId"])
                 pp_score, pp_reasons = score_popularity(item_stats)
                 total_score += ppw * pp_score
                 reasons.extend(pp_reasons)

@@ -71,7 +71,7 @@ export function OAuthButtons() {
     <div className="space-y-3">
       <div className="relative flex items-center">
         <div className="grow border-t border-border" />
-        <span className="mx-3 shrink-0 text-xs text-muted-foreground">
+        <span className="mx-3 shrink-0 text-xs font-medium text-muted-foreground">
           or continue with
         </span>
         <div className="grow border-t border-border" />
@@ -85,7 +85,7 @@ export function OAuthButtons() {
             size="lg"
             disabled={loadingProvider !== null}
             onClick={() => handleOAuth(id)}
-            className="gap-2"
+            className="h-10 gap-2 border-border/65 bg-background/70 shadow-[inset_0_1px_0_color-mix(in_oklch,var(--card)_86%,transparent)] hover:border-primary/35 hover:bg-secondary/75"
             aria-label={`Continue with ${label}`}
           >
             {loadingProvider === id ? (

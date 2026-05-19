@@ -115,6 +115,14 @@ class ItemPopularityStore:
         """
         return self._col.find_one({"itemId": item_id})
 
+    def get_item_stats_many(self, item_ids: list[str]) -> dict[str, dict]:
+        """Fetch popularity stats for multiple items in one MongoDB query."""
+        if not item_ids:
+            return {}
+
+        docs = self._col.find({"itemId": {"$in": item_ids}})
+        return {doc["itemId"]: doc for doc in docs}
+
     def get_total_items(self) -> int:
         """Count the number of distinct items with recorded interactions."""
         return self._col.count_documents({})

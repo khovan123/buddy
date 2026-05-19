@@ -1,66 +1,49 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 
 import {
   ArrowRight,
-  BookOpen,
+  Briefcase,
   CheckCircle2,
-  MessageSquareText,
+  Layers3,
+  MessageSquare,
+  Rocket,
   Search,
+  Sparkles,
   Star,
-  Upload,
+  Zap,
 } from "lucide-react"
 
+import { AnimatedCounter } from "@/components/atoms/animated-counter"
 import {
   MotionHero,
   MotionSection,
   MotionStagger,
 } from "@/components/atoms/motion-primitives"
+import { UserAvatar } from "@/components/atoms/user-avatar"
+import PixelTrail from "@/components/fancy/background/pixel-trail"
+import MarqueeAlongSvgPath from "@/components/fancy/blocks/marquee-along-svg-path"
+import BreathingText from "@/components/fancy/text/breathing-text"
+import Letter3DSwap from "@/components/fancy/text/letter-3d-swap"
+import TextHighlighter from "@/components/fancy/text/text-highlighter"
+import Typewriter from "@/components/fancy/text/typewriter"
+import VariableFontHoverByRandomLetter from "@/components/fancy/text/variable-font-hover-by-random-letter"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import type { LandingData } from "@/features/intro/services/intro.service"
 
 import { hydrateLandingData } from "../utils/landing-content.data"
 
+/* ------------------------------------------------------------------ */
+/*  Component                                                          */
+/* ------------------------------------------------------------------ */
+
 interface LandingContentProps {
   seoDescription: string
   data: LandingData
 }
-
-const MVP_STEPS = [
-  {
-    icon: Search,
-    title: "Find the right material fast",
-    description:
-      "Browse a focused library of resources, tutorials, and collections by learning goal instead of searching across scattered links.",
-  },
-  {
-    icon: Upload,
-    title: "Publish one useful resource",
-    description:
-      "Creators can share a practical tutorial or document first, then learn from real usage before building a full catalogue.",
-  },
-  {
-    icon: MessageSquareText,
-    title: "Ask questions from the content",
-    description:
-      "Learners can use the study assistant to turn uploaded material into grounded answers and revision prompts.",
-  },
-]
-
-const LEARNING_SIGNALS = [
-  "Can a learner find a relevant resource in under 2 minutes?",
-  "Will a creator publish one useful item without onboarding help?",
-  "Does the AI answer reduce the next study step for real course material?",
-]
-
-const DEFERRED_FEATURES = [
-  "Advanced subscriptions and payout automation",
-  "Large recommendation-model optimization",
-  "Institution dashboards and custom integrations",
-  "Complex gamification, badges, and social feeds",
-]
 
 export function LandingContent({
   seoDescription,
@@ -68,155 +51,363 @@ export function LandingContent({
 }: LandingContentProps) {
   const { features, stats, useCases, testimonials } =
     hydrateLandingData(rawData)
+  const statStyles = [
+    {
+      panel: "border-emerald-200/70 bg-emerald-50/80 text-emerald-950 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-50",
+      icon: "bg-emerald-500 text-white",
+      number: "text-emerald-700 dark:text-emerald-300",
+    },
+    {
+      panel: "border-sky-200/70 bg-sky-50/80 text-sky-950 dark:border-sky-400/20 dark:bg-sky-400/10 dark:text-sky-50",
+      icon: "bg-sky-500 text-white",
+      number: "text-sky-700 dark:text-sky-300",
+    },
+    {
+      panel: "border-amber-200/80 bg-amber-50/80 text-amber-950 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-50",
+      icon: "bg-amber-500 text-white",
+      number: "text-amber-700 dark:text-amber-300",
+    },
+    {
+      panel: "border-rose-200/70 bg-rose-50/80 text-rose-950 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-50",
+      icon: "bg-rose-500 text-white",
+      number: "text-rose-700 dark:text-rose-300",
+    },
+  ]
+  const mvpCards = [
+    {
+      icon: Search,
+      eyebrow: "Discover",
+      title: "Find the first useful resource fast",
+      description:
+        "The MVP starts with searchable course material and curated tutorials, so a learner can land on a practical next step without browsing an endless catalog.",
+    },
+    {
+      icon: Sparkles,
+      eyebrow: "Study",
+      title: "Ask from the material, not the whole internet",
+      description:
+        "Grounded answers keep the assistant focused on the resource a learner is using, turning a document or tutorial into a study companion.",
+    },
+    {
+      icon: Rocket,
+      eyebrow: "Publish",
+      title: "Let one creator prove supply",
+      description:
+        "Creators can publish a focused resource, watch learner response, and improve the content before Buddy expands into larger marketplace mechanics.",
+    },
+  ]
 
   return (
     <>
-      <section className="relative isolate overflow-hidden bg-education-paper text-education-ink">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,color-mix(in_oklch,var(--education-gold)_18%,transparent),transparent_28rem),radial-gradient(circle_at_80%_10%,color-mix(in_oklch,var(--education-sage)_15%,transparent),transparent_24rem),linear-gradient(135deg,color-mix(in_oklch,var(--card)_82%,transparent),color-mix(in_oklch,var(--education-paper)_86%,transparent))]" />
-        <div className="absolute top-16 right-8 -z-10 hidden h-72 w-72 rounded-full border border-education-line md:block" />
-        <div className="mx-auto grid max-w-7xl gap-12 px-6 py-20 md:grid-cols-[1.05fr_0.95fr] md:py-28">
-          <div className="space-y-8">
-            <MotionHero delay={0}>
-              <Badge className="h-auto rounded-full bg-primary px-4 py-1.5 text-primary-foreground">
-                Buddy MVP
-              </Badge>
-            </MotionHero>
+      {/* ── Hero ────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-background text-foreground">
+        {/* Animated background blobs with Pixel Trail */}
+        <div className="absolute inset-0 z-0">
+          <PixelTrail
+            pixelSize={32}
+            fadeDuration={800}
+            pixelClassName="bg-primary/5"
+          />
+        </div>
 
-            <MotionHero delay={0.12}>
-              <div className="space-y-5">
-                <h1 className="max-w-4xl text-5xl leading-[0.95] font-black tracking-tight md:text-7xl">
-                  Learn from the exact material your course needs.
+        <div className="relative mx-auto max-w-7xl px-6 pt-20 pb-20 md:pt-28 md:pb-32">
+          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
+            <div className="max-w-3xl space-y-8">
+              {/* Trust badge */}
+              <MotionHero delay={0}>
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2">
+                    <UserAvatar
+                      name="Alice"
+                      className="size-8 border-2 border-background"
+                    />
+                    <UserAvatar
+                      name="Bob"
+                      className="size-8 border-2 border-background"
+                    />
+                    <UserAvatar
+                      name="Carol"
+                      className="size-8 border-2 border-background"
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Trusted by 100K+ students across 50+ universities
+                  </p>
+                </div>
+              </MotionHero>
+
+              {/* Main headline */}
+              <MotionHero delay={0.15}>
+                <h1 className="text-4xl leading-[1.1] font-bold tracking-tight md:text-6xl lg:text-7xl">
+                  <Letter3DSwap
+                    staggerDuration={0.05}
+                    staggerFrom="center"
+                    rotateDirection="bottom"
+                    frontFaceClassName="text-foreground"
+                    secondFaceClassName="text-primary"
+                  >
+                    Learning that drives
+                  </Letter3DSwap>{" "}
+                  <TextHighlighter
+                    triggerType="inView"
+                    highlightColor="hsl(var(--primary) / 0.2)"
+                  >
+                    <BreathingText
+                      fromFontVariationSettings="'wght' 400"
+                      toFontVariationSettings="'wght' 800"
+                      staggerDuration={0.1}
+                      className="bg-linear-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent"
+                    >
+                      real results
+                    </BreathingText>
+                  </TextHighlighter>
                 </h1>
-                <p className="max-w-2xl text-lg leading-8 text-muted-foreground md:text-xl">
-                  {seoDescription ||
-                    "Buddy helps students discover practical learning resources, follow creator-made tutorials, and ask AI questions grounded in the material they are studying."}
-                </p>
-              </div>
-            </MotionHero>
+              </MotionHero>
 
-            <MotionHero delay={0.24}>
-              <div className="flex flex-wrap gap-3">
-                <Button asChild size="lg" className="px-6">
-                  <Link href="/explore">
-                    Try the learning flow <ArrowRight className="ml-2 size-4" />
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="px-6">
-                  <Link href="/sign-up">Join as early user</Link>
-                </Button>
+              <MotionHero delay={0.3}>
+                <Typewriter
+                  as="p"
+                  text={
+                    seoDescription ||
+                    "A student-led marketplace connecting learners with curated resources, tutorials, and expert-created collections."
+                  }
+                  speed={30}
+                  className="block min-h-[60px] max-w-2xl text-lg text-muted-foreground md:text-xl"
+                  showCursor={true}
+                  loop={false}
+                />
+              </MotionHero>
+
+              {/* CTA */}
+              <MotionHero delay={0.45}>
+                <div className="relative z-10 flex flex-wrap items-center gap-4">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="group rounded-full bg-foreground px-8 text-background hover:bg-foreground/90"
+                  >
+                    <Link href="/explore">
+                      <VariableFontHoverByRandomLetter
+                        label="Explore Resources"
+                        fromFontVariationSettings="'wght' 500, 'slnt' 0"
+                        toFontVariationSettings="'wght' 900, 'slnt' -10"
+                        className="mr-2 inline-block"
+                      />{" "}
+                      <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    size="lg"
+                    variant="outline"
+                    className="rounded-full border-border bg-transparent text-foreground hover:bg-accent"
+                  >
+                    <Link href="/sign-up">Start for free</Link>
+                  </Button>
+                </div>
+              </MotionHero>
+            </div>
+
+            <MotionHero
+              delay={0.25}
+              className="group relative isolate overflow-hidden rounded-3xl border border-border bg-card/80 p-3 shadow-[0_26px_80px_-52px_color-mix(in_oklch,var(--education-ink)_65%,transparent)] backdrop-blur"
+            >
+              <div className="absolute top-0 right-10 left-10 h-px bg-linear-to-r from-transparent via-primary/70 to-transparent" />
+              <div className="relative aspect-[4/3] overflow-hidden rounded-[1.25rem] bg-muted">
+                <Image
+                  src="https://github.com/SP-XD/SP-XD/blob/main/images/dev-working_rounded.gif?raw=true"
+                  alt="Developer working at a desk"
+                  fill
+                  unoptimized
+                  priority
+                  sizes="(min-width: 1024px) 42vw, 100vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                />
+              </div>
+              <div className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div>
+                  <p className="text-sm font-semibold text-card-foreground">
+                    Ship, watch, refine.
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                    Keep the first learning loop close to the people building
+                    it.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border bg-background/70 px-4 py-3 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+                  MVP lab
+                </div>
               </div>
             </MotionHero>
           </div>
 
-          <MotionHero delay={0.18}>
-            <div className="rounded-[2rem] border border-border/70 bg-card/85 p-5 shadow-[0_28px_70px_-48px_color-mix(in_oklch,var(--education-ink)_55%,transparent)] backdrop-blur">
-              <div className="rounded-[1.5rem] bg-foreground p-5 text-background">
-                <div className="mb-8 flex items-center justify-between">
-                  <span className="text-sm font-semibold tracking-[0.3em] uppercase">
-                    MVP loop
-                  </span>
-                  <BookOpen className="size-5 text-accent" />
-                </div>
-                <div className="space-y-4">
-                  {MVP_STEPS.map((step, index) => (
-                    <article
-                      key={step.title}
-                      className="rounded-2xl border border-background/10 bg-background/[0.06] p-4"
-                    >
-                      <div className="mb-3 flex items-center gap-3">
-                        <span className="flex size-9 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
-                          {index + 1}
-                        </span>
-                        <step.icon className="size-5 text-accent" />
-                      </div>
-                      <h2 className="text-lg font-semibold">{step.title}</h2>
-                      <p className="mt-2 text-sm leading-6 text-background/70">
-                        {step.description}
-                      </p>
-                    </article>
-                  ))}
-                </div>
+          {/* Stats lab with animated counters */}
+          <div className="relative isolate mt-16 overflow-hidden rounded-3xl border border-border bg-card/80 p-5 shadow-[0_24px_70px_-48px_color-mix(in_oklch,var(--education-ink)_55%,transparent)] backdrop-blur md:mt-24 md:p-7">
+            <div className="absolute top-0 right-8 left-8 h-px bg-linear-to-r from-transparent via-primary/60 to-transparent" />
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold tracking-widest text-primary uppercase">
+                  Live MVP pulse
+                </p>
+                <h2 className="mt-2 max-w-xl text-2xl leading-tight font-bold tracking-tight text-card-foreground md:text-3xl">
+                  Proof points from the first learning loop.
+                </h2>
+              </div>
+              <div className="rounded-full border border-border bg-background/80 px-4 py-2 text-xs font-medium text-muted-foreground">
+                Built to measure, not decorate
               </div>
             </div>
-          </MotionHero>
+
+            <MotionStagger
+              className="grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4"
+              staggerDelay={0.12}
+              variant="scale-in"
+            >
+              {stats.map((stat, idx) => {
+                const style = statStyles[idx % statStyles.length]
+
+                return (
+                  <div
+                    key={stat.label}
+                    className={`group flex h-full flex-col rounded-3xl border p-5 transition-all duration-300 hover:-translate-y-1 ${style.panel}`}
+                  >
+                    <div className="mb-5 flex items-start justify-between gap-4">
+                      <div
+                        className={`flex size-11 items-center justify-center rounded-2xl shadow-sm ${style.icon}`}
+                      >
+                        <stat.icon className="size-5" />
+                      </div>
+                      <span className="rounded-full bg-background/70 px-3 py-1 text-xs font-semibold text-current opacity-70">
+                        signal {idx + 1}
+                      </span>
+                    </div>
+                    <AnimatedCounter
+                      value={stat.value}
+                      className={`text-4xl font-black tracking-tight ${style.number}`}
+                    />
+                    <p className="mt-3 flex-1 text-sm leading-6 text-current opacity-75">
+                      {stat.label}
+                    </p>
+                  </div>
+                )
+              })}
+            </MotionStagger>
+          </div>
         </div>
       </section>
 
-      <section className="bg-background py-18 md:py-24">
-        <div className="mx-auto max-w-7xl space-y-10 px-6">
-          <MotionSection className="max-w-3xl" variant="fade-up">
-            <Badge variant="outline" className="mb-4 h-auto px-3 py-1">
-              Core value
+      {/* ── Features ────────────────────────────────────────────── */}
+      <section className="bg-background py-20 md:py-28">
+        <div className="mx-auto max-w-7xl space-y-16 px-6">
+          <MotionSection className="text-center" variant="fade-up">
+            <Badge
+              variant="outline"
+              className="mb-4 rounded-full px-4 py-1.5 text-xs font-semibold tracking-widest uppercase"
+            >
+              Why Buddy
             </Badge>
-            <h2 className="text-3xl font-bold tracking-tight md:text-5xl">
-              One usable learning path, not a feature catalogue.
+            <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+              This is what modern learning looks like
             </h2>
-            <p className="mt-4 text-lg leading-8 text-muted-foreground">
-              The MVP keeps only the actions needed to validate demand: discover
-              content, publish a first resource, and ask a grounded study
-              question.
+            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+              Bring knowledge, community, and your academic journey into one
+              place so you can make a real impact.
             </p>
           </MotionSection>
 
           <MotionStagger
-            className="grid gap-5 md:grid-cols-3"
-            staggerDelay={0.1}
+            className="grid auto-rows-fr items-stretch gap-6 md:grid-cols-2"
+            staggerDelay={0.12}
             variant="fade-up"
           >
-            {features.map((feature) => (
+            {features.map((feature, idx) => (
               <article
                 key={feature.title}
-                className="rounded-3xl border border-border/70 bg-card/80 p-6 shadow-[0_18px_42px_-34px_color-mix(in_oklch,var(--education-ink)_44%,transparent)]"
+                className="group relative isolate flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-card/80 p-6 shadow-[0_22px_48px_-36px_color-mix(in_oklch,var(--education-ink)_50%,transparent)] transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:bg-card"
               >
-                <div className="mb-5 flex size-12 items-center justify-center rounded-2xl bg-primary/10">
-                  <feature.icon className="size-6 text-primary" />
+                <div className="absolute inset-x-6 top-0 h-px bg-linear-to-r from-transparent via-primary/45 to-transparent" />
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 transition-colors group-hover:bg-primary/20">
+                    <feature.icon className="size-6 text-primary" />
+                  </div>
+                  <span className="rounded-full border border-border bg-background/70 px-3 py-1 text-xs font-medium text-muted-foreground">
+                    0{idx + 1}
+                  </span>
                 </div>
-                <h3 className="text-xl font-semibold">{feature.title}</h3>
-                <p className="mt-3 leading-7 text-muted-foreground">
+                <h3 className="text-xl font-semibold text-card-foreground">
+                  {feature.title}
+                </h3>
+                <p className="mt-3 flex-1 text-base leading-relaxed text-muted-foreground">
                   {feature.description}
                 </p>
+                <div className="mt-6 flex items-center gap-2 text-sm font-medium text-primary">
+                  <CheckCircle2 className="size-4" />
+                  Ready for the first learning loop
+                </div>
               </article>
             ))}
           </MotionStagger>
         </div>
       </section>
 
-      <section className="border-y border-border bg-muted/35 py-18 md:py-24">
-        <div className="mx-auto grid max-w-7xl gap-8 px-6 lg:grid-cols-[0.9fr_1.1fr]">
+      {/* ── MVP Focus ───────────────────────────────────────────── */}
+      <section className="border-y border-border bg-muted/30 py-20 md:py-28">
+        <div className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-stretch">
           <MotionSection
-            className="rounded-3xl border border-border bg-background p-8"
+            className="flex h-full flex-col justify-between rounded-3xl border border-border bg-card/80 p-8 shadow-[0_22px_52px_-40px_color-mix(in_oklch,var(--education-ink)_45%,transparent)]"
             variant="fade-up"
           >
-            <Badge className="mb-5 h-auto px-3 py-1">Validate next</Badge>
-            <h2 className="text-3xl font-bold tracking-tight">
-              Feedback questions built into the release.
-            </h2>
-            <div className="mt-6 space-y-4">
-              {LEARNING_SIGNALS.map((signal) => (
-                <div key={signal} className="flex gap-3">
-                  <CheckCircle2 className="mt-1 size-5 shrink-0 text-primary" />
-                  <p className="leading-7 text-muted-foreground">{signal}</p>
+            <div>
+              <Badge
+                variant="outline"
+                className="mb-5 rounded-full px-4 py-1.5 text-xs font-semibold tracking-widest uppercase"
+              >
+                MVP Scope
+              </Badge>
+              <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+                Small release, sharp proof.
+              </h2>
+              <p className="mt-4 text-base leading-7 text-muted-foreground">
+                Buddy&apos;s first version should feel complete where it
+                matters: a learner can find material, study with context, and a
+                creator can publish the supply that makes the loop worth
+                repeating.
+              </p>
+            </div>
+            <div className="mt-8 grid auto-rows-fr gap-3 sm:grid-cols-3">
+              {["Search", "Study", "Publish"].map((label) => (
+                <div
+                  key={label}
+                  className="flex h-full items-center gap-2 rounded-2xl border border-border bg-background/70 px-4 py-3 text-sm font-medium text-card-foreground"
+                >
+                  <Layers3 className="size-4 text-primary" />
+                  {label}
                 </div>
               ))}
             </div>
           </MotionSection>
 
           <MotionStagger
-            className="grid gap-4 sm:grid-cols-3"
-            staggerDelay={0.1}
-            variant="scale-in"
+            className="grid auto-rows-fr items-stretch gap-5 md:grid-cols-3"
+            staggerDelay={0.12}
+            variant="fade-up"
           >
-            {stats.map((stat) => (
+            {mvpCards.map((card) => (
               <article
-                key={stat.label}
-                className="rounded-3xl border border-border bg-background p-6"
+                key={card.title}
+                className="group flex h-full flex-col rounded-3xl border border-border bg-background p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:bg-card"
               >
-                <stat.icon className="mb-6 size-6 text-primary" />
-                <p className="text-4xl font-black tracking-tight">
-                  {stat.value}
+                <div className="mb-5 flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+                  <card.icon className="size-5" />
+                </div>
+                <p className="text-xs font-semibold tracking-widest text-primary uppercase">
+                  {card.eyebrow}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  {stat.label}
+                <h3 className="mt-3 text-lg font-semibold text-card-foreground">
+                  {card.title}
+                </h3>
+                <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">
+                  {card.description}
                 </p>
               </article>
             ))}
@@ -224,63 +415,92 @@ export function LandingContent({
         </div>
       </section>
 
-      <section className="bg-background py-18 md:py-24">
-        <div className="mx-auto grid max-w-7xl gap-8 px-6 md:grid-cols-2">
-          <MotionSection variant="fade-up">
-            <Badge variant="outline" className="mb-4 h-auto px-3 py-1">
-              Not in MVP
-            </Badge>
-            <h2 className="text-3xl font-bold tracking-tight">
-              Explicitly deferred so the first release can teach us something.
-            </h2>
-          </MotionSection>
-
-          <MotionStagger
-            className="grid gap-3"
-            staggerDelay={0.08}
-            variant="fade-up"
+      {/* ── Techniques Marquee ───────────────────────────────────── */}
+      <section className="overflow-hidden border-y border-border bg-background py-16">
+        <div className="mx-auto mb-8 max-w-7xl px-6 text-center">
+          <Badge
+            variant="outline"
+            className="mb-4 rounded-full px-4 py-1.5 text-xs font-semibold tracking-widest uppercase"
           >
-            {DEFERRED_FEATURES.map((item) => (
-              <div
-                key={item}
-                className="rounded-2xl border border-border bg-card px-5 py-4 text-card-foreground"
-              >
-                {item}
-              </div>
-            ))}
-          </MotionStagger>
+            In Project
+          </Badge>
+          <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
+            Powered by the best techniques
+          </h2>
+        </div>
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-center">
+          <MarqueeAlongSvgPath
+            path="M1 209.434C58.5872 255.935 387.926 325.938 482.583 209.434C600.905 63.8051 525.516 -43.2211 427.332 19.9613C329.149 83.1436 352.902 242.723 515.041 267.302C644.752 286.966 943.56 181.94 995 156.5"
+            viewBox="0 0 996 330"
+            baseVelocity={8}
+            draggable={true}
+            dragSensitivity={0.1}
+            responsive
+            repeat={4}
+            slowdownOnHover={true}
+            className="mt-10 h-full w-full scale-105"
+            grabCursor
+          >
+            <div className="rounded-full border border-primary/20 bg-primary px-4 py-2 text-sm font-semibold whitespace-nowrap text-primary-foreground shadow-lg duration-300 ease-in-out hover:scale-150">
+              Next.js
+            </div>
+            <div className="rounded-full border border-secondary/20 bg-secondary px-4 py-2 text-sm font-semibold whitespace-nowrap text-secondary-foreground shadow-lg duration-300 ease-in-out hover:scale-150">
+              React
+            </div>
+            <div className="rounded-full border border-muted/20 bg-muted px-4 py-2 text-sm font-semibold whitespace-nowrap text-muted-foreground shadow-lg duration-300 ease-in-out hover:scale-150">
+              Framer Motion
+            </div>
+            <div className="rounded-full border border-accent/20 bg-accent px-4 py-2 text-sm font-semibold whitespace-nowrap text-accent-foreground shadow-lg duration-300 ease-in-out hover:scale-150">
+              Tailwind CSS
+            </div>
+            <div className="rounded-full border border-card/20 bg-card px-4 py-2 text-sm font-semibold whitespace-nowrap text-card-foreground shadow-lg duration-300 ease-in-out hover:scale-150">
+              TypeScript
+            </div>
+            <div className="rounded-full border border-primary/20 bg-primary/80 px-4 py-2 text-sm font-semibold whitespace-nowrap text-primary-foreground shadow-lg duration-300 ease-in-out hover:scale-150">
+              Nest.js
+            </div>
+          </MarqueeAlongSvgPath>
         </div>
       </section>
 
-      <section className="border-y border-border bg-education-paper-strong py-18 md:py-24">
-        <div className="mx-auto max-w-7xl space-y-10 px-6">
-          <MotionSection className="max-w-3xl" variant="fade-up">
-            <Badge variant="outline" className="mb-4 h-auto px-3 py-1">
-              Evidence
+      {/* ── Impact Metrics ──────────────────────────────────────── */}
+      <section className="bg-background py-20 text-foreground md:py-28">
+        <div className="mx-auto max-w-7xl space-y-16 px-6">
+          <MotionSection className="text-center" variant="fade-up">
+            <Badge
+              variant="outline"
+              className="mb-4 rounded-full border-border px-4 py-1.5 text-xs font-semibold tracking-widest text-muted-foreground uppercase"
+            >
+              Impact
             </Badge>
-            <h2 className="text-3xl font-bold tracking-tight md:text-5xl">
-              Keep every product signal visible before adding more scope.
+            <h2 className="text-3xl font-bold tracking-tight md:text-4xl">
+              Learning that moves the numbers that matter
             </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+              Leading universities and student communities trust Buddy to
+              deliver measurable learning outcomes.
+            </p>
           </MotionSection>
 
           <MotionStagger
-            className="grid gap-5 md:grid-cols-3"
-            staggerDelay={0.1}
+            className="grid auto-rows-fr items-stretch gap-8 md:grid-cols-3"
+            staggerDelay={0.15}
             variant="fade-up"
           >
             {useCases.map((item) => (
               <article
-                key={item.title}
-                className="rounded-3xl border border-border/70 bg-card/80 p-6 shadow-[0_18px_42px_-34px_color-mix(in_oklch,var(--education-ink)_44%,transparent)]"
+                key={item.metric}
+                className="flex h-full flex-col rounded-2xl border border-border bg-card/50 p-8 backdrop-blur transition-all duration-300 hover:-translate-y-1 hover:border-border/80"
               >
-                <p className="text-5xl font-black tracking-tighter text-primary">
-                  {item.metric}
-                </p>
-                <p className="mt-1 text-xs font-bold tracking-[0.18em] text-muted-foreground uppercase">
+                <AnimatedCounter
+                  value={item.metric}
+                  className="mb-1 block bg-linear-to-r from-purple-400 to-blue-400 bg-clip-text text-5xl font-bold text-transparent"
+                />
+                <p className="mb-4 text-sm text-muted-foreground">
                   {item.metricLabel}
                 </p>
-                <h3 className="mt-6 text-xl font-semibold">{item.title}</h3>
-                <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                <h3 className="mb-3 text-lg font-semibold">{item.title}</h3>
+                <p className="flex-1 text-sm leading-relaxed text-muted-foreground">
                   {item.description}
                 </p>
               </article>
@@ -289,46 +509,100 @@ export function LandingContent({
         </div>
       </section>
 
-      <section className="bg-background py-18 md:py-24">
-        <div className="mx-auto max-w-7xl space-y-10 px-6">
-          <MotionSection className="max-w-3xl" variant="fade-up">
-            <Badge variant="outline" className="mb-4 h-auto px-3 py-1">
-              Learner voices
+      {/* ── CTA Duo ─────────────────────────────────────────────── */}
+      <section className="bg-background py-20">
+        <MotionStagger
+          className="mx-auto grid max-w-7xl auto-rows-fr items-stretch gap-6 px-6 md:grid-cols-2"
+          staggerDelay={0.15}
+          variant="scale-in"
+        >
+          <article className="flex h-full flex-col rounded-3xl bg-primary p-10 text-primary-foreground transition-transform duration-300 hover:-translate-y-1">
+            <Briefcase className="mb-4 size-8 opacity-80" />
+            <h3 className="mb-3 text-2xl font-bold">Become a Creator</h3>
+            <p className="mb-6 flex-1 text-primary-foreground/80">
+              Join over 2,500 creators who share their expertise and earn from
+              their knowledge. Build your audience and make an impact.
+            </p>
+            <Button
+              variant="secondary"
+              asChild
+              className="rounded-full"
+              size="lg"
+            >
+              <Link href="/sign-up">Start Creating Today</Link>
+            </Button>
+          </article>
+          <article className="flex h-full flex-col rounded-3xl border border-border bg-card p-10 transition-transform duration-300 hover:-translate-y-1">
+            <MessageSquare className="mb-4 size-8 text-primary opacity-80" />
+            <h3 className="mb-3 text-2xl font-bold text-card-foreground">
+              For Universities
+            </h3>
+            <p className="mb-6 flex-1 text-muted-foreground">
+              Equip your students with the best learning resources. Custom
+              integrations and institutional dashboards available.
+            </p>
+            <Button asChild className="rounded-full" size="lg">
+              <Link href="/about">Learn More</Link>
+            </Button>
+          </article>
+        </MotionStagger>
+      </section>
+
+      {/* ── Testimonials ────────────────────────────────────────── */}
+      <section className="border-t border-border bg-muted/30 py-20 md:py-28">
+        <div className="mx-auto max-w-7xl space-y-16 px-6">
+          <MotionSection className="text-center" variant="fade-up">
+            <Badge
+              variant="outline"
+              className="mb-4 rounded-full px-4 py-1.5 text-xs font-semibold tracking-widest uppercase"
+            >
+              Testimonials
             </Badge>
-            <h2 className="text-3xl font-bold tracking-tight md:text-5xl">
-              Preserve qualitative feedback as part of the interface.
+            <h2 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+              What learners are saying
             </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+              Real feedback from students and creators using Buddy every day.
+            </p>
           </MotionSection>
 
           <MotionStagger
-            className="grid gap-5 md:grid-cols-[1.2fr_0.9fr_1.05fr]"
-            staggerDelay={0.1}
+            className="grid auto-rows-fr items-stretch gap-6 md:grid-cols-3"
+            staggerDelay={0.12}
             variant="fade-up"
           >
             {testimonials.map((testimonial) => (
               <article
                 key={testimonial.name}
-                className="rounded-3xl border border-border/70 bg-card/80 p-6 shadow-[0_18px_42px_-34px_color-mix(in_oklch,var(--education-ink)_44%,transparent)]"
+                className="flex h-full flex-col rounded-2xl border border-border bg-card p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
               >
-                <div className="flex gap-1 text-accent">
+                <div className="mb-4 flex gap-0.5">
                   {Array.from(
                     { length: testimonial.rating },
                     (_, ratingStar) => ratingStar + 1
                   ).map((ratingStar) => (
                     <Star
                       key={`${testimonial.name}-${ratingStar}`}
-                      className="size-4 fill-current"
+                      className="size-4 fill-yellow-500 text-yellow-500"
                     />
                   ))}
                 </div>
-                <blockquote className="mt-5 text-base leading-7 text-foreground">
+                <blockquote className="mb-6 flex-1 text-sm leading-relaxed text-card-foreground">
                   &ldquo;{testimonial.quote}&rdquo;
                 </blockquote>
-                <div className="mt-6 border-t border-border/70 pt-4">
-                  <p className="font-semibold">{testimonial.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {testimonial.role}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <UserAvatar
+                    name={testimonial.name}
+                    className="size-10 border border-border"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-card-foreground">
+                      {testimonial.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {testimonial.role}
+                    </p>
+                  </div>
                 </div>
               </article>
             ))}
@@ -336,36 +610,37 @@ export function LandingContent({
         </div>
       </section>
 
-      <section className="bg-foreground py-18 text-background md:py-24">
+      {/* ── Final CTA ───────────────────────────────────────────── */}
+      <section className="bg-background py-20 text-foreground md:py-28">
         <MotionSection
-          className="mx-auto max-w-4xl px-6 text-center"
+          className="mx-auto max-w-3xl px-6 text-center"
           variant="fade-up"
         >
-          <Badge className="mb-5 h-auto bg-accent px-3 py-1 text-accent-foreground">
-            Early access
-          </Badge>
-          <h2 className="text-4xl font-black tracking-tight md:text-6xl">
-            Ship the first learning loop, then improve from real behavior.
+          <Zap className="mx-auto mb-6 size-10 text-purple-400" />
+          <h2 className="text-3xl font-bold tracking-tight md:text-5xl">
+            Ready to transform how you learn?
           </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-background/70">
-            {useCases[0]?.description ??
-              "Start with the smallest usable experience: one learner, one useful piece of content, and one clear next step."}
+          <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
+            Join 100,000+ students who are already learning smarter with Buddy.
+            Free to start, powerful to grow.
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Button
               asChild
               size="lg"
-              className="bg-accent px-6 text-accent-foreground hover:bg-accent/90"
+              className="rounded-full bg-foreground px-10 text-background hover:bg-foreground/90"
             >
-              <Link href="/sign-up">Create account</Link>
+              <Link href="/sign-up">
+                Get Started Free <ArrowRight className="ml-2 size-4" />
+              </Link>
             </Button>
             <Button
               asChild
               size="lg"
               variant="outline"
-              className="border-background/20 bg-transparent px-6 text-background hover:bg-background/10"
+              className="rounded-full border-border bg-transparent text-foreground hover:bg-accent"
             >
-              <Link href="/contact">Send MVP feedback</Link>
+              <Link href="/explore">Browse Resources</Link>
             </Button>
           </div>
         </MotionSection>

@@ -11,7 +11,6 @@ import { SectionHeading } from "@/components/atoms/section-heading"
 import { Button } from "@/components/ui/button"
 import {
   Field,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldLegend,
@@ -59,15 +58,15 @@ export function SignUpForm() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-4 [&>header]:space-y-2 [&>header>h2]:text-3xl [&>header>p]:leading-5">
       <SectionHeading
         badge="Sign Up"
         title="Register Account"
-        description="Create an account to start buying, selling materials, courses, and join a dynamic education community."
+        description="Create your workspace for courses, materials, and study decisions."
       />
       <form onSubmit={handleSubmit(onSubmit)}>
-        <FieldGroup className="gap-4">
-          <FieldSet className="gap-4">
+        <FieldGroup className="gap-3">
+          <FieldSet className="gap-3">
             <FieldLegend variant="label" className="sr-only">
               Registration details
             </FieldLegend>
@@ -75,8 +74,9 @@ export function SignUpForm() {
               <FieldLabel htmlFor="nickname">Nickname</FieldLabel>
               <Input
                 id="nickname"
-                placeholder="John Doe"
+                placeholder="Minh Tran"
                 disabled={isLoading}
+                className="h-10 border-border/55 bg-background/80 px-4 shadow-[inset_0_1px_0_color-mix(in_oklch,var(--card)_86%,transparent)]"
                 {...register("nickname")}
               />
               {errors.nickname ? (
@@ -92,6 +92,7 @@ export function SignUpForm() {
                 // type="email"
                 placeholder="student@university.edu"
                 disabled={isLoading}
+                className="h-10 border-border/55 bg-background/80 px-4 shadow-[inset_0_1px_0_color-mix(in_oklch,var(--card)_86%,transparent)]"
                 {...register("email")}
               />
               {errors.email ? (
@@ -107,21 +108,22 @@ export function SignUpForm() {
                 type="password"
                 placeholder="********"
                 disabled={isLoading}
+                className="h-10 border-border/55 bg-background/80 px-4 shadow-[inset_0_1px_0_color-mix(in_oklch,var(--card)_86%,transparent)]"
                 {...register("password")}
               />
               {errors.password ? (
                 <p className="text-sm text-destructive">
                   {errors.password.message}
                 </p>
-              ) : (
-                <FieldDescription>
-                  Password should be at least 8 characters for better security.
-                </FieldDescription>
-              )}
+              ) : null}
             </Field>
           </FieldSet>
           <Field>
-            <Button className="w-full" type="submit" disabled={isLoading}>
+            <Button
+              className="h-10 w-full shadow-[0_18px_34px_-22px_color-mix(in_oklch,var(--primary)_80%,transparent)]"
+              type="submit"
+              disabled={isLoading}
+            >
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" />
@@ -138,7 +140,7 @@ export function SignUpForm() {
         Already have an account?{" "}
         <Link
           href="/login"
-          className="font-semibold text-primary hover:underline"
+          className="font-semibold text-primary underline-offset-4 hover:underline"
         >
           Log in now
         </Link>
