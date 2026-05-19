@@ -12,20 +12,22 @@ export function SectionHeading({
   description,
 }: SectionHeadingProps) {
   return (
-    <header className="space-y-2">
+    <header className="space-y-3">
       {badge ? (
         <Badge
           variant="outline"
-          className="h-auto rounded-none px-0 text-xs font-semibold tracking-[0.16em] uppercase"
+          className="text-2xs h-auto rounded-full border-primary/20 bg-secondary/45 px-3 py-1 font-bold tracking-[0.18em] text-primary uppercase"
         >
           {badge}
         </Badge>
       ) : null}
-      <h2 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+      <h2 className="max-w-3xl text-3xl leading-tight font-semibold tracking-tighter text-foreground md:text-4xl">
         {title}
       </h2>
       {description ? (
-        <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
+        <p className="max-w-[65ch] text-sm leading-7 text-muted-foreground">
+          {description}
+        </p>
       ) : null}
     </header>
   )

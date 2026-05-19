@@ -268,7 +268,7 @@ export function ExploreModeSwitcher({
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="size-2 animate-pulse rounded-full bg-blue-500" />
+                <span className="size-2 animate-pulse rounded-full bg-accent" />
                 <Badge
                   variant="outline"
                   className="text-2xs rounded-full border-border/80 px-2 py-0.5 font-semibold tracking-widest text-muted-foreground uppercase"

@@ -6,7 +6,7 @@ export function ExploreBackground() {
   return (
     <div className="pointer-events-none fixed inset-0 z-[-1] overflow-hidden">
       <m.div
-        className="absolute -top-40 right-0 h-120 w-120 rounded-full bg-purple-600/5 blur-30"
+        className="blur-30 absolute -top-40 right-0 h-120 w-120 rounded-full bg-primary/8"
         animate={{
           scale: [1, 1.1, 1],
           opacity: [0.2, 0.3, 0.2],
@@ -20,7 +20,7 @@ export function ExploreBackground() {
         }}
       />
       <m.div
-        className="absolute bottom-0 left-1/4 h-80 w-80 rounded-full bg-blue-600/5 blur-25"
+        className="blur-25 absolute bottom-0 left-1/4 h-80 w-80 rounded-full bg-accent/10"
         animate={{
           scale: [1, 1.08, 1],
           opacity: [0.15, 0.25, 0.15],

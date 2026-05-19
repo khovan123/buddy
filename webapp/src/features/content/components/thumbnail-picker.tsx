@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback, useRef, useState } from "react"
+import React, { useCallback, useMemo, useRef, useState } from "react"
 
 import Image from "next/image"
 
@@ -34,29 +34,27 @@ export function ThumbnailPicker({
   const [isDragging, setIsDragging] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const [previewSource, setPreviewSource] = useState<string | null>(null)
-
-  React.useEffect(() => {
+  const previewSource = useMemo(() => {
     if (!value) {
-      setPreviewSource(null)
-      return
+      return null
     }
 
     if (typeof value === "string") {
-      setPreviewSource(value)
+      return value
+    }
+
+    return URL.createObjectURL(value)
+  }, [value])
+
+  React.useEffect(() => {
+    if (!(value instanceof File) || !previewSource) {
       return
     }
 
-    if (value instanceof File) {
-      const url = URL.createObjectURL(value)
-      setPreviewSource(url)
-
-      // Cleanup to prevent memory leaks
-      return () => {
-        URL.revokeObjectURL(url)
-      }
+    return () => {
+      URL.revokeObjectURL(previewSource)
     }
-  }, [value])
+  }, [previewSource, value])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -118,13 +116,12 @@ export function ThumbnailPicker({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 transition-all duration-200 ${
-          previewSource
+        className={`relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 transition-all duration-200 ${previewSource
             ? "border-transparent bg-muted/20"
             : isDragging
               ? "border-primary bg-primary/5"
               : "cursor-pointer border-dashed border-border hover:border-primary/50 hover:bg-muted/50"
-        } ${error ? "border-destructive/50 hover:border-destructive" : ""}`}
+          } ${error ? "border-destructive/50 hover:border-destructive" : ""}`}
       >
         {previewSource ? (
           <>

@@ -17,12 +17,12 @@ export default function ExploreLoading() {
       <section className="space-y-10">
         {/* ── ExploreHero ── */}
         <header className="relative space-y-3 overflow-hidden rounded-2xl border border-white/5 bg-card/30 px-6 py-8 shadow-lg backdrop-blur-xl md:px-8 md:py-10">
-          <div className="pointer-events-none absolute -top-16 -left-16 h-40 w-40 rounded-full bg-primary/20 blur-20" />
-          <div className="pointer-events-none absolute -right-8 -bottom-8 h-40 w-40 rounded-full bg-accent/15 blur-20" />
+          <div className="blur-20 pointer-events-none absolute -top-16 -left-16 h-40 w-40 rounded-full bg-primary/20" />
+          <div className="blur-20 pointer-events-none absolute -right-8 -bottom-8 h-40 w-40 rounded-full bg-accent/15" />
           <div className="relative z-10 flex flex-col items-start space-y-2.5">
             <Badge
               variant="outline"
-              className="h-auto rounded-full border-primary/20 bg-primary/10 px-3 py-1 text-2xs font-semibold tracking-widest text-primary uppercase backdrop-blur-md"
+              className="text-2xs h-auto rounded-full border-primary/20 bg-primary/10 px-3 py-1 font-semibold tracking-widest text-primary uppercase backdrop-blur-md"
             >
               Explore
             </Badge>
@@ -76,12 +76,12 @@ export default function ExploreLoading() {
         <div className="space-y-12">
           {/* Marketplace header */}
           <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-card/30 p-6 shadow-2xl backdrop-blur-xl">
-            <div className="pointer-events-none absolute -top-24 -right-24 size-96 rounded-full bg-primary/20 blur-25" />
+            <div className="blur-25 pointer-events-none absolute -top-24 -right-24 size-96 rounded-full bg-primary/20" />
             <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="space-y-2">
                 <Badge
                   variant="outline"
-                  className="rounded-full border-primary/20 bg-primary/5 px-3 py-1 text-2xs font-bold tracking-widest text-primary uppercase"
+                  className="text-2xs rounded-full border-primary/20 bg-primary/5 px-3 py-1 font-bold tracking-widest text-primary uppercase"
                 >
                   Marketplace
                 </Badge>
@@ -120,7 +120,7 @@ export default function ExploreLoading() {
                   <span className="size-2 animate-pulse rounded-full bg-primary" />
                   <Badge
                     variant="outline"
-                    className="rounded-full border-border/80 px-2 py-0.5 text-2xs font-semibold tracking-widest text-muted-foreground uppercase"
+                    className="text-2xs rounded-full border-border/80 px-2 py-0.5 font-semibold tracking-widest text-muted-foreground uppercase"
                   >
                     Curated
                   </Badge>
@@ -157,10 +157,10 @@ export default function ExploreLoading() {
             <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="size-2 animate-pulse rounded-full bg-blue-500" />
+                  <span className="size-2 animate-pulse rounded-full bg-accent" />
                   <Badge
                     variant="outline"
-                    className="rounded-full border-border/80 px-2 py-0.5 text-2xs font-semibold tracking-widest text-muted-foreground uppercase"
+                    className="text-2xs rounded-full border-border/80 px-2 py-0.5 font-semibold tracking-widest text-muted-foreground uppercase"
                   >
                     Popular
                   </Badge>

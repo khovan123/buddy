@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 
 import type { Metadata } from "next"
 
-import { Geist_Mono, Inter } from "next/font/google"
+import { Geist, Geist_Mono } from "next/font/google"
 
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -16,7 +16,7 @@ import { ReduxProvider } from "../lib/redux/redux-provider"
 import { cn } from "../lib/utils"
 import { ErrorProvider } from "../providers/error-provider"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -129,7 +129,7 @@ export default function RootLayout({
         "antialiased",
         fontMono.variable,
         "font-sans",
-        inter.variable
+        geist.variable
       )}
     >
       <body suppressHydrationWarning>

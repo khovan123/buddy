@@ -126,7 +126,7 @@ export function ResourcesDashboard({
                         className={cn(
                           "h-4 w-4 shrink-0",
                           resource.resourceVerified
-                            ? "text-blue-500"
+                            ? "text-primary"
                             : "text-gray-500"
                         )}
                       />
@@ -136,7 +136,7 @@ export function ResourcesDashboard({
                             ? "default"
                             : "secondary"
                         }
-                        className="h-5 px-1.5 text-2xs leading-none font-semibold uppercase"
+                        className="text-2xs h-5 px-1.5 leading-none font-semibold uppercase"
                       >
                         {resource.status}
                       </Badge>

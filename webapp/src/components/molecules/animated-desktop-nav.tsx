@@ -54,7 +54,7 @@ export function AnimatedDesktopNav({
         "hidden items-center md:grid",
         "grid-cols-[minmax(0,auto)_1fr_minmax(0,auto)] gap-2",
         scrolled
-          ? "w-fit! backdrop-blur-xl [background:hsl(var(--background)/0.8)]"
+          ? "w-fit! border border-border/70 bg-background/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-xl"
           : "bg-transparent"
       )}
       animate={{
@@ -68,8 +68,8 @@ export function AnimatedDesktopNav({
         paddingBottom: 12,
         borderRadius: scrolled ? 9999 : 0,
         boxShadow: scrolled
-          ? "0 4px 30px rgba(0,0,0,0.08), 0 0 0 1px rgba(128,128,128,0.15)"
-          : "0 0 0 0 rgba(0,0,0,0), 0 0 0 0 rgba(128,128,128,0)",
+          ? "0 18px 40px -28px color-mix(in oklch, var(--education-ink) 45%, transparent)"
+          : "0 0 0 0 rgba(0,0,0,0)",
       }}
       transition={smoothTransition}
     >
@@ -88,7 +88,7 @@ export function AnimatedDesktopNav({
           className="group mr-4 whitespace-nowrap text-foreground"
         >
           <motion.span
-            className="inline-block font-bold tracking-tight"
+            className="inline-block font-semibold tracking-tight"
             animate={{ fontSize: "18px" }}
             transition={smoothTransition}
             whileHover={{ scale: 1.05 }}
@@ -120,7 +120,7 @@ export function AnimatedDesktopNav({
                 <NavigationMenuItem key={item.label}>
                   <NavigationMenuTrigger
                     className={cn(
-                      "bg-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground data-popup-open:bg-muted/50",
+                      "bg-transparent text-muted-foreground hover:bg-secondary/70 hover:text-foreground data-popup-open:bg-secondary/70",
                       active && "font-semibold text-foreground"
                     )}
                   >
@@ -144,7 +144,7 @@ export function AnimatedDesktopNav({
                     href={item.href!}
                     className={cn(
                       navigationMenuTriggerStyle(),
-                      "bg-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                      "bg-transparent text-muted-foreground hover:bg-secondary/70 hover:text-foreground",
                       active && "font-semibold text-foreground"
                     )}
                   >

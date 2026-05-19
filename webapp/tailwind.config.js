@@ -1,4 +1,5 @@
 // import defaultTheme from "tailwindcss/defaultTheme"
+import plugin from "tailwindcss/plugin"
 
 /** @type {import('tailwindcss').Config} */
 const config = {
@@ -15,6 +16,20 @@ const config = {
       },
       boxShadow: {
         soft: "0 4px 20px -4px rgba(0,0,0,0.05)",
+        education:
+          "0 18px 42px -28px color-mix(in oklch, var(--education-ink) 34%, transparent)",
+      },
+      colors: {
+        education: {
+          paper: "var(--education-paper)",
+          "paper-strong": "var(--education-paper-strong)",
+          ink: "var(--education-ink)",
+          sage: "var(--education-sage)",
+          "sage-foreground": "var(--education-sage-foreground)",
+          gold: "var(--education-gold)",
+          "gold-foreground": "var(--education-gold-foreground)",
+          line: "var(--education-line)",
+        },
       },
       strokeWidth: {
         1.5: "1.5",
@@ -51,7 +66,7 @@ const config = {
     },
   },
   plugins: [
-    require("tailwindcss/plugin")(function ({ matchUtilities, theme }) {
+    plugin(function ({ matchUtilities, theme }) {
       matchUtilities(
         {
           "anim-delay": (value) => ({
