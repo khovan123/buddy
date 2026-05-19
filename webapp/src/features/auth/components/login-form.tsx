@@ -75,11 +75,11 @@ export function LoginForm() {
   }
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-5 [&>header]:space-y-2 [&>header>h2]:text-3xl [&>header>p]:leading-6">
       <SectionHeading
         badge="Login"
         title="Login to Buddy"
-        description="Access your library, courses, and manage your education transactions."
+        description="Return to your library, course workspace, and saved materials."
       />
       <form onSubmit={handleSubmit(onSubmit)}>
         <FieldGroup className="gap-4">
@@ -94,6 +94,7 @@ export function LoginForm() {
                 type="email"
                 placeholder="student@university.edu"
                 disabled={isSubmitting}
+                className="h-11 border-border/55 bg-background/80 px-4 shadow-[inset_0_1px_0_color-mix(in_oklch,var(--card)_86%,transparent)]"
                 {...register("email")}
               />
               {errors.email ? (
@@ -109,6 +110,7 @@ export function LoginForm() {
                 type="password"
                 placeholder="********"
                 disabled={isSubmitting}
+                className="h-11 border-border/55 bg-background/80 px-4 shadow-[inset_0_1px_0_color-mix(in_oklch,var(--card)_86%,transparent)]"
                 {...register("password")}
               />
               {errors.password ? (
@@ -123,7 +125,11 @@ export function LoginForm() {
             </Field>
           </FieldSet>
           <Field>
-            <Button className="w-full" type="submit" disabled={isSubmitting}>
+            <Button
+              className="h-11 w-full shadow-[0_18px_34px_-22px_color-mix(in_oklch,var(--primary)_80%,transparent)]"
+              type="submit"
+              disabled={isSubmitting}
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" />
@@ -140,7 +146,7 @@ export function LoginForm() {
         Don&apos;t have an account?{" "}
         <Link
           href="/sign-up"
-          className="font-semibold text-primary hover:underline"
+          className="font-semibold text-primary underline-offset-4 hover:underline"
         >
           Sign up now
         </Link>

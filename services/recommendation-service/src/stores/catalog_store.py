@@ -84,6 +84,14 @@ class CatalogStore:
         """Get a single content item by its itemId."""
         return self._items.find_one({"itemId": item_id}, {"_id": 0})
 
+    def get_items_by_ids(self, item_ids: list[str]) -> dict[str, dict]:
+        """Get multiple catalog items keyed by itemId in one MongoDB query."""
+        if not item_ids:
+            return {}
+
+        docs = self._items.find({"itemId": {"$in": item_ids}}, {"_id": 0})
+        return {doc["itemId"]: doc for doc in docs}
+
     def get_item_count(self) -> int:
         """Get the total number of items in the catalog."""
         return self._items.count_documents({})
