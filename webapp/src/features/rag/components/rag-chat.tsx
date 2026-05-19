@@ -97,7 +97,7 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
         setIsLoading(false)
       }
     },
-    [input, isLoading, user?.id, accessToken]
+    [accessToken, input, isLoading, user]
   )
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -121,25 +121,25 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
 
       {/* ── Messages area ────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-4 py-8 md:px-10">
-          <div className="mx-auto mt-10 flex max-w-2xl animate-in flex-col items-center justify-center duration-700 fade-in">
-            <div className="mb-8 flex size-16 items-center justify-center rounded-2xl bg-secondary/30 text-primary">
-              <Bot className="size-8 stroke-1.5" />
-            </div>
-
-            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2">
-              {SUGGESTIONS.map((suggestion) => (
-                <button
-                  key={suggestion}
-                  onClick={() => handleSend(suggestion)}
-                  className="flex flex-col items-start gap-1 rounded-xl border border-border/40 bg-card p-4 text-left transition-colors hover:bg-secondary/20"
-                >
-                  <span className="text-sm leading-relaxed font-medium text-foreground/90">
-                    {suggestion}
-                  </span>
-                </button>
-              ))}
-            </div>
+        <div className="mx-auto mt-10 flex max-w-2xl animate-in flex-col items-center justify-center duration-700 fade-in">
+          <div className="mb-8 flex size-16 items-center justify-center rounded-2xl bg-secondary/30 text-primary">
+            <Bot className="size-8 stroke-1.5" />
           </div>
+
+          <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2">
+            {SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion}
+                onClick={() => handleSend(suggestion)}
+                className="flex flex-col items-start gap-1 rounded-xl border border-border/40 bg-card p-4 text-left transition-colors hover:bg-secondary/20"
+              >
+                <span className="text-sm leading-relaxed font-medium text-foreground/90">
+                  {suggestion}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="mx-auto flex max-w-3xl flex-col gap-8">
           {messages.map((msg) => (

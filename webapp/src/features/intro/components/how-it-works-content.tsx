@@ -44,7 +44,7 @@ export function HowItWorksContent({ data: rawData }: HowItWorksContentProps) {
       <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-32">
         <div className="pointer-events-none absolute inset-0">
           <motion.div
-            className="absolute -top-20 left-1/4 h-100 w-100 rounded-full bg-primary/5 blur-25"
+            className="blur-25 absolute -top-20 left-1/4 h-100 w-100 rounded-full bg-primary/5"
             animate={{ scale: [1, 1.1, 1], opacity: [0.05, 0.1, 0.05] }}
             transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
           />
@@ -63,9 +63,7 @@ export function HowItWorksContent({ data: rawData }: HowItWorksContentProps) {
           <MotionHero delay={0.15}>
             <h1 className="text-4xl leading-[1.1] font-bold tracking-tight md:text-6xl lg:text-7xl">
               From curious learner to{" "}
-              <span className="bg-linear-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-                impactful creator
-              </span>
+              <span className="text-primary">impactful creator</span>
             </h1>
           </MotionHero>
 

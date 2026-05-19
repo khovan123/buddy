@@ -157,56 +157,67 @@ const LANDING_FALLBACK: LandingData = {
   features: [
     {
       iconKey: "BookOpen",
-      title: "Curated Resources",
+      title: "Focused course resources",
       description:
-        "Access thousands of tutorials, documents, and collections curated by students and creators who understand your learning journey.",
+        "Start with a small, useful library of notes, documents, and tutorials organized around the learner's immediate study goal.",
     },
     {
       iconKey: "Users",
-      title: "Community-Driven",
+      title: "Creator-first publishing",
       description:
-        "Learn from peers who have been in your shoes. Our creators are students and professionals sharing real-world knowledge.",
+        "Let a student or mentor publish one practical resource quickly, then improve the format from real learner feedback.",
     },
     {
       iconKey: "Sparkles",
-      title: "AI-Powered Discovery",
+      title: "Grounded study assistant",
       description:
-        "Smart recommendations that match your major, career goals, and skills — so you always find the most relevant content.",
+        "Answer questions from the learning material itself so students get a clearer next step instead of generic advice.",
     },
     {
       iconKey: "TrendingUp",
-      title: "Track Your Growth",
+      title: "Learning signals",
       description:
-        "Monitor your learning progress, build your skill profile, and showcase your expertise to future employers.",
+        "Track whether learners find content, finish a resource, ask follow-up questions, and come back for the next session.",
     },
   ],
   stats: [
-    { value: "100K+", label: "Active Learners", iconKey: "Users" },
-    { value: "2.5K+", label: "Expert Creators", iconKey: "GraduationCap" },
-    { value: "150+", label: "Subject Areas", iconKey: "LayoutGrid" },
-    { value: "4.9/5", label: "Satisfaction Rate", iconKey: "Star" },
+    {
+      value: "3",
+      label: "Core actions in the first release",
+      iconKey: "Target",
+    },
+    {
+      value: "1",
+      label: "Creator upload needed to test supply",
+      iconKey: "GraduationCap",
+    },
+    {
+      value: "7d",
+      label: "Feedback cycle before the next iteration",
+      iconKey: "TrendingUp",
+    },
   ],
   useCases: [
     {
-      metric: "3X",
-      metricLabel: "Faster learning outcomes",
-      title: "Personalized learning paths that adapt to each student",
+      metric: "1",
+      metricLabel: "Primary user journey",
+      title: "A learner finds material and gets a useful next step",
       description:
-        "Students using Buddy complete their learning objectives 3 times faster than traditional methods, thanks to curated collections and AI-powered recommendations.",
+        "The first Buddy release should prove one loop: a learner discovers relevant course material, studies it, and uses the assistant or creator context to decide what to do next.",
     },
     {
-      metric: "85%",
-      metricLabel: "Content completion rate",
-      title: "Engaging content that keeps students coming back",
+      metric: "3",
+      metricLabel: "Validation questions",
+      title: "Measure behavior before expanding the roadmap",
       description:
-        "Our community-curated approach ensures content quality and relevance, resulting in one of the highest completion rates in the industry.",
+        "The MVP measures discovery speed, first creator upload completion, and whether grounded AI answers reduce study friction.",
     },
     {
-      metric: "50K+",
-      metricLabel: "Resources shared monthly",
-      title: "A thriving ecosystem of knowledge sharing",
+      metric: "4",
+      metricLabel: "Deferred categories",
+      title: "Delay expensive features until demand is clearer",
       description:
-        "Every month, creators contribute tutorials, resources and collections across 150+ subject areas, building the largest student-led learning library.",
+        "Payments, institutional dashboards, advanced recommendations, and social mechanics should follow validated learner and creator usage.",
     },
   ],
   testimonials: [

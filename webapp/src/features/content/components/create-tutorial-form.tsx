@@ -210,29 +210,45 @@ export function CreateTutorialForm() {
 
   // ── Fetch resources when course changes ───────────────────────
   const prevCourseRef = useRef<string>("")
-  if (selectedCourseId !== prevCourseRef.current) {
+  useEffect(() => {
+    if (selectedCourseId === prevCourseRef.current) {
+      return
+    }
+
     prevCourseRef.current = selectedCourseId
     if (!selectedCourseId) {
-      setResources([])
-      setResourceCollections([])
-      form.setValue("steps", [])
-      form.setValue("collectionId", undefined)
-    } else {
-      // Fetch individual resources (for manual mode)
-      setIsLoadingResources(true)
-      fetchResourcesByCourse(selectedCourseId)
-        .then((fetched) => setResources(fetched))
-        .catch(() => toast.error("Failed to fetch related resources."))
-        .finally(() => setIsLoadingResources(false))
-
-      // Fetch resource collections (for collection mode)
-      setIsLoadingCollections(true)
-      fetchResourceCollectionsByCourse(selectedCourseId)
-        .then((fetched) => setResourceCollections(fetched))
-        .catch(() => toast.error("Failed to fetch resource collections."))
-        .finally(() => setIsLoadingCollections(false))
+      queueMicrotask(() => {
+        setResources([])
+        setResourceCollections([])
+        form.setValue("steps", [])
+        form.setValue("collectionId", undefined)
+      })
+      return
     }
-  }
+
+    // Fetch individual resources (for manual mode)
+    queueMicrotask(() => setIsLoadingResources(true))
+    fetchResourcesByCourse(selectedCourseId)
+      .then((fetched) => queueMicrotask(() => setResources(fetched)))
+      .catch(() => toast.error("Failed to fetch related resources."))
+      .finally(() => queueMicrotask(() => setIsLoadingResources(false)))
+
+    // Fetch resource collections (for collection mode)
+    queueMicrotask(() => setIsLoadingCollections(true))
+    fetchResourceCollectionsByCourse(selectedCourseId)
+      .then((fetched) => queueMicrotask(() => setResourceCollections(fetched)))
+      .catch(() => toast.error("Failed to fetch resource collections."))
+      .finally(() => queueMicrotask(() => setIsLoadingCollections(false)))
+  }, [
+    fetchResourceCollectionsByCourse,
+    fetchResourcesByCourse,
+    form,
+    selectedCourseId,
+    setIsLoadingCollections,
+    setIsLoadingResources,
+    setResourceCollections,
+    setResources,
+  ])
 
   // ── Mode switch: clear data when switching attachment mode ─────
   useEffect(() => {
@@ -301,12 +317,12 @@ export function CreateTutorialForm() {
       const stepsPayload =
         resourceAttachmentMode === "manual"
           ? steps?.map((step) => ({
-              title: step.title,
-              resources: step.resources.map((res) => ({
-                resourceId: res.resourceId,
-                instructionNote: res.instructionNote,
-              })),
-            }))
+            title: step.title,
+            resources: step.resources.map((res) => ({
+              resourceId: res.resourceId,
+              instructionNote: res.instructionNote,
+            })),
+          }))
           : undefined
 
       const payload = {
@@ -379,11 +395,18 @@ export function CreateTutorialForm() {
     } catch (error: unknown) {
       toast.error(
         extractApiError(error) ||
-          "Failed to create tutorial. Please fix the validation errors."
+        "Failed to create tutorial. Please fix the validation errors."
       )
       console.error(error)
     }
   }
+
+  const handleFormSubmit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      void handleSubmit(onSubmit, onInvalid)(event)
+    },
+    [handleSubmit, onInvalid, onSubmit]
+  )
 
   const inferContentType = useCallback((item: ContentItem) => {
     // In a real app with proper types, check item.type or item.media
@@ -831,7 +854,7 @@ export function CreateTutorialForm() {
       </CardHeader>
       <CardContent>
         <form
-          onSubmit={handleSubmit(onSubmit, onInvalid)}
+          onSubmit={handleFormSubmit}
           className="space-y-8"
         >
           {mode === "minimal" ? (

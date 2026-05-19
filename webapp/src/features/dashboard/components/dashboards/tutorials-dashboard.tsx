@@ -135,9 +135,7 @@ export function TutorialsDashboard({
                       <BadgeCheck
                         className={cn(
                           "h-4 w-4 shrink-0",
-                          tutorial.isVerified
-                            ? "text-blue-500"
-                            : "text-gray-500"
+                          tutorial.isVerified ? "text-primary" : "text-gray-500"
                         )}
                       />
                       <Badge
@@ -146,7 +144,7 @@ export function TutorialsDashboard({
                             ? "default"
                             : "secondary"
                         }
-                        className="h-5 px-1.5 text-2xs leading-none font-semibold uppercase"
+                        className="text-2xs h-5 px-1.5 leading-none font-semibold uppercase"
                       >
                         {tutorial.status}
                       </Badge>

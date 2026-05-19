@@ -245,7 +245,7 @@ const MarqueeAlongSvgPath = ({
   const smoothVelocity = useSpring(scrollVelocity, scrollSpringConfig)
 
   // Hover and drag state tracking
-  const isHovered = useRef(false)
+  const isHoveredRef = useRef(false)
   const isDragging = useRef(false)
   const dragVelocity = useRef(0)
 
@@ -282,7 +282,7 @@ const MarqueeAlongSvgPath = ({
     }
 
     // Update hover factor
-    if (isHovered.current) {
+    if (isHoveredRef.current) {
       hoverFactorValue.set(slowdownOnHover ? slowDownFactor : 1)
     } else {
       hoverFactorValue.set(1)
@@ -332,10 +332,10 @@ const MarqueeAlongSvgPath = ({
     if (!draggable) {
       return
     }
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    ; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
 
     if (grabCursor) {
-      ;(e.currentTarget as HTMLElement).style.cursor = "grabbing"
+      ; (e.currentTarget as HTMLElement).style.cursor = "grabbing"
     }
 
     isDragging.current = true
@@ -371,11 +371,11 @@ const MarqueeAlongSvgPath = ({
     if (!draggable) {
       return
     }
-    ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+    ; (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
     isDragging.current = false
 
     if (grabCursor) {
-      ;(e.currentTarget as HTMLElement).style.cursor = "grab"
+      ; (e.currentTarget as HTMLElement).style.cursor = "grab"
     }
   }
 
@@ -426,7 +426,7 @@ const MarqueeAlongSvgPath = ({
             cssVariableInterpolation={cssVariableInterpolation}
             draggable={draggable}
             grabCursor={grabCursor}
-            isHovered={isHovered}
+            isHoveredRef={isHoveredRef}
             itemRefs={itemRefs}
           />
         ))}
@@ -449,7 +449,7 @@ interface MarqueeItemProps {
   cssVariableInterpolation?: CSSVariableInterpolation[]
   draggable: boolean
   grabCursor: boolean
-  isHovered: React.RefObject<boolean>
+  isHoveredRef: React.RefObject<boolean>
   itemRefs: React.RefObject<Map<string, HTMLDivElement>>
 }
 
@@ -467,7 +467,7 @@ const MarqueeItem: React.FC<MarqueeItemProps> = ({
   cssVariableInterpolation,
   draggable,
   grabCursor,
-  isHovered,
+  isHoveredRef,
   itemRefs,
 }) => {
   // Create a unique offset transform for each item
@@ -526,8 +526,8 @@ const MarqueeItem: React.FC<MarqueeItemProps> = ({
         ...cssVariables,
       }}
       aria-hidden={repeatIndex > 0}
-      onMouseEnter={() => (isHovered.current = true)}
-      onMouseLeave={() => (isHovered.current = false)}
+      onMouseEnter={() => (isHoveredRef.current = true)}
+      onMouseLeave={() => (isHoveredRef.current = false)}
     >
       {child}
     </motion.div>
