@@ -9,6 +9,8 @@ and wires up the RabbitMQ consumer, model scheduler, and CORS middleware on star
 import logging
 import threading
 import asyncio
+import os
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
@@ -19,7 +21,6 @@ from fastapi import APIRouter, FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.concurrency import run_in_threadpool
 
 from config import HOST, PORT, RECOMMENDATION_CACHE_TTL, REDIS_URL, ALLOWED_ORIGINS
 from models import RecommendResponse, TrendingResponse, HealthResponse, RAGRequest, RAGResponse
@@ -35,6 +36,18 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 HEALTH_CHECK_TIMEOUT_SECONDS = 5
+RECOMMENDATION_TIMEOUT_SECONDS = 25
+RAG_STATS_TIMEOUT_SECONDS = 8
+RAG_ASK_TIMEOUT_SECONDS = 60
+RAG_STARTUP_WARMUP_ENABLED = (
+    os.getenv("RAG_STARTUP_WARMUP_ENABLED", "false").lower() == "true"
+)
+BLOCKING_WORKER_LIMIT = int(os.getenv("RECOMMENDATION_BLOCKING_WORKERS", "12"))
+blocking_executor = ThreadPoolExecutor(
+    max_workers=BLOCKING_WORKER_LIMIT,
+    thread_name_prefix="recommendation-blocking",
+)
+blocking_slots = threading.BoundedSemaphore(BLOCKING_WORKER_LIMIT)
 
 # ─── Global singletons (all read from recommendation_db only) ──────────────────
 
@@ -49,6 +62,66 @@ rag_pipeline = None
 rag_indexer = None
 rag_vector_store = None
 rag_lock = threading.Lock()
+
+
+def _rag_module_ready() -> bool:
+    """Return whether RAG has already been initialised without triggering init."""
+    return bool(rag_pipeline and rag_indexer and rag_vector_store)
+
+
+async def _run_blocking_with_timeout(
+    name: str,
+    func,
+    *args,
+    timeout: int,
+    unavailable_status: int = 503,
+    **kwargs,
+):
+    """Run blocking work in a bounded pool and fail fast on slow dependencies.
+
+    ``asyncio.wait_for`` cannot stop synchronous Mongo/Redis/RAG/ML work once a
+    worker thread has started it. The semaphore is intentionally released by the
+    worker after the callable really finishes, so timed-out jobs keep consuming
+    capacity and repeated slow requests cannot exhaust Starlette/AnyIO's shared
+    threadpool or queue unbounded work.
+    """
+    if not blocking_slots.acquire(blocking=False):
+        logger.warning("%s rejected because blocking worker pool is full", name)
+        return JSONResponse(
+            status_code=unavailable_status,
+            content={"message": f"{name} busy", "status": "unavailable"},
+        )
+
+    def _run():
+        try:
+            return func(*args, **kwargs)
+        finally:
+            blocking_slots.release()
+
+    loop = asyncio.get_running_loop()
+    try:
+        future = loop.run_in_executor(blocking_executor, _run)
+    except Exception:
+        blocking_slots.release()
+        raise
+
+    try:
+        return await asyncio.wait_for(asyncio.shield(future), timeout=timeout)
+    except asyncio.TimeoutError:
+        future.add_done_callback(lambda done: _consume_late_blocking_result(name, done))
+        logger.warning("%s timed out after %ss", name, timeout)
+        return JSONResponse(
+            status_code=unavailable_status,
+            content={"message": f"{name} timed out", "status": "unavailable"},
+        )
+
+
+def _consume_late_blocking_result(name: str, future) -> None:
+    """Consume a late result so post-timeout exceptions are logged, not leaked."""
+    try:
+        future.result()
+    except Exception as e:
+        logger.warning("%s failed after request timed out: %s", name, e)
 
 
 def get_rag_module():
@@ -149,31 +222,16 @@ async def lifespan(app: FastAPI):
 
             logger.info("Background init complete (consumer + scheduler)")
 
-            # 3. Pre-warm embedding model so first RAG request is fast
-            try:
-                from rag.embedder import preload_model
-                logger.info("Pre-warming embedding model...")
-                if preload_model():
-                    logger.info("Embedding model ready")
-                else:
-                    logger.warning("Embedding model preload failed (RAG will retry lazily)")
-            except Exception as e:
-                logger.warning(f"Embedding preload error (non-fatal): {e}")
-
-            # 4. Auto-index vectors if the store is empty
-            try:
-                _, indexer, vs = get_rag_module()
-                info = vs.get_collection_info()
-                if info.get("vectors_count", 0) == 0:
-                    logger.info("Vector store empty — triggering auto-index...")
-                    index_thread = threading.Thread(
-                        target=_auto_index, args=(indexer,), daemon=True,
-                    )
-                    index_thread.start()
-                else:
-                    logger.info(f"Vector store has {info['vectors_count']} vectors — skipping auto-index")
-            except Exception as e:
-                logger.warning(f"Auto-index check failed (non-fatal): {e}")
+            if RAG_STARTUP_WARMUP_ENABLED:
+                warmup_thread = threading.Thread(target=_warm_rag_background, daemon=True)
+                warmup_thread.start()
+            else:
+                logger.info("RAG startup warmup disabled; checking vector bootstrap only")
+                bootstrap_thread = threading.Thread(
+                    target=_bootstrap_rag_index_background,
+                    daemon=True,
+                )
+                bootstrap_thread.start()
 
         except Exception as e:
             logger.error(f"Background init failed: {e}")
@@ -227,6 +285,38 @@ def _auto_index(indexer) -> None:
         logger.info(f"Auto-index completed: {result}")
     except Exception as e:
         logger.error(f"Auto-index failed: {e}")
+
+
+def _warm_rag_background() -> None:
+    """Optional embedding warmup for environments that can afford cold-start CPU."""
+    try:
+        from rag.embedder import preload_model
+        logger.info("Pre-warming embedding model...")
+        if preload_model():
+            logger.info("Embedding model ready")
+        else:
+            logger.warning("Embedding model preload failed (RAG will retry lazily)")
+    except Exception as e:
+        logger.warning(f"Embedding preload error (non-fatal): {e}")
+
+    _bootstrap_rag_index_background()
+
+
+def _bootstrap_rag_index_background() -> None:
+    """Check the vector store and restore automatic indexing for empty deployments."""
+    try:
+        _, indexer, vs = get_rag_module()
+        info = vs.get_collection_info()
+        if info.get("vectors_count", 0) == 0:
+            logger.info("Vector store empty — triggering auto-index...")
+            index_thread = threading.Thread(
+                target=_auto_index, args=(indexer,), daemon=True,
+            )
+            index_thread.start()
+        else:
+            logger.info(f"Vector store has {info['vectors_count']} vectors — skipping auto-index")
+    except Exception as e:
+        logger.warning(f"Auto-index check failed (non-fatal): {e}")
 
 
 app = FastAPI(
@@ -287,32 +377,19 @@ health_router = APIRouter(prefix="/v1/health", tags=["health"])
 
 @health_router.get("", response_model=HealthResponse)
 async def health():
-    """Return a full health report including system phase and aggregate stats.
+    """Return a lightweight service health report.
 
-    Returns:
-        HealthResponse: Contains ``status``, current ``phase``,
-        ``totalInteractions``, ``totalUsers``, and ``totalItems``.
+    This endpoint is called through the gateway's public recommendation health
+    proxy, so it must not perform MongoDB aggregate scans or cold-start RAG.
+    Deep dependency checks belong in ``/readiness`` or operational stats routes.
     """
-    def _build_health_response() -> dict:
-        return {
-            "status": "healthy",
-            "phase": scoring_engine.detect_phase(),
-            "totalInteractions": user_store.get_total_interactions(),
-            "totalUsers": user_store.get_total_users_with_interactions(),
-            "totalItems": popularity_store.get_total_items(),
-        }
-
-    try:
-        return await asyncio.wait_for(
-            run_in_threadpool(_build_health_response),
-            timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
-        )
-    except asyncio.TimeoutError:
-        logger.warning("Health check timed out")
-        return JSONResponse(
-            status_code=503,
-            content={"status": "degraded", "reason": "health_check_timeout"},
-        )
+    return {
+        "status": "healthy",
+        "phase": "unknown",
+        "totalInteractions": -1,
+        "totalUsers": -1,
+        "totalItems": -1,
+    }
 
 
 @health_router.get("/liveness")
@@ -340,14 +417,15 @@ async def readiness():
         response with the error detail.
     """
     try:
-        await asyncio.wait_for(
-            run_in_threadpool(user_store._db.command, "ping"),
+        result = await _run_blocking_with_timeout(
+            "readiness check",
+            user_store._db.command,
+            "ping",
             timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
         )
+        if isinstance(result, JSONResponse):
+            return result
         return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
-    except asyncio.TimeoutError:
-        logger.error("Readiness check timed out")
-        return JSONResponse(status_code=503, content={"status": "unavailable", "error": "readiness_timeout"})
     except Exception as e:
         logger.error(f"Readiness check failed: {e}")
         return JSONResponse(status_code=503, content={"status": "unavailable", "error": str(e)})
@@ -385,22 +463,40 @@ async def recommend(
     # Check Redis cache
     cache_key = f"rec:{userId}:{contentType}:{limit}"
     try:
-        cached = await run_in_threadpool(redis_client.get, cache_key)
+        cached = await _run_blocking_with_timeout(
+            "recommendation cache read",
+            redis_client.get,
+            cache_key,
+            timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
+        )
+        if isinstance(cached, JSONResponse):
+            cached = None
         if cached:
             return json.loads(cached)
     except Exception as e:
         logger.warning(f"Redis get failed: {e}")
 
     # Generate recommendations
-    result = await run_in_threadpool(scoring_engine.recommend, userId, limit, contentType)
+    result = await _run_blocking_with_timeout(
+        "recommendation scoring",
+        scoring_engine.recommend,
+        userId,
+        limit,
+        contentType,
+        timeout=RECOMMENDATION_TIMEOUT_SECONDS,
+    )
+    if isinstance(result, JSONResponse):
+        return result
 
     # Cache result
     try:
-        await run_in_threadpool(
+        await _run_blocking_with_timeout(
+            "recommendation cache write",
             redis_client.setex,
             cache_key,
             RECOMMENDATION_CACHE_TTL,
             json.dumps(result),
+            timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
         )
     except Exception as e:
         logger.warning(f"Redis set failed: {e}")
@@ -427,7 +523,15 @@ async def trending(
     Returns:
         TrendingResponse: Trending items with interaction totals and ratings.
     """
-    items = await run_in_threadpool(popularity_store.get_popular_items, majorId, limit)
+    items = await _run_blocking_with_timeout(
+        "trending lookup",
+        popularity_store.get_popular_items,
+        majorId,
+        limit,
+        timeout=RECOMMENDATION_TIMEOUT_SECONDS,
+    )
+    if isinstance(items, JSONResponse):
+        return items
 
     return {
         "majorId": majorId,
@@ -577,7 +681,13 @@ async def reload_model():
     Returns:
         dict: ``{"status": "loaded" | "no_model", "version": ...}``.
     """
-    loaded = await run_in_threadpool(scoring_engine.reload_model)
+    loaded = await _run_blocking_with_timeout(
+        "model reload",
+        scoring_engine.reload_model,
+        timeout=RECOMMENDATION_TIMEOUT_SECONDS,
+    )
+    if isinstance(loaded, JSONResponse):
+        return loaded
     return {
         "status": "loaded" if loaded else "no_model",
         "version": scoring_engine.model_manager.active_version,
@@ -592,7 +702,13 @@ async def model_versions():
         dict: ``{"activeVersion": ..., "versions": [...]}`` where each
         version entry includes accuracy, loss, and timestamp.
     """
-    versions = await run_in_threadpool(scoring_engine.model_manager.list_versions)
+    versions = await _run_blocking_with_timeout(
+        "model versions lookup",
+        scoring_engine.model_manager.list_versions,
+        timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
+    )
+    if isinstance(versions, JSONResponse):
+        return versions
     return {
         "activeVersion": scoring_engine.model_manager.active_version,
         "versions": versions,
@@ -609,7 +725,11 @@ async def model_info():
     Returns:
         dict: Model metadata and runtime state.
     """
-    return await run_in_threadpool(scoring_engine.model_manager.get_model_info)
+    return await _run_blocking_with_timeout(
+        "model info lookup",
+        scoring_engine.model_manager.get_model_info,
+        timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
+    )
 
 
 @rec_router.post("/model/rebuild-index")
@@ -626,7 +746,13 @@ async def rebuild_index():
         items = catalog_store.get_all_items()
         return scoring_engine.model_manager.rebuild_index(items)
 
-    count = await run_in_threadpool(_rebuild)
+    count = await _run_blocking_with_timeout(
+        "model index rebuild",
+        _rebuild,
+        timeout=RECOMMENDATION_TIMEOUT_SECONDS,
+    )
+    if isinstance(count, JSONResponse):
+        return count
     return {"status": "rebuilt", "items_indexed": count}
 
 
@@ -652,7 +778,14 @@ async def rag_ask(body: RAGRequest):
         RAGResponse with ``answer``, ``sources``, and timing metrics.
     """
     try:
-        pipeline, _, _ = await run_in_threadpool(get_rag_module)
+        pipeline = await _run_blocking_with_timeout(
+            "RAG module init",
+            get_rag_module,
+            timeout=RAG_STATS_TIMEOUT_SECONDS,
+        )
+        if isinstance(pipeline, JSONResponse):
+            return pipeline
+        pipeline, _, _ = pipeline
     except Exception as e:
         logger.warning(f"RAG module init failed: {e}")
         return JSONResponse(status_code=503, content={"message": "RAG module not available", "error": str(e)})
@@ -664,13 +797,17 @@ async def rag_ask(body: RAGRequest):
         filters["courseId"] = body.courseId
 
     try:
-        result = await run_in_threadpool(
+        result = await _run_blocking_with_timeout(
+            "RAG query",
             pipeline.ask,
             query=body.query,
             user_id=body.userId,
             filters=filters or None,
             top_k=body.topK,
+            timeout=RAG_ASK_TIMEOUT_SECONDS,
         )
+        if isinstance(result, JSONResponse):
+            return result
         return result
     except Exception as e:
         logger.error(f"RAG pipeline.ask() failed: {e}", exc_info=True)
@@ -688,7 +825,14 @@ async def rag_index():
         Dict with ``items_read``, ``items_indexed``, ``chunks_indexed``.
     """
     try:
-        _, indexer, _ = await run_in_threadpool(get_rag_module)
+        rag_module = await _run_blocking_with_timeout(
+            "RAG module init",
+            get_rag_module,
+            timeout=RAG_STATS_TIMEOUT_SECONDS,
+        )
+        if isinstance(rag_module, JSONResponse):
+            return rag_module
+        _, indexer, _ = rag_module
     except Exception as e:
         logger.warning(f"RAG module init failed: {e}")
         return JSONResponse(status_code=503, content={"message": "RAG module not available", "error": str(e)})
@@ -709,19 +853,13 @@ async def rag_index():
 
 @rag_router.get("/health")
 async def rag_health():
-    """RAG module health check — includes embedding model readiness."""
-    try:
-        await run_in_threadpool(get_rag_module)
-    except Exception as e:
-        return JSONResponse(status_code=503, content={"status": "unavailable", "reason": str(e)})
-
-    # Check embedding layer (the actual bottleneck)
-    from rag.embedder import embedding_health
-    embed_ok = await run_in_threadpool(embedding_health)
+    """RAG module health check that never triggers cold-start initialisation."""
+    from rag.embedder import is_model_loaded
 
     return {
-        "status": "ok" if embed_ok else "degraded",
-        "embedding_model": "loaded" if embed_ok else "not_loaded",
+        "status": "ok" if _rag_module_ready() else "degraded",
+        "rag_module": "ready" if _rag_module_ready() else "not_initialized",
+        "embedding_model": "loaded" if is_model_loaded() else "not_loaded",
     }
 
 
@@ -733,7 +871,13 @@ async def rag_stats():
             _, _, vector_store = get_rag_module()
             return vector_store.get_collection_info()
 
-        info = await run_in_threadpool(_get_stats)
+        info = await _run_blocking_with_timeout(
+            "RAG stats lookup",
+            _get_stats,
+            timeout=RAG_STATS_TIMEOUT_SECONDS,
+        )
+        if isinstance(info, JSONResponse):
+            return info
         return {"status": "ok", "collection": info}
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "error": str(e)})

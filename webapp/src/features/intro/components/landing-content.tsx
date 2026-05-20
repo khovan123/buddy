@@ -28,7 +28,6 @@ import MarqueeAlongSvgPath from "@/components/fancy/blocks/marquee-along-svg-pat
 import BreathingText from "@/components/fancy/text/breathing-text"
 import Letter3DSwap from "@/components/fancy/text/letter-3d-swap"
 import TextHighlighter from "@/components/fancy/text/text-highlighter"
-import Typewriter from "@/components/fancy/text/typewriter"
 import VariableFontHoverByRandomLetter from "@/components/fancy/text/variable-font-hover-by-random-letter"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -51,6 +50,9 @@ export function LandingContent({
 }: LandingContentProps) {
   const { features, stats, useCases, testimonials } =
     hydrateLandingData(rawData)
+  const heroDescription =
+    seoDescription ||
+    "A student-led marketplace connecting learners with curated resources, tutorials, and expert-created collections."
   const statStyles = [
     {
       panel: "border-emerald-200/70 bg-emerald-50/80 text-emerald-950 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-50",
@@ -140,6 +142,7 @@ export function LandingContent({
               <MotionHero delay={0.15}>
                 <h1 className="text-4xl leading-[1.1] font-bold tracking-tight md:text-6xl lg:text-7xl">
                   <Letter3DSwap
+                    as="span"
                     staggerDuration={0.05}
                     staggerFrom="center"
                     rotateDirection="bottom"
@@ -150,7 +153,7 @@ export function LandingContent({
                   </Letter3DSwap>{" "}
                   <TextHighlighter
                     triggerType="inView"
-                    highlightColor="hsl(var(--primary) / 0.2)"
+                    highlightColor="color-mix(in oklch, var(--primary) 20%, transparent)"
                   >
                     <BreathingText
                       fromFontVariationSettings="'wght' 400"
@@ -165,17 +168,9 @@ export function LandingContent({
               </MotionHero>
 
               <MotionHero delay={0.3}>
-                <Typewriter
-                  as="p"
-                  text={
-                    seoDescription ||
-                    "A student-led marketplace connecting learners with curated resources, tutorials, and expert-created collections."
-                  }
-                  speed={30}
-                  className="block min-h-[60px] max-w-2xl text-lg text-muted-foreground md:text-xl"
-                  showCursor={true}
-                  loop={false}
-                />
+                <p className="max-w-2xl text-lg text-muted-foreground md:text-xl">
+                  {heroDescription}
+                </p>
               </MotionHero>
 
               {/* CTA */}
