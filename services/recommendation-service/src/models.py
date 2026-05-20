@@ -35,6 +35,7 @@ class RecommendationItem(BaseModel):
     itemType: str
     score: float
     reasons: list[str] = []
+    display: Optional[dict] = None
 
 class RecommendResponse(BaseModel):
     """Response envelope for the ``/recommend`` endpoint.
@@ -80,6 +81,7 @@ class TrendingItem(BaseModel):
     itemType: str
     totalInteractions: int
     avgRating: float
+    display: Optional[dict] = None
 
 class TrendingResponse(BaseModel):
     """Response envelope for the ``/trending`` endpoint."""

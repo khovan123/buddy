@@ -1,5 +1,7 @@
 import { Suspense } from "react"
 
+import Link from "next/link"
+
 import { SectionHeading } from "@/components/atoms/section-heading"
 import { CollectionCard } from "@/components/molecules/collection-card"
 import { ResourceCard } from "@/components/molecules/resource-card"
@@ -8,6 +10,7 @@ import { getTrending } from "@/features/content/services/content.service"
 import type {
   CollectionQueryItem,
   ResourceQueryItem,
+  TrendingItem,
   TutorialQueryItem,
 } from "@/features/content/types"
 
@@ -29,7 +32,9 @@ async function TrendingList({ majorId, days, limit = 6 }: Props) {
     return null
   }
 
-  const validItems = data.items.filter((item) => item.content != null)
+  const validItems = data.items.filter(
+    (item) => item.content != null || item.display?.title
+  )
 
   if (validItems.length === 0) {
     return null
@@ -45,7 +50,20 @@ async function TrendingList({ majorId, days, limit = 6 }: Props) {
       <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {validItems.map((rec) => {
           const itemType = rec.itemType
-          const content = rec.content!
+          const content = rec.content
+
+          if (!content) {
+            return (
+              <TrendingFallbackCard
+                key={rec.itemId}
+                title={rec.display?.title || "Trending content"}
+                itemType={itemType}
+                slug={rec.display?.slug}
+                totalInteractions={rec.totalInteractions}
+                avgRating={rec.avgRating}
+              />
+            )
+          }
 
           if (itemType === "RESOURCE") {
             return (
@@ -92,6 +110,57 @@ async function TrendingList({ majorId, days, limit = 6 }: Props) {
       </div>
     </section>
   )
+}
+
+function TrendingFallbackCard({
+  title,
+  itemType,
+  slug,
+  totalInteractions,
+  avgRating,
+}: {
+  title: string
+  itemType: TrendingItem["itemType"]
+  slug?: string
+  totalInteractions: number
+  avgRating: number
+}) {
+  const href = slug ? getContentHref(itemType, slug) : undefined
+  const body = (
+    <article className="flex h-full min-h-40 flex-col justify-between rounded-lg border border-border/80 bg-card p-4 shadow-sm transition hover:border-primary/40">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <span>{formatItemType(itemType)}</span>
+          <span>{totalInteractions} interactions</span>
+        </div>
+        <h3 className="line-clamp-2 text-base font-semibold text-foreground">
+          {title}
+        </h3>
+      </div>
+      <p className="mt-4 text-sm text-muted-foreground">
+        {avgRating > 0 ? `${avgRating.toFixed(1)} average rating` : "Trending this week"}
+      </p>
+    </article>
+  )
+
+  return href ? <Link href={href}>{body}</Link> : body
+}
+
+function getContentHref(itemType: TrendingItem["itemType"], slug: string) {
+  if (itemType === "TUTORIAL") {
+    return `/home/tutorials/${slug}`
+  }
+  if (itemType === "TUTORIAL_COLLECTION") {
+    return `/home/tutorials/collections/${slug}`
+  }
+  if (itemType === "RESOURCE_COLLECTION" || itemType === "COLLECTION") {
+    return `/home/resources/collections/${slug}`
+  }
+  return `/home/resources/${slug}`
+}
+
+function formatItemType(itemType: TrendingItem["itemType"]) {
+  return itemType.toLowerCase().replaceAll("_", " ")
 }
 
 export function TrendingSection(props: Props) {

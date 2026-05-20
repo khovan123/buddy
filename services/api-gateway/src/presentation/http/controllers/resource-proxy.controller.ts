@@ -144,6 +144,22 @@ export class ResourceProxyController {
   }
 
   /**
+   * Fetch multiple resources by ID for recommendation hydration.
+   */
+  @Get('by-ids')
+  @Public()
+  getResourcesByIds(@Req() req: FastifyRequest, @Query() query: any) {
+    return this.proxy.forward(req, {
+      service: 'content',
+      path: '/v1/resources/by-ids',
+      method: 'GET',
+      query,
+      timeoutMs: 2_500,
+      skipRetry: true,
+    });
+  }
+
+  /**
    * Executes the get uncollected resources operation.
    *
    * @param req - The req parameter

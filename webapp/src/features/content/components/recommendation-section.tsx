@@ -21,7 +21,9 @@ async function RecommendationList({ userId, contentType, hasLoadMore = false, pa
     return null
   }
 
-  const validItems = data.recommendations.filter((item) => item.content != null)
+  const validItems = data.recommendations.filter(
+    (item) => item.content != null || item.display?.title
+  )
 
   if (validItems.length === 0) {
     return null

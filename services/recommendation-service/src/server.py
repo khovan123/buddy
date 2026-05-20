@@ -75,6 +75,28 @@ def _rag_module_ready() -> bool:
     return bool(rag_pipeline and rag_indexer and rag_vector_store)
 
 
+def _rag_embedding_ready() -> bool:
+    """Return whether the embedding model is loaded without triggering a load."""
+    try:
+        from rag.embedder import is_model_loaded
+
+        return is_model_loaded()
+    except Exception as e:
+        logger.warning(f"Embedding readiness check failed: {e}")
+        return False
+
+
+def _embedding_not_ready_response() -> JSONResponse:
+    return JSONResponse(
+        status_code=503,
+        content={
+            "message": "RAG embedding model not ready",
+            "status": "degraded",
+            "reason": "embedding_model_not_loaded",
+        },
+    )
+
+
 async def _run_blocking_with_timeout(
     name: str,
     func,
@@ -455,6 +477,43 @@ app.include_router(health_router)
 rec_router = APIRouter(prefix="/v1/recommendation", tags=["recommendation"])
 
 
+def _with_catalog_display(items: list[dict]) -> list[dict]:
+    """Attach lightweight display fields from the local recommendation catalog."""
+    catalog_by_id = catalog_store.get_items_by_ids([item.get("itemId", "") for item in items])
+    enriched = []
+    for item in items:
+        catalog = catalog_by_id.get(item.get("itemId"), {})
+        enriched.append({
+            **item,
+            "display": {
+                "title": catalog.get("title", ""),
+                "slug": catalog.get("slug", ""),
+                "itemType": catalog.get("itemType", item.get("itemType", "")),
+                "majorId": catalog.get("majorId", ""),
+                "courseId": catalog.get("courseId", ""),
+            },
+        })
+    return enriched
+
+
+async def _attach_catalog_display(items: list[dict]) -> list[dict]:
+    """Best-effort display enrichment that does not block core recommendation output."""
+    if not items:
+        return items
+
+    result = await _run_blocking_with_timeout(
+        "catalog display lookup",
+        _with_catalog_display,
+        items,
+        timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
+        unavailable_status=200,
+    )
+    if isinstance(result, JSONResponse):
+        logger.warning("Catalog display lookup unavailable; returning scored items only")
+        return items
+    return result
+
+
 @rec_router.get("/recommend", response_model=RecommendResponse)
 async def recommend(
     userId: str = Query(..., description="User ID to get recommendations for"),
@@ -488,7 +547,9 @@ async def recommend(
         if isinstance(cached, JSONResponse):
             cached = None
         if cached:
-            return json.loads(cached)
+            result = json.loads(cached)
+            result["recommendations"] = await _attach_catalog_display(result.get("recommendations", []))
+            return result
     except Exception as e:
         logger.warning(f"Redis get failed: {e}")
 
@@ -503,6 +564,8 @@ async def recommend(
     )
     if isinstance(result, JSONResponse):
         return result
+
+    result["recommendations"] = await _attach_catalog_display(result.get("recommendations", []))
 
     # Cache result
     try:
@@ -549,22 +612,24 @@ async def trending(
     if isinstance(items, JSONResponse):
         return items
 
+    response_items = [
+        {
+            "itemId": item["itemId"],
+            "itemType": item.get("itemType", ""),
+            "totalInteractions": sum([
+                item.get("stats", {}).get("viewCount", 0),
+                item.get("stats", {}).get("likeCount", 0),
+                item.get("stats", {}).get("purchaseCount", 0),
+            ]),
+            "avgRating": item.get("avgRating", 0.0),
+        }
+        for item in items
+    ]
+
     return {
         "majorId": majorId,
         "period": f"{days}d",
-        "items": [
-            {
-                "itemId": item["itemId"],
-                "itemType": item.get("itemType", ""),
-                "totalInteractions": sum([
-                    item.get("stats", {}).get("viewCount", 0),
-                    item.get("stats", {}).get("likeCount", 0),
-                    item.get("stats", {}).get("purchaseCount", 0),
-                ]),
-                "avgRating": item.get("avgRating", 0.0),
-            }
-            for item in items
-        ],
+        "items": await _attach_catalog_display(response_items),
     }
 
 
@@ -793,6 +858,9 @@ async def rag_ask(body: RAGRequest):
     Returns:
         RAGResponse with ``answer``, ``sources``, and timing metrics.
     """
+    if not _rag_embedding_ready():
+        return _embedding_not_ready_response()
+
     try:
         pipeline = await _run_blocking_with_timeout(
             "RAG module init",
@@ -842,6 +910,9 @@ async def rag_retrieve(body: RAGRequest):
     This endpoint isolates embedding and Qdrant retrieval from Gemini answer
     generation, which makes production diagnosis and UI fallbacks cheaper.
     """
+    if not _rag_embedding_ready():
+        return _embedding_not_ready_response()
+
     try:
         pipeline = await _run_blocking_with_timeout(
             "RAG module init",
@@ -922,10 +993,11 @@ async def rag_index():
 async def rag_health():
     """RAG module health check that never triggers cold-start initialisation."""
     rag_ready = _rag_module_ready()
+    embedding_ready = _rag_embedding_ready()
     return {
-        "status": "ok" if rag_ready else "degraded",
+        "status": "ok" if rag_ready and embedding_ready else "degraded",
         "rag_module": "ready" if rag_ready else "not_initialized",
-        "embedding_model": "not_checked",
+        "embedding_model": "loaded" if embedding_ready else "not_loaded",
     }
 
 
