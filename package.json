@@ -14,7 +14,7 @@
     "build:libs": "turbo run build --filter=./libs/*",
     "start:dist": "turbo run start:dist",
     "dev": "turbo run dev --concurrency=20",
-    "dev:prod": "turbo run dev:prod --no-cache --concurrency=20",
+    "dev:prod": "cross-env NODE_ENV=production turbo run dev:prod --no-cache --concurrency=20",
     "test": "turbo run test -- --passWithNoTests",
     "test:unit": "turbo run test:unit -- --passWithNoTests",
     "test:integration": "turbo run test:integration -- --passWithNoTests",

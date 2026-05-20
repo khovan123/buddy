@@ -84,6 +84,11 @@ def embedding_health() -> bool:
         return False
 
 
+def is_model_loaded() -> bool:
+    """Return whether the embedding model is already loaded without loading it."""
+    return _model is not None
+
+
 def embed_texts(texts: list[str], batch_size: int = 64) -> np.ndarray:
     """Batch-embed a list of texts.
 
