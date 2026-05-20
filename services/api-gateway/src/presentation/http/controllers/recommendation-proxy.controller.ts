@@ -1,12 +1,29 @@
-import { JwtAuthGuard, Public } from '@libs/common';
+import { AppLogger, JwtAuthGuard, Public } from '@libs/common';
 import { Controller, Get, Post, Query, Req, UseGuards, Body } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import { ApiComposerService } from '../../../infrastructure/http/api-composer.service';
+import {
+  ApiComposerService,
+  type CompositionRequest,
+} from '../../../infrastructure/http/api-composer.service';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
+
+const CONTENT_HYDRATION_TIMEOUT_MS = 8_000;
+const INTERNAL_CONTENT_FIELDS = new Set([
+  'primarys3key',
+  's3key',
+  'filekey',
+  'storagekey',
+  'signedurl',
+  'downloadurl',
+  'deletedat',
+  'metadata',
+]);
 
 /** Proxy controller forwarding requests to recommendation-service (Python/FastAPI on port 3009). */
 @Controller({ path: 'recommendations', version: '1' })
 export class RecommendationProxyController {
+  private readonly logger = new AppLogger(RecommendationProxyController.name);
+
   constructor(
     private readonly proxy: HttpProxyService,
     private readonly composer: ApiComposerService,
@@ -243,6 +260,24 @@ export class RecommendationProxyController {
   }
 
   /**
+   * Retrieve RAG sources without answer generation.
+   *
+   * @param req - The req parameter
+   */
+  @Post('rag/retrieve')
+  @UseGuards(JwtAuthGuard)
+  ragRetrieve(@Body() body: unknown, @Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'recommendation',
+      resilienceKey: 'recommendation-rag',
+      path: '/v1/rag/retrieve',
+      method: 'POST',
+      body,
+      timeoutMs: 100_000,
+    });
+  }
+
+  /**
    * Trigger a full re-index of content into the RAG vector store.
    *
    * @param req - The req parameter
@@ -270,7 +305,7 @@ export class RecommendationProxyController {
   ragHealth(@Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
       service: 'recommendation',
-      resilienceKey: 'recommendation-rag',
+      resilienceKey: 'recommendation-rag-health',
       path: '/v1/rag/health',
       method: 'GET',
       timeoutMs: 5_000,
@@ -317,20 +352,24 @@ export class RecommendationProxyController {
     const itemsByType = this.groupItemsByType(items);
 
     // Build batch composition requests — one per item type group using GET with query params
-    const compositionRequests = Array.from(itemsByType.entries()).map(([type, typeItems]) => ({
-      key: `batch_${type}`,
-      options: {
-        service: 'content' as const,
-        path: this.getBatchContentPath(
-          type,
-          typeItems.map((item) => item.itemId),
-        ),
-        method: 'GET' as const,
-      },
-      optional: true, // If one batch fails, don't break the whole response
-    }));
+    const compositionRequests: CompositionRequest[] = Array.from(itemsByType.entries()).map(
+      ([type, typeItems]) => ({
+        key: `batch_${type}`,
+        options: {
+          service: 'content' as const,
+          path: this.getBatchContentPath(
+            type,
+            typeItems.map((item) => item.itemId),
+          ),
+          method: 'GET' as const,
+          timeoutMs: CONTENT_HYDRATION_TIMEOUT_MS,
+          skipRetry: true,
+        },
+        optional: true, // If one batch fails, don't break the whole response
+      }),
+    );
 
-    const composed = await this.composer.compose(req, compositionRequests);
+    const composed = await this.resolveHydration(req, compositionRequests);
 
     // Reconstruct the original item list with hydrated content
     return items.map((item) => {
@@ -351,9 +390,58 @@ export class RecommendationProxyController {
 
       return {
         ...item,
-        content: content ?? null,
+        content: content ? this.sanitizeContent(content) : null,
       };
     });
+  }
+
+  private async resolveHydration(
+    req: FastifyRequest,
+    compositionRequests: CompositionRequest[],
+  ): Promise<Record<string, unknown>> {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        this.composer.compose(req, compositionRequests),
+        new Promise<Record<string, unknown>>((resolve) => {
+          timeout = setTimeout(() => resolve({}), CONTENT_HYDRATION_TIMEOUT_MS);
+        }),
+      ]);
+    } catch (error) {
+      this.logger.warn(
+        `Recommendation content hydration failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return {};
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
+  }
+
+  private sanitizeContent(content: unknown): unknown {
+    if (Array.isArray(content)) {
+      return content.map((value) => this.sanitizeContent(value));
+    }
+
+    if (!content || typeof content !== 'object') {
+      return content;
+    }
+
+    return Object.fromEntries(
+      Object.entries(content as Record<string, unknown>)
+        .filter(([key]) => !this.isInternalContentField(key))
+        .map(([key, value]) => [key, this.sanitizeContent(value)]),
+    );
+  }
+
+  private isInternalContentField(key: string): boolean {
+    const normalized = key.toLowerCase();
+    return (
+      INTERNAL_CONTENT_FIELDS.has(normalized) ||
+      normalized.startsWith('_') ||
+      normalized.includes('s3') ||
+      normalized.includes('signed') ||
+      normalized.includes('download')
+    );
   }
 
   /**

@@ -1,6 +1,6 @@
 "use client"
 
-import type { RAGRequest, RAGResponse } from "../types"
+import type { RAGRequest, RAGResponse, RAGRetrieveResponse } from "../types"
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -43,16 +43,59 @@ export async function askRAG(
   })
 
   if (!res.ok) {
-    const errorText = await res.text().catch(() => "Unknown error")
-    let message = errorText
-    try {
-      const parsed = JSON.parse(errorText) as { message?: string }
-      message = parsed.message || errorText
-    } catch {
-      // Keep raw text for non-JSON errors.
+    const error = await toRAGServiceError(res)
+    if (error.isUnavailable) {
+      const fallback = await retrieveRAG(request, token).catch(() => null)
+      if (fallback) {
+        return {
+          answer:
+            "I found relevant Unibuddy content, but the answer generator is temporarily unavailable. Please review the sources below or try again.",
+          sources: fallback.sources,
+          model: "",
+          tokensUsed: 0,
+          retrievalTimeMs: fallback.retrievalTimeMs,
+          generationTimeMs: 0,
+        }
+      }
     }
-    throw new RAGServiceError(res.status, message)
+    throw error
   }
 
   return res.json()
+}
+
+async function retrieveRAG(
+  request: RAGRequest,
+  token?: string
+): Promise<RAGRetrieveResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  }
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`
+  }
+
+  const res = await fetch(`${API_BASE}/v1/recommendations/rag/retrieve`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(request),
+  })
+
+  if (!res.ok) {
+    throw await toRAGServiceError(res)
+  }
+
+  return res.json()
+}
+
+async function toRAGServiceError(res: Response): Promise<RAGServiceError> {
+  const errorText = await res.text().catch(() => "Unknown error")
+  let message = errorText
+  try {
+    const parsed = JSON.parse(errorText) as { message?: string }
+    message = parsed.message || errorText
+  } catch {
+    // Keep raw text for non-JSON errors.
+  }
+  return new RAGServiceError(res.status, message)
 }

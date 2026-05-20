@@ -39,6 +39,7 @@ const DEFAULT_BULKHEAD = { maxConcurrent: 20, maxQueue: 50 };
 const BULKHEAD_OVERRIDES: Record<string, { maxConcurrent: number; maxQueue: number }> = {
   upload: { maxConcurrent: 10, maxQueue: 30 },
   'recommendation-rag': { maxConcurrent: 4, maxQueue: 8 },
+  'recommendation-rag-health': { maxConcurrent: 10, maxQueue: 20 },
 };
 
 /** Service handling business logic for  http proxy. */
