@@ -17,8 +17,7 @@ from rag.retriever import RetrievedChunk
 logger = logging.getLogger(__name__)
 
 _configured = False
-_model = None
-_model_lock = threading.Lock()
+_config_lock = threading.Lock()
 
 SYSTEM_PROMPT = """\
 You are a helpful university study assistant for Unibuddy — a platform where students share resources, tutorials, and study materials.
@@ -56,29 +55,29 @@ def _ensure_configured() -> None:
     """Configure the Gemini SDK on first use."""
     global _configured
     if not _configured:
-        if not GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY is not set. Cannot use LLM generation.")
-        genai.configure(api_key=GEMINI_API_KEY)
-        _configured = True
-        logger.info(f"Gemini API configured, model={LLM_MODEL}")
+        with _config_lock:
+            if _configured:
+                return
+            if not GEMINI_API_KEY:
+                raise ValueError("GEMINI_API_KEY is not set. Cannot use LLM generation.")
+            genai.configure(api_key=GEMINI_API_KEY)
+            _configured = True
+            logger.info(f"Gemini API configured, model={LLM_MODEL}")
 
 
 def _get_model():
-    """Return a singleton Gemini model instance."""
-    global _model
-    if _model is not None:
-        return _model
+    """Create a per-request Gemini model instance.
 
-    with _model_lock:
-        if _model is not None:
-            return _model
-
-        _ensure_configured()
-        _model = genai.GenerativeModel(
-            model_name=LLM_MODEL,
-            system_instruction=SYSTEM_PROMPT,
-        )
-        return _model
+    The deprecated google-generativeai client has shown concurrency
+    instability when a GenerativeModel object is shared across threads.
+    Configuration is still process-wide, but model instances are cheap enough
+    to create per generation request and avoid cross-request mutable state.
+    """
+    _ensure_configured()
+    return genai.GenerativeModel(
+        model_name=LLM_MODEL,
+        system_instruction=SYSTEM_PROMPT,
+    )
 
 
 def _format_context(chunks: list[RetrievedChunk]) -> str:

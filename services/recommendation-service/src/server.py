@@ -835,6 +835,54 @@ async def rag_ask(body: RAGRequest):
         )
 
 
+@rag_router.post("/retrieve")
+async def rag_retrieve(body: RAGRequest):
+    """Retrieve RAG sources without LLM generation.
+
+    This endpoint isolates embedding and Qdrant retrieval from Gemini answer
+    generation, which makes production diagnosis and UI fallbacks cheaper.
+    """
+    try:
+        pipeline = await _run_blocking_with_timeout(
+            "RAG module init",
+            get_rag_module,
+            timeout=RAG_STATS_TIMEOUT_SECONDS,
+            pool="rag",
+        )
+        if isinstance(pipeline, JSONResponse):
+            return pipeline
+        pipeline, _, _ = pipeline
+    except Exception as e:
+        logger.warning(f"RAG module init failed: {e}")
+        return JSONResponse(status_code=503, content={"message": "RAG module not available", "error": str(e)})
+
+    filters = {}
+    if body.majorId:
+        filters["majorId"] = body.majorId
+    if body.courseId:
+        filters["courseId"] = body.courseId
+
+    try:
+        result = await _run_blocking_with_timeout(
+            "RAG retrieve",
+            pipeline.retrieve_only,
+            query=body.query,
+            filters=filters or None,
+            top_k=body.topK,
+            timeout=RAG_ASK_TIMEOUT_SECONDS,
+            pool="rag",
+        )
+        if isinstance(result, JSONResponse):
+            return result
+        return result
+    except Exception as e:
+        logger.error(f"RAG pipeline.retrieve_only() failed: {e}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"message": "RAG retrieve failed", "error": str(e)},
+        )
+
+
 @rag_router.post("/index")
 async def rag_index():
     """Trigger a full re-index of all AVAILABLE content into the vector store.

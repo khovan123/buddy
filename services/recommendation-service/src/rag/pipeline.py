@@ -84,6 +84,14 @@ class RAGPipeline:
         """
         k = top_k or RAG_TOP_K
 
+        logger.info(
+            "RAG ask started: query_len=%s top_k=%s has_user=%s filters=%s",
+            len(query),
+            k,
+            bool(user_id),
+            bool(filters),
+        )
+
         # ── Chat History ─────────────────────────────────────────────────
         history = self._get_chat_history(user_id) if user_id else None
 
@@ -99,43 +107,40 @@ class RAGPipeline:
 
         # ── Retrieve ─────────────────────────────────────────────────────
         t0 = time.time()
+        logger.info("RAG retrieval started: top_k=%s filters=%s", k, filters or {})
         chunks = self._retriever.retrieve(query, top_k=k, filters=filters)
         retrieval_ms = (time.time() - t0) * 1000
+        logger.info("RAG retrieval completed: chunks=%s elapsed_ms=%.0f", len(chunks), retrieval_ms)
 
         if not chunks:
             return self._empty_response(retrieval_ms)
 
-        # ── Deduplicate by item_id (keep highest-scoring chunk per item) ─
-        seen_items: dict[str, RetrievedChunk] = {}
-        for chunk in chunks:
-            if chunk.item_id not in seen_items or chunk.score > seen_items[chunk.item_id].score:
-                seen_items[chunk.item_id] = chunk
-        # But pass all chunks to LLM for richer context
-        unique_chunks_for_sources = list(seen_items.values())
-
-        # ── Build response ───────────────────────────────────────────────
-        sources = [
-            {
-                "slug": c.slug,
-                "itemType": c.item_type,
-                "title": c.title,
-                "score": round(c.score, 4),
-                "chunkText": c.text[:200],  # Truncate for response size
-            }
-            for c in unique_chunks_for_sources
-        ]
+        sources = self._sources_from_chunks(chunks)
 
         # ── Generate ─────────────────────────────────────────────────────
         t1 = time.time()
+        generation_succeeded = False
         try:
+            logger.info("RAG generation started: chunks=%s history_turns=%s", len(chunks), len(history or []))
             gen_result: RAGGenerationResult = generate(query, chunks, history=history)
             generation_ms = (time.time() - t1) * 1000
             answer = gen_result.answer
             model = gen_result.model
             tokens_used = gen_result.tokens_used
+            generation_succeeded = True
+            logger.info(
+                "RAG generation completed: elapsed_ms=%.0f model=%s tokens=%s",
+                generation_ms,
+                model,
+                tokens_used,
+            )
         except Exception as e:
             generation_ms = (time.time() - t1) * 1000
-            logger.warning(f"RAG generation failed, returning retrieved sources only: {e}")
+            logger.warning(
+                "RAG generation failed after %.0fms, returning retrieved sources only: %s",
+                generation_ms,
+                e,
+            )
             answer = (
                 "I found relevant Unibuddy content, but the answer generator is "
                 "temporarily unavailable. Please review the sources below or try again."
@@ -153,16 +158,68 @@ class RAGPipeline:
         }
 
         # ── Cache & History ──────────────────────────────────────────────
-        if user_id:
-            self._save_chat_history(user_id, query, gen_result.answer)
-        else:
+        if user_id and generation_succeeded:
+            self._save_chat_history(user_id, query, answer)
+        elif user_id:
+            logger.info("Skipping RAG chat history save for degraded generation response")
+        elif generation_succeeded:
             self._set_cached(cache_key, result)
+        else:
+            logger.info("Skipping RAG cache write for degraded generation response")
 
         logger.info(
             f"RAG pipeline completed: retrieval={retrieval_ms:.0f}ms, "
             f"generation={generation_ms:.0f}ms, sources={len(sources)}"
         )
         return result
+
+    def retrieve_only(
+        self,
+        query: str,
+        filters: dict | None = None,
+        top_k: int | None = None,
+    ) -> dict:
+        """Retrieve matching chunks without calling the answer generator."""
+        k = top_k or RAG_TOP_K
+        logger.info(
+            "RAG retrieve-only started: query_len=%s top_k=%s filters=%s",
+            len(query),
+            k,
+            filters or {},
+        )
+        t0 = time.time()
+        chunks = self._retriever.retrieve(query, top_k=k, filters=filters)
+        retrieval_ms = (time.time() - t0) * 1000
+        sources = self._sources_from_chunks(chunks)
+        logger.info(
+            "RAG retrieve-only completed: chunks=%s sources=%s elapsed_ms=%.0f",
+            len(chunks),
+            len(sources),
+            retrieval_ms,
+        )
+        return {
+            "sources": sources,
+            "retrievalTimeMs": round(retrieval_ms, 2),
+            "chunksRetrieved": len(chunks),
+        }
+
+    def _sources_from_chunks(self, chunks: list[RetrievedChunk]) -> list[dict]:
+        """Deduplicate retrieved chunks by item and format response sources."""
+        seen_items: dict[str, RetrievedChunk] = {}
+        for chunk in chunks:
+            if chunk.item_id not in seen_items or chunk.score > seen_items[chunk.item_id].score:
+                seen_items[chunk.item_id] = chunk
+
+        return [
+            {
+                "slug": c.slug,
+                "itemType": c.item_type,
+                "title": c.title,
+                "score": round(c.score, 4),
+                "chunkText": c.text[:200],
+            }
+            for c in seen_items.values()
+        ]
 
     def _empty_response(self, retrieval_ms: float) -> dict:
         """Return a response when no relevant chunks are found."""

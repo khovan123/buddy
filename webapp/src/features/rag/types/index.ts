@@ -17,6 +17,12 @@ export interface RAGResponse {
   generationTimeMs: number
 }
 
+export interface RAGRetrieveResponse {
+  sources: RAGSource[]
+  retrievalTimeMs: number
+  chunksRetrieved: number
+}
+
 export interface RAGRequest {
   query: string
   userId?: string
