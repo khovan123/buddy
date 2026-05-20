@@ -10,6 +10,7 @@ import logging
 import threading
 import asyncio
 import os
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
@@ -20,7 +21,6 @@ from fastapi import APIRouter, FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.concurrency import run_in_threadpool
 
 from config import HOST, PORT, RECOMMENDATION_CACHE_TTL, REDIS_URL, ALLOWED_ORIGINS
 from models import RecommendResponse, TrendingResponse, HealthResponse, RAGRequest, RAGResponse
@@ -42,6 +42,12 @@ RAG_ASK_TIMEOUT_SECONDS = 60
 RAG_STARTUP_WARMUP_ENABLED = (
     os.getenv("RAG_STARTUP_WARMUP_ENABLED", "false").lower() == "true"
 )
+BLOCKING_WORKER_LIMIT = int(os.getenv("RECOMMENDATION_BLOCKING_WORKERS", "12"))
+blocking_executor = ThreadPoolExecutor(
+    max_workers=BLOCKING_WORKER_LIMIT,
+    thread_name_prefix="recommendation-blocking",
+)
+blocking_slots = threading.BoundedSemaphore(BLOCKING_WORKER_LIMIT)
 
 # ─── Global singletons (all read from recommendation_db only) ──────────────────
 
@@ -71,18 +77,51 @@ async def _run_blocking_with_timeout(
     unavailable_status: int = 503,
     **kwargs,
 ):
-    """Run a blocking callable off the event loop and fail fast on slow dependencies."""
-    try:
-        return await asyncio.wait_for(
-            run_in_threadpool(func, *args, **kwargs),
-            timeout=timeout,
+    """Run blocking work in a bounded pool and fail fast on slow dependencies.
+
+    ``asyncio.wait_for`` cannot stop synchronous Mongo/Redis/RAG/ML work once a
+    worker thread has started it. The semaphore is intentionally released by the
+    worker after the callable really finishes, so timed-out jobs keep consuming
+    capacity and repeated slow requests cannot exhaust Starlette/AnyIO's shared
+    threadpool or queue unbounded work.
+    """
+    if not blocking_slots.acquire(blocking=False):
+        logger.warning("%s rejected because blocking worker pool is full", name)
+        return JSONResponse(
+            status_code=unavailable_status,
+            content={"message": f"{name} busy", "status": "unavailable"},
         )
+
+    def _run():
+        try:
+            return func(*args, **kwargs)
+        finally:
+            blocking_slots.release()
+
+    loop = asyncio.get_running_loop()
+    try:
+        future = loop.run_in_executor(blocking_executor, _run)
+    except Exception:
+        blocking_slots.release()
+        raise
+
+    try:
+        return await asyncio.wait_for(asyncio.shield(future), timeout=timeout)
     except asyncio.TimeoutError:
+        future.add_done_callback(lambda done: _consume_late_blocking_result(name, done))
         logger.warning("%s timed out after %ss", name, timeout)
         return JSONResponse(
             status_code=unavailable_status,
             content={"message": f"{name} timed out", "status": "unavailable"},
         )
+
+
+def _consume_late_blocking_result(name: str, future) -> None:
+    """Consume a late result so post-timeout exceptions are logged, not leaked."""
+    try:
+        future.result()
+    except Exception as e:
+        logger.warning("%s failed after request timed out: %s", name, e)
 
 
 def get_rag_module():
@@ -187,7 +226,12 @@ async def lifespan(app: FastAPI):
                 warmup_thread = threading.Thread(target=_warm_rag_background, daemon=True)
                 warmup_thread.start()
             else:
-                logger.info("RAG startup warmup disabled; RAG will initialise lazily")
+                logger.info("RAG startup warmup disabled; checking vector bootstrap only")
+                bootstrap_thread = threading.Thread(
+                    target=_bootstrap_rag_index_background,
+                    daemon=True,
+                )
+                bootstrap_thread.start()
 
         except Exception as e:
             logger.error(f"Background init failed: {e}")
@@ -244,7 +288,7 @@ def _auto_index(indexer) -> None:
 
 
 def _warm_rag_background() -> None:
-    """Optional RAG warmup for environments that can afford the cold-start CPU cost."""
+    """Optional embedding warmup for environments that can afford cold-start CPU."""
     try:
         from rag.embedder import preload_model
         logger.info("Pre-warming embedding model...")
@@ -255,6 +299,11 @@ def _warm_rag_background() -> None:
     except Exception as e:
         logger.warning(f"Embedding preload error (non-fatal): {e}")
 
+    _bootstrap_rag_index_background()
+
+
+def _bootstrap_rag_index_background() -> None:
+    """Check the vector store and restore automatic indexing for empty deployments."""
     try:
         _, indexer, vs = get_rag_module()
         info = vs.get_collection_info()
@@ -368,14 +417,15 @@ async def readiness():
         response with the error detail.
     """
     try:
-        await asyncio.wait_for(
-            run_in_threadpool(user_store._db.command, "ping"),
+        result = await _run_blocking_with_timeout(
+            "readiness check",
+            user_store._db.command,
+            "ping",
             timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
         )
+        if isinstance(result, JSONResponse):
+            return result
         return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
-    except asyncio.TimeoutError:
-        logger.error("Readiness check timed out")
-        return JSONResponse(status_code=503, content={"status": "unavailable", "error": "readiness_timeout"})
     except Exception as e:
         logger.error(f"Readiness check failed: {e}")
         return JSONResponse(status_code=503, content={"status": "unavailable", "error": str(e)})
