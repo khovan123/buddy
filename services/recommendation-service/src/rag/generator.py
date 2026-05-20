@@ -6,16 +6,19 @@ Never exposes attachment metadata (download URLs, S3 keys, file sizes).
 """
 
 import logging
+import threading
 from dataclasses import dataclass
 
 import google.generativeai as genai
 
-from rag.config_rag import GEMINI_API_KEY, LLM_MODEL
+from rag.config_rag import GEMINI_API_KEY, LLM_MODEL, LLM_TIMEOUT_SECONDS
 from rag.retriever import RetrievedChunk
 
 logger = logging.getLogger(__name__)
 
 _configured = False
+_model = None
+_model_lock = threading.Lock()
 
 SYSTEM_PROMPT = """\
 You are a helpful university study assistant for Unibuddy — a platform where students share resources, tutorials, and study materials.
@@ -60,6 +63,24 @@ def _ensure_configured() -> None:
         logger.info(f"Gemini API configured, model={LLM_MODEL}")
 
 
+def _get_model():
+    """Return a singleton Gemini model instance."""
+    global _model
+    if _model is not None:
+        return _model
+
+    with _model_lock:
+        if _model is not None:
+            return _model
+
+        _ensure_configured()
+        _model = genai.GenerativeModel(
+            model_name=LLM_MODEL,
+            system_instruction=SYSTEM_PROMPT,
+        )
+        return _model
+
+
 def _format_context(chunks: list[RetrievedChunk]) -> str:
     """Format retrieved chunks into a numbered context block.
 
@@ -91,15 +112,10 @@ def generate(
     Returns:
         RAGGenerationResult with the answer, model name, and token count.
     """
-    _ensure_configured()
-
     context = _format_context(context_chunks)
     prompt = CONTEXT_TEMPLATE.format(context=context, query=query)
 
-    model = genai.GenerativeModel(
-        model_name=LLM_MODEL,
-        system_instruction=SYSTEM_PROMPT,
-    )
+    model = _get_model()
 
     contents = []
     if history:
@@ -109,7 +125,10 @@ def generate(
     
     contents.append({"role": "user", "parts": [prompt]})
 
-    response = model.generate_content(contents)
+    response = model.generate_content(
+        contents,
+        request_options={"timeout": LLM_TIMEOUT_SECONDS},
+    )
 
     # Extract token usage
     tokens_used = 0

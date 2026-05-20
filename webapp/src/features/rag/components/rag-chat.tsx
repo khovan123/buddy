@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { UserProfile } from "@/features/user/services/user-api"
 
-import { askRAG } from "../services/rag.service"
+import { RAGServiceError, askRAG } from "../services/rag.service"
 import type { RAGMessage } from "../types"
 
 import { RAGMessageBlock } from "./rag-message"
@@ -84,11 +84,14 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
         }
         setMessages((prev) => [...prev, assistantMessage])
       } catch (error) {
+        const content =
+          error instanceof RAGServiceError && error.isUnavailable
+            ? "Buddy Intelligence is warming up or temporarily unavailable. Please try again in a moment."
+            : "Sorry, I encountered an error processing your question. Please try again."
         const errorMessage: RAGMessage = {
           id: nextMessageId("error"),
           role: "assistant",
-          content:
-            "Sorry, I encountered an error processing your question. Please try again.",
+          content,
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, errorMessage])
