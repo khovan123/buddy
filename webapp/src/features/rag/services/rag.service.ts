@@ -7,6 +7,18 @@ const API_BASE =
   process.env.NEXT_API_BASE_URL ||
   "http://127.0.0.1:3000"
 
+export class RAGServiceError extends Error {
+  status: number
+  isUnavailable: boolean
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = "RAGServiceError"
+    this.status = status
+    this.isUnavailable = status === 503 || status === 504 || status === 429
+  }
+}
+
 /**
  * Ask a question to the RAG system via the API gateway.
  *
@@ -32,7 +44,14 @@ export async function askRAG(
 
   if (!res.ok) {
     const errorText = await res.text().catch(() => "Unknown error")
-    throw new Error(`RAG request failed (${res.status}): ${errorText}`)
+    let message = errorText
+    try {
+      const parsed = JSON.parse(errorText) as { message?: string }
+      message = parsed.message || errorText
+    } catch {
+      // Keep raw text for non-JSON errors.
+    }
+    throw new RAGServiceError(res.status, message)
   }
 
   return res.json()

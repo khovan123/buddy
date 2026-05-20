@@ -38,16 +38,22 @@ logger = logging.getLogger(__name__)
 HEALTH_CHECK_TIMEOUT_SECONDS = 5
 RECOMMENDATION_TIMEOUT_SECONDS = 25
 RAG_STATS_TIMEOUT_SECONDS = 8
-RAG_ASK_TIMEOUT_SECONDS = 60
+RAG_ASK_TIMEOUT_SECONDS = 90
 RAG_STARTUP_WARMUP_ENABLED = (
     os.getenv("RAG_STARTUP_WARMUP_ENABLED", "false").lower() == "true"
 )
 BLOCKING_WORKER_LIMIT = int(os.getenv("RECOMMENDATION_BLOCKING_WORKERS", "12"))
-blocking_executor = ThreadPoolExecutor(
+RAG_WORKER_LIMIT = int(os.getenv("RAG_BLOCKING_WORKERS", "4"))
+default_blocking_executor = ThreadPoolExecutor(
     max_workers=BLOCKING_WORKER_LIMIT,
     thread_name_prefix="recommendation-blocking",
 )
-blocking_slots = threading.BoundedSemaphore(BLOCKING_WORKER_LIMIT)
+rag_blocking_executor = ThreadPoolExecutor(
+    max_workers=RAG_WORKER_LIMIT,
+    thread_name_prefix="rag-blocking",
+)
+default_blocking_slots = threading.BoundedSemaphore(BLOCKING_WORKER_LIMIT)
+rag_blocking_slots = threading.BoundedSemaphore(RAG_WORKER_LIMIT)
 
 # ─── Global singletons (all read from recommendation_db only) ──────────────────
 
@@ -75,6 +81,7 @@ async def _run_blocking_with_timeout(
     *args,
     timeout: int,
     unavailable_status: int = 503,
+    pool: str = "default",
     **kwargs,
 ):
     """Run blocking work in a bounded pool and fail fast on slow dependencies.
@@ -85,8 +92,10 @@ async def _run_blocking_with_timeout(
     capacity and repeated slow requests cannot exhaust Starlette/AnyIO's shared
     threadpool or queue unbounded work.
     """
-    if not blocking_slots.acquire(blocking=False):
-        logger.warning("%s rejected because blocking worker pool is full", name)
+    executor, slots = _get_blocking_pool(pool)
+
+    if not slots.acquire(blocking=False):
+        logger.warning("%s rejected because %s blocking worker pool is full", name, pool)
         return JSONResponse(
             status_code=unavailable_status,
             content={"message": f"{name} busy", "status": "unavailable"},
@@ -96,13 +105,13 @@ async def _run_blocking_with_timeout(
         try:
             return func(*args, **kwargs)
         finally:
-            blocking_slots.release()
+            slots.release()
 
     loop = asyncio.get_running_loop()
     try:
-        future = loop.run_in_executor(blocking_executor, _run)
+        future = loop.run_in_executor(executor, _run)
     except Exception:
-        blocking_slots.release()
+        slots.release()
         raise
 
     try:
@@ -114,6 +123,13 @@ async def _run_blocking_with_timeout(
             status_code=unavailable_status,
             content={"message": f"{name} timed out", "status": "unavailable"},
         )
+
+
+def _get_blocking_pool(pool: str):
+    """Return the executor and capacity guard for a class of blocking work."""
+    if pool == "rag":
+        return rag_blocking_executor, rag_blocking_slots
+    return default_blocking_executor, default_blocking_slots
 
 
 def _consume_late_blocking_result(name: str, future) -> None:
@@ -782,6 +798,7 @@ async def rag_ask(body: RAGRequest):
             "RAG module init",
             get_rag_module,
             timeout=RAG_STATS_TIMEOUT_SECONDS,
+            pool="rag",
         )
         if isinstance(pipeline, JSONResponse):
             return pipeline
@@ -805,6 +822,7 @@ async def rag_ask(body: RAGRequest):
             filters=filters or None,
             top_k=body.topK,
             timeout=RAG_ASK_TIMEOUT_SECONDS,
+            pool="rag",
         )
         if isinstance(result, JSONResponse):
             return result
@@ -829,6 +847,7 @@ async def rag_index():
             "RAG module init",
             get_rag_module,
             timeout=RAG_STATS_TIMEOUT_SECONDS,
+            pool="rag",
         )
         if isinstance(rag_module, JSONResponse):
             return rag_module
@@ -854,12 +873,11 @@ async def rag_index():
 @rag_router.get("/health")
 async def rag_health():
     """RAG module health check that never triggers cold-start initialisation."""
-    from rag.embedder import is_model_loaded
-
+    rag_ready = _rag_module_ready()
     return {
-        "status": "ok" if _rag_module_ready() else "degraded",
-        "rag_module": "ready" if _rag_module_ready() else "not_initialized",
-        "embedding_model": "loaded" if is_model_loaded() else "not_loaded",
+        "status": "ok" if rag_ready else "degraded",
+        "rag_module": "ready" if rag_ready else "not_initialized",
+        "embedding_model": "not_checked",
     }
 
 
@@ -875,6 +893,7 @@ async def rag_stats():
             "RAG stats lookup",
             _get_stats,
             timeout=RAG_STATS_TIMEOUT_SECONDS,
+            pool="rag",
         )
         if isinstance(info, JSONResponse):
             return info

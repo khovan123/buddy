@@ -15,6 +15,8 @@ import { ServiceName, ServiceRegistryService } from '../config/service-registry.
 /** Interface representing data constraints for  proxy options. */
 export interface ProxyOptions {
   service: ServiceName;
+  /** Optional key for isolating circuit breaker/bulkhead state within a service. */
+  resilienceKey?: string;
   path: string;
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
@@ -34,10 +36,9 @@ const DEFAULT_CIRCUIT_BREAKER = {
 const DEFAULT_BULKHEAD = { maxConcurrent: 20, maxQueue: 50 };
 
 /** Per-service bulkhead overrides (upload handles large files → lower concurrency) */
-const BULKHEAD_OVERRIDES: Partial<
-  Record<ServiceName, { maxConcurrent: number; maxQueue: number }>
-> = {
+const BULKHEAD_OVERRIDES: Record<string, { maxConcurrent: number; maxQueue: number }> = {
   upload: { maxConcurrent: 10, maxQueue: 30 },
+  'recommendation-rag': { maxConcurrent: 4, maxQueue: 8 },
 };
 
 /** Service handling business logic for  http proxy. */
@@ -45,10 +46,10 @@ const BULKHEAD_OVERRIDES: Partial<
 export class HttpProxyService {
   private readonly logger = new AppLogger(HttpProxyService.name);
 
-  /** Per-service circuit breakers */
-  private readonly breakers = new Map<ServiceName, CircuitBreaker>();
-  /** Per-service bulkheads */
-  private readonly bulkheads = new Map<ServiceName, Bulkhead>();
+  /** Per-service or per-route-group circuit breakers */
+  private readonly breakers = new Map<string, CircuitBreaker>();
+  /** Per-service or per-route-group bulkheads */
+  private readonly bulkheads = new Map<string, Bulkhead>();
 
   constructor(
     private readonly registry: ServiceRegistryService,
@@ -67,8 +68,9 @@ export class HttpProxyService {
     options: ProxyOptions,
     reply?: FastifyReply,
   ): Promise<unknown> {
-    const breaker = this.getCircuitBreaker(options.service);
-    const bulkhead = this.getBulkhead(options.service);
+    const resilienceKey = options.resilienceKey ?? options.service;
+    const breaker = this.getCircuitBreaker(resilienceKey);
+    const bulkhead = this.getBulkhead(resilienceKey);
 
     // Layer 1: Bulkhead (concurrency isolation)
     return bulkhead.execute(() =>
@@ -188,34 +190,35 @@ export class HttpProxyService {
 
   // ── Lazy-initialized resilience primitives ─────────────────────────────────
 
-  private getCircuitBreaker(service: ServiceName): CircuitBreaker {
-    let breaker = this.breakers.get(service);
+  private getCircuitBreaker(key: string): CircuitBreaker {
+    let breaker = this.breakers.get(key);
     if (!breaker) {
+      const envKey = key.toUpperCase().replace(/[^A-Z0-9]/g, '_');
       breaker = new CircuitBreaker({
-        name: `cb-${service}`,
+        name: `cb-${key}`,
         failureThreshold:
-          this.config.get<number>(`CB_FAILURE_THRESHOLD_${service.toUpperCase()}`) ??
+          this.config.get<number>(`CB_FAILURE_THRESHOLD_${envKey}`) ??
           DEFAULT_CIRCUIT_BREAKER.failureThreshold,
         resetTimeoutMs:
-          this.config.get<number>(`CB_RESET_TIMEOUT_${service.toUpperCase()}`) ??
+          this.config.get<number>(`CB_RESET_TIMEOUT_${envKey}`) ??
           DEFAULT_CIRCUIT_BREAKER.resetTimeoutMs,
         halfOpenMaxAttempts: DEFAULT_CIRCUIT_BREAKER.halfOpenMaxAttempts,
       });
-      this.breakers.set(service, breaker);
+      this.breakers.set(key, breaker);
     }
     return breaker;
   }
 
-  private getBulkhead(service: ServiceName): Bulkhead {
-    let bulkhead = this.bulkheads.get(service);
+  private getBulkhead(key: string): Bulkhead {
+    let bulkhead = this.bulkheads.get(key);
     if (!bulkhead) {
-      const overrides = BULKHEAD_OVERRIDES[service];
+      const overrides = BULKHEAD_OVERRIDES[key];
       bulkhead = new Bulkhead({
-        name: `bh-${service}`,
+        name: `bh-${key}`,
         maxConcurrent: overrides?.maxConcurrent ?? DEFAULT_BULKHEAD.maxConcurrent,
         maxQueue: overrides?.maxQueue ?? DEFAULT_BULKHEAD.maxQueue,
       });
-      this.bulkheads.set(service, bulkhead);
+      this.bulkheads.set(key, bulkhead);
     }
     return bulkhead;
   }

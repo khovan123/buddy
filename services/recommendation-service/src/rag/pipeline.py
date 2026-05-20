@@ -113,11 +113,6 @@ class RAGPipeline:
         # But pass all chunks to LLM for richer context
         unique_chunks_for_sources = list(seen_items.values())
 
-        # ── Generate ─────────────────────────────────────────────────────
-        t1 = time.time()
-        gen_result: RAGGenerationResult = generate(query, chunks, history=history)
-        generation_ms = (time.time() - t1) * 1000
-
         # ── Build response ───────────────────────────────────────────────
         sources = [
             {
@@ -130,11 +125,29 @@ class RAGPipeline:
             for c in unique_chunks_for_sources
         ]
 
+        # ── Generate ─────────────────────────────────────────────────────
+        t1 = time.time()
+        try:
+            gen_result: RAGGenerationResult = generate(query, chunks, history=history)
+            generation_ms = (time.time() - t1) * 1000
+            answer = gen_result.answer
+            model = gen_result.model
+            tokens_used = gen_result.tokens_used
+        except Exception as e:
+            generation_ms = (time.time() - t1) * 1000
+            logger.warning(f"RAG generation failed, returning retrieved sources only: {e}")
+            answer = (
+                "I found relevant Unibuddy content, but the answer generator is "
+                "temporarily unavailable. Please review the sources below or try again."
+            )
+            model = ""
+            tokens_used = 0
+
         result = {
-            "answer": gen_result.answer,
+            "answer": answer,
             "sources": sources,
-            "model": gen_result.model,
-            "tokensUsed": gen_result.tokens_used,
+            "model": model,
+            "tokensUsed": tokens_used,
             "retrievalTimeMs": round(retrieval_ms, 2),
             "generationTimeMs": round(generation_ms, 2),
         }

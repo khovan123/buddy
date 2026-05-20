@@ -234,10 +234,11 @@ export class RecommendationProxyController {
   ragAsk(@Body() body: unknown, @Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
       service: 'recommendation',
+      resilienceKey: 'recommendation-rag',
       path: '/v1/rag/ask',
       method: 'POST',
       body,
-      timeoutMs: 180_000, // 3 min — cold-start loads SentenceTransformer model
+      timeoutMs: 100_000,
     });
   }
 
@@ -251,6 +252,7 @@ export class RecommendationProxyController {
   ragIndex(@Body() body: unknown, @Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
       service: 'recommendation',
+      resilienceKey: 'recommendation-rag',
       path: '/v1/rag/index',
       method: 'POST',
       body,
@@ -268,8 +270,11 @@ export class RecommendationProxyController {
   ragHealth(@Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
       service: 'recommendation',
+      resilienceKey: 'recommendation-rag',
       path: '/v1/rag/health',
       method: 'GET',
+      timeoutMs: 5_000,
+      skipRetry: true,
     });
   }
 
@@ -283,8 +288,11 @@ export class RecommendationProxyController {
   ragStats(@Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
       service: 'recommendation',
+      resilienceKey: 'recommendation-rag',
       path: '/v1/rag/stats',
       method: 'GET',
+      timeoutMs: 10_000,
+      skipRetry: true,
     });
   }
 
