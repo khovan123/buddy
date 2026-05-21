@@ -335,6 +335,15 @@ class EventConsumer:
             pass
         # Drain in-flight reindex work (workers ACK via add_callback_threadsafe)
         self._reindex_pool.shutdown(wait=True, cancel_futures=False)
+        # Flush pending add_callback_threadsafe ACKs from completed workers.
+        # After stop_consuming() the I/O loop no longer pumps events, so
+        # scheduled callbacks would be stranded.  process_data_events(0)
+        # dispatches them synchronously before we tear down the connection.
+        try:
+            if self._connection and self._connection.is_open:
+                self._connection.process_data_events(time_limit=0)
+        except Exception:
+            pass
         try:
             if self._connection and self._connection.is_open:
                 self._connection.close()
