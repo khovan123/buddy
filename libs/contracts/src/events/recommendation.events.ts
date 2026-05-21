@@ -25,6 +25,14 @@ export interface ItemSyncPayload {
   courseId?: string;
   title?: string;
   slug?: string;
+  /** Resource body text for RAG indexing. */
+  summary?: string;
+  /** Tutorial body text for RAG indexing. */
+  description?: string;
+  /** Key bullet points for RAG indexing. */
+  hightlights?: string[];
+  /** Tutorial step outlines for RAG indexing. */
+  steps?: Array<{ title: string; description?: string }>;
 }
 
 /** Payload shape for COURSE_UPSERT / COURSE_DELETED */
