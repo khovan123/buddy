@@ -6,18 +6,15 @@ Never exposes attachment metadata (download URLs, S3 keys, file sizes).
 """
 
 import logging
-import threading
 from dataclasses import dataclass
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from rag.config_rag import GEMINI_API_KEY, LLM_MODEL, LLM_TIMEOUT_SECONDS
 from rag.retriever import RetrievedChunk
 
 logger = logging.getLogger(__name__)
-
-_configured = False
-_config_lock = threading.Lock()
 
 SYSTEM_PROMPT = """\
 You are a helpful university study assistant for Unibuddy — a platform where students share resources, tutorials, and study materials.
@@ -51,32 +48,14 @@ class RAGGenerationResult:
     tokens_used: int
 
 
-def _ensure_configured() -> None:
-    """Configure the Gemini SDK on first use."""
-    global _configured
-    if not _configured:
-        with _config_lock:
-            if _configured:
-                return
-            if not GEMINI_API_KEY:
-                raise ValueError("GEMINI_API_KEY is not set. Cannot use LLM generation.")
-            genai.configure(api_key=GEMINI_API_KEY)
-            _configured = True
-            logger.info(f"Gemini API configured, model={LLM_MODEL}")
-
-
-def _get_model():
-    """Create a per-request Gemini model instance.
-
-    The deprecated google-generativeai client has shown concurrency
-    instability when a GenerativeModel object is shared across threads.
-    Configuration is still process-wide, but model instances are cheap enough
-    to create per generation request and avoid cross-request mutable state.
-    """
-    _ensure_configured()
-    return genai.GenerativeModel(
-        model_name=LLM_MODEL,
-        system_instruction=SYSTEM_PROMPT,
+def _get_client() -> genai.Client:
+    """Create a per-request Gemini client."""
+    if not GEMINI_API_KEY:
+        raise ValueError("GEMINI_API_KEY is not set. Cannot use LLM generation.")
+    logger.debug("Creating Gemini GenAI client, model=%s", LLM_MODEL)
+    return genai.Client(
+        api_key=GEMINI_API_KEY,
+        http_options=types.HttpOptions(timeout=LLM_TIMEOUT_SECONDS * 1000),
     )
 
 
@@ -114,20 +93,35 @@ def generate(
     context = _format_context(context_chunks)
     prompt = CONTEXT_TEMPLATE.format(context=context, query=query)
 
-    model = _get_model()
-
-    contents = []
+    contents: list[types.Content] = []
     if history:
         for turn in history:
-            contents.append({"role": "user", "parts": [turn["query"]]})
-            contents.append({"role": "model", "parts": [turn["answer"]]})
-    
-    contents.append({"role": "user", "parts": [prompt]})
+            contents.append(
+                types.Content(
+                    role="user",
+                    parts=[types.Part.from_text(text=turn["query"])],
+                )
+            )
+            contents.append(
+                types.Content(
+                    role="model",
+                    parts=[types.Part.from_text(text=turn["answer"])],
+                )
+            )
 
-    response = model.generate_content(
-        contents,
-        request_options={"timeout": LLM_TIMEOUT_SECONDS},
+    contents.append(
+        types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=prompt)],
+        )
     )
+
+    with _get_client() as client:
+        response = client.models.generate_content(
+            model=LLM_MODEL,
+            contents=contents,
+            config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT),
+        )
 
     # Extract token usage
     tokens_used = 0

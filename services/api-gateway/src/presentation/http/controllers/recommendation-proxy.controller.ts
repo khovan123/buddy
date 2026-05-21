@@ -250,7 +250,7 @@ export class RecommendationProxyController {
   @UseGuards(JwtAuthGuard)
   ragAsk(@Body() body: unknown, @Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
-      service: 'recommendation',
+      service: 'rag',
       resilienceKey: 'recommendation-rag',
       path: '/v1/rag/ask',
       method: 'POST',
@@ -268,7 +268,7 @@ export class RecommendationProxyController {
   @UseGuards(JwtAuthGuard)
   ragRetrieve(@Body() body: unknown, @Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
-      service: 'recommendation',
+      service: 'rag',
       resilienceKey: 'recommendation-rag',
       path: '/v1/rag/retrieve',
       method: 'POST',
@@ -286,7 +286,7 @@ export class RecommendationProxyController {
   @UseGuards(JwtAuthGuard)
   ragIndex(@Body() body: unknown, @Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
-      service: 'recommendation',
+      service: 'rag',
       resilienceKey: 'recommendation-rag',
       path: '/v1/rag/index',
       method: 'POST',
@@ -304,7 +304,7 @@ export class RecommendationProxyController {
   @Public()
   ragHealth(@Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
-      service: 'recommendation',
+      service: 'rag',
       resilienceKey: 'recommendation-rag-health',
       path: '/v1/rag/health',
       method: 'GET',
@@ -322,7 +322,7 @@ export class RecommendationProxyController {
   @Public()
   ragStats(@Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
-      service: 'recommendation',
+      service: 'rag',
       resilienceKey: 'recommendation-rag',
       path: '/v1/rag/stats',
       method: 'GET',

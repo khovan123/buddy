@@ -10,7 +10,8 @@ export type ServiceName =
   | 'content-access'
   | 'billing'
   | 'interaction'
-  | 'recommendation';
+  | 'recommendation'
+  | 'rag';
 
 /** Service handling business logic for  registry service. */
 @Injectable()
@@ -28,6 +29,10 @@ export class ServiceRegistryService {
       'content-access': config.get<string>('CONTENT_ACCESS_SERVICE_URL', 'http://0.0.0.0:3007'),
       interaction: config.get<string>('INTERACTION_SERVICE_URL', 'http://0.0.0.0:3008'),
       recommendation: config.get<string>('RECOMMENDATION_SERVICE_URL', 'http://0.0.0.0:3009'),
+      rag: config.get<string>(
+        'RAG_SERVICE_URL',
+        config.get<string>('RECOMMENDATION_SERVICE_URL', 'http://0.0.0.0:3009'),
+      ),
     };
     console.log('[ServiceRegistry] Initialized with:', this.registry);
     console.log('[ServiceRegistry] NODE_ENV:', process.env.NODE_ENV);
