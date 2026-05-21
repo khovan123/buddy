@@ -15,7 +15,7 @@ export class RecommendationSyncPublisher {
 
   constructor(private readonly amqpConnection: AmqpConnection) {}
 
-  /** Send a sync payload to recommendation.content.sync queue. */
+  /** Send a sync payload to recommendation.content.sync queue (fire-and-forget). */
   async send(payload: RecommendationContentSyncPayload): Promise<void> {
     try {
       await this.amqpConnection.channel.sendToQueue(
@@ -29,5 +29,19 @@ export class RecommendationSyncPublisher {
         `Failed to sync to recommendation: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
+  }
+
+  /**
+   * Send a sync payload and propagate any broker error to the caller.
+   *
+   * Use this in backfill/bulk flows where the caller needs to track
+   * publish failures accurately instead of assuming success.
+   */
+  async sendOrThrow(payload: RecommendationContentSyncPayload): Promise<void> {
+    await this.amqpConnection.channel.sendToQueue(
+      QUEUES.RECOMMENDATION_CONTENT_SYNC,
+      Buffer.from(JSON.stringify(payload)),
+      { persistent: true, contentType: 'application/json' },
+    );
   }
 }

@@ -19,11 +19,6 @@ WORKDIR /app
 # Copy installed packages from builder
 COPY --from=builder /install /usr/local
 
-# Pre-download the embedding model so containers don't need internet at startup.
-# Place BEFORE source COPY so Docker layer cache survives source-code changes.
-ENV TRANSFORMERS_CACHE=/app/.model_cache
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
-
 # Copy application source
 COPY services/recommendation-service/src/ .
 
@@ -33,7 +28,6 @@ COPY services/recommendation-service/artifacts/ ./artifacts/
 
 ENV PYTHONUNBUFFERED=1
 ENV ARTIFACTS_DIR=/app/artifacts
-ENV TOKENIZERS_PARALLELISM=false
 ENV TF_ENABLE_ONEDNN_OPTS=0
 
 EXPOSE 3009

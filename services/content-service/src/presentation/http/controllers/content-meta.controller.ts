@@ -1,4 +1,4 @@
-import { getCorrelationId, JwtAuthGuard, Public } from '@libs/common';
+import { AppLogger, getCorrelationId, JwtAuthGuard, Public } from '@libs/common';
 import { successResponse } from '@libs/contracts';
 import {
   Body,
@@ -45,6 +45,8 @@ import { CreateMajorDto, UpdateMajorDto } from '../dtos/major.dto';
  */
 @Controller({ path: 'content-meta', version: '1' })
 export class ContentMetaController {
+  private readonly logger = new AppLogger(ContentMetaController.name);
+
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
@@ -94,6 +96,8 @@ export class ContentMetaController {
     let resources = 0;
     let tutorials = 0;
     let collections = 0;
+    let failed = 0;
+    const failedItems: Array<{ itemType: string; itemId: string; error: string }> = [];
 
     for (let page = 1; ; page += 1) {
       const result = await this.resourceRepository.findAvailableResources({
@@ -101,18 +105,25 @@ export class ContentMetaController {
         limit: pageSize,
       });
       for (const item of result.data) {
-        await this.recommendationSync.send({
-          type: 'ITEM_UPSERT',
-          itemId: item.id,
-          itemType: 'RESOURCE',
-          majorId: item.majorId,
-          courseId: item.courseId,
-          title: item.title,
-          slug: item.slug,
-          summary: item.summary,
-          hightlights: item.hightlights,
-        });
-        resources += 1;
+        try {
+          await this.recommendationSync.sendOrThrow({
+            type: 'ITEM_UPSERT',
+            itemId: item.id,
+            itemType: 'RESOURCE',
+            majorId: item.majorId,
+            courseId: item.courseId,
+            title: item.title,
+            slug: item.slug,
+            summary: item.summary,
+            hightlights: item.hightlights,
+          });
+          resources += 1;
+        } catch (err) {
+          failed += 1;
+          const errMsg = err instanceof Error ? err.message : String(err);
+          failedItems.push({ itemType: 'RESOURCE', itemId: item.id, error: errMsg });
+          this.logger.warn(`Backfill publish failed for RESOURCE ${item.id}: ${errMsg}`);
+        }
       }
       if (page >= result.meta.totalPages) break;
     }
@@ -123,25 +134,32 @@ export class ContentMetaController {
         limit: pageSize,
       });
       for (const item of result.data) {
-        await this.recommendationSync.send({
-          type: 'ITEM_UPSERT',
-          itemId: item.id,
-          itemType: 'TUTORIAL',
-          majorId: item.majorId,
-          courseId: item.courseId,
-          title: item.title,
-          slug: item.slug,
-          description: item.description,
-          hightlights: item.hightlights,
-          steps: item.steps?.map((step) => ({
-            title: step.title,
-            description: step.resources
-              .map((resource) => resource.instructionNote || resource.resource?.summary || '')
-              .filter(Boolean)
-              .join(' '),
-          })),
-        });
-        tutorials += 1;
+        try {
+          await this.recommendationSync.sendOrThrow({
+            type: 'ITEM_UPSERT',
+            itemId: item.id,
+            itemType: 'TUTORIAL',
+            majorId: item.majorId,
+            courseId: item.courseId,
+            title: item.title,
+            slug: item.slug,
+            description: item.description,
+            hightlights: item.hightlights,
+            steps: item.steps?.map((step) => ({
+              title: step.title,
+              description: step.resources
+                .map((resource) => resource.instructionNote || resource.resource?.summary || '')
+                .filter(Boolean)
+                .join(' '),
+            })),
+          });
+          tutorials += 1;
+        } catch (err) {
+          failed += 1;
+          const errMsg = err instanceof Error ? err.message : String(err);
+          failedItems.push({ itemType: 'TUTORIAL', itemId: item.id, error: errMsg });
+          this.logger.warn(`Backfill publish failed for TUTORIAL ${item.id}: ${errMsg}`);
+        }
       }
       if (page >= result.meta.totalPages) break;
     }
@@ -152,32 +170,66 @@ export class ContentMetaController {
         limit: pageSize,
       });
       for (const item of result.data) {
-        await this.recommendationSync.send({
-          type: 'ITEM_UPSERT',
-          itemId: item.id,
-          itemType:
-            item.type === CollectionType.RESOURCE ? 'RESOURCE_COLLECTION' : 'TUTORIAL_COLLECTION',
-          majorId: item.majorId,
-          courseId: item.courseId,
-          title: item.title,
-          slug: item.slug,
-          description: item.description,
-          hightlights: item.hightlights,
-        });
-        collections += 1;
+        try {
+          await this.recommendationSync.sendOrThrow({
+            type: 'ITEM_UPSERT',
+            itemId: item.id,
+            itemType:
+              item.type === CollectionType.RESOURCE ? 'RESOURCE_COLLECTION' : 'TUTORIAL_COLLECTION',
+            majorId: item.majorId,
+            courseId: item.courseId,
+            title: item.title,
+            slug: item.slug,
+            description: item.description,
+            hightlights: item.hightlights,
+          });
+          collections += 1;
+        } catch (err) {
+          failed += 1;
+          const errMsg = err instanceof Error ? err.message : String(err);
+          failedItems.push({
+            itemType: item.type === CollectionType.RESOURCE ? 'RESOURCE_COLLECTION' : 'TUTORIAL_COLLECTION',
+            itemId: item.id,
+            error: errMsg,
+          });
+          this.logger.warn(`Backfill publish failed for COLLECTION ${item.id}: ${errMsg}`);
+        }
       }
       if (page >= result.meta.totalPages) break;
     }
 
+    const published = resources + tutorials + collections;
+    const total = published + failed;
+
+    let status: 'backfill_published' | 'backfill_partial' | 'backfill_failed';
+    if (failed === 0) {
+      status = 'backfill_published';
+    } else if (published > 0) {
+      status = 'backfill_partial';
+    } else {
+      status = 'backfill_failed';
+    }
+
+    if (failed > 0) {
+      this.logger.error(
+        `Backfill completed with ${failed}/${total} failures`,
+      );
+    }
+
     return successResponse(
       {
-        status: 'backfill_published',
+        status,
         resources,
         tutorials,
         collections,
-        total: resources + tutorials + collections,
+        published,
+        failed,
+        total,
+        ...(failedItems.length > 0 && { failedItems }),
       },
-      'Recommendation catalog backfill published',
+      failed === 0
+        ? 'Recommendation catalog backfill published'
+        : `Recommendation catalog backfill completed with ${failed} failures`,
       getCorrelationId(),
     );
   }

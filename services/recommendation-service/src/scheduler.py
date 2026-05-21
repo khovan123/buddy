@@ -16,11 +16,10 @@ logger = logging.getLogger(__name__)
 class ModelScheduler:
     """Schedules periodic FAISS index rebuilds and drift-check retrain cycles."""
 
-    def __init__(self, model_manager, catalog_store=None, drift_monitor=None, rag_indexer=None):
+    def __init__(self, model_manager, catalog_store=None, drift_monitor=None):
         self._model_manager = model_manager
         self._catalog_store = catalog_store
         self._drift_monitor = drift_monitor
-        self._rag_indexer = rag_indexer
         self._timers: list[threading.Timer] = []
         self._retrain_lock = threading.Lock()
 
@@ -29,12 +28,10 @@ class ModelScheduler:
         self._schedule_faiss_rebuild()
         if self._drift_monitor:
             self._schedule_drift_check()
-        if self._rag_indexer:
-            self._schedule_daily_rag_sync()
-            
+
         logger.info(
             f"ModelScheduler started: FAISS rebuild every {FAISS_REBUILD_INTERVAL_HOURS}h, "
-            f"drift check every {RETRAIN_INTERVAL_HOURS}h, and daily RAG sync at midnight"
+            f"drift check every {RETRAIN_INTERVAL_HOURS}h"
         )
 
     def stop(self) -> None:
@@ -100,30 +97,3 @@ class ModelScheduler:
         finally:
             self._schedule_drift_check()
 
-    # ─── Daily RAG Sync ─────────────────────────────────────────────────
-
-    def _schedule_daily_rag_sync(self) -> None:
-        now = datetime.now()
-        tomorrow = now + timedelta(days=1)
-        midnight = datetime(year=tomorrow.year, month=tomorrow.month, day=tomorrow.day, hour=0, minute=0, second=0)
-        seconds_until_midnight = (midnight - now).total_seconds()
-        
-        timer = threading.Timer(seconds_until_midnight, self._run_rag_sync)
-        timer.daemon = True
-        timer.start()
-        self._timers.append(timer)
-        logger.info(f"Scheduled next daily RAG sync in {seconds_until_midnight / 3600:.2f} hours (at midnight)")
-
-    def _run_rag_sync(self) -> None:
-        try:
-            if not self._rag_indexer:
-                return
-
-            logger.info("Daily RAG sync (re-index) starting...")
-            result = self._rag_indexer.index_all()
-            logger.info(f"Daily RAG sync complete: {result}")
-        except Exception as e:
-            logger.error(f"Daily RAG sync failed: {e}")
-        finally:
-            # Re-schedule for the next midnight
-            self._schedule_daily_rag_sync()
