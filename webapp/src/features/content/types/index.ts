@@ -551,6 +551,13 @@ export interface RecommendationItem {
   itemType: "RESOURCE" | "TUTORIAL" | "RESOURCE_COLLECTION" | "TUTORIAL_COLLECTION" | "COLLECTION"
   score: number
   reasons: string[]
+  display?: {
+    title?: string
+    slug?: string
+    itemType?: string
+    majorId?: string
+    courseId?: string
+  } | null
   content: (ResourceQueryItem | TutorialQueryItem | CollectionQueryItem) | null
 }
 
@@ -567,6 +574,13 @@ export interface TrendingItem {
   itemType: "RESOURCE" | "TUTORIAL" | "RESOURCE_COLLECTION" | "TUTORIAL_COLLECTION" | "COLLECTION"
   totalInteractions: number
   avgRating: number
+  display?: {
+    title?: string
+    slug?: string
+    itemType?: string
+    majorId?: string
+    courseId?: string
+  } | null
   content: (ResourceQueryItem | TutorialQueryItem | CollectionQueryItem) | null
 }
 

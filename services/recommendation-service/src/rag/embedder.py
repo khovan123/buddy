@@ -8,16 +8,26 @@ threads initialise the model simultaneously during cold start.
 Runs on CPU only (consistent with the existing TF-based recommendation model).
 """
 
+from __future__ import annotations
+
 import logging
 import os
 import threading
+from typing import TYPE_CHECKING
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 from rag.config_rag import EMBEDDING_MODEL, EMBEDDING_DIM
 
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
+
 logger = logging.getLogger(__name__)
+
+
+class EmbeddingModelNotReady(RuntimeError):
+    """Raised when request-time RAG tries to use an unloaded embedding model."""
+
 
 _model: SentenceTransformer | None = None
 _model_lock = threading.Lock()
@@ -29,8 +39,8 @@ _model_lock = threading.Lock()
 _CACHE_FOLDER = os.getenv("TRANSFORMERS_CACHE") or None
 
 
-def _get_model() -> SentenceTransformer:
-    """Return the singleton SentenceTransformer instance.
+def _load_model() -> SentenceTransformer:
+    """Load and return the singleton SentenceTransformer instance.
 
     Uses double-checked locking to ensure thread-safety without holding
     the lock on every call after initialisation.
@@ -44,10 +54,19 @@ def _get_model() -> SentenceTransformer:
         if _model is not None:
             return _model
 
+        from sentence_transformers import SentenceTransformer
+
         logger.info(f"Loading embedding model: {EMBEDDING_MODEL} (cache={_CACHE_FOLDER})")
         _model = SentenceTransformer(EMBEDDING_MODEL, cache_folder=_CACHE_FOLDER)
         logger.info(f"Embedding model loaded (dim={EMBEDDING_DIM})")
         return _model
+
+
+def _get_loaded_model() -> SentenceTransformer:
+    """Return the loaded model without triggering a cold load."""
+    if _model is None:
+        raise EmbeddingModelNotReady("RAG embedding model is not loaded")
+    return _model
 
 
 def preload_model() -> bool:
@@ -60,9 +79,9 @@ def preload_model() -> bool:
         ``True`` if the model loaded successfully, ``False`` on failure.
     """
     try:
-        _get_model()
+        _load_model()
         # Quick sanity encode to validate the model works
-        _get_model().encode(["warmup"], normalize_embeddings=True)
+        _load_model().encode(["warmup"], normalize_embeddings=True)
         logger.info("Embedding model pre-warmed successfully")
         return True
     except Exception as e:
@@ -77,10 +96,11 @@ def embedding_health() -> bool:
         ``True`` if a test encode succeeds, ``False`` otherwise.
     """
     try:
-        model = _get_model()
+        model = _get_loaded_model()
         model.encode(["health check"], normalize_embeddings=True)
         return True
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Embedding health check failed: {e}")
         return False
 
 
@@ -99,7 +119,7 @@ def embed_texts(texts: list[str], batch_size: int = 64) -> np.ndarray:
     Returns:
         Numpy array of shape ``(len(texts), EMBEDDING_DIM)``.
     """
-    model = _get_model()
+    model = _load_model()
     embeddings = model.encode(
         texts,
         batch_size=batch_size,
@@ -118,6 +138,6 @@ def embed_query(query: str) -> np.ndarray:
     Returns:
         Numpy array of shape ``(EMBEDDING_DIM,)``.
     """
-    model = _get_model()
+    model = _get_loaded_model()
     embedding = model.encode(query, normalize_embeddings=True)
     return np.array(embedding, dtype=np.float32)

@@ -7,7 +7,7 @@ import {
 } from '../../../infrastructure/http/api-composer.service';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
 
-const CONTENT_HYDRATION_TIMEOUT_MS = 8_000;
+const CONTENT_HYDRATION_TIMEOUT_MS = 2_500;
 const INTERNAL_CONTENT_FIELDS = new Set([
   'primarys3key',
   's3key',

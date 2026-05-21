@@ -120,6 +120,22 @@ export class TutorialProxyController {
   }
 
   /**
+   * Fetch multiple tutorials by ID for recommendation hydration.
+   */
+  @Get('by-ids')
+  @Public()
+  getTutorialsByIds(@Req() req: FastifyRequest, @Query() query: any) {
+    return this.proxy.forward(req, {
+      service: 'content',
+      path: '/v1/tutorials/by-ids',
+      method: 'GET',
+      query,
+      timeoutMs: 2_500,
+      skipRetry: true,
+    });
+  }
+
+  /**
    * Executes the get uncollected tutorials operation.
    *
    * @param req - The req parameter

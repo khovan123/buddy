@@ -121,6 +121,22 @@ export class CollectionProxyController {
   }
 
   /**
+   * Fetch multiple collections by ID for recommendation hydration.
+   */
+  @Get('by-ids')
+  @Public()
+  getCollectionsByIds(@Req() req: FastifyRequest, @Query() query: any) {
+    return this.proxy.forward(req, {
+      service: 'content',
+      path: '/v1/collections/by-ids',
+      method: 'GET',
+      query,
+      timeoutMs: 2_500,
+      skipRetry: true,
+    });
+  }
+
+  /**
    * Executes the get resource collection by slug operation.
    *
    * @param slug - The slug parameter

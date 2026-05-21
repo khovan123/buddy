@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 
+import Link from "next/link"
 
 import { CollectionCard } from "@/components/molecules/collection-card"
 import { ResourceCard } from "@/components/molecules/resource-card"
@@ -39,7 +40,20 @@ export function RecommendationGrid({ items, pageSize, hasLoadMore = false }: Rec
       <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {visibleItems.map((rec) => {
           const itemType = rec.itemType
-          const content = rec.content!
+          const content = rec.content
+
+          if (!content) {
+            return (
+              <RecommendationFallbackCard
+                key={rec.itemId}
+                title={rec.display?.title || "Recommended content"}
+                itemType={itemType}
+                slug={rec.display?.slug}
+                score={rec.score}
+                reasons={rec.reasons}
+              />
+            )
+          }
 
           if (itemType === "RESOURCE") {
             return (
@@ -99,4 +113,57 @@ export function RecommendationGrid({ items, pageSize, hasLoadMore = false }: Rec
       ):null}
     </>
   )
+}
+
+function RecommendationFallbackCard({
+  title,
+  itemType,
+  slug,
+  score,
+  reasons,
+}: {
+  title: string
+  itemType: RecommendationItem["itemType"]
+  slug?: string
+  score: number
+  reasons: string[]
+}) {
+  const href = slug ? getContentHref(itemType, slug) : undefined
+  const body = (
+    <article className="flex h-full min-h-40 flex-col justify-between rounded-lg border border-border/80 bg-card p-4 shadow-sm transition hover:border-primary/40">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <span>{formatItemType(itemType)}</span>
+          <span>{Math.round(score * 100)}%</span>
+        </div>
+        <h3 className="line-clamp-2 text-base font-semibold text-foreground">
+          {title}
+        </h3>
+      </div>
+      {reasons.length > 0 ? (
+        <p className="mt-4 line-clamp-2 text-sm text-muted-foreground">
+          {reasons.join(", ")}
+        </p>
+      ) : null}
+    </article>
+  )
+
+  return href ? <Link href={href}>{body}</Link> : body
+}
+
+function getContentHref(itemType: RecommendationItem["itemType"], slug: string) {
+  if (itemType === "TUTORIAL") {
+    return `/home/tutorials/${slug}`
+  }
+  if (itemType === "TUTORIAL_COLLECTION") {
+    return `/home/tutorials/collections/${slug}`
+  }
+  if (itemType === "RESOURCE_COLLECTION" || itemType === "COLLECTION") {
+    return `/home/resources/collections/${slug}`
+  }
+  return `/home/resources/${slug}`
+}
+
+function formatItemType(itemType: RecommendationItem["itemType"]) {
+  return itemType.toLowerCase().replaceAll("_", " ")
 }
