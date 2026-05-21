@@ -91,6 +91,13 @@ def generate_items(courses: list[dict]) -> list[dict]:
             "courseId": course["courseId"],
             "semester": course["semester"],
             "tags": random.sample(TOPICS, min(3, len(TOPICS))),
+            "summary": f"A practical {topic.lower()} resource for {course['name']}.",
+            "description": f"Learn core {topic.lower()} concepts through examples, checkpoints, and interview-style practice.",
+            "hightlights": [
+                f"Covers {topic} fundamentals",
+                f"Aligned with {course['name']}",
+                "Includes practice exercises",
+            ],
             "createdAt": (datetime.now(timezone.utc) - timedelta(days=random.randint(1, 180))).isoformat(),
         })
     return items

@@ -1,4 +1,4 @@
-import { getCorrelationId, JwtAuthGuard, Public } from '@libs/common';
+import { AppLogger, getCorrelationId, JwtAuthGuard, Public } from '@libs/common';
 import { successResponse } from '@libs/contracts';
 import {
   Body,
@@ -7,6 +7,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   Post,
   Put,
@@ -23,20 +24,39 @@ import { UpdateCourseCommand } from '../../../application/commands/update-course
 import { UpdateMajorCommand } from '../../../application/commands/update-major.command';
 import { GetContentMetaQuery } from '../../../application/queries/get-content-meta.query';
 import { GetCoursesByMajorQuery } from '../../../application/queries/get-courses-by-major.query';
+import type { ICollectionRepository } from '../../../domain/repositories/collection.repository.interface';
+import type { IResourceRepository } from '../../../domain/repositories/resource.repository.interface';
+import {
+  COLLECTION_REPOSITORY,
+  RESOURCE_REPOSITORY,
+  TUTORIAL_REPOSITORY,
+} from '../../../domain/repositories/tokens';
+import type { ITutorialRepository } from '../../../domain/repositories/tutorial.repository.interface';
+import { RecommendationSyncPublisher } from '../../../infrastructure/messaging/publishers/recommendation-sync.publisher';
+import { CollectionType } from '../../../infrastructure/persistence/mongo/schemas/collection.schema';
+import { CourseIdParamDto } from '../dtos/course-id-param.dto';
 import { CreateCourseDto, UpdateCourseDto } from '../dtos/course.dto';
-import { CreateMajorDto, UpdateMajorDto } from '../dtos/major.dto';
 import { GetCoursesByMajorQueryDto } from '../dtos/get-courses-by-major-query.dto';
 import { MajorIdParamDto } from '../dtos/major-id-param.dto';
-import { CourseIdParamDto } from '../dtos/course-id-param.dto';
+import { CreateMajorDto, UpdateMajorDto } from '../dtos/major.dto';
 
 /**
  * ContentMetaController — Management and query of Majors and Courses.
  */
 @Controller({ path: 'content-meta', version: '1' })
 export class ContentMetaController {
+  private readonly logger = new AppLogger(ContentMetaController.name);
+
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    @Inject(RESOURCE_REPOSITORY)
+    private readonly resourceRepository: IResourceRepository,
+    @Inject(TUTORIAL_REPOSITORY)
+    private readonly tutorialRepository: ITutorialRepository,
+    @Inject(COLLECTION_REPOSITORY)
+    private readonly collectionRepository: ICollectionRepository,
+    private readonly recommendationSync: RecommendationSyncPublisher,
   ) {}
 
   /**
@@ -65,6 +85,152 @@ export class ContentMetaController {
   async getCoursesByMajor(@Query() query: GetCoursesByMajorQueryDto) {
     const courses = await this.queryBus.execute(new GetCoursesByMajorQuery(query.majorId));
     return successResponse(courses, 'Get courses by major successful', getCorrelationId());
+  }
+
+  @Post('recommendation-sync/backfill')
+  @UseGuards(JwtAuthGuard)
+  @Version('1')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async backfillRecommendationCatalog() {
+    const pageSize = 100;
+    let resources = 0;
+    let tutorials = 0;
+    let collections = 0;
+    let failed = 0;
+    const failedItems: Array<{ itemType: string; itemId: string; error: string }> = [];
+
+    for (let page = 1; ; page += 1) {
+      const result = await this.resourceRepository.findAvailableResources({
+        page,
+        limit: pageSize,
+      });
+      for (const item of result.data) {
+        try {
+          await this.recommendationSync.sendOrThrow({
+            type: 'ITEM_UPSERT',
+            itemId: item.id,
+            itemType: 'RESOURCE',
+            majorId: item.majorId,
+            courseId: item.courseId,
+            title: item.title,
+            slug: item.slug,
+            summary: item.summary,
+            hightlights: item.hightlights,
+          });
+          resources += 1;
+        } catch (err) {
+          failed += 1;
+          const errMsg = err instanceof Error ? err.message : String(err);
+          failedItems.push({ itemType: 'RESOURCE', itemId: item.id, error: errMsg });
+          this.logger.warn(`Backfill publish failed for RESOURCE ${item.id}: ${errMsg}`);
+        }
+      }
+      if (page >= result.meta.totalPages) break;
+    }
+
+    for (let page = 1; ; page += 1) {
+      const result = await this.tutorialRepository.findAvailableTutorials({
+        page,
+        limit: pageSize,
+      });
+      for (const item of result.data) {
+        try {
+          await this.recommendationSync.sendOrThrow({
+            type: 'ITEM_UPSERT',
+            itemId: item.id,
+            itemType: 'TUTORIAL',
+            majorId: item.majorId,
+            courseId: item.courseId,
+            title: item.title,
+            slug: item.slug,
+            description: item.description,
+            hightlights: item.hightlights,
+            steps: item.steps?.map((step) => ({
+              title: step.title,
+              description: step.resources
+                .map((resource) => resource.instructionNote || resource.resource?.summary || '')
+                .filter(Boolean)
+                .join(' '),
+            })),
+          });
+          tutorials += 1;
+        } catch (err) {
+          failed += 1;
+          const errMsg = err instanceof Error ? err.message : String(err);
+          failedItems.push({ itemType: 'TUTORIAL', itemId: item.id, error: errMsg });
+          this.logger.warn(`Backfill publish failed for TUTORIAL ${item.id}: ${errMsg}`);
+        }
+      }
+      if (page >= result.meta.totalPages) break;
+    }
+
+    for (let page = 1; ; page += 1) {
+      const result = await this.collectionRepository.findAvailableCollections({
+        page,
+        limit: pageSize,
+      });
+      for (const item of result.data) {
+        try {
+          await this.recommendationSync.sendOrThrow({
+            type: 'ITEM_UPSERT',
+            itemId: item.id,
+            itemType:
+              item.type === CollectionType.RESOURCE ? 'RESOURCE_COLLECTION' : 'TUTORIAL_COLLECTION',
+            majorId: item.majorId,
+            courseId: item.courseId,
+            title: item.title,
+            slug: item.slug,
+            description: item.description,
+            hightlights: item.hightlights,
+          });
+          collections += 1;
+        } catch (err) {
+          failed += 1;
+          const errMsg = err instanceof Error ? err.message : String(err);
+          failedItems.push({
+            itemType:
+              item.type === CollectionType.RESOURCE ? 'RESOURCE_COLLECTION' : 'TUTORIAL_COLLECTION',
+            itemId: item.id,
+            error: errMsg,
+          });
+          this.logger.warn(`Backfill publish failed for COLLECTION ${item.id}: ${errMsg}`);
+        }
+      }
+      if (page >= result.meta.totalPages) break;
+    }
+
+    const published = resources + tutorials + collections;
+    const total = published + failed;
+
+    let status: 'backfill_published' | 'backfill_partial' | 'backfill_failed';
+    if (failed === 0) {
+      status = 'backfill_published';
+    } else if (published > 0) {
+      status = 'backfill_partial';
+    } else {
+      status = 'backfill_failed';
+    }
+
+    if (failed > 0) {
+      this.logger.error(`Backfill completed with ${failed}/${total} failures`);
+    }
+
+    return successResponse(
+      {
+        status,
+        resources,
+        tutorials,
+        collections,
+        published,
+        failed,
+        total,
+        ...(failedItems.length > 0 && { failedItems }),
+      },
+      failed === 0
+        ? 'Recommendation catalog backfill published'
+        : `Recommendation catalog backfill completed with ${failed} failures`,
+      getCorrelationId(),
+    );
   }
 
   // --- MAJOR ADMIN ENDPOINTS ---

@@ -1,5 +1,5 @@
 import { AppLogger, JwtAuthGuard, Public, type JwtPayload } from '@libs/common';
-import { Controller, Get, Post, Query, Req, UseGuards, Body } from '@nestjs/common';
+import { Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import {
   ApiComposerService,
@@ -256,98 +256,6 @@ export class RecommendationProxyController {
       service: 'recommendation',
       path: '/v1/recommendation/model/rebuild-index',
       method: 'POST',
-    });
-  }
-
-  // ── RAG Endpoints ──────────────────────────────────────────────────
-
-  /**
-   * Ask a question using RAG (Retrieval-Augmented Generation).
-   *
-   * @param req - The req parameter
-   */
-  @Post('rag/ask')
-  @UseGuards(JwtAuthGuard)
-  ragAsk(@Body() body: unknown, @Req() req: FastifyRequest) {
-    return this.proxy.forward(req, {
-      service: 'rag',
-      resilienceKey: 'recommendation-rag',
-      path: '/v1/rag/ask',
-      method: 'POST',
-      body,
-      timeoutMs: 100_000,
-    });
-  }
-
-  /**
-   * Retrieve RAG sources without answer generation.
-   *
-   * @param req - The req parameter
-   */
-  @Post('rag/retrieve')
-  @UseGuards(JwtAuthGuard)
-  ragRetrieve(@Body() body: unknown, @Req() req: FastifyRequest) {
-    return this.proxy.forward(req, {
-      service: 'rag',
-      resilienceKey: 'recommendation-rag',
-      path: '/v1/rag/retrieve',
-      method: 'POST',
-      body,
-      timeoutMs: 100_000,
-    });
-  }
-
-  /**
-   * Trigger a full re-index of content into the RAG vector store.
-   *
-   * @param req - The req parameter
-   */
-  @Post('rag/index')
-  @UseGuards(JwtAuthGuard)
-  ragIndex(@Body() body: unknown, @Req() req: FastifyRequest) {
-    return this.proxy.forward(req, {
-      service: 'rag',
-      resilienceKey: 'recommendation-rag',
-      path: '/v1/rag/index',
-      method: 'POST',
-      body,
-      timeoutMs: 300_000, // 5 min — full re-index embeds all catalog items
-    });
-  }
-
-  /**
-   * RAG health check.
-   *
-   * @param req - The req parameter
-   */
-  @Get('rag/health')
-  @Public()
-  ragHealth(@Req() req: FastifyRequest) {
-    return this.proxy.forward(req, {
-      service: 'rag',
-      resilienceKey: 'recommendation-rag-health',
-      path: '/v1/rag/health',
-      method: 'GET',
-      timeoutMs: 5_000,
-      skipRetry: true,
-    });
-  }
-
-  /**
-   * RAG vector store statistics.
-   *
-   * @param req - The req parameter
-   */
-  @Get('rag/stats')
-  @Public()
-  ragStats(@Req() req: FastifyRequest) {
-    return this.proxy.forward(req, {
-      service: 'rag',
-      resilienceKey: 'recommendation-rag',
-      path: '/v1/rag/stats',
-      method: 'GET',
-      timeoutMs: 10_000,
-      skipRetry: true,
     });
   }
 

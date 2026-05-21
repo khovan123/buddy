@@ -1,9 +1,9 @@
 """
 FastAPI server for the dedicated RAG service.
 
-This process intentionally runs only the RAG/Qdrant/Gemini path. It does not
-load the recommendation ML model, FAISS recommendation index, RabbitMQ
-consumer, or recommendation scheduler.
+This process runs the RAG/Qdrant/Gemini pipeline **and** a RabbitMQ consumer
+that keeps the Qdrant index in sync with content-service events (ITEM_UPSERT,
+ITEM_DELETED, etc.) via the ``content.sync`` fanout exchange.
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from config import ALLOWED_ORIGINS, HOST, PORT, REDIS_URL
+from consumer import RAGContentConsumer
 from rag.indexer import RAGIndexer
 from rag.pipeline import RAGPipeline
 from rag.retriever import Retriever
@@ -56,6 +57,8 @@ rag_pipeline = None
 rag_indexer = None
 rag_vector_store = None
 rag_lock = threading.Lock()
+
+_rag_consumer: RAGContentConsumer | None = None
 
 
 class RAGRequest(BaseModel):
@@ -200,6 +203,46 @@ def _bootstrap_rag_index_background() -> None:
         logger.warning("Auto-index check failed: %s", e)
 
 
+_consumer_shutdown = threading.Event()
+
+
+def _start_content_consumer() -> None:
+    """Start the RAG content-sync consumer after the RAG module is ready.
+
+    Retries ``get_rag_module()`` with exponential backoff so transient
+    dependency outages (Qdrant, MongoDB) during startup don't permanently
+    kill the consumer thread.
+
+    Exits cleanly when ``_consumer_shutdown`` is set (during lifespan
+    teardown), preventing a race where ``close()`` stops the current
+    consumer but this loop immediately creates a new one.
+    """
+    global _rag_consumer
+    retry_delay = 5
+
+    while not _consumer_shutdown.is_set():
+        try:
+            _, indexer, _ = get_rag_module()
+            consumer = RAGContentConsumer(catalog_store, indexer)
+            _rag_consumer = consumer
+            # start_consuming() has its own internal reconnect loop for
+            # RabbitMQ failures; if it ever returns, we re-enter this
+            # outer loop to re-init the module and restart.
+            consumer.start_consuming()
+        except Exception as e:
+            if _consumer_shutdown.is_set():
+                break
+            logger.error(
+                "Content-sync consumer init failed: %s. Retrying in %ds...",
+                e, retry_delay, exc_info=True,
+            )
+            # Use event wait instead of time.sleep so shutdown wakes us
+            _consumer_shutdown.wait(timeout=retry_delay)
+            retry_delay = min(retry_delay * 2, 60)
+
+    logger.info("Content-sync consumer loop exited (shutdown requested)")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if RAG_STARTUP_WARMUP_ENABLED:
@@ -207,9 +250,16 @@ async def lifespan(app: FastAPI):
     else:
         threading.Thread(target=_bootstrap_rag_index_background, daemon=True).start()
 
+    # Start content-sync consumer in a daemon thread
+    threading.Thread(target=_start_content_consumer, daemon=True, name="rag-consumer").start()
+
     logger.info("RAG service started")
     yield
 
+    # Graceful shutdown — signal the retry loop first, then close consumer
+    _consumer_shutdown.set()
+    if _rag_consumer:
+        _rag_consumer.close()
     catalog_store.close()
     logger.info("RAG service shutdown")
 

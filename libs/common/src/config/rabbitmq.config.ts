@@ -8,6 +8,7 @@ export const EXCHANGES = {
   UPLOAD: 'upload.events',
   INTERACTION: 'interaction.events',
   CONTENT: 'content.events',
+  CONTENT_SYNC: 'content.sync',
   DEAD_LETTER: 'dead.letter',
 } as const;
 
@@ -36,6 +37,7 @@ export const QUEUES = {
   INTERACTION_EVENTS: 'interaction.events',
   RECOMMENDATION_EVENTS: 'recommendation.events',
   RECOMMENDATION_CONTENT_SYNC: 'recommendation.content.sync',
+  RAG_CONTENT_SYNC: 'rag.content.sync',
   RECOMMENDATION_USER_SYNC: 'recommendation.user.sync',
   NOTIFICATION_MODEL_TRAINED: 'notification.model.trained',
 } as const;

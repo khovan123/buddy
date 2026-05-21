@@ -8,12 +8,14 @@ Consumes 3 event streams (each on its own queue):
 
 This is how the recommendation-service builds its local materialized views
 without ever connecting to another service's database.
+
+RAG indexing is handled by the dedicated ``rag-service``; this consumer
+only maintains the recommendation catalog and FAISS index.
 """
 
 import json
 import logging
 import threading
-from concurrent.futures import ThreadPoolExecutor
 import pika
 from config import RABBITMQ_URL, FAISS_REBUILD_THRESHOLD
 
@@ -54,27 +56,25 @@ class EventConsumer:
         popularity_store: ItemPopularityStore,
         catalog_store: CatalogStore,
         model_manager=None,
-        rag_indexer=None,
     ):
         self.user_store = user_store
         self.popularity_store = popularity_store
         self.catalog_store = catalog_store
         self._model_manager = model_manager
-        self._rag_indexer = rag_indexer
         self._connection = None
         self._channel = None
         self._items_since_rebuild = 0
         self._rebuild_lock = threading.Lock()
-        self._reindex_pool = ThreadPoolExecutor(
-            max_workers=1, thread_name_prefix="rag-reindex",
-        )
         self._stopping = False
 
     def connect(self) -> None:
         """Establish a blocking connection to RabbitMQ and declare queues.
 
         Declares durable queues for all three event streams with dead-letter
-        exchange support.  Sets ``prefetch_count=50`` for flow control.
+        exchange support.  The content sync queue is bound to the
+        ``content.sync`` fanout exchange so both this service and the
+        rag-service receive the same events independently.
+        Sets ``prefetch_count=50`` for flow control.
         """
         params = pika.URLParameters(RABBITMQ_URL)
         self._connection = pika.BlockingConnection(params)
@@ -87,6 +87,17 @@ class EventConsumer:
                 durable=True,
                 arguments={"x-dead-letter-exchange": "dead.letter"}
             )
+
+        # Bind content sync queue to the fanout exchange
+        self._channel.exchange_declare(
+            exchange="content.sync",
+            exchange_type="fanout",
+            durable=True,
+        )
+        self._channel.queue_bind(
+            queue=QUEUE_CONTENT_SYNC,
+            exchange="content.sync",
+        )
 
         self._channel.basic_qos(prefetch_count=50)
         logger.info("Connected to RabbitMQ, consuming from 3 queues")
@@ -139,26 +150,14 @@ class EventConsumer:
             if sync_type == "ITEM_UPSERT":
                 self.catalog_store.upsert_item(payload)
                 self._check_rebuild_threshold()
-                self._rag_index_item(payload)
             elif sync_type == "ITEM_DELETED":
                 self.catalog_store.remove_item(payload["itemId"])
-                self._rag_remove_item(payload["itemId"])
             elif sync_type == "COURSE_UPSERT":
                 self.catalog_store.upsert_course(payload)
-                self._submit_reindex(
-                    channel, method.delivery_tag,
-                    self._rag_reindex_by_course, payload["courseId"],
-                )
-                return  # ACK deferred to worker thread
             elif sync_type == "COURSE_DELETED":
                 self.catalog_store.remove_course(payload["courseId"])
             elif sync_type == "MAJOR_UPSERT":
                 self.catalog_store.upsert_major(payload)
-                self._submit_reindex(
-                    channel, method.delivery_tag,
-                    self._rag_reindex_by_major, payload["majorId"],
-                )
-                return  # ACK deferred to worker thread
             elif sync_type == "MAJOR_DELETED":
                 self.catalog_store.remove_major(payload["majorId"])
             else:
@@ -184,75 +183,7 @@ class EventConsumer:
                     t = threading.Thread(target=self._model_manager.rebuild_index, daemon=True)
                     t.start()
 
-    def _rag_index_item(self, payload: dict) -> None:
-        """Incrementally index a content item into the RAG vector store."""
-        if self._rag_indexer:
-            try:
-                self._rag_indexer.index_item(payload)
-            except Exception as e:
-                logger.warning(f"RAG incremental index failed for {payload.get('itemId', '?')}: {e}")
 
-    def _rag_remove_item(self, item_id: str) -> None:
-        """Remove a content item from the RAG vector store."""
-        if self._rag_indexer:
-            try:
-                self._rag_indexer.remove_item(item_id)
-            except Exception as e:
-                logger.warning(f"RAG remove failed for {item_id}: {e}")
-
-    def _submit_reindex(self, channel, delivery_tag, reindex_fn, entity_id) -> None:
-        """Offload a reindex job to the thread pool; ACK when done.
-
-        Runs ``reindex_fn(entity_id)`` on a single-threaded pool so the
-        pika callback returns immediately (heartbeats keep flowing).
-        The message is ACKed via ``add_callback_threadsafe`` only after
-        the work completes — if the process dies mid-reindex, RabbitMQ
-        redelivers the event.
-
-        During shutdown the pool may already be closed (a callback that
-        was in-flight when ``stop_consuming`` was called).  In that case
-        we ACK immediately — the catalog update already succeeded and
-        the reindex will happen on next full rebuild.
-        """
-        def _worker():
-            try:
-                reindex_fn(entity_id)
-            except Exception as exc:
-                logger.warning(f"RAG reindex failed for {entity_id}: {exc}")
-            finally:
-                try:
-                    self._connection.add_callback_threadsafe(
-                        lambda: channel.basic_ack(delivery_tag=delivery_tag)
-                    )
-                except Exception as exc:
-                    logger.warning(f"Failed to schedule ACK after reindex for {entity_id}: {exc}")
-
-        try:
-            self._reindex_pool.submit(_worker)
-        except RuntimeError:
-            # Pool already shut down (mid-shutdown race) — ACK and move on
-            logger.debug(f"Reindex pool closed, skipping reindex for {entity_id}")
-            channel.basic_ack(delivery_tag=delivery_tag)
-
-    def _rag_reindex_by_major(self, major_id: str) -> None:
-        """Re-embed all items linked to a major after it was renamed/updated."""
-        if self._rag_indexer:
-            try:
-                count = self._rag_indexer.reindex_by_major(major_id)
-                if count:
-                    logger.info(f"RAG reindexed {count} chunks for major {major_id}")
-            except Exception as e:
-                logger.warning(f"RAG reindex-by-major failed for {major_id}: {e}")
-
-    def _rag_reindex_by_course(self, course_id: str) -> None:
-        """Re-embed all items linked to a course after it was renamed/updated."""
-        if self._rag_indexer:
-            try:
-                count = self._rag_indexer.reindex_by_course(course_id)
-                if count:
-                    logger.info(f"RAG reindexed {count} chunks for course {course_id}")
-            except Exception as e:
-                logger.warning(f"RAG reindex-by-course failed for {course_id}: {e}")
 
     # ─── User Profile Sync Events (from user-service) ──────────────────
 
@@ -327,21 +258,9 @@ class EventConsumer:
         StreamLostError) so the lifespan shutdown never crashes.
         """
         self._stopping = True
-        # Stop accepting new messages first, so no new callbacks arrive
         try:
             if self._channel and self._channel.is_open:
                 self._channel.stop_consuming()
-        except Exception:
-            pass
-        # Drain in-flight reindex work (workers ACK via add_callback_threadsafe)
-        self._reindex_pool.shutdown(wait=True, cancel_futures=False)
-        # Flush pending add_callback_threadsafe ACKs from completed workers.
-        # After stop_consuming() the I/O loop no longer pumps events, so
-        # scheduled callbacks would be stranded.  process_data_events(0)
-        # dispatches them synchronously before we tear down the connection.
-        try:
-            if self._connection and self._connection.is_open:
-                self._connection.process_data_events(time_limit=0)
         except Exception:
             pass
         try:

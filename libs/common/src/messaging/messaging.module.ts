@@ -22,6 +22,11 @@ import { EXCHANGES } from '../config/rabbitmq.config';
             { name: EXCHANGES.UPLOAD, type: 'topic' },
             { name: EXCHANGES.INTERACTION, type: 'topic' },
             { name: EXCHANGES.CONTENT, type: 'topic' },
+            {
+              name: EXCHANGES.CONTENT_SYNC,
+              type: 'fanout',
+              options: { arguments: { 'alternate-exchange': EXCHANGES.DEAD_LETTER } },
+            },
             { name: EXCHANGES.DEAD_LETTER, type: 'direct' },
           ],
           uri: url,
