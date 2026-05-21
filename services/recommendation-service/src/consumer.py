@@ -208,6 +208,11 @@ class EventConsumer:
         The message is ACKed via ``add_callback_threadsafe`` only after
         the work completes — if the process dies mid-reindex, RabbitMQ
         redelivers the event.
+
+        During shutdown the pool may already be closed (a callback that
+        was in-flight when ``stop_consuming`` was called).  In that case
+        we ACK immediately — the catalog update already succeeded and
+        the reindex will happen on next full rebuild.
         """
         def _worker():
             try:
@@ -222,7 +227,12 @@ class EventConsumer:
                 except Exception as exc:
                     logger.warning(f"Failed to schedule ACK after reindex for {entity_id}: {exc}")
 
-        self._reindex_pool.submit(_worker)
+        try:
+            self._reindex_pool.submit(_worker)
+        except RuntimeError:
+            # Pool already shut down (mid-shutdown race) — ACK and move on
+            logger.debug(f"Reindex pool closed, skipping reindex for {entity_id}")
+            channel.basic_ack(delivery_tag=delivery_tag)
 
     def _rag_reindex_by_major(self, major_id: str) -> None:
         """Re-embed all items linked to a major after it was renamed/updated."""
@@ -317,12 +327,14 @@ class EventConsumer:
         StreamLostError) so the lifespan shutdown never crashes.
         """
         self._stopping = True
-        self._reindex_pool.shutdown(wait=True, cancel_futures=False)
+        # Stop accepting new messages first, so no new callbacks arrive
         try:
             if self._channel and self._channel.is_open:
                 self._channel.stop_consuming()
         except Exception:
             pass
+        # Drain in-flight reindex work (workers ACK via add_callback_threadsafe)
+        self._reindex_pool.shutdown(wait=True, cancel_futures=False)
         try:
             if self._connection and self._connection.is_open:
                 self._connection.close()
