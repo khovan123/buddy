@@ -191,34 +191,32 @@ class EventConsumer:
     def _rag_reindex_by_major(self, major_id: str) -> None:
         """Re-embed items linked to a major after it was renamed/updated.
 
-        Runs in a daemon thread so the consumer loop is not blocked while
-        re-chunking and re-embedding potentially many items.
+        Runs synchronously so the message is only ACKed once the reindex
+        completes.  If the process dies mid-reindex, RabbitMQ will
+        redeliver the event.
         """
         if self._rag_indexer:
-            def _do():
-                try:
-                    count = self._rag_indexer.reindex_by_major(major_id)
-                    if count:
-                        logger.info(f"RAG reindexed {count} chunks for major {major_id}")
-                except Exception as e:
-                    logger.warning(f"RAG reindex-by-major failed for {major_id}: {e}")
-            threading.Thread(target=_do, daemon=True).start()
+            try:
+                count = self._rag_indexer.reindex_by_major(major_id)
+                if count:
+                    logger.info(f"RAG reindexed {count} chunks for major {major_id}")
+            except Exception as e:
+                logger.warning(f"RAG reindex-by-major failed for {major_id}: {e}")
 
     def _rag_reindex_by_course(self, course_id: str) -> None:
         """Re-embed items linked to a course after it was renamed/updated.
 
-        Runs in a daemon thread so the consumer loop is not blocked while
-        re-chunking and re-embedding potentially many items.
+        Runs synchronously so the message is only ACKed once the reindex
+        completes.  If the process dies mid-reindex, RabbitMQ will
+        redeliver the event.
         """
         if self._rag_indexer:
-            def _do():
-                try:
-                    count = self._rag_indexer.reindex_by_course(course_id)
-                    if count:
-                        logger.info(f"RAG reindexed {count} chunks for course {course_id}")
-                except Exception as e:
-                    logger.warning(f"RAG reindex-by-course failed for {course_id}: {e}")
-            threading.Thread(target=_do, daemon=True).start()
+            try:
+                count = self._rag_indexer.reindex_by_course(course_id)
+                if count:
+                    logger.info(f"RAG reindexed {count} chunks for course {course_id}")
+            except Exception as e:
+                logger.warning(f"RAG reindex-by-course failed for {course_id}: {e}")
 
     # ─── User Profile Sync Events (from user-service) ──────────────────
 

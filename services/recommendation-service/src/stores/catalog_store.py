@@ -43,6 +43,7 @@ class CatalogStore:
         try:
             self._items.create_index("itemId", unique=True)
             self._items.create_index([("majorId", 1), ("courseId", 1)])
+            self._items.create_index("courseId")
             self._items.create_index("itemType")
             self._courses.create_index("courseId", unique=True)
             self._majors.create_index("majorId", unique=True)
