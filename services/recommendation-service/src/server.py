@@ -42,6 +42,8 @@ RAG_ASK_TIMEOUT_SECONDS = 90
 RAG_STARTUP_WARMUP_ENABLED = (
     os.getenv("RAG_STARTUP_WARMUP_ENABLED", "false").lower() == "true"
 )
+SERVICE_MODE = os.getenv("SERVICE_MODE", os.getenv("SERVICE_NAME", "recommendation-service")).lower()
+RAG_ONLY_MODE = SERVICE_MODE in {"rag", "rag-service"}
 BLOCKING_WORKER_LIMIT = int(os.getenv("RECOMMENDATION_BLOCKING_WORKERS", "12"))
 RAG_WORKER_LIMIT = int(os.getenv("RAG_BLOCKING_WORKERS", "4"))
 default_blocking_executor = ThreadPoolExecutor(
@@ -57,10 +59,14 @@ rag_blocking_slots = threading.BoundedSemaphore(RAG_WORKER_LIMIT)
 
 # ─── Global singletons (all read from recommendation_db only) ──────────────────
 
-user_store = UserProfileStore()
-popularity_store = ItemPopularityStore()
 catalog_store = CatalogStore()
-scoring_engine = ScoringEngine(user_store, popularity_store, catalog_store)
+user_store = None if RAG_ONLY_MODE else UserProfileStore()
+popularity_store = None if RAG_ONLY_MODE else ItemPopularityStore()
+scoring_engine = (
+    None
+    if RAG_ONLY_MODE
+    else ScoringEngine(user_store, popularity_store, catalog_store)
+)
 redis_client = redis.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=10, socket_timeout=10)
 
 # RAG singletons (initialised only when a RAG operation needs Qdrant)
@@ -93,6 +99,16 @@ def _embedding_not_ready_response() -> JSONResponse:
             "message": "RAG embedding model not ready",
             "status": "degraded",
             "reason": "embedding_model_not_loaded",
+        },
+    )
+
+
+def _recommendation_unavailable_response() -> JSONResponse:
+    return JSONResponse(
+        status_code=503,
+        content={
+            "message": "Recommendation endpoints are disabled in RAG-only mode",
+            "status": "unavailable",
         },
     )
 
@@ -233,6 +249,19 @@ async def lifespan(app: FastAPI):
     def _background_init():
         """Run all heavy init in a single background thread."""
         try:
+            if RAG_ONLY_MODE:
+                logger.info("RAG-only service mode enabled; skipping recommendation ML, consumer, and scheduler")
+                if RAG_STARTUP_WARMUP_ENABLED:
+                    warmup_thread = threading.Thread(target=_warm_rag_background, daemon=True)
+                    warmup_thread.start()
+                else:
+                    bootstrap_thread = threading.Thread(
+                        target=_bootstrap_rag_index_background,
+                        daemon=True,
+                    )
+                    bootstrap_thread.start()
+                return
+
             # 1. RabbitMQ consumer
             # RAG/Qdrant is initialised lazily when indexing actually runs.
             model_manager = scoring_engine.model_manager
@@ -290,8 +319,10 @@ async def lifespan(app: FastAPI):
             app.state.consumer.close()
         except Exception as e:
             logger.warning(f"Consumer close error (ignored): {e}")
-    user_store.close()
-    popularity_store.close()
+    if user_store:
+        user_store.close()
+    if popularity_store:
+        popularity_store.close()
     catalog_store.close()
     logger.info("Recommendation service shutdown")
 
@@ -457,7 +488,7 @@ async def readiness():
     try:
         result = await _run_blocking_with_timeout(
             "readiness check",
-            user_store._db.command,
+            catalog_store._db.command,
             "ping",
             timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
         )
@@ -535,6 +566,9 @@ async def recommend(
     Returns:
         RecommendResponse: Recommendations with scores, strategy, and phase.
     """
+    if RAG_ONLY_MODE or scoring_engine is None:
+        return _recommendation_unavailable_response()
+
     # Check Redis cache
     cache_key = f"rec:{userId}:{contentType}:{limit}"
     try:
@@ -602,6 +636,9 @@ async def trending(
     Returns:
         TrendingResponse: Trending items with interaction totals and ratings.
     """
+    if RAG_ONLY_MODE or popularity_store is None:
+        return _recommendation_unavailable_response()
+
     items = await _run_blocking_with_timeout(
         "trending lookup",
         popularity_store.get_popular_items,
