@@ -31,6 +31,27 @@ class RAGIndexer:
         self._catalog = catalog_store
         self._vector = vector_store
 
+    # ── Enrichment ────────────────────────────────────────────────────
+
+    def _enrich_items(self, items: list[dict]) -> None:
+        """Inject human-readable major/course names for the chunker.
+
+        Looks up the catalog's ``majors`` and ``courses`` collections and
+        adds ``_major_name`` / ``_course_name`` keys that the chunker uses
+        instead of raw UUIDs — better embeddings, better retrieval.
+        """
+        majors = self._catalog.get_majors()    # {majorId: {name, code, …}}
+        courses = self._catalog.get_courses()  # {courseId: {name, code, …}}
+        for item in items:
+            mid = item.get("majorId", "")
+            cid = item.get("courseId", "")
+            if mid and mid in majors:
+                item["_major_name"] = majors[mid].get("name", "")
+            if cid and cid in courses:
+                item["_course_name"] = courses[cid].get("name", "")
+
+    # ── Full re-index ────────────────────────────────────────────────
+
     def index_all(self) -> dict:
         """Full re-index: read all catalog items, chunk, embed, upsert.
 
@@ -50,6 +71,7 @@ class RAGIndexer:
         if not items:
             return {"items_read": len(all_items), "items_indexed": 0, "chunks_indexed": 0}
 
+        self._enrich_items(items)
         chunks = chunk_items(items)
 
         if not chunks:
@@ -91,6 +113,7 @@ class RAGIndexer:
         # Remove old chunks first
         self._vector.delete_by_item_id(item_id)
 
+        self._enrich_items([item])
         chunks = chunk_item(item)
         if not chunks:
             return 0

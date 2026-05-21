@@ -192,6 +192,8 @@ export class CreateResourceHanlder implements ICommandHandler<CreateResourceComm
       courseId,
       title,
       slug: resource.slug,
+      summary,
+      hightlights,
     });
 
     // 9. Return resourceId + danh sách uploadUrls cho client upload trực tiếp

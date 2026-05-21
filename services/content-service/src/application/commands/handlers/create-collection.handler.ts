@@ -217,6 +217,9 @@ export class CreateCollectionHandler implements ICommandHandler<CreateCollection
       majorId,
       courseId,
       title,
+      slug,
+      description,
+      hightlights,
     });
 
     return collection;

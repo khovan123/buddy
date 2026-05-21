@@ -209,6 +209,9 @@ export class CreateTutorialHanlder implements ICommandHandler<CreateTutorialComm
       courseId,
       title,
       slug,
+      description,
+      hightlights,
+      steps: steps?.map((s) => ({ title: s.title })),
     });
 
     // 7. Return tutorial metadata + presigned URL + estimatedTime
