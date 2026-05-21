@@ -52,7 +52,7 @@ export class RagProxyController {
   catalogBackfill(@Body() body: unknown, @Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
       service: 'content',
-      resilienceKey: 'recommendation-rag-index',
+      resilienceKey: 'recommendation-catalog-backfill',
       path: '/v1/content-meta/recommendation-sync/backfill',
       method: 'POST',
       body,
