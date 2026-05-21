@@ -110,6 +110,7 @@ jobs:
           - content-access-service
           - interaction-service
           - recommendation-service
+          - rag-service
 
     steps:
       - uses: actions/checkout@v4
@@ -171,6 +172,7 @@ jobs:
           - content-access-service
           - interaction-service
           - recommendation-service
+          - rag-service
 
     steps:
       - uses: actions/checkout@v4

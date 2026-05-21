@@ -1,0 +1,9 @@
+{
+  "name": "rag-service",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "PYTHONPATH=src python3 src/server.py",
+    "dev:prod": "cross-env PYTHONPATH=src dotenv -e .env.prod -- python3 src/server.py"
+  }
+}
