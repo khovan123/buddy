@@ -10,7 +10,8 @@ materialized views — both services receive the same events independently.
 
 Heavy work (embedding + Qdrant upsert) is offloaded to a worker thread so
 the pika I/O thread stays responsive for heartbeats.  ACK/NACK is sent via
-``add_callback_threadsafe`` after the work completes.
+``add_callback_threadsafe`` on the *original* connection/channel that
+delivered the message, avoiding stale-channel issues after reconnects.
 """
 
 import json
@@ -43,7 +44,9 @@ class RAGContentConsumer:
     Heavy re-indexing (ITEM_UPSERT, COURSE_UPSERT, MAJOR_UPSERT) is
     dispatched to a ``ThreadPoolExecutor`` so the pika I/O thread
     continues servicing heartbeats.  ACK is sent back via
-    ``add_callback_threadsafe`` after the work completes successfully.
+    ``add_callback_threadsafe`` using the **original** connection/channel
+    captured at delivery time to avoid PRECONDITION_FAILED errors after
+    reconnects.
 
     Args:
         catalog_store: Local materialized view of items/courses/majors.
@@ -89,20 +92,31 @@ class RAGContentConsumer:
         logger.info("RAG consumer connected, bound %s to %s", QUEUE_RAG_CONTENT_SYNC, EXCHANGE_CONTENT_SYNC)
 
     # ─── Thread-safe ACK/NACK helpers ───────────────────────────────────
+    # These accept the *delivery-time* connection and channel so that a
+    # reconnect between message delivery and worker completion doesn't
+    # cause PRECONDITION_FAILED (unknown delivery tag on new channel).
 
-    def _safe_ack(self, delivery_tag: int) -> None:
+    @staticmethod
+    def _safe_ack(connection, channel, delivery_tag: int) -> None:
         """ACK a message from any thread via the pika I/O loop."""
-        if self._connection and self._connection.is_open:
-            self._connection.add_callback_threadsafe(
-                lambda: self._channel.basic_ack(delivery_tag=delivery_tag)
-            )
+        try:
+            if connection and connection.is_open:
+                connection.add_callback_threadsafe(
+                    lambda: channel.basic_ack(delivery_tag=delivery_tag)
+                )
+        except Exception as e:
+            logger.debug("Could not ACK delivery_tag=%s: %s", delivery_tag, e)
 
-    def _safe_nack(self, delivery_tag: int) -> None:
+    @staticmethod
+    def _safe_nack(connection, channel, delivery_tag: int) -> None:
         """NACK+requeue a message from any thread via the pika I/O loop."""
-        if self._connection and self._connection.is_open:
-            self._connection.add_callback_threadsafe(
-                lambda: self._channel.basic_nack(delivery_tag=delivery_tag, requeue=True)
-            )
+        try:
+            if connection and connection.is_open:
+                connection.add_callback_threadsafe(
+                    lambda: channel.basic_nack(delivery_tag=delivery_tag, requeue=True)
+                )
+        except Exception as e:
+            logger.debug("Could not NACK delivery_tag=%s: %s", delivery_tag, e)
 
     # ─── Message handler ────────────────────────────────────────────────
 
@@ -112,7 +126,13 @@ class RAGContentConsumer:
         Light operations (catalog store updates, deletes) run inline.
         Heavy operations (embedding + Qdrant upsert) are dispatched to the
         thread pool; ACK is deferred until the work completes.
+
+        The *delivery-time* ``channel`` and its parent connection are
+        captured and passed to the worker so ACK targets the correct
+        channel even after a reconnect.
         """
+        # Capture the connection that owns this channel at delivery time
+        conn = self._connection
         try:
             message = json.loads(body)
             payload = message.get("payload", message)
@@ -125,7 +145,8 @@ class RAGContentConsumer:
                 if item:
                     # Offload embedding work — ACK after completion
                     self._executor.submit(
-                        self._index_item_async, item, method.delivery_tag
+                        self._index_item_async, conn, channel,
+                        item, method.delivery_tag,
                     )
                     return  # ACK handled by worker thread
                 else:
@@ -141,9 +162,9 @@ class RAGContentConsumer:
                 self.catalog_store.upsert_course(payload)
                 course_id = payload.get("courseId", "")
                 if course_id:
-                    # Offload batch re-index — ACK after completion
                     self._executor.submit(
-                        self._reindex_items_by_course_async, course_id, method.delivery_tag
+                        self._reindex_items_by_course_async, conn, channel,
+                        course_id, method.delivery_tag,
                     )
                     return
 
@@ -154,9 +175,9 @@ class RAGContentConsumer:
                 self.catalog_store.upsert_major(payload)
                 major_id = payload.get("majorId", "")
                 if major_id:
-                    # Offload batch re-index — ACK after completion
                     self._executor.submit(
-                        self._reindex_items_by_major_async, major_id, method.delivery_tag
+                        self._reindex_items_by_major_async, conn, channel,
+                        major_id, method.delivery_tag,
                     )
                     return
 
@@ -172,24 +193,25 @@ class RAGContentConsumer:
             channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
     # ─── Worker-thread methods (run off the pika I/O thread) ────────────
+    # Each receives the delivery-time connection+channel for safe ACK.
 
-    def _index_item_async(self, item: dict, delivery_tag: int) -> None:
+    def _index_item_async(self, conn, channel, item: dict, delivery_tag: int) -> None:
         """Index a single item in a worker thread, then ACK."""
         item_id = item.get("itemId", "?")
         try:
             chunks = self.rag_indexer.index_item(item)
             logger.debug("Indexed %d chunks for item %s", chunks, item_id)
-            self._safe_ack(delivery_tag)
+            self._safe_ack(conn, channel, delivery_tag)
         except Exception as e:
             logger.error("Failed to index item %s: %s", item_id, e)
-            self._safe_nack(delivery_tag)
+            self._safe_nack(conn, channel, delivery_tag)
 
-    def _reindex_items_by_course_async(self, course_id: str, delivery_tag: int) -> None:
+    def _reindex_items_by_course_async(self, conn, channel, course_id: str, delivery_tag: int) -> None:
         """Re-index all items for a course in a worker thread, then ACK."""
         try:
             items = self.catalog_store.get_items_by_course(course_id)
             if not items:
-                self._safe_ack(delivery_tag)
+                self._safe_ack(conn, channel, delivery_tag)
                 return
             logger.info("Re-indexing %d items for course %s after metadata update", len(items), course_id)
             for item in items:
@@ -197,17 +219,17 @@ class RAGContentConsumer:
                     self.rag_indexer.index_item(item)
                 except Exception as e:
                     logger.error("Failed to re-index item %s for course %s: %s", item.get("itemId"), course_id, e)
-            self._safe_ack(delivery_tag)
+            self._safe_ack(conn, channel, delivery_tag)
         except Exception as e:
             logger.error("Course re-index failed for %s: %s", course_id, e)
-            self._safe_nack(delivery_tag)
+            self._safe_nack(conn, channel, delivery_tag)
 
-    def _reindex_items_by_major_async(self, major_id: str, delivery_tag: int) -> None:
+    def _reindex_items_by_major_async(self, conn, channel, major_id: str, delivery_tag: int) -> None:
         """Re-index all items for a major in a worker thread, then ACK."""
         try:
             items = self.catalog_store.get_items_by_major(major_id)
             if not items:
-                self._safe_ack(delivery_tag)
+                self._safe_ack(conn, channel, delivery_tag)
                 return
             logger.info("Re-indexing %d items for major %s after metadata update", len(items), major_id)
             for item in items:
@@ -215,10 +237,10 @@ class RAGContentConsumer:
                     self.rag_indexer.index_item(item)
                 except Exception as e:
                     logger.error("Failed to re-index item %s for major %s: %s", item.get("itemId"), major_id, e)
-            self._safe_ack(delivery_tag)
+            self._safe_ack(conn, channel, delivery_tag)
         except Exception as e:
             logger.error("Major re-index failed for %s: %s", major_id, e)
-            self._safe_nack(delivery_tag)
+            self._safe_nack(conn, channel, delivery_tag)
 
     # ─── Lifecycle ──────────────────────────────────────────────────────
 

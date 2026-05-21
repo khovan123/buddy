@@ -203,17 +203,24 @@ def _bootstrap_rag_index_background() -> None:
         logger.warning("Auto-index check failed: %s", e)
 
 
+_consumer_shutdown = threading.Event()
+
+
 def _start_content_consumer() -> None:
     """Start the RAG content-sync consumer after the RAG module is ready.
 
     Retries ``get_rag_module()`` with exponential backoff so transient
     dependency outages (Qdrant, MongoDB) during startup don't permanently
     kill the consumer thread.
+
+    Exits cleanly when ``_consumer_shutdown`` is set (during lifespan
+    teardown), preventing a race where ``close()`` stops the current
+    consumer but this loop immediately creates a new one.
     """
     global _rag_consumer
     retry_delay = 5
 
-    while True:
+    while not _consumer_shutdown.is_set():
         try:
             _, indexer, _ = get_rag_module()
             consumer = RAGContentConsumer(catalog_store, indexer)
@@ -223,13 +230,17 @@ def _start_content_consumer() -> None:
             # outer loop to re-init the module and restart.
             consumer.start_consuming()
         except Exception as e:
+            if _consumer_shutdown.is_set():
+                break
             logger.error(
                 "Content-sync consumer init failed: %s. Retrying in %ds...",
                 e, retry_delay, exc_info=True,
             )
-            import time
-            time.sleep(retry_delay)
+            # Use event wait instead of time.sleep so shutdown wakes us
+            _consumer_shutdown.wait(timeout=retry_delay)
             retry_delay = min(retry_delay * 2, 60)
+
+    logger.info("Content-sync consumer loop exited (shutdown requested)")
 
 
 @asynccontextmanager
@@ -245,7 +256,8 @@ async def lifespan(app: FastAPI):
     logger.info("RAG service started")
     yield
 
-    # Graceful shutdown
+    # Graceful shutdown — signal the retry loop first, then close consumer
+    _consumer_shutdown.set()
     if _rag_consumer:
         _rag_consumer.close()
     catalog_store.close()
