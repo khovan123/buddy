@@ -141,10 +141,12 @@ class EventConsumer:
                 self._rag_remove_item(payload["itemId"])
             elif sync_type == "COURSE_UPSERT":
                 self.catalog_store.upsert_course(payload)
+                self._rag_reindex_by_course(payload["courseId"])
             elif sync_type == "COURSE_DELETED":
                 self.catalog_store.remove_course(payload["courseId"])
             elif sync_type == "MAJOR_UPSERT":
                 self.catalog_store.upsert_major(payload)
+                self._rag_reindex_by_major(payload["majorId"])
             elif sync_type == "MAJOR_DELETED":
                 self.catalog_store.remove_major(payload["majorId"])
             else:
@@ -185,6 +187,38 @@ class EventConsumer:
                 self._rag_indexer.remove_item(item_id)
             except Exception as e:
                 logger.warning(f"RAG remove failed for {item_id}: {e}")
+
+    def _rag_reindex_by_major(self, major_id: str) -> None:
+        """Re-embed items linked to a major after it was renamed/updated.
+
+        Runs in a daemon thread so the consumer loop is not blocked while
+        re-chunking and re-embedding potentially many items.
+        """
+        if self._rag_indexer:
+            def _do():
+                try:
+                    count = self._rag_indexer.reindex_by_major(major_id)
+                    if count:
+                        logger.info(f"RAG reindexed {count} chunks for major {major_id}")
+                except Exception as e:
+                    logger.warning(f"RAG reindex-by-major failed for {major_id}: {e}")
+            threading.Thread(target=_do, daemon=True).start()
+
+    def _rag_reindex_by_course(self, course_id: str) -> None:
+        """Re-embed items linked to a course after it was renamed/updated.
+
+        Runs in a daemon thread so the consumer loop is not blocked while
+        re-chunking and re-embedding potentially many items.
+        """
+        if self._rag_indexer:
+            def _do():
+                try:
+                    count = self._rag_indexer.reindex_by_course(course_id)
+                    if count:
+                        logger.info(f"RAG reindexed {count} chunks for course {course_id}")
+                except Exception as e:
+                    logger.warning(f"RAG reindex-by-course failed for {course_id}: {e}")
+            threading.Thread(target=_do, daemon=True).start()
 
     # ─── User Profile Sync Events (from user-service) ──────────────────
 

@@ -105,6 +105,10 @@ class CatalogStore:
         """Get content items filtered by major."""
         return list(self._items.find({"majorId": major_id}, {"_id": 0}))
 
+    def get_items_by_course(self, course_id: str) -> list[dict]:
+        """Get content items filtered by course."""
+        return list(self._items.find({"courseId": course_id}, {"_id": 0}))
+
     # ─── Course Catalog (populated by content events) ───────────────────
 
     def upsert_course(self, course: dict) -> None:
@@ -138,6 +142,10 @@ class CatalogStore:
             courses[doc["courseId"]] = doc
         return courses
 
+    def get_course(self, course_id: str) -> dict | None:
+        """Get a single course by its courseId."""
+        return self._courses.find_one({"courseId": course_id}, {"_id": 0})
+
     # ─── Major Catalog (populated by content events) ────────────────────
 
     def upsert_major(self, major: dict) -> None:
@@ -164,6 +172,10 @@ class CatalogStore:
         for doc in self._majors.find({}, {"_id": 0}):
             majors[doc["majorId"]] = doc
         return majors
+
+    def get_major(self, major_id: str) -> dict | None:
+        """Get a single major by its majorId."""
+        return self._majors.find_one({"majorId": major_id}, {"_id": 0})
 
     def get_all_majors(self) -> list[dict]:
         """Get all majors as a list."""
