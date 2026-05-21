@@ -78,7 +78,7 @@ export class RagProxyController {
   stats(@Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
       service: 'rag',
-      resilienceKey: 'recommendation-rag-health',
+      resilienceKey: 'recommendation-rag-stats',
       path: '/v1/rag/stats',
       method: 'GET',
       timeoutMs: 10_000,
