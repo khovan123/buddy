@@ -71,7 +71,10 @@ class EventConsumer:
         """Establish a blocking connection to RabbitMQ and declare queues.
 
         Declares durable queues for all three event streams with dead-letter
-        exchange support.  Sets ``prefetch_count=50`` for flow control.
+        exchange support.  The content sync queue is bound to the
+        ``content.sync`` fanout exchange so both this service and the
+        rag-service receive the same events independently.
+        Sets ``prefetch_count=50`` for flow control.
         """
         params = pika.URLParameters(RABBITMQ_URL)
         self._connection = pika.BlockingConnection(params)
@@ -84,6 +87,17 @@ class EventConsumer:
                 durable=True,
                 arguments={"x-dead-letter-exchange": "dead.letter"}
             )
+
+        # Bind content sync queue to the fanout exchange
+        self._channel.exchange_declare(
+            exchange="content.sync",
+            exchange_type="fanout",
+            durable=True,
+        )
+        self._channel.queue_bind(
+            queue=QUEUE_CONTENT_SYNC,
+            exchange="content.sync",
+        )
 
         self._channel.basic_qos(prefetch_count=50)
         logger.info("Connected to RabbitMQ, consuming from 3 queues")

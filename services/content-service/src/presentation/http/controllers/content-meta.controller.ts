@@ -188,7 +188,8 @@ export class ContentMetaController {
           failed += 1;
           const errMsg = err instanceof Error ? err.message : String(err);
           failedItems.push({
-            itemType: item.type === CollectionType.RESOURCE ? 'RESOURCE_COLLECTION' : 'TUTORIAL_COLLECTION',
+            itemType:
+              item.type === CollectionType.RESOURCE ? 'RESOURCE_COLLECTION' : 'TUTORIAL_COLLECTION',
             itemId: item.id,
             error: errMsg,
           });
@@ -211,9 +212,7 @@ export class ContentMetaController {
     }
 
     if (failed > 0) {
-      this.logger.error(
-        `Backfill completed with ${failed}/${total} failures`,
-      );
+      this.logger.error(`Backfill completed with ${failed}/${total} failures`);
     }
 
     return successResponse(

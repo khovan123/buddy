@@ -1,9 +1,9 @@
 """
 FastAPI server for the dedicated RAG service.
 
-This process intentionally runs only the RAG/Qdrant/Gemini path. It does not
-load the recommendation ML model, FAISS recommendation index, RabbitMQ
-consumer, or recommendation scheduler.
+This process runs the RAG/Qdrant/Gemini pipeline **and** a RabbitMQ consumer
+that keeps the Qdrant index in sync with content-service events (ITEM_UPSERT,
+ITEM_DELETED, etc.) via the ``content.sync`` fanout exchange.
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ from pydantic import BaseModel, Field
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from config import ALLOWED_ORIGINS, HOST, PORT, REDIS_URL
+from consumer import RAGContentConsumer
 from rag.indexer import RAGIndexer
 from rag.pipeline import RAGPipeline
 from rag.retriever import Retriever
@@ -56,6 +57,8 @@ rag_pipeline = None
 rag_indexer = None
 rag_vector_store = None
 rag_lock = threading.Lock()
+
+_rag_consumer: RAGContentConsumer | None = None
 
 
 class RAGRequest(BaseModel):
@@ -200,6 +203,22 @@ def _bootstrap_rag_index_background() -> None:
         logger.warning("Auto-index check failed: %s", e)
 
 
+def _start_content_consumer() -> None:
+    """Start the RAG content-sync consumer after the RAG module is ready.
+
+    Waits for ``get_rag_module()`` to initialise, then starts consuming
+    from the ``rag.content.sync`` queue in a blocking loop.
+    """
+    global _rag_consumer
+    try:
+        _, indexer, _ = get_rag_module()
+        consumer = RAGContentConsumer(catalog_store, indexer)
+        _rag_consumer = consumer
+        consumer.start_consuming()
+    except Exception as e:
+        logger.error("Content-sync consumer failed: %s", e, exc_info=True)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if RAG_STARTUP_WARMUP_ENABLED:
@@ -207,9 +226,15 @@ async def lifespan(app: FastAPI):
     else:
         threading.Thread(target=_bootstrap_rag_index_background, daemon=True).start()
 
+    # Start content-sync consumer in a daemon thread
+    threading.Thread(target=_start_content_consumer, daemon=True, name="rag-consumer").start()
+
     logger.info("RAG service started")
     yield
 
+    # Graceful shutdown
+    if _rag_consumer:
+        _rag_consumer.close()
     catalog_store.close()
     logger.info("RAG service shutdown")
 

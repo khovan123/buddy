@@ -35,6 +35,8 @@ jobs:
               - 'libs/**'
             lockfile:
               - 'package-lock.json'
+            rootpkg:
+              - 'package.json'
             webapp:
               - 'webapp/**'
             api-gateway:
@@ -64,7 +66,7 @@ jobs:
         id: set-matrix
         run: |
           SERVICES=()
-          SHARED="${{ steps.filter.outputs.libs == 'true' || steps.filter.outputs.lockfile == 'true' }}"
+          SHARED="${{ steps.filter.outputs.libs == 'true' || steps.filter.outputs.lockfile == 'true' || steps.filter.outputs.rootpkg == 'true' }}"
           FORCE="${{ github.event_name == 'workflow_dispatch' }}"
 
           for SVC in api-gateway auth-service user-service notification-service \
