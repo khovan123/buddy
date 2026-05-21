@@ -24,21 +24,21 @@ import { UpdateCourseCommand } from '../../../application/commands/update-course
 import { UpdateMajorCommand } from '../../../application/commands/update-major.command';
 import { GetContentMetaQuery } from '../../../application/queries/get-content-meta.query';
 import { GetCoursesByMajorQuery } from '../../../application/queries/get-courses-by-major.query';
+import type { ICollectionRepository } from '../../../domain/repositories/collection.repository.interface';
+import type { IResourceRepository } from '../../../domain/repositories/resource.repository.interface';
 import {
   COLLECTION_REPOSITORY,
   RESOURCE_REPOSITORY,
   TUTORIAL_REPOSITORY,
 } from '../../../domain/repositories/tokens';
-import type { ICollectionRepository } from '../../../domain/repositories/collection.repository.interface';
-import type { IResourceRepository } from '../../../domain/repositories/resource.repository.interface';
 import type { ITutorialRepository } from '../../../domain/repositories/tutorial.repository.interface';
 import { RecommendationSyncPublisher } from '../../../infrastructure/messaging/publishers/recommendation-sync.publisher';
 import { CollectionType } from '../../../infrastructure/persistence/mongo/schemas/collection.schema';
+import { CourseIdParamDto } from '../dtos/course-id-param.dto';
 import { CreateCourseDto, UpdateCourseDto } from '../dtos/course.dto';
-import { CreateMajorDto, UpdateMajorDto } from '../dtos/major.dto';
 import { GetCoursesByMajorQueryDto } from '../dtos/get-courses-by-major-query.dto';
 import { MajorIdParamDto } from '../dtos/major-id-param.dto';
-import { CourseIdParamDto } from '../dtos/course-id-param.dto';
+import { CreateMajorDto, UpdateMajorDto } from '../dtos/major.dto';
 
 /**
  * ContentMetaController — Management and query of Majors and Courses.
@@ -96,7 +96,10 @@ export class ContentMetaController {
     let collections = 0;
 
     for (let page = 1; ; page += 1) {
-      const result = await this.resourceRepository.findAvailableResources({ page, limit: pageSize });
+      const result = await this.resourceRepository.findAvailableResources({
+        page,
+        limit: pageSize,
+      });
       for (const item of result.data) {
         await this.recommendationSync.send({
           type: 'ITEM_UPSERT',
@@ -115,7 +118,10 @@ export class ContentMetaController {
     }
 
     for (let page = 1; ; page += 1) {
-      const result = await this.tutorialRepository.findAvailableTutorials({ page, limit: pageSize });
+      const result = await this.tutorialRepository.findAvailableTutorials({
+        page,
+        limit: pageSize,
+      });
       for (const item of result.data) {
         await this.recommendationSync.send({
           type: 'ITEM_UPSERT',
@@ -141,7 +147,10 @@ export class ContentMetaController {
     }
 
     for (let page = 1; ; page += 1) {
-      const result = await this.collectionRepository.findAvailableCollections({ page, limit: pageSize });
+      const result = await this.collectionRepository.findAvailableCollections({
+        page,
+        limit: pageSize,
+      });
       for (const item of result.data) {
         await this.recommendationSync.send({
           type: 'ITEM_UPSERT',
