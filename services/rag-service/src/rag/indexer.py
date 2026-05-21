@@ -31,6 +31,33 @@ class RAGIndexer:
         self._catalog = catalog_store
         self._vector = vector_store
 
+    # ── Enrichment ────────────────────────────────────────────────────
+
+    def _enrich_items(self, items: list[dict]) -> None:
+        """Bulk-inject human-readable major/course names for full re-index."""
+        majors = self._catalog.get_majors()
+        courses = self._catalog.get_courses()
+        for item in items:
+            mid = item.get("majorId", "")
+            cid = item.get("courseId", "")
+            if mid and mid in majors:
+                item["_major_name"] = majors[mid].get("name", "")
+            if cid and cid in courses:
+                item["_course_name"] = courses[cid].get("name", "")
+
+    def _enrich_item(self, item: dict) -> None:
+        """Inject human-readable major/course names for incremental indexing."""
+        mid = item.get("majorId", "")
+        cid = item.get("courseId", "")
+        if mid:
+            major = self._catalog.get_major(mid)
+            if major:
+                item["_major_name"] = major.get("name", "")
+        if cid:
+            course = self._catalog.get_course(cid)
+            if course:
+                item["_course_name"] = course.get("name", "")
+
     def index_all(self) -> dict:
         """Full re-index: read all catalog items, chunk, embed, upsert.
 
@@ -50,6 +77,7 @@ class RAGIndexer:
         if not items:
             return {"items_read": len(all_items), "items_indexed": 0, "chunks_indexed": 0}
 
+        self._enrich_items(items)
         chunks = chunk_items(items)
 
         if not chunks:
@@ -91,6 +119,7 @@ class RAGIndexer:
         # Remove old chunks first
         self._vector.delete_by_item_id(item_id)
 
+        self._enrich_item(item)
         chunks = chunk_item(item)
         if not chunks:
             return 0
@@ -109,3 +138,31 @@ class RAGIndexer:
             item_id: The content item's unique identifier.
         """
         self._vector.delete_by_item_id(item_id)
+
+    # ── Targeted reindex (major / course rename) ─────────────────────
+
+    def reindex_by_major(self, major_id: str) -> int:
+        """Re-embed all items linked to a major after a name change."""
+        items = self._catalog.get_items_by_major(major_id)
+        items = [i for i in items if i.get("status", "AVAILABLE") in _INDEXABLE_STATUSES]
+        if not items:
+            return 0
+
+        logger.info(f"Reindexing {len(items)} items for major {major_id}")
+        total = 0
+        for item in items:
+            total += self.index_item(item)
+        return total
+
+    def reindex_by_course(self, course_id: str) -> int:
+        """Re-embed all items linked to a course after a name change."""
+        items = self._catalog.get_items_by_course(course_id)
+        items = [i for i in items if i.get("status", "AVAILABLE") in _INDEXABLE_STATUSES]
+        if not items:
+            return 0
+
+        logger.info(f"Reindexing {len(items)} items for course {course_id}")
+        total = 0
+        for item in items:
+            total += self.index_item(item)
+        return total
