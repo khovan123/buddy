@@ -1,5 +1,5 @@
 """
-Centralised configuration for the recommendation service.
+Centralised configuration for the RAG service.
 
 All settings are loaded from environment variables with sensible defaults
 for local development.  In production the ``.env.prod`` file is loaded

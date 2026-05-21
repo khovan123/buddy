@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       has_service_changes: ${{ steps.set-matrix.outputs.has_service_changes }}
-      has_webapp_changes:  ${{ steps.filter.outputs.webapp }}
+      has_webapp_changes:  ${{ steps.set-webapp.outputs.has_webapp_changes }}
       services_matrix:    ${{ steps.set-matrix.outputs.matrix }}
 
     steps:
@@ -61,6 +61,19 @@ jobs:
               - 'services/recommendation-service/**'
             rag-service:
               - 'services/rag-service/**'
+
+      - name: Detect webapp changes
+        id: set-webapp
+        run: |
+          SHARED="${{ steps.filter.outputs.libs == 'true' || steps.filter.outputs.lockfile == 'true' || steps.filter.outputs.rootpkg == 'true' }}"
+          FORCE="${{ github.event_name == 'workflow_dispatch' }}"
+          WEBAPP="${{ steps.filter.outputs.webapp }}"
+
+          if [[ "$FORCE" == "true" || "$WEBAPP" == "true" || "$SHARED" == "true" ]]; then
+            echo "has_webapp_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_webapp_changes=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build dynamic matrix
         id: set-matrix
