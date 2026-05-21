@@ -31,11 +31,15 @@ class Chunk:
 def _build_document_text(item: dict) -> str:
     """Assemble a single document string from an item's text fields.
 
-    Intentionally excludes attachment metadata (download URLs, S3 keys,
-    file sizes) to prevent leaking sensitive data into RAG responses.
+    Prioritises body content (summary, highlights, steps) over metadata
+    so that the embedding model encodes actual educational material.
+
+    Uses ``_major_name`` / ``_course_name`` keys (injected by the indexer's
+    enrichment pass) instead of raw UUIDs to provide human-readable context
+    without wasting embedding dimensions on meaningless identifiers.
 
     Args:
-        item: Catalog item dict from MongoDB.
+        item: Catalog item dict from MongoDB (possibly enriched).
 
     Returns:
         Combined text suitable for chunking.
@@ -55,28 +59,25 @@ def _build_document_text(item: dict) -> str:
     if highlights:
         parts.append("Key points: " + "; ".join(highlights))
 
-    # Tutorial steps
     steps = item.get("steps") or []
     if steps:
         step_texts = []
         for i, step in enumerate(steps, 1):
             step_title = step.get("title", "")
-            if step_title:
+            step_desc = step.get("description", "")
+            if step_title and step_desc:
+                step_texts.append(f"Step {i}: {step_title} - {step_desc}")
+            elif step_title:
                 step_texts.append(f"Step {i}: {step_title}")
         if step_texts:
             parts.append("Steps: " + "; ".join(step_texts))
 
-    item_type = item.get("itemType", "")
-    if item_type:
-        parts.append(f"Type: {item_type}")
-
-    major_id = item.get("majorId", "")
-    if major_id:
-        parts.append(f"Major: {major_id}")
-
-    course_id = item.get("courseId", "")
-    if course_id:
-        parts.append(f"Course: {course_id}")
+    major_name = item.get("_major_name", "")
+    course_name = item.get("_course_name", "")
+    if major_name:
+        parts.append(f"Major: {major_name}")
+    if course_name:
+        parts.append(f"Course: {course_name}")
 
     return "\n".join(parts)
 

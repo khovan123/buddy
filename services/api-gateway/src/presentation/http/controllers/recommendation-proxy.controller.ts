@@ -1,4 +1,4 @@
-import { AppLogger, JwtAuthGuard, Public } from '@libs/common';
+import { AppLogger, JwtAuthGuard, Public, type JwtPayload } from '@libs/common';
 import { Controller, Get, Post, Query, Req, UseGuards, Body } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import {
@@ -48,6 +48,26 @@ export class RecommendationProxyController {
     @Query('userId') userId: string,
     @Query('limit') limit?: string,
     @Query('contentType') contentType?: string,
+  ) {
+    return this.getHydratedRecommendations(req, userId, limit, contentType);
+  }
+
+  @Get('for-you')
+  @UseGuards(JwtAuthGuard)
+  async getRecommendationsForCurrentUser(
+    @Req() req: FastifyRequest,
+    @Query('limit') limit?: string,
+    @Query('contentType') contentType?: string,
+  ) {
+    const user = (req as FastifyRequest & { user: JwtPayload }).user;
+    return this.getHydratedRecommendations(req, user.sub, limit, contentType);
+  }
+
+  private async getHydratedRecommendations(
+    req: FastifyRequest,
+    userId: string,
+    limit?: string,
+    contentType?: string,
   ) {
     const query: Record<string, string> = { userId };
     if (limit) query.limit = limit;
