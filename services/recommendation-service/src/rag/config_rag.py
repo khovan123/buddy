@@ -25,7 +25,7 @@ RAG_TOP_K = int(os.getenv("RAG_TOP_K", "5"))
 
 # ─── LLM (Gemini) ──────────────────────────────────────────────────────────
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-LLM_MODEL = os.getenv("LLM_MODEL", "gemini-2.0-flash")
+LLM_MODEL = os.getenv("LLM_MODEL", "gemini-2.5-flash")
 LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", "45"))
 
 # ─── Cache ──────────────────────────────────────────────────────────────────
