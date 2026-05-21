@@ -17,6 +17,7 @@ import { ContentMetaProxyController } from './presentation/http/controllers/cont
 import { GatewayHealthController } from './presentation/http/controllers/gateway-health.controller';
 import { InteractionProxyController } from './presentation/http/controllers/interaction-proxy.controller';
 import { LibraryProxyController } from './presentation/http/controllers/library-proxy.controller';
+import { RagProxyController } from './presentation/http/controllers/rag-proxy.controller';
 import { RecommendationProxyController } from './presentation/http/controllers/recommendation-proxy.controller';
 import { ResourceProxyController } from './presentation/http/controllers/resource-proxy.controller';
 import { TutorialProxyController } from './presentation/http/controllers/tutorial-proxy.controller';
@@ -73,6 +74,7 @@ import { HttpProxyService } from './infrastructure/http/http-proxy.service';
     CareerSkillProxyController,
     InteractionProxyController,
     RecommendationProxyController,
+    RagProxyController,
   ],
   providers: [HttpProxyService, ServiceRegistryService, ApiComposerService],
 })

@@ -7,6 +7,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Inject,
   Param,
   Post,
   Put,
@@ -23,6 +24,16 @@ import { UpdateCourseCommand } from '../../../application/commands/update-course
 import { UpdateMajorCommand } from '../../../application/commands/update-major.command';
 import { GetContentMetaQuery } from '../../../application/queries/get-content-meta.query';
 import { GetCoursesByMajorQuery } from '../../../application/queries/get-courses-by-major.query';
+import {
+  COLLECTION_REPOSITORY,
+  RESOURCE_REPOSITORY,
+  TUTORIAL_REPOSITORY,
+} from '../../../domain/repositories/tokens';
+import type { ICollectionRepository } from '../../../domain/repositories/collection.repository.interface';
+import type { IResourceRepository } from '../../../domain/repositories/resource.repository.interface';
+import type { ITutorialRepository } from '../../../domain/repositories/tutorial.repository.interface';
+import { RecommendationSyncPublisher } from '../../../infrastructure/messaging/publishers/recommendation-sync.publisher';
+import { CollectionType } from '../../../infrastructure/persistence/mongo/schemas/collection.schema';
 import { CreateCourseDto, UpdateCourseDto } from '../dtos/course.dto';
 import { CreateMajorDto, UpdateMajorDto } from '../dtos/major.dto';
 import { GetCoursesByMajorQueryDto } from '../dtos/get-courses-by-major-query.dto';
@@ -37,6 +48,13 @@ export class ContentMetaController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    @Inject(RESOURCE_REPOSITORY)
+    private readonly resourceRepository: IResourceRepository,
+    @Inject(TUTORIAL_REPOSITORY)
+    private readonly tutorialRepository: ITutorialRepository,
+    @Inject(COLLECTION_REPOSITORY)
+    private readonly collectionRepository: ICollectionRepository,
+    private readonly recommendationSync: RecommendationSyncPublisher,
   ) {}
 
   /**
@@ -65,6 +83,94 @@ export class ContentMetaController {
   async getCoursesByMajor(@Query() query: GetCoursesByMajorQueryDto) {
     const courses = await this.queryBus.execute(new GetCoursesByMajorQuery(query.majorId));
     return successResponse(courses, 'Get courses by major successful', getCorrelationId());
+  }
+
+  @Post('recommendation-sync/backfill')
+  @UseGuards(JwtAuthGuard)
+  @Version('1')
+  @HttpCode(HttpStatus.ACCEPTED)
+  async backfillRecommendationCatalog() {
+    const pageSize = 100;
+    let resources = 0;
+    let tutorials = 0;
+    let collections = 0;
+
+    for (let page = 1; ; page += 1) {
+      const result = await this.resourceRepository.findAvailableResources({ page, limit: pageSize });
+      for (const item of result.data) {
+        await this.recommendationSync.send({
+          type: 'ITEM_UPSERT',
+          itemId: item.id,
+          itemType: 'RESOURCE',
+          majorId: item.majorId,
+          courseId: item.courseId,
+          title: item.title,
+          slug: item.slug,
+          summary: item.summary,
+          hightlights: item.hightlights,
+        });
+        resources += 1;
+      }
+      if (page >= result.meta.totalPages) break;
+    }
+
+    for (let page = 1; ; page += 1) {
+      const result = await this.tutorialRepository.findAvailableTutorials({ page, limit: pageSize });
+      for (const item of result.data) {
+        await this.recommendationSync.send({
+          type: 'ITEM_UPSERT',
+          itemId: item.id,
+          itemType: 'TUTORIAL',
+          majorId: item.majorId,
+          courseId: item.courseId,
+          title: item.title,
+          slug: item.slug,
+          description: item.description,
+          hightlights: item.hightlights,
+          steps: item.steps?.map((step) => ({
+            title: step.title,
+            description: step.resources
+              .map((resource) => resource.instructionNote || resource.resource?.summary || '')
+              .filter(Boolean)
+              .join(' '),
+          })),
+        });
+        tutorials += 1;
+      }
+      if (page >= result.meta.totalPages) break;
+    }
+
+    for (let page = 1; ; page += 1) {
+      const result = await this.collectionRepository.findAvailableCollections({ page, limit: pageSize });
+      for (const item of result.data) {
+        await this.recommendationSync.send({
+          type: 'ITEM_UPSERT',
+          itemId: item.id,
+          itemType:
+            item.type === CollectionType.RESOURCE ? 'RESOURCE_COLLECTION' : 'TUTORIAL_COLLECTION',
+          majorId: item.majorId,
+          courseId: item.courseId,
+          title: item.title,
+          slug: item.slug,
+          description: item.description,
+          hightlights: item.hightlights,
+        });
+        collections += 1;
+      }
+      if (page >= result.meta.totalPages) break;
+    }
+
+    return successResponse(
+      {
+        status: 'backfill_published',
+        resources,
+        tutorials,
+        collections,
+        total: resources + tutorials + collections,
+      },
+      'Recommendation catalog backfill published',
+      getCorrelationId(),
+    );
   }
 
   // --- MAJOR ADMIN ENDPOINTS ---

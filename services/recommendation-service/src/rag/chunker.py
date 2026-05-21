@@ -51,12 +51,21 @@ def _build_document_text(item: dict) -> str:
     if title:
         parts.append(f"Title: {title}")
 
+    major_name = item.get("_major_name", "")
+    course_name = item.get("_course_name", "")
+
     # Resources use 'summary', tutorials use 'description'
     summary = item.get("summary") or item.get("description") or ""
+    if not summary:
+        topic_context = course_name or major_name
+        if title and topic_context:
+            summary = f"{title} for {topic_context}."
+        elif title:
+            summary = title
     if summary:
         parts.append(f"Summary: {summary}")
 
-    highlights = item.get("hightlights") or item.get("highlights") or []
+    highlights = item.get("hightlights") or item.get("highlights") or item.get("tags") or []
     if highlights:
         parts.append("Key points: " + "; ".join(highlights))
 
@@ -75,8 +84,6 @@ def _build_document_text(item: dict) -> str:
             parts.append("Steps: " + "; ".join(step_texts))
 
     # ── Contextual labels (human-readable, low-weight) ──────────
-    major_name = item.get("_major_name", "")
-    course_name = item.get("_course_name", "")
     if major_name:
         parts.append(f"Major: {major_name}")
     if course_name:
