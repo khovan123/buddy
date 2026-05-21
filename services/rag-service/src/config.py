@@ -70,6 +70,6 @@ OOV_RETRAIN_THRESHOLD = float(os.getenv("OOV_RETRAIN_THRESHOLD", "0.20"))
 
 # ─── Server ─────────────────────────────────────────────────────────────────────
 HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", "3009"))
+PORT = int(os.getenv("PORT", "3010"))
 _allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "*")
 ALLOWED_ORIGINS = ["*"] if _allowed_origins_raw == "*" else [o.strip() for o in _allowed_origins_raw.split(",")]
