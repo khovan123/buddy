@@ -13,6 +13,7 @@ without ever connecting to another service's database.
 import json
 import logging
 import threading
+from concurrent.futures import ThreadPoolExecutor
 import pika
 from config import RABBITMQ_URL, FAISS_REBUILD_THRESHOLD
 
@@ -64,6 +65,9 @@ class EventConsumer:
         self._channel = None
         self._items_since_rebuild = 0
         self._rebuild_lock = threading.Lock()
+        self._reindex_pool = ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="rag-reindex",
+        )
         self._stopping = False
 
     def connect(self) -> None:
@@ -141,12 +145,20 @@ class EventConsumer:
                 self._rag_remove_item(payload["itemId"])
             elif sync_type == "COURSE_UPSERT":
                 self.catalog_store.upsert_course(payload)
-                self._rag_reindex_by_course(payload["courseId"])
+                self._submit_reindex(
+                    channel, method.delivery_tag,
+                    self._rag_reindex_by_course, payload["courseId"],
+                )
+                return  # ACK deferred to worker thread
             elif sync_type == "COURSE_DELETED":
                 self.catalog_store.remove_course(payload["courseId"])
             elif sync_type == "MAJOR_UPSERT":
                 self.catalog_store.upsert_major(payload)
-                self._rag_reindex_by_major(payload["majorId"])
+                self._submit_reindex(
+                    channel, method.delivery_tag,
+                    self._rag_reindex_by_major, payload["majorId"],
+                )
+                return  # ACK deferred to worker thread
             elif sync_type == "MAJOR_DELETED":
                 self.catalog_store.remove_major(payload["majorId"])
             else:
@@ -188,37 +200,59 @@ class EventConsumer:
             except Exception as e:
                 logger.warning(f"RAG remove failed for {item_id}: {e}")
 
-    def _rag_reindex_by_major(self, major_id: str) -> None:
-        """Re-embed items linked to a major after it was renamed/updated.
+    def _submit_reindex(self, channel, delivery_tag, reindex_fn, entity_id) -> None:
+        """Offload a reindex job to the thread pool; ACK when done.
 
-        Runs in a daemon thread so the consumer loop is not blocked while
-        re-chunking and re-embedding potentially many items.
+        Runs ``reindex_fn(entity_id)`` on a single-threaded pool so the
+        pika callback returns immediately (heartbeats keep flowing).
+        The message is ACKed via ``add_callback_threadsafe`` only after
+        the work completes — if the process dies mid-reindex, RabbitMQ
+        redelivers the event.
+
+        During shutdown the pool may already be closed (a callback that
+        was in-flight when ``stop_consuming`` was called).  In that case
+        we ACK immediately — the catalog update already succeeded and
+        the reindex will happen on next full rebuild.
         """
-        if self._rag_indexer:
-            def _do():
+        def _worker():
+            try:
+                reindex_fn(entity_id)
+            except Exception as exc:
+                logger.warning(f"RAG reindex failed for {entity_id}: {exc}")
+            finally:
                 try:
-                    count = self._rag_indexer.reindex_by_major(major_id)
-                    if count:
-                        logger.info(f"RAG reindexed {count} chunks for major {major_id}")
-                except Exception as e:
-                    logger.warning(f"RAG reindex-by-major failed for {major_id}: {e}")
-            threading.Thread(target=_do, daemon=True).start()
+                    self._connection.add_callback_threadsafe(
+                        lambda: channel.basic_ack(delivery_tag=delivery_tag)
+                    )
+                except Exception as exc:
+                    logger.warning(f"Failed to schedule ACK after reindex for {entity_id}: {exc}")
+
+        try:
+            self._reindex_pool.submit(_worker)
+        except RuntimeError:
+            # Pool already shut down (mid-shutdown race) — ACK and move on
+            logger.debug(f"Reindex pool closed, skipping reindex for {entity_id}")
+            channel.basic_ack(delivery_tag=delivery_tag)
+
+    def _rag_reindex_by_major(self, major_id: str) -> None:
+        """Re-embed all items linked to a major after it was renamed/updated."""
+        if self._rag_indexer:
+            try:
+                count = self._rag_indexer.reindex_by_major(major_id)
+                if count:
+                    logger.info(f"RAG reindexed {count} chunks for major {major_id}")
+            except Exception as e:
+                logger.warning(f"RAG reindex-by-major failed for {major_id}: {e}")
 
     def _rag_reindex_by_course(self, course_id: str) -> None:
-        """Re-embed items linked to a course after it was renamed/updated.
-
-        Runs in a daemon thread so the consumer loop is not blocked while
-        re-chunking and re-embedding potentially many items.
-        """
+        """Re-embed all items linked to a course after it was renamed/updated."""
         if self._rag_indexer:
-            def _do():
-                try:
-                    count = self._rag_indexer.reindex_by_course(course_id)
-                    if count:
-                        logger.info(f"RAG reindexed {count} chunks for course {course_id}")
-                except Exception as e:
-                    logger.warning(f"RAG reindex-by-course failed for {course_id}: {e}")
-            threading.Thread(target=_do, daemon=True).start()
+            try:
+                count = self._rag_indexer.reindex_by_course(course_id)
+                if count:
+                    logger.info(f"RAG reindexed {count} chunks for course {course_id}")
+            except Exception as e:
+                logger.warning(f"RAG reindex-by-course failed for {course_id}: {e}")
 
     # ─── User Profile Sync Events (from user-service) ──────────────────
 
@@ -293,9 +327,21 @@ class EventConsumer:
         StreamLostError) so the lifespan shutdown never crashes.
         """
         self._stopping = True
+        # Stop accepting new messages first, so no new callbacks arrive
         try:
             if self._channel and self._channel.is_open:
                 self._channel.stop_consuming()
+        except Exception:
+            pass
+        # Drain in-flight reindex work (workers ACK via add_callback_threadsafe)
+        self._reindex_pool.shutdown(wait=True, cancel_futures=False)
+        # Flush pending add_callback_threadsafe ACKs from completed workers.
+        # After stop_consuming() the I/O loop no longer pumps events, so
+        # scheduled callbacks would be stranded.  process_data_events(0)
+        # dispatches them synchronously before we tear down the connection.
+        try:
+            if self._connection and self._connection.is_open:
+                self._connection.process_data_events(time_limit=0)
         except Exception:
             pass
         try:
