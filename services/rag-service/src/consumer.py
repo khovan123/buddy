@@ -207,37 +207,53 @@ class RAGContentConsumer:
             self._safe_nack(conn, channel, delivery_tag)
 
     def _reindex_items_by_course_async(self, conn, channel, course_id: str, delivery_tag: int) -> None:
-        """Re-index all items for a course in a worker thread, then ACK."""
+        """Re-index all items for a course in a worker thread, then ACK.
+
+        NACKs (requeue) if *any* item fails so the event gets retried.
+        """
         try:
             items = self.catalog_store.get_items_by_course(course_id)
             if not items:
                 self._safe_ack(conn, channel, delivery_tag)
                 return
             logger.info("Re-indexing %d items for course %s after metadata update", len(items), course_id)
+            had_failure = False
             for item in items:
                 try:
                     self.rag_indexer.index_item(item)
                 except Exception as e:
+                    had_failure = True
                     logger.error("Failed to re-index item %s for course %s: %s", item.get("itemId"), course_id, e)
-            self._safe_ack(conn, channel, delivery_tag)
+            if had_failure:
+                self._safe_nack(conn, channel, delivery_tag)
+            else:
+                self._safe_ack(conn, channel, delivery_tag)
         except Exception as e:
             logger.error("Course re-index failed for %s: %s", course_id, e)
             self._safe_nack(conn, channel, delivery_tag)
 
     def _reindex_items_by_major_async(self, conn, channel, major_id: str, delivery_tag: int) -> None:
-        """Re-index all items for a major in a worker thread, then ACK."""
+        """Re-index all items for a major in a worker thread, then ACK.
+
+        NACKs (requeue) if *any* item fails so the event gets retried.
+        """
         try:
             items = self.catalog_store.get_items_by_major(major_id)
             if not items:
                 self._safe_ack(conn, channel, delivery_tag)
                 return
             logger.info("Re-indexing %d items for major %s after metadata update", len(items), major_id)
+            had_failure = False
             for item in items:
                 try:
                     self.rag_indexer.index_item(item)
                 except Exception as e:
+                    had_failure = True
                     logger.error("Failed to re-index item %s for major %s: %s", item.get("itemId"), major_id, e)
-            self._safe_ack(conn, channel, delivery_tag)
+            if had_failure:
+                self._safe_nack(conn, channel, delivery_tag)
+            else:
+                self._safe_ack(conn, channel, delivery_tag)
         except Exception as e:
             logger.error("Major re-index failed for %s: %s", major_id, e)
             self._safe_nack(conn, channel, delivery_tag)
