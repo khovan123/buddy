@@ -206,17 +206,30 @@ def _bootstrap_rag_index_background() -> None:
 def _start_content_consumer() -> None:
     """Start the RAG content-sync consumer after the RAG module is ready.
 
-    Waits for ``get_rag_module()`` to initialise, then starts consuming
-    from the ``rag.content.sync`` queue in a blocking loop.
+    Retries ``get_rag_module()`` with exponential backoff so transient
+    dependency outages (Qdrant, MongoDB) during startup don't permanently
+    kill the consumer thread.
     """
     global _rag_consumer
-    try:
-        _, indexer, _ = get_rag_module()
-        consumer = RAGContentConsumer(catalog_store, indexer)
-        _rag_consumer = consumer
-        consumer.start_consuming()
-    except Exception as e:
-        logger.error("Content-sync consumer failed: %s", e, exc_info=True)
+    retry_delay = 5
+
+    while True:
+        try:
+            _, indexer, _ = get_rag_module()
+            consumer = RAGContentConsumer(catalog_store, indexer)
+            _rag_consumer = consumer
+            # start_consuming() has its own internal reconnect loop for
+            # RabbitMQ failures; if it ever returns, we re-enter this
+            # outer loop to re-init the module and restart.
+            consumer.start_consuming()
+        except Exception as e:
+            logger.error(
+                "Content-sync consumer init failed: %s. Retrying in %ds...",
+                e, retry_delay, exc_info=True,
+            )
+            import time
+            time.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, 60)
 
 
 @asynccontextmanager

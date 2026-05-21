@@ -77,9 +77,10 @@ class RAGContentConsumer:
         Dispatches to catalog_store for metadata persistence, and to
         rag_indexer for Qdrant vector upsert/removal.
 
-        Only ITEM_UPSERT and ITEM_DELETED trigger re-indexing.
-        Course/major metadata updates only affect the catalog store
-        (Qdrant chunks are indexed by item, not by course/major).
+        ITEM_UPSERT / ITEM_DELETED trigger direct re-indexing.
+        COURSE_UPSERT / MAJOR_UPSERT also trigger a targeted re-index of
+        all items belonging to the changed course/major, because chunk text
+        is enriched with course/major names during indexing.
         """
         try:
             message = json.loads(body)
@@ -106,10 +107,17 @@ class RAGContentConsumer:
 
             elif sync_type == "COURSE_UPSERT":
                 self.catalog_store.upsert_course(payload)
+                # Re-index items tied to this course (chunk text includes course name)
+                self._reindex_items_by_course(payload.get("courseId", ""))
+
             elif sync_type == "COURSE_DELETED":
                 self.catalog_store.remove_course(payload["courseId"])
+
             elif sync_type == "MAJOR_UPSERT":
                 self.catalog_store.upsert_major(payload)
+                # Re-index items tied to this major (chunk text includes major name)
+                self._reindex_items_by_major(payload.get("majorId", ""))
+
             elif sync_type == "MAJOR_DELETED":
                 self.catalog_store.remove_major(payload["majorId"])
             else:
@@ -119,6 +127,34 @@ class RAGContentConsumer:
         except Exception as e:
             logger.error("Failed to process content sync event: %s", e, exc_info=True)
             channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+
+    def _reindex_items_by_course(self, course_id: str) -> None:
+        """Re-index all items belonging to a course after metadata change."""
+        if not course_id:
+            return
+        items = self.catalog_store.get_items_by_course(course_id)
+        if not items:
+            return
+        logger.info("Re-indexing %d items for course %s after metadata update", len(items), course_id)
+        for item in items:
+            try:
+                self.rag_indexer.index_item(item)
+            except Exception as e:
+                logger.error("Failed to re-index item %s for course %s: %s", item.get("itemId"), course_id, e)
+
+    def _reindex_items_by_major(self, major_id: str) -> None:
+        """Re-index all items belonging to a major after metadata change."""
+        if not major_id:
+            return
+        items = self.catalog_store.get_items_by_major(major_id)
+        if not items:
+            return
+        logger.info("Re-indexing %d items for major %s after metadata update", len(items), major_id)
+        for item in items:
+            try:
+                self.rag_indexer.index_item(item)
+            except Exception as e:
+                logger.error("Failed to re-index item %s for major %s: %s", item.get("itemId"), major_id, e)
 
     def start_consuming(self) -> None:
         """Blocking consume loop with reconnect — run in a daemon thread."""

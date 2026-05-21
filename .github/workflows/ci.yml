@@ -189,7 +189,7 @@ jobs:
 
       - name: Lint webapp
         working-directory: webapp
-        run: npx next lint
+        run: npm run lint
 
       - name: Type check webapp
         working-directory: webapp
