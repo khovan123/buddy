@@ -237,7 +237,7 @@ export const microFrontends = [
     status: "planned",
     mountMode: "remote",
     owner: "AI Experience Web",
-    sourceRoot: "webapp/src/features/chat",
+    sourceRoot: "webapp/src/features/rag",
     routes: [
       {
         path: "/ask",
@@ -263,7 +263,7 @@ export const microFrontends = [
     status: "live",
     mountMode: "route-segment",
     owner: "Identity Web",
-    sourceRoot: "webapp/src/features/profile",
+    sourceRoot: "webapp/src/features/user",
     routes: [
       {
         path: "/profile",
@@ -289,7 +289,7 @@ export const microFrontends = [
     status: "live",
     mountMode: "route-segment",
     owner: "Identity Web",
-    sourceRoot: "webapp/src/features/settings",
+    sourceRoot: "webapp/src/features/billing",
     routes: [
       {
         path: "/settings",
