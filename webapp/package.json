@@ -9,6 +9,7 @@
     "start": "next start -p 8000",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
+    "mfe:check": "node scripts/validate-micro-frontends.mjs",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"
   },

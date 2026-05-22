@@ -1,22 +1,22 @@
 import type { Metadata } from "next"
 
-import { RecommendationSection } from "@/features/content/components/recommendation-section"
+import { RecommendationSection } from "@/features/content"
 import {
   mapCollectionToLibraryCard,
   mapResourceToLibraryAsset,
   mapTutorialToLibraryAsset,
-} from "@/features/content/mappers"
+} from "@/features/content"
 import {
   getLibraryResourceCollections,
   getLibraryResources,
   getLibraryTutorialCollections,
   getLibraryTutorials,
-} from "@/features/content/services/content.service"
+} from "@/features/content"
 import type {
   CollectionQueryItem,
   ResourceQueryItem,
   TutorialQueryItem,
-} from "@/features/content/types"
+} from "@/features/content"
 import LibraryBrowser from "@/features/library/components/library-browser"
 import {
   JsonLdScript,

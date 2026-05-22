@@ -1,5 +1,4 @@
-import TransactionHistoryPage from "@/features/billing/components/transaction-history-page"
-import { getTransactions } from "@/features/billing/services/billing.service"
+import { TransactionHistoryPage, getTransactions } from "@/features/billing"
 
 
 export default async function TransactionsPage() {

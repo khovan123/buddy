@@ -1,13 +1,13 @@
-import { PayoutAccountCard } from "@/features/billing/components/payout-account-card"
-import { SubscriptionCard } from "@/features/billing/components/subscription-card"
-import { TransactionTimeline } from "@/features/billing/components/transaction-timeline"
-import { WalletHeroCard } from "@/features/billing/components/wallet-hero-card"
 import {
+  PayoutAccountCard,
+  SubscriptionCard,
+  TransactionTimeline,
+  WalletHeroCard,
   getPayoutAccount,
   getSubscription,
   getTransactions,
   getWalletBalance,
-} from "@/features/billing/services/billing.service"
+} from "@/features/billing"
 
 
 

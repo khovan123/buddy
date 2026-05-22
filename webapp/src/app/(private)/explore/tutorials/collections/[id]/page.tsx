@@ -29,7 +29,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import { getTutorialCollectionBySlug } from "@/features/content/services/content.service"
+import { getTutorialCollectionBySlug } from "@/features/content"
 
 type PageParams = Promise<{ id: string }>
 

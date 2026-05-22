@@ -2,15 +2,15 @@ import type { Metadata } from "next"
 
 import { ProfileHeroSection } from "@/components/organisms/profile-hero-section"
 import { ProfilePublishedSection } from "@/components/organisms/profile-published-section"
-import { fetchProfileTab } from "@/features/content/actions/actions"
-import { mapTutorialToProfileItem } from "@/features/content/mappers"
+import { fetchProfileTab } from "@/features/content"
+import { mapTutorialToProfileItem } from "@/features/content"
 import {
   getMyTutorials,
   getMyResources,
   getMyTutorialCollections,
   getMyResourceCollections,
-} from "@/features/content/services/content.service"
-import type { TutorialQueryItem, ResourceQueryItem, CollectionQueryItem } from "@/features/content/types"
+} from "@/features/content"
+import type { TutorialQueryItem, ResourceQueryItem, CollectionQueryItem } from "@/features/content"
 import {
   JsonLdScript,
   breadcrumbJsonLd,

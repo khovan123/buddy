@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { RAGChat } from "@/features/rag/components/rag-chat"
+import { RAGChat } from "@/features/rag"
 import { getMe } from "@/features/user/services/user.service"
 import { getAccessToken } from "@/lib/server-session"
 

@@ -3,7 +3,7 @@ import type { ReactNode } from "react"
 import type { Metadata } from "next"
 
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import { SettingsSidebar } from "@/features/billing/components/settings-sidebar"
+import { SettingsSidebar } from "@/features/settings"
 
 export const metadata: Metadata = {
   title: "Settings",

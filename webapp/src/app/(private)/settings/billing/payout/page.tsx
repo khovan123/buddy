@@ -1,5 +1,4 @@
-import PayoutSetupPage from "@/features/billing/components/payout-setup-page"
-import { getPayoutAccount } from "@/features/billing/services/billing.service"
+import { PayoutSetupPage, getPayoutAccount } from "@/features/billing"
 
 
 export default async function PayoutPage() {

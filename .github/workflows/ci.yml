@@ -204,6 +204,10 @@ jobs:
         working-directory: webapp
         run: npm run lint
 
+      - name: Check micro-frontend boundaries
+        working-directory: webapp
+        run: npm run mfe:check
+
       - name: Type check webapp
         working-directory: webapp
         run: npx tsc --noEmit

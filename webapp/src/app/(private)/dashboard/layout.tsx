@@ -6,8 +6,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { DashboardBreadcrumb } from "@/features/dashboard/components/dashboard-breadcrumb"
-import { DashboardSidebar } from "@/features/dashboard/components/dashboard-sidebar"
+import { DashboardBreadcrumb } from "@/features/dashboard"
+import { DashboardSidebar } from "@/features/dashboard"
 
 export default function DashboardLayout({
   children,

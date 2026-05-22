@@ -4,13 +4,13 @@ import Link from "next/link"
 
 import { TutorialCard } from "@/components/molecules/tutorial-card"
 import { Button } from "@/components/ui/button"
-import { RecommendationSection } from "@/features/content/components/recommendation-section"
-import { TutorialLoadMoreGrid } from "@/features/content/components/tutorial-load-more-grid"
-import { mapTutorialToCard } from "@/features/content/mappers"
+import { RecommendationSection } from "@/features/content"
+import { TutorialLoadMoreGrid } from "@/features/content"
+import { mapTutorialToCard } from "@/features/content"
 import {
   getTopTutorials,
   getTutorials,
-} from "@/features/content/services/content.service"
+} from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
 
 export async function generateMetadata(): Promise<Metadata> {

@@ -3,19 +3,19 @@ import type { Metadata } from "next"
 import { SectionHeading } from "@/components/atoms/section-heading"
 import { FeatureCard } from "@/components/molecules/feature-card"
 import { SeoHero } from "@/components/molecules/seo-hero"
-import { HomeModeSwitcher } from "@/features/content/components/home-mode-switcher"
-import { TrendingSection } from "@/features/content/components/trending-section"
+import { HomeModeSwitcher } from "@/features/content"
+import { TrendingSection } from "@/features/content"
 import {
   mapCollectionToCard,
   mapResourceToCard,
   mapTutorialToCard,
-} from "@/features/content/mappers"
+} from "@/features/content"
 import {
   getTopResourceCollections,
   getTopResources,
   getTopTutorialCollections,
   getTopTutorials,
-} from "@/features/content/services/content.service"
+} from "@/features/content"
 import {
   JsonLdScript,
   breadcrumbJsonLd,

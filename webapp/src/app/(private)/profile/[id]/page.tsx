@@ -4,10 +4,10 @@ import { MetaChip } from "@/components/atoms/meta-chip"
 import { SectionHeading } from "@/components/atoms/section-heading"
 import { SeoHero } from "@/components/molecules/seo-hero"
 import { ProfilePublishedSection } from "@/components/organisms/profile-published-section"
-import { fetchUserProfileTab } from "@/features/content/actions/actions"
-import { mapTutorialToProfileItem } from "@/features/content/mappers"
-import { getTutorials } from "@/features/content/services/content.service"
-import type { TutorialQueryItem } from "@/features/content/types"
+import { fetchUserProfileTab } from "@/features/content"
+import { mapTutorialToProfileItem } from "@/features/content"
+import { getTutorials } from "@/features/content"
+import type { TutorialQueryItem } from "@/features/content"
 import {
   JsonLdScript,
   breadcrumbJsonLd,

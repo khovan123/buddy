@@ -6,7 +6,7 @@ import { Geist, Geist_Mono } from "next/font/google"
 
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { UploadProgressPanel } from "@/features/content/components/upload-progress-panel"
+import { UploadProgressPanel } from "@/features/content"
 import "../bones/registry"
 import "./globals.css"
 

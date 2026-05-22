@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { CreateTutorialForm } from "@/features/content/components/create-tutorial-form"
+import { CreateTutorialForm } from "@/features/content"
 import {
   JsonLdScript,
   breadcrumbJsonLd,

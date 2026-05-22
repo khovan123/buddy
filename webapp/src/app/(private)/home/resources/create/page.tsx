@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { CreateResourceForm } from "@/features/content/components/create-resource-form"
+import { CreateResourceForm } from "@/features/content"
 import {
   JsonLdScript,
   breadcrumbJsonLd,
