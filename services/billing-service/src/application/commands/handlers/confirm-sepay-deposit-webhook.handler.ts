@@ -3,9 +3,7 @@ import { ConfirmSePayDepositWebhookCommand } from '../confirm-sepay-deposit-webh
 import { ConfirmTopUpCommand } from '../confirm-top-up.command';
 
 @CommandHandler(ConfirmSePayDepositWebhookCommand)
-export class ConfirmSePayDepositWebhookHandler
-  implements ICommandHandler<ConfirmSePayDepositWebhookCommand>
-{
+export class ConfirmSePayDepositWebhookHandler implements ICommandHandler<ConfirmSePayDepositWebhookCommand> {
   constructor(private readonly commandBus: CommandBus) {}
 
   async execute(

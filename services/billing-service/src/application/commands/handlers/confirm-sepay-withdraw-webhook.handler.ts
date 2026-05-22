@@ -13,9 +13,7 @@ type SePayWithdrawWebhookPayload = {
 };
 
 @CommandHandler(ConfirmSePayWithdrawWebhookCommand)
-export class ConfirmSePayWithdrawWebhookHandler
-  implements ICommandHandler<ConfirmSePayWithdrawWebhookCommand>
-{
+export class ConfirmSePayWithdrawWebhookHandler implements ICommandHandler<ConfirmSePayWithdrawWebhookCommand> {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly sepay: SePayAdapter,
