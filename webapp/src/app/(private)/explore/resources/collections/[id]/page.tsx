@@ -23,7 +23,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
-import { getResourceCollectionBySlug } from "@/features/content/services/content.service"
+import { getResourceCollectionBySlug } from "@/features/content"
 
 type PageParams = Promise<{ id: string }>
 

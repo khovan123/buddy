@@ -4,13 +4,13 @@ import Link from "next/link"
 
 import { ResourceCard } from "@/components/molecules/resource-card"
 import { Button } from "@/components/ui/button"
-import { RecommendationSection } from "@/features/content/components/recommendation-section"
-import { ResourceLoadMoreGrid } from "@/features/content/components/resource-load-more-grid"
-import { mapResourceToCard } from "@/features/content/mappers"
+import { RecommendationSection } from "@/features/content"
+import { ResourceLoadMoreGrid } from "@/features/content"
+import { mapResourceToCard } from "@/features/content"
 import {
   getResources,
   getTopResources,
-} from "@/features/content/services/content.service"
+} from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
 
 

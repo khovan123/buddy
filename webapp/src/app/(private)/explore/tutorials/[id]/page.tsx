@@ -29,12 +29,12 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Toggle } from "@/components/ui/toggle"
-import { TutorialResourcePreviewDialog } from "@/features/content/components/tutorial-resource-preview-dialog"
-import { TutorialVideoPlayer } from "@/features/content/components/tutorial-video-player"
+import { TutorialResourcePreviewDialog } from "@/features/content"
+import { TutorialVideoPlayer } from "@/features/content"
 import {
   getResourcePreview,
   getTutorialBySlug,
-} from "@/features/content/services/content.service"
+} from "@/features/content"
 
 type PageParams = Promise<{ id: string }>
 

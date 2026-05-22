@@ -7,7 +7,7 @@ import { FileText } from "lucide-react"
 import { LibraryBackButton } from "@/components/atoms/library-back-button"
 import { MetaChip } from "@/components/atoms/meta-chip"
 import { DocumentReader } from "@/components/organisms/document-reader"
-import { getLibraryResourceBySlug } from "@/features/content/services/content.service"
+import { getLibraryResourceBySlug } from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
 
 type PageParams = Promise<{ id: string }>

@@ -19,11 +19,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
-import { ResourceDocumentPreview } from "@/features/content/components/resource-document-preview"
+import { ResourceDocumentPreview } from "@/features/content"
 import {
   getResourceBySlug,
   getResourcePreview,
-} from "@/features/content/services/content.service"
+} from "@/features/content"
 
 type PageParams = Promise<{ id: string }>
 

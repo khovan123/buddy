@@ -31,6 +31,13 @@ export interface MicroFrontendDefinition {
   entry?: ComponentType
 }
 
+export const microFrontendRuntime = {
+  host: "vercel",
+  mode: process.env.NEXT_PUBLIC_MICRO_FRONTEND_MODE ?? "single-project",
+  registryPath:
+    process.env.NEXT_PUBLIC_MICRO_FRONTEND_REGISTRY_PATH ?? "/api/micro-frontends",
+} as const
+
 export const microFrontends = [
   {
     id: "intro",
@@ -234,8 +241,8 @@ export const microFrontends = [
   {
     id: "assistant",
     name: "AI Study Assistant",
-    status: "planned",
-    mountMode: "remote",
+    status: "candidate",
+    mountMode: "package",
     owner: "AI Experience Web",
     sourceRoot: "webapp/src/features/rag",
     routes: [
@@ -253,7 +260,7 @@ export const microFrontends = [
     },
     sharedCapabilities: ["markdown streaming", "citation rendering", "chat telemetry"],
     rolloutNotes: [
-      "This is the best first remote candidate once shell contracts are stable.",
+      "Single-project Vercel rollout keeps this as a package boundary before remote deployment.",
       "Keep stream transport isolated from the global Redux store.",
     ],
   },
@@ -289,7 +296,7 @@ export const microFrontends = [
     status: "live",
     mountMode: "route-segment",
     owner: "Identity Web",
-    sourceRoot: "webapp/src/features/billing",
+    sourceRoot: "webapp/src/features/settings",
     routes: [
       {
         path: "/settings",

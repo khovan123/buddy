@@ -2,22 +2,22 @@ import { Suspense } from "react"
 
 import type { Metadata } from "next"
 
-import { ExploreHero } from "@/features/content/components/explore-hero"
-import { ExploreModeSwitcher } from "@/features/content/components/explore-mode-switcher"
-import { RecommendationSection } from "@/features/content/components/recommendation-section"
-import { TrendingSection } from "@/features/content/components/trending-section"
+import { ExploreHero } from "@/features/content"
+import { ExploreModeSwitcher } from "@/features/content"
+import { RecommendationSection } from "@/features/content"
+import { TrendingSection } from "@/features/content"
 import {
   mapCollectionToCard,
   mapResourceToCard,
   mapTutorialToCard,
-} from "@/features/content/mappers"
+} from "@/features/content"
 import {
   getTopResourceCollections,
   getTopResources,
   getTopTutorialCollections,
   getTopTutorials,
-} from "@/features/content/services/content.service"
-import { CollectionType } from "@/features/content/types"
+} from "@/features/content"
+import { CollectionType } from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
 
 

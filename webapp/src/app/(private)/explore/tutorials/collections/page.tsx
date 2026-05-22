@@ -1,13 +1,13 @@
 import type { Metadata } from "next"
 
 import { CollectionCard } from "@/components/molecules/collection-card"
-import { CollectionLoadMoreGrid } from "@/features/content/components/collection-load-more-grid"
-import { RecommendationSection } from "@/features/content/components/recommendation-section"
-import { mapCollectionToCard } from "@/features/content/mappers"
+import { CollectionLoadMoreGrid } from "@/features/content"
+import { RecommendationSection } from "@/features/content"
+import { mapCollectionToCard } from "@/features/content"
 import {
   getTopTutorialCollections,
   getTutorialCollections,
-} from "@/features/content/services/content.service"
+} from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
 
 export async function generateMetadata(): Promise<Metadata> {

@@ -8,7 +8,7 @@ import { ArrowRight, FolderKanban, Video } from "lucide-react"
 import { LibraryBackButton } from "@/components/atoms/library-back-button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { getLibraryTutorialCollectionBySlug } from "@/features/content/services/content.service"
+import { getLibraryTutorialCollectionBySlug } from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
 
 type PageParams = Promise<{ id: string }>

@@ -2,7 +2,7 @@ import { Metadata } from "next"
 
 import { notFound } from "next/navigation"
 
-import ContentDashboardView from "@/features/dashboard/components/content-dashboard-view"
+import { ContentDashboardView } from "@/features/dashboard"
 import { getSeoContent } from "@/features/seo/services/seo-content"
 
 interface DashboardSlugPageProps {

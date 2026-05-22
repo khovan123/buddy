@@ -4,9 +4,9 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 
 import { ExploreBackground } from "@/components/atoms/explore-background"
-import { ExploreBreadcrumb } from "@/features/content/components/explore-breadcrumb"
-import { ExploreFilterBar } from "@/features/content/components/explore-filter-bar"
-import { getContentMeta } from "@/features/content/services/content.service"
+import { ExploreBreadcrumb } from "@/features/content"
+import { ExploreFilterBar } from "@/features/content"
+import { getContentMeta } from "@/features/content"
 
 export const metadata: Metadata = {
   robots: {

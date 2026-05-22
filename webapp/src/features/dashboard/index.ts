@@ -1,0 +1,6 @@
+export { DashboardBreadcrumb } from "./components/dashboard-breadcrumb"
+export { DashboardHeader } from "./components/dashboard-header"
+export { DashboardSidebar } from "./components/dashboard-sidebar"
+export { default as ContentDashboardView } from "./components/content-dashboard-view"
+export * from "./services/dashboard.service"
+export * from "./types"

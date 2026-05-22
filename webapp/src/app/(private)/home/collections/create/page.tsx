@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { CreateCollectionForm } from "@/features/content/components/create-collection-form"
+import { CreateCollectionForm } from "@/features/content"
 import {
   JsonLdScript,
   breadcrumbJsonLd,

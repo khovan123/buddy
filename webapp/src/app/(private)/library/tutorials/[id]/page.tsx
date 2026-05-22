@@ -9,7 +9,7 @@ import { MetaChip } from "@/components/atoms/meta-chip"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { getLibraryTutorialBySlug } from "@/features/content/services/content.service"
+import { getLibraryTutorialBySlug } from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
 
 type PageParams = Promise<{ id: string }>
