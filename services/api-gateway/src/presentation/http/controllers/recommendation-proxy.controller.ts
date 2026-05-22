@@ -7,7 +7,8 @@ import {
 } from '../../../infrastructure/http/api-composer.service';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
 
-const CONTENT_HYDRATION_TIMEOUT_MS = 2_500;
+const CONTENT_HYDRATION_REQUEST_TIMEOUT_MS = 3_500;
+const CONTENT_HYDRATION_TOTAL_TIMEOUT_MS = 8_000;
 const INTERNAL_CONTENT_FIELDS = new Set([
   'primarys3key',
   's3key',
@@ -290,8 +291,7 @@ export class RecommendationProxyController {
             typeItems.map((item) => item.itemId),
           ),
           method: 'GET' as const,
-          timeoutMs: CONTENT_HYDRATION_TIMEOUT_MS,
-          skipRetry: true,
+          timeoutMs: CONTENT_HYDRATION_REQUEST_TIMEOUT_MS,
         },
         optional: true, // If one batch fails, don't break the whole response
       }),
@@ -332,7 +332,7 @@ export class RecommendationProxyController {
       return await Promise.race([
         this.composer.compose(req, compositionRequests),
         new Promise<Record<string, unknown>>((resolve) => {
-          timeout = setTimeout(() => resolve({}), CONTENT_HYDRATION_TIMEOUT_MS);
+          timeout = setTimeout(() => resolve({}), CONTENT_HYDRATION_TOTAL_TIMEOUT_MS);
         }),
       ]);
     } catch (error) {
