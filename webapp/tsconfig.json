@@ -45,7 +45,6 @@
   "exclude": [
     "node_modules",
     ".next",
-    ".code-review-graph",
-    "__tests__"
+    ".code-review-graph"
   ]
 }
