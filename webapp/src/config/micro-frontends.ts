@@ -55,6 +55,21 @@ export const microFrontends = [
         owner: "Growth Web",
         description: "Plan comparison and conversion surface.",
       },
+      {
+        path: "/faq",
+        owner: "Growth Web",
+        description: "Frequently asked questions.",
+      },
+      {
+        path: "/contact",
+        owner: "Growth Web",
+        description: "Public contact form and support links.",
+      },
+      {
+        path: "/how-it-works",
+        owner: "Growth Web",
+        description: "Product walkthrough and feature explanation.",
+      },
     ],
     contract: {
       auth: "public",
@@ -90,6 +105,11 @@ export const microFrontends = [
         path: "/otp",
         owner: "Identity Web",
         description: "One-time verification flow.",
+      },
+      {
+        path: "/onboarding",
+        owner: "Identity Web",
+        description: "Post-registration profile setup and role selection.",
       },
     ],
     contract: {
@@ -152,6 +172,11 @@ export const microFrontends = [
     owner: "Creator Web",
     sourceRoot: "webapp/src/features/dashboard",
     routes: [
+      {
+        path: "/dashboard",
+        owner: "Creator Web",
+        description: "Dashboard index and dynamic slug pages.",
+      },
       {
         path: "/dashboard/majors",
         owner: "Creator Web",
@@ -230,6 +255,58 @@ export const microFrontends = [
     rolloutNotes: [
       "This is the best first remote candidate once shell contracts are stable.",
       "Keep stream transport isolated from the global Redux store.",
+    ],
+  },
+  {
+    id: "profile",
+    name: "User Profile",
+    status: "live",
+    mountMode: "route-segment",
+    owner: "Identity Web",
+    sourceRoot: "webapp/src/features/profile",
+    routes: [
+      {
+        path: "/profile",
+        owner: "Identity Web",
+        description: "Authenticated user profile and public profile view.",
+      },
+    ],
+    contract: {
+      auth: "required",
+      dataAccess: "api-gateway",
+      stateScope: "feature-store",
+      requiredProviders: ["ReduxProvider", "ErrorProvider", "ThemeProvider"],
+    },
+    sharedCapabilities: ["avatar upload", "profile cards", "activity feed"],
+    rolloutNotes: [
+      "Profile owns user-facing identity display; auth owns session lifecycle.",
+      "Public profile view (/profile/[id]) must degrade gracefully for logged-out visitors.",
+    ],
+  },
+  {
+    id: "settings",
+    name: "Account Settings",
+    status: "live",
+    mountMode: "route-segment",
+    owner: "Identity Web",
+    sourceRoot: "webapp/src/features/settings",
+    routes: [
+      {
+        path: "/settings",
+        owner: "Identity Web",
+        description: "Account preferences, notification controls, and security settings.",
+      },
+    ],
+    contract: {
+      auth: "required",
+      dataAccess: "api-gateway",
+      stateScope: "feature-store",
+      requiredProviders: ["ReduxProvider", "ErrorProvider", "ThemeProvider"],
+    },
+    sharedCapabilities: ["preference forms", "notification toggles"],
+    rolloutNotes: [
+      "Settings index owns general account preferences; billing sub-route is a separate MFE.",
+      "Keep /settings/billing routing delegated to the billing MFE via startsWith matching.",
     ],
   },
 ] satisfies MicroFrontendDefinition[]
