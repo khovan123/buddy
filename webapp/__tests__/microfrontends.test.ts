@@ -1,5 +1,6 @@
 /* @jest-environment node */
 import { validateRouting, validateMiddlewareConfig } from '@vercel/microfrontends/next/testing';
+
 import { config } from '../src/proxy';
 
 /**
