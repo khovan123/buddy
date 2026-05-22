@@ -133,15 +133,15 @@ export class HttpProxyService {
 
     // Only set Content-Type and body for non-GET methods with a body
     const rawBody =
-      typeof options.rawBody === 'string'
-        ? options.rawBody
-        : options.rawBody?.toString('utf8');
+      typeof options.rawBody === 'string' ? options.rawBody : options.rawBody?.toString('utf8');
     const hasRawBody = rawBody !== undefined && options.method !== 'GET';
     const hasJsonBody = options.body !== undefined && options.method !== 'GET';
     const hasBody = hasRawBody || hasJsonBody;
     if (hasBody) {
       headers['Content-Type'] =
-        options.headers?.['content-type'] ?? options.headers?.['Content-Type'] ?? 'application/json';
+        options.headers?.['content-type'] ??
+        options.headers?.['Content-Type'] ??
+        'application/json';
     }
 
     const controller = new AbortController();
