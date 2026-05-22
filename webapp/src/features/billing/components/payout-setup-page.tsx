@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
@@ -56,14 +56,20 @@ interface PayoutSetupPageProps {
 }
 
 export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps) {
+  const [account, setAccount] = useState(initialAccount)
   const [editing, setEditing] = useState(!initialAccount)
-  const [verified, setVerified] = useState(false)
+  const [verified, setVerified] = useState(Boolean(initialAccount?.verified))
   const { handleError, clearError } = useGlobalError()
 
   const [savePayoutAccount, { isLoading: isSaving }] =
     useSavePayoutAccountMutation()
   const [verifyBankAccount, { isLoading: isVerifying }] =
     useVerifyBankAccountMutation()
+
+  useEffect(() => {
+    setAccount(initialAccount)
+    setVerified(Boolean(initialAccount?.verified))
+  }, [initialAccount])
 
   const {
     register,
@@ -73,12 +79,12 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
     formState: { errors },
   } = useForm<PayoutFormValues>({
     resolver: zodResolver(payoutSchema),
-    values: initialAccount
+    values: account
       ? {
-          bankBin: initialAccount.bankBin,
-          bankAccountNumber: initialAccount.bankAccountNumber,
-          bankAccountName: initialAccount.bankAccountName,
-          bankName: initialAccount.bankName,
+          bankBin: account.bankBin,
+          bankAccountNumber: account.bankAccountNumber,
+          bankAccountName: account.bankAccountName,
+          bankName: account.bankName,
         }
       : {
           bankBin: "",
@@ -91,6 +97,15 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
   const bankBin = watch("bankBin")
   const bankAccountNumber = watch("bankAccountNumber")
 
+  useEffect(() => {
+    const unchangedAccount =
+      account?.bankBin === bankBin &&
+      account?.bankAccountNumber === bankAccountNumber &&
+      account?.verified
+
+    setVerified(Boolean(unchangedAccount))
+  }, [account, bankAccountNumber, bankBin])
+
   const handleVerify = async () => {
     if (!bankBin || !bankAccountNumber) {return}
     clearError()
@@ -102,11 +117,16 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
         bankAccountNumber,
       }).unwrap()
 
-      if (res.data?.accountName) {
+      if (res.data?.valid && res.data.accountName) {
         setValue("bankAccountName", res.data.accountName)
         setVerified(true)
         toast.success("Bank account verified successfully!")
+        return
       }
+
+      setValue("bankAccountName", "")
+      setVerified(false)
+      toast.error("Bank account could not be verified.")
     } catch (err) {
       handleError(err)
     }
@@ -114,11 +134,21 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
 
   const onSubmit = async (data: PayoutFormValues) => {
     clearError()
+    if (!verified) {
+      toast.error("Please verify this bank account before saving.")
+      return
+    }
+
     try {
       await savePayoutAccount(data).unwrap()
       toast.success("Payout account saved!")
+      setAccount({
+        ...data,
+        verified: true,
+        verifiedAt: new Date().toISOString(),
+      })
       setEditing(false)
-      setVerified(false)
+      setVerified(true)
     } catch (err) {
       handleError(err)
     }
@@ -127,7 +157,7 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
   return (
     <div className="space-y-6">
       {/* Current Account Display */}
-      {initialAccount && !editing && (
+      {account && !editing && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
@@ -153,12 +183,12 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
                   <Building2 className="size-5 text-muted-foreground" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium">{initialAccount.bankName}</p>
+                  <p className="font-medium">{account.bankName}</p>
                   <p className="text-sm text-muted-foreground">
-                    {initialAccount.bankAccountName}
+                    {account.bankAccountName}
                   </p>
                 </div>
-                {initialAccount.verified ? (
+                {account.verified ? (
                   <Badge
                     variant="default"
                     className="gap-1 bg-emerald-600/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-400"
@@ -178,13 +208,13 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
                 <div>
                   <p className="text-xs text-muted-foreground">Account Number</p>
                   <p className="font-mono text-sm font-medium tabular-nums">
-                    {maskAccountNumber(initialAccount.bankAccountNumber)}
+                    {maskAccountNumber(account.bankAccountNumber)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Bank BIN</p>
                   <p className="font-mono text-sm font-medium tabular-nums">
-                    {initialAccount.bankBin}
+                    {account.bankBin}
                   </p>
                 </div>
               </div>
@@ -199,7 +229,7 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm font-semibold">
               <CreditCard className="size-4" />
-              {initialAccount ? "Update Payout Account" : "Set Up Payout Account"}
+              {account ? "Update Payout Account" : "Set Up Payout Account"}
             </CardTitle>
           </CardHeader>
 
@@ -302,6 +332,8 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
                     <Input
                       id="payout-account-name"
                       placeholder="Auto-filled after verify"
+                      readOnly={verified}
+                      className={verified ? "bg-muted/50" : undefined}
                       {...register("bankAccountName")}
                     />
                     {errors.bankAccountName && (
@@ -331,7 +363,7 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
                     id="payout-save-btn"
                     type="submit"
                     size="sm"
-                    disabled={isSaving}
+                    disabled={isSaving || !verified}
                   >
                     {isSaving ? (
                       <Loader2 className="mr-1 size-3 animate-spin" />
@@ -340,7 +372,7 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
                     )}
                     Save Account
                   </Button>
-                  {initialAccount && (
+                  {account && (
                     <Button
                       type="button"
                       variant="ghost"

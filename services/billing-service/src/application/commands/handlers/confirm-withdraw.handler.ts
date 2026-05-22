@@ -26,7 +26,7 @@ export class ConfirmWithdrawHandler implements ICommandHandler<ConfirmWithdrawCo
         transactionId: command.transactionId,
         userId: (transaction.metadata?.userId as string) ?? '',
         amount: transaction.amountInCents,
-        provider: (transaction.provider as 'PAYOS' | 'PAYPAL' | 'BANK_TRANSFER') ?? 'BANK_TRANSFER',
+        provider: (transaction.provider as 'SEPAY' | 'BANK_TRANSFER') ?? 'BANK_TRANSFER',
         completedAt: new Date().toISOString(),
       },
       command.correlationId,

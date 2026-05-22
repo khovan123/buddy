@@ -31,8 +31,7 @@ export type TransactionStatus = (typeof TransactionStatus)[keyof typeof Transact
 
 
 export const PaymentProvider = {
-  PAYOS: 'PAYOS',
-  PAYPAL: 'PAYPAL',
+  SEPAY: 'SEPAY',
   BANK_TRANSFER: 'BANK_TRANSFER'
 } as const
 

@@ -1,3 +1,5 @@
+import { ConfirmSePayDepositWebhookHandler } from './handlers/confirm-sepay-deposit-webhook.handler';
+import { ConfirmSePayWithdrawWebhookHandler } from './handlers/confirm-sepay-withdraw-webhook.handler';
 import { ConfirmTopUpHandler } from './handlers/confirm-top-up.handler';
 import { ConfirmWithdrawHandler } from './handlers/confirm-withdraw.handler';
 import { CreateSubscriptionHandler } from './handlers/create-subscription.handler';
@@ -10,6 +12,8 @@ import { WithdrawWalletHandler } from './handlers/withdraw-wallet.handler';
 export const COMMAND_HANDLERS = [
   TopUpWalletHandler,
   ConfirmTopUpHandler,
+  ConfirmSePayDepositWebhookHandler,
+  ConfirmSePayWithdrawWebhookHandler,
   ProcessPurchaseHandler,
   WithdrawWalletHandler,
   ConfirmWithdrawHandler,

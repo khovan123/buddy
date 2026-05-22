@@ -1,4 +1,4 @@
-import { Inject, ServiceUnavailableException } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { WALLET_REPOSITORY } from '../../../domain/repositories/tokens';
 import type { IWalletRepository } from '../../../domain/repositories/wallet.repository.interface';
@@ -29,9 +29,6 @@ export class TopUpWalletHandler implements ICommandHandler<TopUpWalletCommand> {
     checkoutUrl: string;
     externalReference: string;
   }> {
-    if (command.provider === 'PAYPAL') {
-      throw new ServiceUnavailableException('PAYPAL GATEWAY IS NOT SUPPORTED SOON!');
-    }
     const gateway = this.paymentGatewayFactory.getGateway(command.provider);
 
     const wallet = await this.walletRepository.getOrCreateWalletByUserId(command.userId);

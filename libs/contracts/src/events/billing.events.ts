@@ -36,7 +36,7 @@ export class WalletToppedUpEvent extends BaseEvent {
       userId: string;
       walletId: string;
       amount: string;
-      provider: 'PAYOS' | 'PAYPAL';
+      provider: 'SEPAY';
       toppedUpAt: string;
     },
     correlationId?: string,
@@ -79,7 +79,7 @@ export class WithdrawRequestedEvent extends BaseEvent {
       amount: string;
       bankAccountNumber?: string;
       bankName?: string;
-      provider: 'PAYOS' | 'PAYPAL' | 'BANK_TRANSFER';
+      provider: 'SEPAY' | 'BANK_TRANSFER';
       requestedAt: string;
     },
     correlationId?: string,
@@ -99,7 +99,7 @@ export class WithdrawCompletedEvent extends BaseEvent {
       transactionId: string;
       userId: string;
       amount: string;
-      provider: 'PAYOS' | 'PAYPAL' | 'BANK_TRANSFER';
+      provider: 'SEPAY' | 'BANK_TRANSFER';
       completedAt: string;
     },
     correlationId?: string,
