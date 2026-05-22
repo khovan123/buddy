@@ -167,7 +167,7 @@ jobs:
         run: npx tsc --noEmit -p tsconfig.base.json
 
       - name: Unit tests
-        run: npm run test:unit
+        run: npx turbo run test:unit --filter='!webapp' -- --passWithNoTests
         env:
           NODE_ENV: test
           POSTGRES_HOST: localhost
@@ -211,6 +211,10 @@ jobs:
       - name: Type check webapp
         working-directory: webapp
         run: npx tsc --noEmit
+
+      - name: Test webapp
+        working-directory: webapp
+        run: npm test
 
   # ─── Stage 3: Build & Push Docker images (changed services only) ────
   build:
