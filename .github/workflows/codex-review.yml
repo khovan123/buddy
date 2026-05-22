@@ -26,6 +26,7 @@ jobs:
 
       - name: Codex PR Review
         if: steps.check.outputs.available == 'true'
+        continue-on-error: true
         uses: khovan123/codex-pr-review-bot@v1
         with:
           openai_api_key: ${{ secrets.OPENAI_API_KEY }}
