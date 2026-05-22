@@ -2,8 +2,10 @@ import type { PaginationMeta } from "@/types/api"
 
 // ── Wallet ───────────────────────────────────────────────
 export interface WalletBalance {
+  walletId?: string
+  userId?: string
   balanceInCents: string
-  currency: string
+  currency?: string
 }
 
 // ── Transactions ─────────────────────────────────────────
@@ -17,7 +19,7 @@ export type TransactionType =
 
 export type TransactionStatus = "PENDING" | "SUCCESS" | "FAILED"
 
-export type PaymentProvider = "PAYOS" | "PAYPAL" | "BANK_TRANSFER"
+export type PaymentProvider = "SEPAY" | "BANK_TRANSFER"
 
 export interface Transaction {
   id: string

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
@@ -50,13 +50,20 @@ function maskAccountNumber(num: string): string {
 }
 
 export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
+  const [currentAccount, setCurrentAccount] = useState(account)
   const [editing, setEditing] = useState(false)
+  const [verified, setVerified] = useState(Boolean(account?.verified))
   const { handleError, clearError } = useGlobalError()
 
   const [savePayoutAccount, { isLoading: isSaving }] =
     useSavePayoutAccountMutation()
   const [verifyBankAccount, { isLoading: isVerifying }] =
     useVerifyBankAccountMutation()
+
+  useEffect(() => {
+    setCurrentAccount(account)
+    setVerified(Boolean(account?.verified))
+  }, [account])
 
   const {
     register,
@@ -66,12 +73,12 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
     formState: { errors },
   } = useForm<PayoutFormValues>({
     resolver: zodResolver(payoutSchema),
-    values: account
+    values: currentAccount
       ? {
-          bankBin: account.bankBin,
-          bankAccountNumber: account.bankAccountNumber,
-          bankAccountName: account.bankAccountName,
-          bankName: account.bankName,
+          bankBin: currentAccount.bankBin,
+          bankAccountNumber: currentAccount.bankAccountNumber,
+          bankAccountName: currentAccount.bankAccountName,
+          bankName: currentAccount.bankName,
         }
       : {
           bankBin: "",
@@ -84,6 +91,15 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
   const bankBin = watch("bankBin")
   const bankAccountNumber = watch("bankAccountNumber")
 
+  useEffect(() => {
+    const unchangedAccount =
+      currentAccount?.bankBin === bankBin &&
+      currentAccount?.bankAccountNumber === bankAccountNumber &&
+      currentAccount?.verified
+
+    setVerified(Boolean(unchangedAccount))
+  }, [bankAccountNumber, bankBin, currentAccount])
+
   const handleVerify = async () => {
     if (!bankBin || !bankAccountNumber) {
       return
@@ -95,10 +111,16 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
         bankAccountNumber,
       }).unwrap()
 
-      if (res.data?.accountName) {
+      if (res.data?.valid && res.data.accountName) {
         setValue("bankAccountName", res.data.accountName)
+        setVerified(true)
         toast.success("Bank account verified!")
+        return
       }
+
+      setValue("bankAccountName", "")
+      setVerified(false)
+      toast.error("Bank account could not be verified.")
     } catch (err) {
       handleError(err)
     }
@@ -106,9 +128,19 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
 
   const onSubmit = async (data: PayoutFormValues) => {
     clearError()
+    if (!verified) {
+      toast.error("Please verify this bank account before saving.")
+      return
+    }
+
     try {
       await savePayoutAccount(data).unwrap()
       toast.success("Payout account saved!")
+      setCurrentAccount({
+        ...data,
+        verified: true,
+        verifiedAt: new Date().toISOString(),
+      })
       setEditing(false)
     } catch (err) {
       handleError(err)
@@ -138,12 +170,12 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
       <CardContent>
         {!editing ? (
           /* ── View Mode ── */
-          account ? (
+          currentAccount ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Building2 className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium">{account.bankName}</span>
-                {account.verified ? (
+                <span className="text-sm font-medium">{currentAccount.bankName}</span>
+                {currentAccount.verified ? (
                   <Badge
                     variant="default"
                     className="gap-1 bg-emerald-600/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-400"
@@ -163,12 +195,12 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
                 <div>
                   <p className="text-xs text-muted-foreground">Account No.</p>
                   <p className="font-mono font-medium tabular-nums">
-                    {maskAccountNumber(account.bankAccountNumber)}
+                    {maskAccountNumber(currentAccount.bankAccountNumber)}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Account Name</p>
-                  <p className="font-medium">{account.bankAccountName}</p>
+                  <p className="font-medium">{currentAccount.bankAccountName}</p>
                 </div>
               </div>
             </div>
@@ -245,6 +277,8 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
                 <Input
                   id="payout-account-name"
                   placeholder="Auto-filled after verify"
+                  readOnly={verified}
+                  className={verified ? "bg-muted/50" : undefined}
                   {...register("bankAccountName")}
                 />
                 {errors.bankAccountName && (
@@ -274,7 +308,7 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
                 id="settings-payout-save-btn"
                 type="submit"
                 size="sm"
-                disabled={isSaving}
+                disabled={isSaving || !verified}
               >
                 {isSaving ? (
                   <Loader2 className="mr-1 size-3 animate-spin" />

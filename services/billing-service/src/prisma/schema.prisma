@@ -24,8 +24,7 @@ enum TransactionStatus {
 }
 
 enum PaymentProvider {
-  PAYOS
-  PAYPAL
+  SEPAY
   BANK_TRANSFER
 }
 

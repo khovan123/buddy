@@ -41,7 +41,6 @@
     "@types/jest": "^29.5.14",
     "@types/multer": "^2.1.0",
     "@types/node": "^22.19.15",
-    "@types/paypal__checkout-server-sdk": "^1.0.8",
     "@typescript-eslint/eslint-plugin": "^8.58.0",
     "@typescript-eslint/parser": "^8.58.0",
     "cross-env": "^10.1.0",
@@ -87,8 +86,6 @@
     "@opentelemetry/sdk-metrics": "^2.6.1",
     "@opentelemetry/sdk-node": "^0.214.0",
     "@opentelemetry/semantic-conventions": "^1.40.0",
-    "@payos/node": "^2.0.5",
-    "@paypal/checkout-server-sdk": "^1.0.3",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.6.0",
     "@prisma/extension-accelerate": "^3.0.1",
@@ -100,6 +97,7 @@
     "mongoose-autopopulate": "^1.1.0",
     "pdf-lib": "^1.17.1",
     "pg": "^8.13.1",
+    "sepay-pg-node": "^1.0.0",
     "slugify": "^1.6.9"
   }
 }

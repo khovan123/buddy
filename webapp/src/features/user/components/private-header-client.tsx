@@ -2,11 +2,13 @@
 
 import { useState } from "react"
 
-import { Bell, Wallet } from "lucide-react"
+import { Bell } from "lucide-react"
 
 import { CreateContentCTA } from "@/components/molecules/create-content-cta"
 import { Navigation } from "@/components/organisms/navigation"
 import { Button } from "@/components/ui/button"
+import { HeaderWalletPopover } from "@/features/user/components/header-wallet-popover"
+import { PlanSelectorPopover } from "@/features/user/components/plan-selector-popover"
 import { ProfileCompleteBanner } from "@/features/user/components/profile-complete-banner"
 import { ProfileUpdateDialog } from "@/features/user/components/profile-update-dialog"
 import { UserMenuPopover } from "@/features/user/components/user-menu-popover"
@@ -49,21 +51,8 @@ export function PrivateHeader({ user }: PrivateHeaderProps) {
         rightSlot={
           <>
             <CreateContentCTA />
-            <Button
-              variant="secondary"
-              size="sm"
-              className="hidden font-semibold md:inline-flex"
-            >
-              Pro Plan
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Wallet"
-              className="hidden md:inline-flex"
-            >
-              <Wallet className="size-4" />
-            </Button>
+            <PlanSelectorPopover />
+            <HeaderWalletPopover />
             <Button
               variant="ghost"
               size="icon"

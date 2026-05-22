@@ -2,6 +2,7 @@ import { AppLogger, EXCHANGES, QUEUES } from '@libs/common';
 import { CONTENT_ROUTINGKEYS, ContentValidationItemType } from '@libs/contracts';
 import { Controller, Inject } from '@nestjs/common';
 import { RabbitRPC } from '@golevelup/nestjs-rabbitmq';
+import { isValidObjectId } from 'mongoose';
 import type { ICollectionRepository } from '../../../domain/repositories/collection.repository.interface';
 import type { IResourceRepository } from '../../../domain/repositories/resource.repository.interface';
 import {
@@ -59,7 +60,7 @@ export class ContentValidationConsumer {
     message: ValidateContentStatusRpcMessage | ValidateContentStatusPayload,
   ): Promise<ValidateContentStatusResponse> {
     const payload = this.extractPayload(message);
-    const isValid = await this.validateContentStatus(payload.itemId, payload.itemType);
+    const isValid = await this.validateContentStatusSafely(payload.itemId, payload.itemType);
 
     this.logger.log(
       `Handled ${CONTENT_ROUTINGKEYS.VALIDATE_CONTENT_STATUS} for ${payload.itemType}:${payload.itemId} => isValid=${isValid}`,
@@ -82,6 +83,27 @@ export class ContentValidationConsumer {
     }
 
     return message as ValidateContentStatusPayload;
+  }
+
+  private async validateContentStatusSafely(
+    itemId: string,
+    itemType: ContentValidationItemType,
+  ): Promise<boolean> {
+    if (!isValidObjectId(itemId)) {
+      this.logger.warn(`Invalid content id for ${itemType}: ${itemId}`);
+      return false;
+    }
+
+    try {
+      return await this.validateContentStatus(itemId, itemType);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to validate ${itemType}:${itemId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      return false;
+    }
   }
 
   /**

@@ -23,7 +23,7 @@ async function bootstrap() {
       trustProxy: true,
       bodyLimit: 10 * 1024 * 1024, // 10MB
     }),
-    { bufferLogs: true },
+    { bufferLogs: true, rawBody: true },
   );
 
   // ── Security ──────────────────────────────────────────────────────
@@ -41,7 +41,15 @@ async function bootstrap() {
     origin: allowedOrigins === '*' ? '*' : allowedOrigins.split(',').map((origin) => origin.trim()),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'x-correlation-id',
+      'x-idempotency-key',
+      'x-secret-key',
+      'x-sepay-signature',
+      'x-sepay-timestamp',
+    ],
     exposedHeaders: ['x-correlation-id'],
   });
 

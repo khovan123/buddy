@@ -1,0 +1,33 @@
+name: Codex PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    environment: develop
+    steps:
+      - name: Check secret availability
+        id: check
+        run: |
+          if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::OPENAI_API_KEY secret is not available. Skipping Codex review."
+          else
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Codex PR Review
+        if: steps.check.outputs.available == 'true'
+        continue-on-error: true
+        uses: khovan123/codex-pr-review-bot@v1
+        with:
+          openai_api_key: ${{ secrets.OPENAI_API_KEY }}
+          github_token: ${{ github.token }}

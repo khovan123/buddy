@@ -20,6 +20,7 @@ export interface ProxyOptions {
   path: string;
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
+  rawBody?: string | Buffer;
   query?: Record<string, string>;
   headers?: Record<string, string>;
   timeoutMs?: number;
@@ -131,9 +132,16 @@ export class HttpProxyService {
     };
 
     // Only set Content-Type and body for non-GET methods with a body
-    const hasBody = options.body && options.method !== 'GET';
+    const rawBody =
+      typeof options.rawBody === 'string' ? options.rawBody : options.rawBody?.toString('utf8');
+    const hasRawBody = rawBody !== undefined && options.method !== 'GET';
+    const hasJsonBody = options.body !== undefined && options.method !== 'GET';
+    const hasBody = hasRawBody || hasJsonBody;
     if (hasBody) {
-      headers['Content-Type'] = 'application/json';
+      headers['Content-Type'] =
+        options.headers?.['content-type'] ??
+        options.headers?.['Content-Type'] ??
+        'application/json';
     }
 
     const controller = new AbortController();
@@ -145,7 +153,7 @@ export class HttpProxyService {
       const response = await fetch(url, {
         method: options.method,
         headers: headers,
-        body: hasBody ? JSON.stringify(options.body) : undefined,
+        body: hasRawBody ? rawBody : hasJsonBody ? JSON.stringify(options.body) : undefined,
         signal: controller.signal,
         keepalive: true,
       });

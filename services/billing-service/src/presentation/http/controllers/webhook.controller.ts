@@ -1,5 +1,4 @@
 import { Public, getCorrelationId } from '@libs/common';
-import { successResponse } from '@libs/contracts';
 import {
   Body,
   Controller,
@@ -13,72 +12,64 @@ import {
 import { CommandBus } from '@nestjs/cqrs';
 import crypto from 'crypto';
 import type { FastifyRequest } from 'fastify';
-import { ConfirmTopUpCommand } from '../../../application/commands/confirm-top-up.command';
+import { ConfirmSePayDepositWebhookCommand } from '../../../application/commands/confirm-sepay-deposit-webhook.command';
+import { ConfirmSePayWithdrawWebhookCommand } from '../../../application/commands/confirm-sepay-withdraw-webhook.command';
 
-/** Controller handling incoming requests for Webhook. */
+type RawBodyFastifyRequest = FastifyRequest & {
+  rawBody?: Buffer | string;
+};
+
+type SePayWebhookResponse = {
+  success: true;
+};
+
+/** Controller handling incoming webhook/IPN requests for Billing. */
 @Controller({ path: 'webhooks/billing', version: '1' })
 export class WebhookController {
   constructor(private readonly commandBus: CommandBus) {}
 
-  /**
-   * Executes the handle pay o s webhook operation.
-   *
-   * @param body - The body parameter
-   * @param signature - The signature parameter
-   * @param req - The req parameter
-   */
-  @Post('payos')
+  @Post('sepay/deposit')
   @Public()
   @Version('1')
   @HttpCode(HttpStatus.OK)
-  async handlePayOSWebhook(
+  async handleSePayDeposit(
     @Body() body: unknown,
-    @Headers('x-signature') signature: string | undefined,
-    @Req() req: FastifyRequest,
-  ) {
+    @Headers('x-secret-key') secretKey: string | undefined,
+    @Req() req: RawBodyFastifyRequest,
+  ): Promise<SePayWebhookResponse> {
     const correlationId = getCorrelationId() || crypto.randomUUID();
+    const rawBody = this.getRawBody(req, body);
 
-    const result = await this.commandBus.execute(
-      new ConfirmTopUpCommand(
-        'PAYOS',
-        JSON.stringify(body ?? {}),
-        signature,
-        req.headers,
-        correlationId,
-      ),
+    await this.commandBus.execute(
+      new ConfirmSePayDepositWebhookCommand(rawBody, secretKey, req.headers, correlationId),
     );
 
-    return successResponse(result, 'PAYOS webhook processed', correlationId);
+    return { success: true };
   }
 
-  /**
-   * Executes the handle pay pal webhook operation.
-   *
-   * @param body - The body parameter
-   * @param signature - The signature parameter
-   * @param req - The req parameter
-   */
-  @Post('paypal')
+  @Post('sepay/withdraw')
   @Public()
   @Version('1')
   @HttpCode(HttpStatus.OK)
-  async handlePayPalWebhook(
+  async handleSePayWithdraw(
     @Body() body: unknown,
-    @Headers('paypal-transmission-sig') signature: string | undefined,
-    @Req() req: FastifyRequest,
-  ) {
+    @Headers('x-secret-key') secretKey: string | undefined,
+    @Req() req: RawBodyFastifyRequest,
+  ): Promise<SePayWebhookResponse> {
     const correlationId = getCorrelationId() || crypto.randomUUID();
+    const rawBody = this.getRawBody(req, body);
 
-    const result = await this.commandBus.execute(
-      new ConfirmTopUpCommand(
-        'PAYPAL',
-        JSON.stringify(body ?? {}),
-        signature,
-        req.headers,
-        correlationId,
-      ),
+    await this.commandBus.execute(
+      new ConfirmSePayWithdrawWebhookCommand(rawBody, secretKey, req.headers, correlationId),
     );
+    return { success: true };
+  }
 
-    return successResponse(result, 'PAYPAL webhook processed', correlationId);
+  private getRawBody(req: RawBodyFastifyRequest, body: unknown): string {
+    if (typeof req.rawBody === 'string') {
+      return req.rawBody;
+    }
+
+    return req.rawBody?.toString('utf8') ?? JSON.stringify(body ?? {});
   }
 }

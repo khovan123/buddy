@@ -1,4 +1,4 @@
-export type PaymentProvider = 'PAYOS' | 'PAYPAL';
+export type PaymentProvider = 'SEPAY';
 
 export type CreatePaymentLinkInput = {
   amountInCents: bigint;

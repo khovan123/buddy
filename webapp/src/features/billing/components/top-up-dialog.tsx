@@ -16,13 +16,6 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { extractApiError } from "@/types/api"
 
 import { useTopUpWalletMutation } from "../services/billing-api"
@@ -40,11 +33,8 @@ const PRESET_AMOUNTS = [
   { label: "₫500,000", value: "500000" },
 ]
 
-type Provider = "PAYOS" | "PAYPAL"
-
 export function TopUpDialog({ open, onOpenChange }: TopUpDialogProps) {
   const [amount, setAmount] = useState("")
-  const [provider, setProvider] = useState<Provider>("PAYOS")
   const [topUp, { isLoading }] = useTopUpWalletMutation()
 
   const handleSubmit = async () => {
@@ -60,13 +50,13 @@ export function TopUpDialog({ open, onOpenChange }: TopUpDialogProps) {
           : ""
       const res = await topUp({
         amountInCents: amount,
-        provider,
+        provider: "SEPAY",
         returnUrl: `${origin}/settings/billing?topup=success`,
         cancelUrl: `${origin}/settings/billing?topup=cancelled`,
       }).unwrap()
 
-      if (res.data?.paymentLink) {
-        globalThis.location.href = res.data.paymentLink
+      if (res.data?.checkoutUrl) {
+        globalThis.location.href = res.data.checkoutUrl
       }
     } catch (err) {
       toast.error(extractApiError(err))
@@ -84,9 +74,9 @@ export function TopUpDialog({ open, onOpenChange }: TopUpDialogProps) {
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Top Up Wallet</DialogTitle>
+          <DialogTitle>Deposit Wallet</DialogTitle>
           <DialogDescription>
-            Choose an amount and payment provider.
+            Add funds to your wallet with SEPAY.
           </DialogDescription>
         </DialogHeader>
 
@@ -122,26 +112,16 @@ export function TopUpDialog({ open, onOpenChange }: TopUpDialogProps) {
             />
             {amount && Number(amount) > 0 && (
               <p className="text-xs text-muted-foreground">
-                You will top up {formatVND(amount)}
+                You will deposit {formatVND(amount)}
               </p>
             )}
           </div>
 
-          {/* Provider */}
-          <div className="space-y-2">
-            <Label htmlFor="topup-provider">Payment Provider</Label>
-            <Select
-              value={provider}
-              onValueChange={(val) => setProvider(val as Provider)}
-            >
-              <SelectTrigger id="topup-provider">
-                <SelectValue placeholder="Select provider" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="PAYOS">PayOS</SelectItem>
-                <SelectItem value="PAYPAL">PayPal</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="rounded-xl bg-muted/50 px-4 py-3 text-sm">
+            <p className="font-medium">SEPAY checkout</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              You will be redirected to the SEPAY payment page.
+            </p>
           </div>
         </div>
 
@@ -160,7 +140,7 @@ export function TopUpDialog({ open, onOpenChange }: TopUpDialogProps) {
             disabled={isLoading || !amount || Number(amount) <= 0}
           >
             {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
-            Continue to Pay
+            Continue to SEPAY
           </Button>
         </DialogFooter>
       </DialogContent>

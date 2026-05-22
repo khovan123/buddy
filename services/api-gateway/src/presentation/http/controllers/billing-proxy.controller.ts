@@ -6,6 +6,7 @@ import {
   Headers,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Put,
   Query,
@@ -15,6 +16,10 @@ import {
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
+
+type RawBodyFastifyRequest = FastifyRequest & {
+  rawBody?: Buffer | string;
+};
 
 /** Controller handling incoming requests for BillingProxy. */
 @Controller({ path: 'billing', version: '1' })
@@ -131,7 +136,6 @@ export class BillingProxyController {
   @Version('1')
   @HttpCode(HttpStatus.OK)
   verifyBankAccount(@Body() body: unknown, @Req() req: FastifyRequest) {
-    console.log(body);
     return this.proxy.forward(req, {
       service: 'billing',
       path: '/v1/billing/payout-account/verify',
@@ -211,6 +215,19 @@ export class BillingProxyController {
       method: 'GET',
     });
   }
+
+  // ── Creator Stats ─────────────────────────────────────────────────
+
+  @Get('sales-count/:userId')
+  @UseGuards(JwtAuthGuard)
+  @Version('1')
+  getSalesCount(@Param('userId') userId: string, @Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'billing',
+      path: `/v1/billing/sales-count/${userId}`,
+      method: 'GET',
+    });
+  }
 }
 
 /** Controller handling incoming requests for BillingWebhookProxy. */
@@ -218,62 +235,76 @@ export class BillingProxyController {
 export class BillingWebhookProxyController {
   constructor(private readonly proxy: HttpProxyService) {}
 
-  /**
-   * Executes the handle pay o s webhook operation.
-   *
-   * @param body - The body parameter
-   * @param signature - The signature parameter
-   * @param req - The req parameter
-   */
-  @Post('payos')
+  @Post('sepay/deposit')
   @Public()
   @Version('1')
   @HttpCode(HttpStatus.OK)
-  handlePayOSWebhook(
+  handleSePayDepositWebhook(
     @Body() body: unknown,
-    @Headers('x-signature') signature: string | undefined,
-    @Req() req: FastifyRequest,
+    @Headers('x-secret-key') secretKey: string | undefined,
+    @Headers('x-sepay-signature') sepaySignature: string | undefined,
+    @Headers('x-sepay-timestamp') sepayTimestamp: string | undefined,
+    @Headers('content-type') contentType: string | undefined,
+    @Req() req: RawBodyFastifyRequest,
   ) {
-    const headers = signature ? { 'x-signature': signature } : undefined;
-    return this.proxy.forward(req, {
-      service: 'billing',
-      path: '/v1/webhooks/billing/payos',
-      method: 'POST',
-      body,
-      headers,
+    return this.forwardSePayWebhook(req, body, {
+      secretKey,
+      sepaySignature,
+      sepayTimestamp,
+      contentType,
+      path: '/v1/webhooks/billing/sepay/deposit',
     });
   }
 
-  /**
-   * Executes the handle pay pal webhook operation.
-   *
-   * @param body - The body parameter
-   * @param paypalSig - The paypalSig parameter
-   * @param paypalTime - The paypalTime parameter
-   * @param paypalId - The paypalId parameter
-   * @param req - The req parameter
-   */
-  @Post('paypal')
+  @Post('sepay/withdraw')
   @Public()
   @Version('1')
   @HttpCode(HttpStatus.OK)
-  handlePayPalWebhook(
+  handleSePayWithdrawWebhook(
     @Body() body: unknown,
-    @Headers('paypal-transmission-sig') paypalSig: string | undefined,
-    @Headers('paypal-transmission-time') paypalTime: string | undefined,
-    @Headers('paypal-transmission-id') paypalId: string | undefined,
-    @Req() req: FastifyRequest,
+    @Headers('x-secret-key') secretKey: string | undefined,
+    @Headers('x-sepay-signature') sepaySignature: string | undefined,
+    @Headers('x-sepay-timestamp') sepayTimestamp: string | undefined,
+    @Headers('content-type') contentType: string | undefined,
+    @Req() req: RawBodyFastifyRequest,
+  ) {
+    return this.forwardSePayWebhook(req, body, {
+      secretKey,
+      sepaySignature,
+      sepayTimestamp,
+      contentType,
+      path: '/v1/webhooks/billing/sepay/withdraw',
+    });
+  }
+
+  private forwardSePayWebhook(
+    req: RawBodyFastifyRequest,
+    body: unknown,
+    input: {
+      secretKey?: string;
+      sepaySignature?: string;
+      sepayTimestamp?: string;
+      contentType?: string;
+      path: string;
+    },
   ) {
     const headers: Record<string, string> = {};
-    if (paypalSig) headers['paypal-transmission-sig'] = paypalSig;
-    if (paypalTime) headers['paypal-transmission-time'] = paypalTime;
-    if (paypalId) headers['paypal-transmission-id'] = paypalId;
+    if (input.secretKey) headers['x-secret-key'] = input.secretKey;
+    if (input.sepaySignature) headers['x-sepay-signature'] = input.sepaySignature;
+    if (input.sepayTimestamp) headers['x-sepay-timestamp'] = input.sepayTimestamp;
+    if (input.contentType) headers['content-type'] = input.contentType;
+
+    const rawBody =
+      typeof req.rawBody === 'string'
+        ? req.rawBody
+        : (req.rawBody?.toString('utf8') ?? JSON.stringify(body ?? {}));
 
     return this.proxy.forward(req, {
       service: 'billing',
-      path: '/v1/webhooks/billing/paypal',
+      path: input.path,
       method: 'POST',
       body,
+      rawBody,
       headers: Object.keys(headers).length > 0 ? headers : undefined,
     });
   }

@@ -5,7 +5,6 @@ import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify
 import { Test, TestingModule } from '@nestjs/testing';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../../src/app.module';
-import { IContentValidator } from '../../src/domain/services/content-validator.interface';
 import {
   CreatePaymentLinkInput,
   CreatePaymentLinkResult,
@@ -14,6 +13,7 @@ import {
   VerifyWebhookResult,
 } from '../../src/domain/repositories/payment-gateway.interface';
 import { CONTENT_VALIDATOR, PAYMENT_GATEWAYS } from '../../src/domain/repositories/tokens';
+import { IContentValidator } from '../../src/domain/services/content-validator.interface';
 import { ContentCatalogRpcPublisher } from '../../src/infrastructure/messaging/publishers/content-catalog.rpc';
 import type { Prisma } from '../../src/infrastructure/persistence/prisma/generated/client';
 import { PrismaService } from '../../src/infrastructure/persistence/prisma/prisma.service';
@@ -25,9 +25,9 @@ jest.setTimeout(30000);
  * Replaces real PayOS/PayPal adapters to avoid external API calls
  */
 class MockPaymentGateway implements IPaymentGateway {
-  readonly provider: 'PAYOS' | 'PAYPAL';
+  readonly provider: 'SEPAY';
 
-  constructor(provider: 'PAYOS' | 'PAYPAL') {
+  constructor(provider: 'SEPAY' = 'SEPAY') {
     this.provider = provider;
   }
 
@@ -249,7 +249,7 @@ describe('Billing Service E2E Tests', () => {
         type,
         status,
         amountInCents,
-        provider: type === 'TOP_UP' ? 'PAYOS' : null,
+        provider: type === 'TOP_UP' ? 'SEPAY' : null,
         externalRef: externalRef || (type === 'TOP_UP' ? `ext_${randomUUID()}` : null),
         currency: 'VND',
         metadata: (metadata || { test: true }) as Prisma.InputJsonValue,
@@ -285,7 +285,7 @@ describe('Billing Service E2E Tests', () => {
       imports: [AppModule],
     })
       .overrideProvider(PAYMENT_GATEWAYS)
-      .useValue([new MockPaymentGateway('PAYOS'), new MockPaymentGateway('PAYPAL')])
+      .useValue([new MockPaymentGateway('SEPAY')])
       .overrideProvider(CONTENT_VALIDATOR)
       .useValue(mockContentValidator)
       .overrideProvider(ContentCatalogRpcPublisher)
@@ -353,7 +353,7 @@ describe('Billing Service E2E Tests', () => {
   // ─────────────────────────────────────────────────────────────────
 
   describe('TOP-UP WEBHOOK FLOW', () => {
-    it('should successfully process PayOS webhook and credit wallet', async () => {
+    it('should successfully process SePay webhook and credit wallet', async () => {
       // ─ SETUP ─────────────────────────────────────────────────────
       const userId = randomUUID();
       const topupAmount = 100000n; // 100,000 VND
@@ -375,7 +375,7 @@ describe('Billing Service E2E Tests', () => {
       // ─ ACTION ────────────────────────────────────────────────────
       const response = await sendJson({
         method: 'POST',
-        url: '/v1/webhooks/billing/payos',
+        url: '/v1/webhooks/billing/sepay',
         headers: {
           'x-external-ref': externalRef,
           'x-amount': topupAmount.toString(),
@@ -428,7 +428,7 @@ describe('Billing Service E2E Tests', () => {
       expect(outboxRecord?.type).toBe('WALLET_TOPPED_UP');
     });
 
-    it.skip('should successfully process PayPal webhook and credit wallet', async () => {
+    it.skip('should successfully process SePay alternate webhook and credit wallet', async () => {
       // ─ SETUP ─────────────────────────────────────────────────────
       const userId = randomUUID();
       const topupAmount = 500000n; // 500,000 VND
@@ -440,7 +440,7 @@ describe('Billing Service E2E Tests', () => {
       // ─ ACTION ────────────────────────────────────────────────────
       const response = await sendJson({
         method: 'POST',
-        url: '/v1/webhooks/billing/paypal',
+        url: '/v1/webhooks/billing/sepay',
         headers: {
           'x-external-ref': externalRef,
           'x-amount': topupAmount.toString(),
@@ -696,7 +696,7 @@ describe('Billing Service E2E Tests', () => {
       // ─ ACTION 1: First webhook call ──────────────────────────────
       const response1 = await sendJson({
         method: 'POST',
-        url: '/v1/webhooks/billing/payos',
+        url: '/v1/webhooks/billing/sepay',
         headers: {
           'x-external-ref': externalRef,
           'x-amount': topupAmount.toString(),

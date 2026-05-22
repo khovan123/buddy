@@ -1,8 +1,7 @@
 import { IsEnum, IsNotEmpty, IsNumberString, IsUrl, MinLength } from 'class-validator';
 
 const PAYMENT_PROVIDERS = {
-  PAYOS: 'PAYOS',
-  PAYPAL: 'PAYPAL',
+  SEPAY: 'SEPAY',
 } as const;
 
 const PRODUCT_TYPES = {
@@ -20,7 +19,7 @@ export class TopUpWalletDto {
   amountInCents!: string;
 
   @IsEnum(PAYMENT_PROVIDERS)
-  provider!: 'PAYOS' | 'PAYPAL';
+  provider!: 'SEPAY';
 
   @IsUrl()
   returnUrl!: string;

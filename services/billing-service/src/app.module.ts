@@ -19,8 +19,7 @@ import { COMMAND_HANDLERS } from './application/commands/command.module';
 import { QUERY_HANDLERS } from './application/queries/query.module';
 import { PAYMENT_GATEWAYS, PAYOUT_GATEWAY, WALLET_REPOSITORY } from './domain/repositories/tokens';
 import { PaymentGatewayFactory } from './infrastructure/external/payment/payment.factory';
-import { PayOSAdapter } from './infrastructure/external/payment/payos.adapter';
-import { PaypalAdapter } from './infrastructure/external/payment/paypal.adapter';
+import { SePayAdapter } from './infrastructure/external/payment/sepay.adapter';
 import { MESSAGE_COMPONENTS } from './infrastructure/messaging/message.module';
 import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module';
 import { PrismaService } from './infrastructure/persistence/prisma/prisma.service';
@@ -61,14 +60,13 @@ import { WebhookController } from './presentation/http/controllers/webhook.contr
       inject: [PrismaService],
     },
     { provide: WALLET_REPOSITORY, useClass: WalletPrismaRepository },
-    { provide: PAYOUT_GATEWAY, useExisting: PayOSAdapter },
-    PayOSAdapter,
-    PaypalAdapter,
+    { provide: PAYOUT_GATEWAY, useExisting: SePayAdapter },
+    SePayAdapter,
     PaymentGatewayFactory,
     {
       provide: PAYMENT_GATEWAYS,
-      inject: [PayOSAdapter, PaypalAdapter],
-      useFactory: (payos: PayOSAdapter, paypal: PaypalAdapter) => [payos, paypal],
+      inject: [SePayAdapter],
+      useFactory: (sepay: SePayAdapter) => [sepay],
     },
   ],
 })

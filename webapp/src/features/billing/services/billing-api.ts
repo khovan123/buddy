@@ -1,16 +1,23 @@
 import type { ApiResponse } from "@/types/api"
 
 import { baseApi } from "../../../lib/redux/base-api"
+import type {
+  Subscription,
+  SubscriptionPlan,
+  WalletBalance,
+} from "../types/billing-types"
 
 interface TopUpWalletRequest {
   amountInCents: string
-  provider: "PAYOS" | "PAYPAL"
+  provider: "SEPAY"
   returnUrl: string
   cancelUrl: string
 }
 
 interface TopUpWalletResponse {
-  paymentLink: string
+  transactionId: string
+  checkoutUrl: string
+  externalReference: string
 }
 
 interface WithdrawWalletRequest {
@@ -23,8 +30,8 @@ interface VerifyBankAccountRequest {
 }
 
 interface VerifyBankAccountResponse {
-  accountName: string
-  accountNumber: string
+  valid: boolean
+  accountName: string | null
 }
 
 interface SavePayoutAccountRequest {
@@ -34,8 +41,40 @@ interface SavePayoutAccountRequest {
   bankName: string
 }
 
+interface CreateSubscriptionRequest {
+  plan: SubscriptionPlan
+}
+
 export const billingApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
+    getWalletBalance: build.query<ApiResponse<WalletBalance>, void>({
+      query: () => ({
+        url: "/v1/billing/wallet/balance",
+        method: "GET",
+      }),
+      providesTags: ["Wallet"],
+    }),
+
+    getSubscription: build.query<ApiResponse<Subscription | null>, void>({
+      query: () => ({
+        url: "/v1/billing/subscription",
+        method: "GET",
+      }),
+      providesTags: ["Subscription"],
+    }),
+
+    createSubscription: build.mutation<
+      ApiResponse<Subscription>,
+      CreateSubscriptionRequest
+    >({
+      query: (body) => ({
+        url: "/v1/billing/subscription",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Subscription"],
+    }),
+
     topUpWallet: build.mutation<
       ApiResponse<TopUpWalletResponse>,
       TopUpWalletRequest
@@ -89,6 +128,9 @@ export const billingApi = baseApi.injectEndpoints({
 })
 
 export const {
+  useGetWalletBalanceQuery,
+  useGetSubscriptionQuery,
+  useCreateSubscriptionMutation,
   useTopUpWalletMutation,
   useWithdrawWalletMutation,
   useVerifyBankAccountMutation,

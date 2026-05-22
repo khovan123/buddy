@@ -46,7 +46,7 @@ export class WalletPrismaRepository implements IWalletRepository {
   async createPendingTopUp(input: {
     userId: string;
     amountInCents: bigint;
-    provider: 'PAYOS' | 'PAYPAL';
+    provider: 'SEPAY';
     externalReference: string;
     metadata?: Record<string, unknown>;
   }): Promise<{ transactionId: string; walletId: string }> {
@@ -80,7 +80,7 @@ export class WalletPrismaRepository implements IWalletRepository {
    */
   async confirmTopUpAndInsertOutbox(input: {
     externalReference: string;
-    provider: 'PAYOS' | 'PAYPAL';
+    provider: 'SEPAY';
     amountInCents: bigint;
     eventType: string;
     eventPayload: Record<string, unknown>;
@@ -394,7 +394,7 @@ export class WalletPrismaRepository implements IWalletRepository {
   async createPendingWithdraw(input: {
     userId: string;
     amountInCents: bigint;
-    provider: 'PAYOS' | 'PAYPAL' | 'BANK_TRANSFER';
+    provider: 'SEPAY' | 'BANK_TRANSFER';
     metadata?: Record<string, unknown>;
     idempotencyKey?: string;
   }): Promise<{ transactionId: string }> {

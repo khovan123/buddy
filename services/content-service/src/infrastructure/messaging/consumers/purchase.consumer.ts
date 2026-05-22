@@ -8,6 +8,14 @@ import { Model } from 'mongoose';
 import { SavedContent } from '../../persistence/mongo/schemas/saved-content.schema';
 import { IdempotentConsumerService } from '../../services/idempotent-consumer.service';
 
+type PurchaseCompletedPayload = PurchaseCompletedEvent['payload'];
+type PurchaseCompletedMessage =
+  | PurchaseCompletedEvent
+  | {
+      correlationId?: string;
+      payload?: PurchaseCompletedPayload;
+    };
+
 @Controller()
 export class PurchaseConsumer {
   private readonly logger = new Logger(PurchaseConsumer.name);
@@ -28,7 +36,7 @@ export class PurchaseConsumer {
     },
   })
   async handlePurchaseCompleted(
-    event: PurchaseCompletedEvent,
+    event: PurchaseCompletedMessage,
     message: ConsumeMessage,
   ): Promise<void> {
     const correlationId = this.idempotentConsumer.resolveCorrelationId(
@@ -42,15 +50,21 @@ export class PurchaseConsumer {
       correlationId,
       BILLING_ROUTINGKEYS.PURCHASE_COMPLETED,
       async (session) => {
-        const { buyerId, items } = event.payload;
+        const payload = this.extractPayload(event);
+        if (!payload?.buyerId || !Array.isArray(payload.items)) {
+          this.logger.warn(`Skipping malformed PURCHASE_COMPLETED event: ${correlationId}`);
+          return;
+        }
+
+        const { buyerId, items } = payload;
 
         const savedContentDocs = items.map((item) => ({
           userId: buyerId,
           itemId: item.itemId,
           itemType: item.itemType,
           metadata: {
-            purchaseId: event.payload.purchaseId,
-            amount: event.payload.amount,
+            purchaseId: payload.purchaseId,
+            amount: payload.amount,
           },
         }));
 
@@ -67,5 +81,9 @@ export class PurchaseConsumer {
         this.logger.log(`Successfully processed PURCHASE_COMPLETED for buyer ${buyerId}`);
       },
     );
+  }
+
+  private extractPayload(event: PurchaseCompletedMessage): PurchaseCompletedPayload | undefined {
+    return event.payload;
   }
 }

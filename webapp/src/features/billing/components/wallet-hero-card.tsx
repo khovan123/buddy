@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
+import { useGetWalletBalanceQuery } from "../services/billing-api"
 import type { WalletBalance } from "../types/billing-types"
 import { formatVND } from "../types/billing-types"
 
@@ -26,6 +27,8 @@ interface WalletHeroCardProps {
 export function WalletHeroCard({ balance }: WalletHeroCardProps) {
   const [topUpOpen, setTopUpOpen] = useState(false)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
+  const { data, isFetching } = useGetWalletBalanceQuery()
+  const currentBalance = data?.data ?? balance
 
   return (
     <>
@@ -45,16 +48,16 @@ export function WalletHeroCard({ balance }: WalletHeroCardProps) {
               </span>
             </div>
 
-            {balance ? (
+            {currentBalance ? (
               <p className="text-4xl font-bold tabular-nums tracking-tight sm:text-5xl">
-                {formatVND(balance.balanceInCents)}
+                {formatVND(currentBalance.balanceInCents)}
               </p>
             ) : (
               <Skeleton className="h-12 w-48 bg-white/20" />
             )}
 
             <p className="text-xs text-white/50">
-              {balance?.currency ?? "VND"} • Updated just now
+              {currentBalance?.currency ?? "VND"} - {isFetching ? "Refreshing" : "Updated just now"}
             </p>
           </div>
 
@@ -66,7 +69,7 @@ export function WalletHeroCard({ balance }: WalletHeroCardProps) {
               onClick={() => setTopUpOpen(true)}
             >
               <ArrowDownToLine className="size-4" />
-              Top Up
+              Deposit
             </Button>
             <Button
               id="settings-withdraw-btn"
@@ -85,7 +88,7 @@ export function WalletHeroCard({ balance }: WalletHeroCardProps) {
       <WithdrawDialog
         open={withdrawOpen}
         onOpenChange={setWithdrawOpen}
-        currentBalance={balance?.balanceInCents ?? "0"}
+        currentBalance={currentBalance?.balanceInCents ?? "0"}
       />
     </>
   )
