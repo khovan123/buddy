@@ -41,6 +41,14 @@
     "lint:fix": {
       "outputs": []
     },
+    "mfe:check": {
+      "inputs": [
+        "src/config/micro-frontends.ts",
+        "microfrontends.json",
+        "scripts/validate-micro-frontends.mjs"
+      ],
+      "outputs": []
+    },
     "prisma:generate": {
       "inputs": ["src/prisma/schema.prisma"],
       "outputs": ["src/infrastructure/persistence/prisma/generated/**"],

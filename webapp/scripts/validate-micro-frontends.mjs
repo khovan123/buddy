@@ -3,6 +3,7 @@ import path from "node:path"
 
 const root = process.cwd()
 const registryPath = path.join(root, "src/config/micro-frontends.ts")
+const mfeConfigPath = path.join(root, "microfrontends.json")
 const appRoot = path.join(root, "src/app")
 const registrySource = readFileSync(registryPath, "utf8")
 
@@ -170,6 +171,45 @@ for (const filePath of appFiles) {
         `${path.relative(root, filePath)} imports @/features/${featureName}/ internals. Use @/features/${featureName}.`
       )
     }
+  }
+}
+
+// ── Cross-validate microfrontends.json ──────────────────────────────────────
+if (!existsSync(mfeConfigPath)) {
+  errors.push("microfrontends.json does not exist at the project root.")
+} else {
+  try {
+    const mfeConfig = JSON.parse(readFileSync(mfeConfigPath, "utf8"))
+
+    if (!mfeConfig.$schema) {
+      errors.push("microfrontends.json is missing the $schema field.")
+    }
+
+    if (!mfeConfig.applications || typeof mfeConfig.applications !== "object") {
+      errors.push("microfrontends.json is missing the applications field.")
+    } else {
+      const appNames = Object.keys(mfeConfig.applications)
+      const appsWithRouting = appNames.filter(
+        (name) => mfeConfig.applications[name].routing?.length > 0
+      )
+      const defaultApps = appNames.filter(
+        (name) => !mfeConfig.applications[name].routing?.length
+      )
+
+      console.info(`microfrontends.json: ${appNames.length} application(s) registered.`)
+      if (defaultApps.length > 0) {
+        console.info(`  Default app (catches all unmatched routes): ${defaultApps.join(", ")}`)
+      }
+      if (appsWithRouting.length > 0) {
+        for (const appName of appsWithRouting) {
+          const paths = mfeConfig.applications[appName].routing
+            .flatMap((rule) => rule.paths || [])
+          console.info(`  ${appName}: ${paths.join(", ")}`)
+        }
+      }
+    }
+  } catch (parseError) {
+    errors.push(`microfrontends.json is not valid JSON: ${parseError.message}`)
   }
 }
 

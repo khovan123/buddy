@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/microfrontends.json",
+  "applications": {
+    "buddy": {
+      "packageName": "webapp",
+      "development": {
+        "fallback": "platform-buddy.vercel.app",
+        "local": 8000
+      }
+    }
+  },
+  "options": {
+    "localProxyPort": 3024
+  }
+}
