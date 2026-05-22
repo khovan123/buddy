@@ -18,7 +18,8 @@
     "jsx": "react-jsx",
     "incremental": true,
     "types": [
-      "node"
+      "node",
+      "jest"
     ],
     "plugins": [
       {
@@ -44,7 +45,6 @@
   "exclude": [
     "node_modules",
     ".next",
-    ".code-review-graph",
-    "__tests__"
+    ".code-review-graph"
   ]
 }
