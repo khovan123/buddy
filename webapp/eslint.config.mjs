@@ -344,6 +344,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Test files — no test runner configured yet (no jest.config, no test script).
+    // Ignored to prevent @typescript-eslint/parser errors from tsconfig exclusion.
+    "__tests__/**",
   ]),
 ])
 
