@@ -8,7 +8,7 @@ import { CreateContentCTA } from "@/components/molecules/create-content-cta"
 import { Navigation } from "@/components/organisms/navigation"
 import { Button } from "@/components/ui/button"
 import { HeaderWalletPopover } from "@/features/user/components/header-wallet-popover"
-import { PlanSelectorPopover } from "@/features/user/components/plan-selector-popover"
+import { PlanSelectorDialog } from "@/features/user/components/plan-selector-dialog"
 import { ProfileCompleteBanner } from "@/features/user/components/profile-complete-banner"
 import { ProfileUpdateDialog } from "@/features/user/components/profile-update-dialog"
 import { UserMenuPopover } from "@/features/user/components/user-menu-popover"
@@ -51,7 +51,7 @@ export function PrivateHeader({ user }: PrivateHeaderProps) {
         rightSlot={
           <>
             <CreateContentCTA />
-            <PlanSelectorPopover />
+            <PlanSelectorDialog />
             <HeaderWalletPopover />
             <Button
               variant="ghost"

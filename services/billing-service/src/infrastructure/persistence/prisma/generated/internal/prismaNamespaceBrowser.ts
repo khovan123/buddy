@@ -56,6 +56,7 @@ export const ModelName = {
   Outbox: 'Outbox',
   UserResourceOwnership: 'UserResourceOwnership',
   PayoutAccount: 'PayoutAccount',
+  SubscriptionPlanCatalog: 'SubscriptionPlanCatalog',
   Subscription: 'Subscription'
 } as const
 
@@ -146,6 +147,39 @@ export const PayoutAccountScalarFieldEnum = {
 } as const
 
 export type PayoutAccountScalarFieldEnum = (typeof PayoutAccountScalarFieldEnum)[keyof typeof PayoutAccountScalarFieldEnum]
+
+
+export const SubscriptionPlanCatalogScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  audience: 'audience',
+  tier: 'tier',
+  title: 'title',
+  groupDescription: 'groupDescription',
+  iconKey: 'iconKey',
+  label: 'label',
+  cta: 'cta',
+  description: 'description',
+  badge: 'badge',
+  currency: 'currency',
+  monthlyPriceCents: 'monthlyPriceCents',
+  yearlyMonthlyPriceCents: 'yearlyMonthlyPriceCents',
+  storageBytes: 'storageBytes',
+  maxResources: 'maxResources',
+  maxTutorials: 'maxTutorials',
+  maxCollections: 'maxCollections',
+  canCreateContent: 'canCreateContent',
+  maxSearchResults: 'maxSearchResults',
+  featureValues: 'featureValues',
+  pbac: 'pbac',
+  metadata: 'metadata',
+  displayOrder: 'displayOrder',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SubscriptionPlanCatalogScalarFieldEnum = (typeof SubscriptionPlanCatalogScalarFieldEnum)[keyof typeof SubscriptionPlanCatalogScalarFieldEnum]
 
 
 export const SubscriptionScalarFieldEnum = {

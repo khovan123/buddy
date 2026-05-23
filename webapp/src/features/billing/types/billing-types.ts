@@ -48,6 +48,17 @@ export interface PayoutAccount {
   verifiedAt?: string
 }
 
+export interface BankProvider {
+  id: string
+  name: string
+  shortName: string
+  code: string
+  bin: string
+  logo?: string
+  lookupSupported: boolean
+  transferSupported: boolean
+}
+
 // ── Subscription ─────────────────────────────────────────
 export type SubscriptionPlan =
   | "CREATOR_FREE"
@@ -63,6 +74,66 @@ export interface Subscription {
   status: SubscriptionStatus
   startsAt: string
   expiresAt?: string
+}
+
+export type PlanFeatureValue = string | boolean
+
+export interface SubscriptionPlanFeature {
+  label: string
+  free: PlanFeatureValue
+  pro: PlanFeatureValue
+}
+
+export interface SubscriptionPlanTier {
+  price: number
+  label: string
+  cta: string
+  description: string
+  yearlyPrice?: number
+  badge?: string
+}
+
+export interface SubscriptionPlanGroup {
+  title: string
+  description: string
+  iconKey: "Palette" | "Users"
+  free: SubscriptionPlanTier
+  pro: SubscriptionPlanTier & { yearlyPrice: number; badge: string }
+  features: SubscriptionPlanFeature[]
+}
+
+export interface SubscriptionComparisonRow {
+  label: string
+  creatorFree: PlanFeatureValue
+  creatorPro: PlanFeatureValue
+  studentFree: PlanFeatureValue
+  studentPro: PlanFeatureValue
+}
+
+export interface SubscriptionComparisonCategory {
+  category: string
+  rows: SubscriptionComparisonRow[]
+}
+
+export interface SubscriptionFaqItem {
+  q: string
+  a: string
+}
+
+export interface SubscriptionPlanCatalogItem {
+  code: SubscriptionPlan
+  audience: "CREATOR" | "STUDENT"
+  tier: "free" | "pro"
+  limits: PlanLimits
+  pbac: Record<string, unknown>
+}
+
+export interface SubscriptionPricingData {
+  creatorPlans: SubscriptionPlanGroup
+  studentPlans: SubscriptionPlanGroup
+  comparisonCategories: SubscriptionComparisonCategory[]
+  faqItems: SubscriptionFaqItem[]
+  planCatalog?: SubscriptionPlanCatalogItem[]
 }
 
 // ── Plan Limits (mirrored from backend contracts) ────────

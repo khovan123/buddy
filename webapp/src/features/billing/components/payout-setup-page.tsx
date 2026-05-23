@@ -23,9 +23,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useGlobalError } from "@/providers/error-provider"
 
 import {
+  useGetBankProvidersQuery,
   useSavePayoutAccountMutation,
   useVerifyBankAccountMutation,
 } from "../services/billing-api"
@@ -34,7 +42,7 @@ import type { PayoutAccount } from "../types/billing-types"
 // ── Validation ─────────────────────────────────────────────
 
 const payoutSchema = z.object({
-  bankBin: z.string().min(3, "Bank BIN is required"),
+  bankBin: z.string().min(3, "Bank is required"),
   bankAccountNumber: z.string().min(5, "Account number is required"),
   bankAccountName: z.string().min(2, "Account name is required"),
   bankName: z.string().min(2, "Bank name is required"),
@@ -65,6 +73,8 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
     useSavePayoutAccountMutation()
   const [verifyBankAccount, { isLoading: isVerifying }] =
     useVerifyBankAccountMutation()
+  const { data: bankProvidersData, isLoading: isLoadingBanks } =
+    useGetBankProvidersQuery()
 
   useEffect(() => {
     setAccount(initialAccount)
@@ -96,6 +106,8 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
 
   const bankBin = watch("bankBin")
   const bankAccountNumber = watch("bankAccountNumber")
+  const bankProviders = bankProvidersData?.data ?? []
+  const selectedBank = bankProviders.find((bank) => bank.bin === bankBin)
 
   useEffect(() => {
     const unchangedAccount =
@@ -119,6 +131,7 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
 
       if (res.data?.valid && res.data.accountName) {
         setValue("bankAccountName", res.data.accountName)
+        setValue("bankName", res.data.bankName ?? selectedBank?.name ?? "")
         setVerified(true)
         toast.success("Bank account verified successfully!")
         return
@@ -130,6 +143,17 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
     } catch (err) {
       handleError(err)
     }
+  }
+
+  const handleBankChange = (nextBankBin: string) => {
+    const bank = bankProviders.find((item) => item.bin === nextBankBin)
+    setValue("bankBin", nextBankBin, { shouldDirty: true, shouldValidate: true })
+    setValue("bankName", bank?.name ?? "", {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+    setValue("bankAccountName", "")
+    setVerified(false)
   }
 
   const onSubmit = async (data: PayoutFormValues) => {
@@ -246,12 +270,27 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field>
-                    <Label htmlFor="payout-bank-bin">Bank BIN</Label>
-                    <Input
-                      id="payout-bank-bin"
-                      placeholder="e.g. 970436"
-                      {...register("bankBin")}
-                    />
+                    <Label htmlFor="payout-bank">Bank</Label>
+                    <Select
+                      value={bankBin}
+                      onValueChange={handleBankChange}
+                      disabled={isLoadingBanks || bankProviders.length === 0}
+                    >
+                      <SelectTrigger id="payout-bank" className="w-full">
+                        <SelectValue
+                          placeholder={
+                            isLoadingBanks ? "Loading banks" : "Choose bank"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bankProviders.map((bank) => (
+                          <SelectItem key={bank.bin} value={bank.bin}>
+                            {bank.shortName} - {bank.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {errors.bankBin && (
                       <p className="text-xs text-destructive">
                         {errors.bankBin.message}
@@ -347,7 +386,9 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
                     <Label htmlFor="payout-bank-name">Bank Name</Label>
                     <Input
                       id="payout-bank-name"
-                      placeholder="e.g. Vietcombank"
+                      placeholder="Auto-filled from selected bank"
+                      readOnly
+                      className="bg-muted/50"
                       {...register("bankName")}
                     />
                     {errors.bankName && (

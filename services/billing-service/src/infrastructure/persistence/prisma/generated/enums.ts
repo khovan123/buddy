@@ -76,3 +76,11 @@ export const SubscriptionStatus = {
 } as const
 
 export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus]
+
+
+export const SubscriptionAudience = {
+  CREATOR: 'CREATOR',
+  STUDENT: 'STUDENT'
+} as const
+
+export type SubscriptionAudience = (typeof SubscriptionAudience)[keyof typeof SubscriptionAudience]
