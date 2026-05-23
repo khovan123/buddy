@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { revalidateCacheTag } from "@/app/actions/revalidate"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -208,6 +209,7 @@ export default function PayoutSetupPage({ initialAccount }: PayoutSetupPageProps
 
     try {
       await savePayoutAccount(data).unwrap()
+      await revalidateCacheTag("payout-account")
       toast.success("Payout account saved!")
       setAccount({
         ...data,
