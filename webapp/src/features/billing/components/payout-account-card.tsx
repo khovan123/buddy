@@ -8,7 +8,6 @@ import {
   Building2,
   Loader2,
   Pencil,
-  Save,
   ShieldAlert,
 } from "lucide-react"
 import { useForm } from "react-hook-form"
@@ -112,33 +111,6 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
     setVerified(Boolean(unchangedAccount))
   }, [bankAccountNumber, bankBin, currentAccount])
 
-  const handleVerify = async () => {
-    if (!bankBin || !bankAccountNumber) {
-      return
-    }
-    clearError()
-    try {
-      const res = await verifyBankAccount({
-        bankBin,
-        bankAccountNumber,
-      }).unwrap()
-
-      if (res.data?.valid && res.data.accountName) {
-        setValue("bankAccountName", res.data.accountName)
-        setValue("bankName", res.data.bankName ?? selectedBank?.name ?? "")
-        setVerified(true)
-        toast.success("Bank account verified!")
-        return
-      }
-
-      setValue("bankAccountName", "")
-      setVerified(false)
-      toast.error("Bank account could not be verified.")
-    } catch (err) {
-      handleError(err)
-    }
-  }
-
   const handleBankChange = (nextBankBin: string) => {
     const bank = bankProviders.find((item) => item.bin === nextBankBin)
     setValue("bankBin", nextBankBin, { shouldDirty: true, shouldValidate: true })
@@ -149,6 +121,76 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
     setValue("bankAccountName", "")
     setVerified(false)
   }
+
+  useEffect(() => {
+    const unchangedAccount =
+      currentAccount?.bankBin === bankBin &&
+      currentAccount?.bankAccountNumber === bankAccountNumber &&
+      currentAccount?.verified
+
+    if (unchangedAccount) {
+      setVerified(true)
+      return
+    }
+
+    if (!bankBin || bankAccountNumber.length < 5) {
+      setValue("bankAccountName", "")
+      setVerified(false)
+      return
+    }
+
+    let active = true
+    const timeout = setTimeout(() => {
+      clearError()
+      setVerified(false)
+
+      void verifyBankAccount({
+        bankBin,
+        bankAccountNumber,
+      })
+        .unwrap()
+        .then((res) => {
+          if (!active) {
+            return
+          }
+
+          if (res.data?.valid && res.data.accountName) {
+            setValue("bankAccountName", res.data.accountName, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+            setValue("bankName", res.data.bankName ?? selectedBank?.name ?? "", {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+            setVerified(true)
+            return
+          }
+
+          setValue("bankAccountName", "")
+          setVerified(false)
+        })
+        .catch((err) => {
+          if (active) {
+            handleError(err)
+          }
+        })
+    }, 600)
+
+    return () => {
+      active = false
+      clearTimeout(timeout)
+    }
+  }, [
+    bankAccountNumber,
+    bankBin,
+    clearError,
+    currentAccount,
+    handleError,
+    selectedBank?.name,
+    setValue,
+    verifyBankAccount,
+  ])
 
   const onSubmit = async (data: PayoutFormValues) => {
     clearError()
@@ -215,15 +257,15 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
                 )}
               </div>
 
-              <div className="grid gap-2 text-sm sm:grid-cols-2">
-                <div>
-                  <p className="text-xs text-muted-foreground">Account No.</p>
+            <div className="grid gap-2 text-sm sm:grid-cols-2">
+              <div>
+                  <p className="text-xs text-muted-foreground">Bank number</p>
                   <p className="font-mono font-medium tabular-nums">
                     {maskAccountNumber(currentAccount.bankAccountNumber)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Account Name</p>
+                  <p className="text-xs text-muted-foreground">Full Name</p>
                   <p className="font-medium">{currentAccount.bankAccountName}</p>
                 </div>
               </div>
@@ -277,7 +319,7 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
               </Field>
 
               <Field>
-                <Label htmlFor="payout-account-number">Account Number</Label>
+                <Label htmlFor="payout-account-number">Bank number</Label>
                 <Input
                   id="payout-account-number"
                   placeholder="e.g. 1234567890"
@@ -291,33 +333,18 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
               </Field>
             </div>
 
-            <Button
-              id="settings-payout-verify-btn"
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={
-                isVerifying || !bankBin || !bankAccountNumber
-              }
-              onClick={handleVerify}
-              className="gap-1"
-            >
-              {isVerifying ? (
-                <Loader2 className="size-3 animate-spin" />
-              ) : (
-                <BadgeCheck className="size-3" />
-              )}
-              Verify Account
-            </Button>
-
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <Field>
-                <Label htmlFor="payout-account-name">Account Name</Label>
+                <Label htmlFor="payout-account-name">Full Name</Label>
                 <Input
                   id="payout-account-name"
-                  placeholder="Auto-filled after verify"
-                  readOnly={verified}
-                  className={verified ? "bg-muted/50" : undefined}
+                  placeholder={
+                    isVerifying
+                      ? "Verifying account..."
+                      : "Auto-filled after verification"
+                  }
+                  readOnly
+                  className="bg-muted/50"
                   {...register("bankAccountName")}
                 />
                 {errors.bankAccountName && (
@@ -326,22 +353,24 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
                   </p>
                 )}
               </Field>
+            </div>
 
-              <Field>
-                <Label htmlFor="payout-bank-name">Bank Name</Label>
-                <Input
-                  id="payout-bank-name"
-                  placeholder="Auto-filled from selected bank"
-                  readOnly
-                  className="bg-muted/50"
-                  {...register("bankName")}
-                />
-                {errors.bankName && (
-                  <p className="text-xs text-destructive">
-                    {errors.bankName.message}
-                  </p>
-                )}
-              </Field>
+            <div className="flex min-h-5 items-center gap-2 text-xs text-muted-foreground">
+              {isVerifying ? (
+                <>
+                  <Loader2 className="size-3 animate-spin" />
+                  Verifying account
+                </>
+              ) : verified ? (
+                <>
+                  <BadgeCheck className="size-3 text-emerald-600" />
+                  Verified
+                </>
+              ) : bankBin && bankAccountNumber ? (
+                "Waiting for account verification"
+              ) : (
+                "Choose a bank and enter bank number to verify"
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -349,13 +378,11 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
                 id="settings-payout-save-btn"
                 type="submit"
                 size="sm"
-                disabled={isSaving || !verified}
+                disabled={isSaving || isVerifying || !verified}
               >
                 {isSaving ? (
                   <Loader2 className="mr-1 size-3 animate-spin" />
-                ) : (
-                  <Save className="mr-1 size-3" />
-                )}
+                ) : null}
                 Save
               </Button>
               <Button

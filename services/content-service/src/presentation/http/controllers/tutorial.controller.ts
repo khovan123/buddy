@@ -5,6 +5,7 @@ import {
   PoliciesGuard,
   Public,
   RequirePolicy,
+  SubscriptionRequiredPolicy,
 } from '@libs/common';
 import { successResponse } from '@libs/contracts';
 import {
@@ -67,7 +68,7 @@ export class TutorialController {
   @Version('1')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(PoliciesGuard)
-  @RequirePolicy(CreatorOnlyPolicy, TutorialLimitPolicy)
+  @RequirePolicy(SubscriptionRequiredPolicy, CreatorOnlyPolicy, TutorialLimitPolicy)
   async createTutorial(
     @Body() dto: CreateTutorialDto,
     @Req() req: FastifyRequest & { user: { sub: string } },

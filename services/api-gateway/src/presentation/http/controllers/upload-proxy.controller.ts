@@ -1,11 +1,17 @@
-import { JwtAuthGuard } from '@libs/common';
+import {
+  JwtAuthGuard,
+  PoliciesGuard,
+  RequirePolicy,
+  SubscriptionRequiredPolicy,
+} from '@libs/common';
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
 
 /** Controller handling incoming requests for UploadProxy. */
 @Controller({ path: 'uploads', version: '1' })
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PoliciesGuard)
+@RequirePolicy(SubscriptionRequiredPolicy)
 export class UploadProxyController {
   constructor(private readonly proxy: HttpProxyService) {}
 

@@ -185,7 +185,7 @@ export type UserGroupByOutputType = {
   passwordHash: string
   nickname: string
   roles: string[]
-  subscriptionPlan: string
+  subscriptionPlan: string | null
   status: $Enums.UserStatus
   emailVerified: boolean
   lastLoginAt: Date | null
@@ -220,7 +220,7 @@ export type UserWhereInput = {
   passwordHash?: Prisma.StringFilter<"User"> | string
   nickname?: Prisma.StringFilter<"User"> | string
   roles?: Prisma.StringNullableListFilter<"User">
-  subscriptionPlan?: Prisma.StringFilter<"User"> | string
+  subscriptionPlan?: Prisma.StringNullableFilter<"User"> | string | null
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   emailVerified?: Prisma.BoolFilter<"User"> | boolean
   lastLoginAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
@@ -235,7 +235,7 @@ export type UserOrderByWithRelationInput = {
   passwordHash?: Prisma.SortOrder
   nickname?: Prisma.SortOrder
   roles?: Prisma.SortOrder
-  subscriptionPlan?: Prisma.SortOrder
+  subscriptionPlan?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   emailVerified?: Prisma.SortOrder
   lastLoginAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -253,7 +253,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   passwordHash?: Prisma.StringFilter<"User"> | string
   nickname?: Prisma.StringFilter<"User"> | string
   roles?: Prisma.StringNullableListFilter<"User">
-  subscriptionPlan?: Prisma.StringFilter<"User"> | string
+  subscriptionPlan?: Prisma.StringNullableFilter<"User"> | string | null
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   emailVerified?: Prisma.BoolFilter<"User"> | boolean
   lastLoginAt?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
@@ -268,7 +268,7 @@ export type UserOrderByWithAggregationInput = {
   passwordHash?: Prisma.SortOrder
   nickname?: Prisma.SortOrder
   roles?: Prisma.SortOrder
-  subscriptionPlan?: Prisma.SortOrder
+  subscriptionPlan?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   emailVerified?: Prisma.SortOrder
   lastLoginAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -288,7 +288,7 @@ export type UserScalarWhereWithAggregatesInput = {
   passwordHash?: Prisma.StringWithAggregatesFilter<"User"> | string
   nickname?: Prisma.StringWithAggregatesFilter<"User"> | string
   roles?: Prisma.StringNullableListFilter<"User">
-  subscriptionPlan?: Prisma.StringWithAggregatesFilter<"User"> | string
+  subscriptionPlan?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   status?: Prisma.EnumUserStatusWithAggregatesFilter<"User"> | $Enums.UserStatus
   emailVerified?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
   lastLoginAt?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
@@ -302,7 +302,7 @@ export type UserCreateInput = {
   passwordHash: string
   nickname: string
   roles?: Prisma.UserCreaterolesInput | string[]
-  subscriptionPlan?: string
+  subscriptionPlan?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
   lastLoginAt?: Date | string | null
@@ -317,7 +317,7 @@ export type UserUncheckedCreateInput = {
   passwordHash: string
   nickname: string
   roles?: Prisma.UserCreaterolesInput | string[]
-  subscriptionPlan?: string
+  subscriptionPlan?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
   lastLoginAt?: Date | string | null
@@ -332,7 +332,7 @@ export type UserUpdateInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   nickname?: Prisma.StringFieldUpdateOperationsInput | string
   roles?: Prisma.UserUpdaterolesInput | string[]
-  subscriptionPlan?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -347,7 +347,7 @@ export type UserUncheckedUpdateInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   nickname?: Prisma.StringFieldUpdateOperationsInput | string
   roles?: Prisma.UserUpdaterolesInput | string[]
-  subscriptionPlan?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -362,7 +362,7 @@ export type UserCreateManyInput = {
   passwordHash: string
   nickname: string
   roles?: Prisma.UserCreaterolesInput | string[]
-  subscriptionPlan?: string
+  subscriptionPlan?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
   lastLoginAt?: Date | string | null
@@ -376,7 +376,7 @@ export type UserUpdateManyMutationInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   nickname?: Prisma.StringFieldUpdateOperationsInput | string
   roles?: Prisma.UserUpdaterolesInput | string[]
-  subscriptionPlan?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -390,7 +390,7 @@ export type UserUncheckedUpdateManyInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   nickname?: Prisma.StringFieldUpdateOperationsInput | string
   roles?: Prisma.UserUpdaterolesInput | string[]
-  subscriptionPlan?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -464,6 +464,10 @@ export type UserUpdaterolesInput = {
   push?: string | string[]
 }
 
+export type NullableStringFieldUpdateOperationsInput = {
+  set?: string | null
+}
+
 export type EnumUserStatusFieldUpdateOperationsInput = {
   set?: $Enums.UserStatus
 }
@@ -500,7 +504,7 @@ export type UserCreateWithoutRefreshTokensInput = {
   passwordHash: string
   nickname: string
   roles?: Prisma.UserCreaterolesInput | string[]
-  subscriptionPlan?: string
+  subscriptionPlan?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
   lastLoginAt?: Date | string | null
@@ -514,7 +518,7 @@ export type UserUncheckedCreateWithoutRefreshTokensInput = {
   passwordHash: string
   nickname: string
   roles?: Prisma.UserCreaterolesInput | string[]
-  subscriptionPlan?: string
+  subscriptionPlan?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
   lastLoginAt?: Date | string | null
@@ -544,7 +548,7 @@ export type UserUpdateWithoutRefreshTokensInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   nickname?: Prisma.StringFieldUpdateOperationsInput | string
   roles?: Prisma.UserUpdaterolesInput | string[]
-  subscriptionPlan?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -558,7 +562,7 @@ export type UserUncheckedUpdateWithoutRefreshTokensInput = {
   passwordHash?: Prisma.StringFieldUpdateOperationsInput | string
   nickname?: Prisma.StringFieldUpdateOperationsInput | string
   roles?: Prisma.UserUpdaterolesInput | string[]
-  subscriptionPlan?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionPlan?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lastLoginAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -674,7 +678,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     passwordHash: string
     nickname: string
     roles: string[]
-    subscriptionPlan: string
+    subscriptionPlan: string | null
     status: $Enums.UserStatus
     emailVerified: boolean
     lastLoginAt: Date | null

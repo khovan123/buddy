@@ -360,7 +360,7 @@ async def _attach_catalog_display(items: list[dict]) -> list[dict]:
 @rec_router.get("/recommend", response_model=RecommendResponse)
 async def recommend(
     userId: str = Query(..., description="User ID to get recommendations for"),
-    limit: int = Query(10, ge=1, le=50),
+    limit: int = Query(10, ge=1),
     contentType: str | None = Query(None, description="RESOURCE | TUTORIAL | RESOURCE_COLLECTION | TUTORIAL_COLLECTION"),
 ):
     """Generate personalised content recommendations for a user.
@@ -371,7 +371,8 @@ async def recommend(
 
     Args:
         userId: Unique identifier of the requesting user.
-        limit: Maximum number of items to return (1–50, default 10).
+        limit: Maximum number of items to return (default 10). API gateway PBAC
+            enforces plan-specific limits for authenticated clients.
         contentType: Optional filter — one of ``RESOURCE``, ``TUTORIAL``,
             ``RESOURCE_COLLECTION``, ``TUTORIAL_COLLECTION``.
 
@@ -432,7 +433,7 @@ async def recommend(
 async def trending(
     majorId: str | None = Query(None),
     days: int = Query(7, ge=1, le=30),
-    limit: int = Query(10, ge=1, le=50),
+    limit: int = Query(10, ge=1),
 ):
     """Return trending content items ranked by aggregate popularity.
 
@@ -442,7 +443,7 @@ async def trending(
     Args:
         majorId: Optional major to scope the trending list.
         days: Trend window in days (1–30, default 7).
-        limit: Maximum items to return (1–50, default 10).
+        limit: Maximum items to return (default 10).
 
     Returns:
         TrendingResponse: Trending items with interaction totals and ratings.

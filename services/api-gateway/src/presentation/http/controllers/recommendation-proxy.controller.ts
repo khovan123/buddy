@@ -1,4 +1,13 @@
-import { AppLogger, JwtAuthGuard, Public, type JwtPayload } from '@libs/common';
+import {
+  AppLogger,
+  JwtAuthGuard,
+  PoliciesGuard,
+  Public,
+  RequirePolicy,
+  SearchResultLimitPolicy,
+  SubscriptionRequiredPolicy,
+  type JwtPayload,
+} from '@libs/common';
 import { Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import {
@@ -54,7 +63,8 @@ export class RecommendationProxyController {
   }
 
   @Get('for-you')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @RequirePolicy(SubscriptionRequiredPolicy, SearchResultLimitPolicy)
   async getRecommendationsForCurrentUser(
     @Req() req: FastifyRequest,
     @Query('limit') limit?: string,

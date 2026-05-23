@@ -15,6 +15,7 @@ import {
   PRISMA_CLIENT,
   PrismaHealthIndicator,
   QUEUES,
+  SubscriptionRequiredPolicy,
 } from '@libs/common';
 
 import { UPLOAD_ROUTINGKEYS } from '@libs/contracts';
@@ -110,6 +111,7 @@ import { WebhookController } from './presentation/webhooks/controllers/upload.we
     VideoProcessorWorker,
     DocumentPreviewWorker,
     PreviewProcessorContext,
+    SubscriptionRequiredPolicy,
     {
       provide: UPLOAD_ROUTINGKEYS.VIDEO_PROCESSING_JOB,
       useValue: UPLOAD_ROUTINGKEYS.VIDEO_PROCESSING_JOB,

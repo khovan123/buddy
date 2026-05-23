@@ -1,4 +1,11 @@
-import { JwtAuthGuard, Public } from '@libs/common';
+import {
+  JwtAuthGuard,
+  PoliciesGuard,
+  Public,
+  RequirePolicy,
+  SearchResultLimitPolicy,
+  SubscriptionRequiredPolicy,
+} from '@libs/common';
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
@@ -9,7 +16,8 @@ export class RagProxyController {
   constructor(private readonly proxy: HttpProxyService) {}
 
   @Post('ask')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @RequirePolicy(SubscriptionRequiredPolicy, SearchResultLimitPolicy)
   ask(@Body() body: unknown, @Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
       service: 'rag',
@@ -22,7 +30,8 @@ export class RagProxyController {
   }
 
   @Post('retrieve')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @RequirePolicy(SubscriptionRequiredPolicy, SearchResultLimitPolicy)
   retrieve(@Body() body: unknown, @Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
       service: 'rag',
