@@ -1,6 +1,5 @@
 import { getSession, signOut } from "next-auth/react"
 
-
 import type {
   BaseQueryFn,
   FetchArgs,
@@ -85,6 +84,7 @@ export const baseApi = createApi({
     "Transaction",
     "PayoutAccount",
     "Subscription",
+    "NotificationPreferences",
   ], // Centralize tag definitions here
   endpoints: () => ({}),
 })

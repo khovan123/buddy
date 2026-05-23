@@ -1,19 +1,12 @@
 "use client"
 
-import {
-  ArrowUpRight,
-  Crown,
-  Sparkles,
-} from "lucide-react"
+import { Crown, Sparkles } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PlanSelectorDialog } from "@/features/user/components/plan-selector-dialog"
 
-import type {
-  Subscription,
-  SubscriptionStatus,
-} from "../types/billing-types"
+import type { Subscription, SubscriptionStatus } from "../types/billing-types"
 import { PLAN_DISPLAY_NAMES, PLAN_LIMITS } from "../types/billing-types"
 
 interface SubscriptionCardProps {
@@ -38,10 +31,9 @@ function formatDate(dateStr: string): string {
 }
 
 function formatStorage(bytes: number): string {
-  if (bytes >= 1024 * 1024 * 1024)
-    {
-      return `${Math.round(bytes / (1024 * 1024 * 1024))} GB`
-    }
+  if (bytes >= 1024 * 1024 * 1024) {
+    return `${Math.round(bytes / (1024 * 1024 * 1024))} GB`
+  }
   return `${Math.round(bytes / (1024 * 1024))} MB`
 }
 
@@ -51,33 +43,20 @@ function formatLimit(value: number): string {
 
 export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
   const isPro = subscription?.plan?.includes("PRO") ?? false
-  const statusConfig = subscription
-    ? STATUS_STYLES[subscription.status]
-    : null
-  const limits = subscription
-    ? PLAN_LIMITS[subscription.plan]
-    : null
+  const statusConfig = subscription ? STATUS_STYLES[subscription.status] : null
+  const limits = subscription ? PLAN_LIMITS[subscription.plan] : null
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        <CardTitle className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
           Subscription
         </CardTitle>
-        {subscription && !isPro && (
-          <Button
-            id="settings-upgrade-btn"
-            variant="outline"
-            size="sm"
-            className="gap-1"
-            asChild
-          >
-            <a href="/explore">
-              <ArrowUpRight className="size-3" />
-              Upgrade
-            </a>
-          </Button>
-        )}
+        <PlanSelectorDialog
+          triggerText={subscription ? "Change plan" : "Choose plan"}
+          triggerVariant={subscription && !isPro ? "default" : "outline"}
+          triggerClassName="inline-flex font-semibold"
+        />
       </CardHeader>
 
       <CardContent>
@@ -104,7 +83,10 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
                   {PLAN_DISPLAY_NAMES[subscription.plan]}
                 </p>
                 <div className="flex items-center gap-2">
-                  <Badge variant={statusConfig!.variant} className="text-[10px] uppercase">
+                  <Badge
+                    variant={statusConfig!.variant}
+                    className="text-[10px] uppercase"
+                  >
                     {statusConfig!.label}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
@@ -157,9 +139,11 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
             <p className="text-sm text-muted-foreground">
               No active subscription
             </p>
-            <Button size="sm" variant="outline" asChild>
-              <a href="/explore">Explore Plans</a>
-            </Button>
+            <PlanSelectorDialog
+              triggerText="Choose plan"
+              triggerVariant="default"
+              triggerClassName="inline-flex font-semibold"
+            />
           </div>
         )}
       </CardContent>

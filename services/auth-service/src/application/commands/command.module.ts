@@ -1,3 +1,4 @@
+import { ChangePasswordHandler } from './handlers/change-password.handler';
 import { LoginUserHandler } from './handlers/login-user.handler';
 import { LogoutUserHandler } from './handlers/logout-user.handler';
 import { OAuthLoginHandler } from './handlers/oauth-login.handler';
@@ -16,4 +17,5 @@ export const COMMAND_HANDLERS = [
   VerifyOtpHandler,
   ResendOtpHandler,
   UpdateSubscriptionPlanHandler,
+  ChangePasswordHandler,
 ];

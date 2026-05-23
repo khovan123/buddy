@@ -17,6 +17,9 @@ interface UserAvatarProps extends ComponentProps<typeof Avatar> {
   className?: string
 
   alt?: string
+
+  // Props passed to the generated Facehash fallback.
+  facehashProps?: ComponentProps<typeof AvatarFallback>["facehashProps"]
 }
 
 export function UserAvatar({
@@ -24,12 +27,19 @@ export function UserAvatar({
   name,
   className,
   alt,
+  facehashProps,
   ...props
 }: UserAvatarProps) {
   return (
     <Avatar className={cn("rounded-full", className)} {...props}>
       <AvatarImage src={src} alt={alt || name} />
-      <AvatarFallback name={name} />
+      <AvatarFallback
+        name={name}
+        facehashProps={{
+          enableBlink: true,
+          ...facehashProps,
+        }}
+      />
     </Avatar>
   )
 }

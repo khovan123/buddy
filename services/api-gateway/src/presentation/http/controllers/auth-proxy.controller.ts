@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Req,
   Res,
@@ -233,6 +234,23 @@ export class AuthProxyController {
       service: 'auth',
       path: '/v1/auth/me',
       method: 'GET',
+    });
+  }
+
+  /**
+   * Executes the change password operation.
+   *
+   * @param body - The body parameter
+   * @param req - The req parameter
+   */
+  @Patch('password')
+  @HttpCode(HttpStatus.OK)
+  changePassword(@Body() body: unknown, @Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'auth',
+      path: '/v1/auth/password',
+      method: 'PATCH',
+      body,
     });
   }
 }

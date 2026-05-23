@@ -6,6 +6,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Req,
   Res,
@@ -14,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { ChangePasswordCommand } from '../../../application/commands/change-password.command';
 import { LoginUserCommand } from '../../../application/commands/login-user.command';
 import { LogoutUserCommand } from '../../../application/commands/logout-user.command';
 import { OAuthLoginCommand } from '../../../application/commands/oauth-login.command';
@@ -23,6 +25,7 @@ import { RegisterUserCommand } from '../../../application/commands/register-user
 import { ResendOtpCommand } from '../../../application/commands/resend-otp.command';
 import { VerifyOtpCommand } from '../../../application/commands/verify-otp.command';
 import { GetMeQuery } from '../../../application/queries/get-me.query';
+import { ChangePasswordDto } from '../dtos/change-password.dto';
 import { LoginDto } from '../dtos/login.dto';
 import { OAuthLoginDto } from '../dtos/oauth-login.dto';
 import { RegisterDto } from '../dtos/register.dto';
@@ -241,5 +244,30 @@ export class AuthController {
   async getMe(@Req() req: FastifyRequest & { user: { sub: string } }) {
     const result = await this.queryBus.execute(new GetMeQuery(req.user.sub));
     return successResponse(result, undefined, getCorrelationId());
+  }
+
+  /**
+   * Executes the change password operation.
+   *
+   * @param req - The req parameter
+   * @param dto - The dto parameter
+   */
+  @Patch('password')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @Req() req: FastifyRequest & { user: { sub: string } },
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.commandBus.execute(
+      new ChangePasswordCommand(
+        req.user.sub,
+        dto.currentPassword,
+        dto.newPassword,
+        getCorrelationId(),
+      ),
+    );
+
+    return successResponse(null, 'Password changed successfully', getCorrelationId());
   }
 }

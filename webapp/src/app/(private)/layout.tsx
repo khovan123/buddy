@@ -28,12 +28,12 @@ export default async function PrivateLayout({
   const user = await getMe()
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-50">
         <PrivateHeader user={user} />
       </header>
 
-      <main className="mx-auto w-full max-w-7xl space-y-10 px-4 py-8 sm:px-6 md:py-10">
+      <main className="mx-auto w-full max-w-7xl flex-1 space-y-10 px-4 py-8 sm:px-6 md:py-10">
         {children}
       </main>
 
