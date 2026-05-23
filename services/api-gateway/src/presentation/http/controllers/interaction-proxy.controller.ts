@@ -1,4 +1,9 @@
-import { JwtAuthGuard } from '@libs/common';
+import {
+  JwtAuthGuard,
+  PoliciesGuard,
+  RequirePolicy,
+  SubscriptionRequiredPolicy,
+} from '@libs/common';
 import { Body, Controller, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
@@ -16,7 +21,8 @@ export class InteractionProxyController {
    */
   @Post()
   @HttpCode(HttpStatus.ACCEPTED)
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @RequirePolicy(SubscriptionRequiredPolicy)
   trackInteraction(@Req() req: FastifyRequest, @Body() body: Record<string, unknown>) {
     return this.proxy.forward(req, {
       service: 'interaction',

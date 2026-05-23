@@ -7,6 +7,11 @@ import { PrismaService } from '../prisma.service';
 
 import type { User as PrismaUser, UserStatus } from '../generated/browser';
 
+type UserRow = Omit<PrismaUser, 'refreshTokens' | 'subscriptionPlan'> & {
+  id: string;
+  subscriptionPlan: string | null;
+};
+
 /** Repository interface/implementation for  user prisma data access. */
 @Injectable()
 export class UserPrismaRepository implements IUserRepository {
@@ -107,7 +112,7 @@ export class UserPrismaRepository implements IUserRepository {
    * @param user - The user parameter
    * @returns Result of type Omit<PrismaUser, 'refreshTokens'> & { id: string }
    */
-  private toRow(user: User): Omit<PrismaUser, 'refreshTokens'> & { id: string } {
+  private toRow(user: User): UserRow {
     return {
       id: user.id,
       email: user.email.value,

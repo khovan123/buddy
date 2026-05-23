@@ -14,7 +14,7 @@ export interface UserProps {
   password: Password;
   nickname: string;
   roles: UserRole[];
-  subscriptionPlan: string;
+  subscriptionPlan: string | null;
   status: UserStatus;
   emailVerified: boolean;
   createdAt: Date;
@@ -43,7 +43,7 @@ export class User {
       password: Password.fromHashed(params.hashedPassword),
       nickname: params.nickname.trim(),
       roles: ['user'],
-      subscriptionPlan: 'STUDENT_FREE',
+      subscriptionPlan: null,
       status: 'pending_verification',
       emailVerified: false,
       createdAt: now,
@@ -181,7 +181,7 @@ export class User {
   get lastLoginAt(): Date | undefined {
     return this.props.lastLoginAt;
   }
-  get subscriptionPlan(): string {
+  get subscriptionPlan(): string | null {
     return this.props.subscriptionPlan;
   }
 }

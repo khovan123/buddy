@@ -32,8 +32,11 @@ import type {
 import { cn } from "@/lib/utils"
 import { extractApiError } from "@/types/api"
 
+type PlanAudience = "student" | "creator"
+
 type PlanCardOption = {
   code: SubscriptionPlan
+  audience: PlanAudience
   plan: PlanTier
   features: PlanFeature[]
   isPro: boolean
@@ -48,6 +51,7 @@ function getPlanCards(data: SubscriptionPricingData | undefined): PlanCardOption
   return [
     {
       code: "CREATOR_FREE",
+      audience: "creator",
       plan: data.creatorPlans.free,
       features: data.creatorPlans.features,
       isPro: false,
@@ -55,6 +59,7 @@ function getPlanCards(data: SubscriptionPricingData | undefined): PlanCardOption
     },
     {
       code: "CREATOR_PRO",
+      audience: "creator",
       plan: data.creatorPlans.pro,
       features: data.creatorPlans.features,
       isPro: true,
@@ -62,6 +67,7 @@ function getPlanCards(data: SubscriptionPricingData | undefined): PlanCardOption
     },
     {
       code: "STUDENT_FREE",
+      audience: "student",
       plan: data.studentPlans.free,
       features: data.studentPlans.features,
       isPro: false,
@@ -69,6 +75,7 @@ function getPlanCards(data: SubscriptionPricingData | undefined): PlanCardOption
     },
     {
       code: "STUDENT_PRO",
+      audience: "student",
       plan: data.studentPlans.pro,
       features: data.studentPlans.features,
       isPro: true,
@@ -79,18 +86,40 @@ function getPlanCards(data: SubscriptionPricingData | undefined): PlanCardOption
 
 export function PlanSelectorDialog() {
   const [open, setOpen] = useState(false)
+  const [selectedAudience, setSelectedAudience] =
+    useState<PlanAudience>("student")
   const { data, isFetching } = useGetSubscriptionQuery()
   const { data: plansData, isFetching: isPlansFetching } =
     useGetSubscriptionPlansQuery()
   const [createSubscription, { isLoading }] = useCreateSubscriptionMutation()
 
   const currentPlan = data?.data?.plan
+  const requiresPlanSelection = !isFetching && !currentPlan
+  const currentAudience: PlanAudience = currentPlan?.startsWith("CREATOR")
+    ? "creator"
+    : "student"
   const planCards = getPlanCards(plansData?.data)
-  const triggerLabel = currentPlan
-    ? PLAN_DISPLAY_NAMES[currentPlan]
-    : isFetching
-      ? "Plans"
-      : "Plans"
+  const visiblePlanCards = planCards.filter(
+    (card) => card.audience === selectedAudience
+  )
+  const triggerLabel = isFetching
+    ? "Plans"
+    : currentPlan
+      ? PLAN_DISPLAY_NAMES[currentPlan]
+      : "Choose plan"
+  const dialogOpen = open || requiresPlanSelection
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setSelectedAudience(currentAudience)
+    }
+
+    if (!nextOpen && requiresPlanSelection) {
+      return
+    }
+
+    setOpen(nextOpen)
+  }
 
   const handleSelectPlan = async (plan: SubscriptionPlan) => {
     if (plan === currentPlan || isLoading) {
@@ -107,7 +136,7 @@ export function PlanSelectorDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant="secondary"
@@ -123,9 +152,34 @@ export function PlanSelectorDialog() {
         <DialogHeader className="pr-10">
           <DialogTitle>Subscription plan</DialogTitle>
           <DialogDescription>
-            Choose the plan used for content limits and search access.
+            {requiresPlanSelection
+              ? "Select a plan to continue."
+              : "Choose the plan used for content limits and search access."}
           </DialogDescription>
         </DialogHeader>
+
+        <div className="grid grid-cols-2 rounded-full bg-secondary p-1 sm:w-fit">
+          <Button
+            type="button"
+            variant={selectedAudience === "student" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setSelectedAudience("student")}
+            className="rounded-full"
+          >
+            <Users className="size-4" />
+            Student
+          </Button>
+          <Button
+            type="button"
+            variant={selectedAudience === "creator" ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setSelectedAudience("creator")}
+            className="rounded-full"
+          >
+            <Palette className="size-4" />
+            Creator
+          </Button>
+        </div>
 
         {isPlansFetching && planCards.length === 0 ? (
           <div className="flex min-h-64 items-center justify-center text-muted-foreground">
@@ -136,49 +190,49 @@ export function PlanSelectorDialog() {
             Subscription plans are unavailable right now.
           </div>
         ) : (
-          <div className="grid gap-4 lg:grid-cols-4">
-            {planCards.map((card) => {
-            const active = card.code === currentPlan
-            const disabled = active || isLoading
+          <div className="grid gap-4 md:grid-cols-2">
+            {visiblePlanCards.map((card) => {
+              const active = card.code === currentPlan
+              const disabled = active || isLoading
 
-            return (
-              <PlanCard
-                key={card.code}
-                plan={{
-                  ...card.plan,
-                  badge: active ? "Active" : card.plan.badge,
-                }}
-                features={card.features}
-                isPro={card.isPro}
-                yearly={false}
-                audienceIcon={card.audienceIcon}
-                className={cn(
-                  "min-w-0 rounded-xl",
-                  active && "ring-2 ring-primary/35"
-                )}
-                action={
-                  <Button
-                    type="button"
-                    size="lg"
-                    disabled={disabled}
-                    onClick={() => void handleSelectPlan(card.code)}
-                    className={cn(
-                      "mb-6 w-full rounded-full",
-                      card.isPro
-                        ? "bg-foreground text-background hover:bg-foreground/90"
-                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    )}
-                  >
-                    {isLoading && !active ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : active ? (
-                      <Check className="size-4" />
-                    ) : null}
-                    {active ? "Active plan" : card.plan.cta}
-                  </Button>
-                }
-              />
-            )
+              return (
+                <PlanCard
+                  key={card.code}
+                  plan={{
+                    ...card.plan,
+                    badge: active ? "Active" : card.plan.badge,
+                  }}
+                  features={card.features}
+                  isPro={card.isPro}
+                  yearly={false}
+                  audienceIcon={card.audienceIcon}
+                  className={cn(
+                    "min-w-0 rounded-xl",
+                    active && "ring-2 ring-primary/35"
+                  )}
+                  action={
+                    <Button
+                      type="button"
+                      size="lg"
+                      disabled={disabled}
+                      onClick={() => void handleSelectPlan(card.code)}
+                      className={cn(
+                        "mb-6 w-full rounded-full",
+                        card.isPro
+                          ? "bg-foreground text-background hover:bg-foreground/90"
+                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                      )}
+                    >
+                      {isLoading && !active ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : active ? (
+                        <Check className="size-4" />
+                      ) : null}
+                      {active ? "Active plan" : card.plan.cta}
+                    </Button>
+                  }
+                />
+              )
             })}
           </div>
         )}

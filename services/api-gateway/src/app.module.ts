@@ -1,4 +1,4 @@
-import { getRedisConfig } from '@libs/common';
+import { getRedisConfig, SearchResultLimitPolicy, SubscriptionRequiredPolicy } from '@libs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -76,6 +76,12 @@ import { HttpProxyService } from './infrastructure/http/http-proxy.service';
     RecommendationProxyController,
     RagProxyController,
   ],
-  providers: [HttpProxyService, ServiceRegistryService, ApiComposerService],
+  providers: [
+    HttpProxyService,
+    ServiceRegistryService,
+    ApiComposerService,
+    SubscriptionRequiredPolicy,
+    SearchResultLimitPolicy,
+  ],
 })
 export class AppModule {}

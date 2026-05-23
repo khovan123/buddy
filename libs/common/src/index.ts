@@ -16,6 +16,8 @@ export * from './filters/global-exception.filter';
 export * from './guards/jwt-auth.guard';
 export * from './guards/policies.guard';
 export * from './guards/policies/creator-only.policy';
+export * from './guards/policies/search-result-limit.policy';
+export * from './guards/policies/subscription-required.policy';
 
 // Config
 export * from './config/rabbitmq.config';

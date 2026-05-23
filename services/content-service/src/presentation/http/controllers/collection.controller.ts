@@ -5,6 +5,7 @@ import {
   PoliciesGuard,
   Public,
   RequirePolicy,
+  SubscriptionRequiredPolicy,
 } from '@libs/common';
 import { successResponse } from '@libs/contracts';
 import {
@@ -68,7 +69,7 @@ export class CollectionController {
   @Version('1')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(PoliciesGuard)
-  @RequirePolicy(CreatorOnlyPolicy, CollectionLimitPolicy)
+  @RequirePolicy(SubscriptionRequiredPolicy, CreatorOnlyPolicy, CollectionLimitPolicy)
   async createCollection(
     @Body() dto: CreateCollectionDto,
     @Req() req: FastifyRequest & { user: { sub: string } },

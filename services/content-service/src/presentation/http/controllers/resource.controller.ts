@@ -5,6 +5,7 @@ import {
   PoliciesGuard,
   Public,
   RequirePolicy,
+  SubscriptionRequiredPolicy,
 } from '@libs/common';
 import { successResponse } from '@libs/contracts';
 import {
@@ -68,7 +69,7 @@ export class ResourceController {
   @Version('1')
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(PoliciesGuard)
-  @RequirePolicy(CreatorOnlyPolicy, ResourceLimitPolicy)
+  @RequirePolicy(SubscriptionRequiredPolicy, CreatorOnlyPolicy, ResourceLimitPolicy)
   async createResource(
     @Body() dto: CreateResourceDto,
     @Req() req: FastifyRequest & { user: { sub: string } },

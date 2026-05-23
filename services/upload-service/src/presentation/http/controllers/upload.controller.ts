@@ -1,4 +1,10 @@
-import { AppLogger, JwtAuthGuard } from '@libs/common';
+import {
+  AppLogger,
+  JwtAuthGuard,
+  PoliciesGuard,
+  RequirePolicy,
+  SubscriptionRequiredPolicy,
+} from '@libs/common';
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { FastifyRequest } from 'fastify';
@@ -14,7 +20,8 @@ import { ConfirmTutorialUploadDto } from '../dtos/confirm-tutorial-upload.dto';
 
 /** Controller handling incoming requests for Upload. */
 @Controller({ path: 'uploads', version: '1' })
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PoliciesGuard)
+@RequirePolicy(SubscriptionRequiredPolicy)
 export class UploadController {
   private readonly logger = new AppLogger(UploadController.name);
 

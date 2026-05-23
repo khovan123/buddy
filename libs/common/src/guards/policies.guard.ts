@@ -1,5 +1,5 @@
-import type { PlanLimits } from '@libs/contracts';
-import { getPlanLimits, SubscriptionPlan } from '@libs/contracts';
+import type { PlanLimits, SubscriptionPlan as SubscriptionPlanType } from '@libs/contracts';
+import { getPlanLimits } from '@libs/contracts';
 import {
   CanActivate,
   ExecutionContext,
@@ -16,7 +16,7 @@ import { ModuleRef, Reflector } from '@nestjs/core';
 export interface PolicyContext {
   userId: string;
   roles: string[];
-  subscriptionPlan: SubscriptionPlan;
+  subscriptionPlan: SubscriptionPlanType;
   planLimits: PlanLimits;
   /** Extra request-scoped data (e.g. file size for storage checks). */
   extras: Record<string, unknown>;
@@ -78,14 +78,19 @@ export class PoliciesGuard implements CanActivate {
       throw new ForbiddenException('Authentication required for policy evaluation');
     }
 
-    const plan = (user.subscriptionPlan as SubscriptionPlan) ?? SubscriptionPlan.STUDENT_FREE;
+    const plan = user.subscriptionPlan as SubscriptionPlanType;
 
     const policyCtx: PolicyContext = {
       userId: user.sub,
       roles: user.roles ?? [],
       subscriptionPlan: plan,
       planLimits: getPlanLimits(plan),
-      extras: { body: request.body },
+      extras: {
+        body: request.body,
+        headers: request.headers,
+        params: request.params,
+        query: request.query,
+      },
     };
 
     for (const HandlerClass of handlerClasses) {

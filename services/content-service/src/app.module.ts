@@ -12,6 +12,7 @@ import {
   HealthController,
   MessagingModule,
   PrismaHealthIndicator,
+  SubscriptionRequiredPolicy,
 } from '@libs/common';
 import {
   COLLECTION_REPOSITORY,
@@ -90,6 +91,7 @@ import { ContentCountService } from './infrastructure/services/content-count.ser
     CleanupPendingCron,
     // PBAC policies
     ContentCountService,
+    SubscriptionRequiredPolicy,
     CreatorOnlyPolicy,
     ResourceLimitPolicy,
     TutorialLimitPolicy,

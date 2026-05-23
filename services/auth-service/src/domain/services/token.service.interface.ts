@@ -13,7 +13,7 @@ export interface AccessTokenPayload {
   email: string;
   nickname: string;
   roles: string[];
-  subscriptionPlan: string;
+  subscriptionPlan?: string;
   type: 'access';
 }
 

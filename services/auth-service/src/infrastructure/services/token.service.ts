@@ -30,9 +30,11 @@ export class TokenService implements ITokenService {
       email: user.email.value,
       nickname: user.nickname,
       roles: user.roles,
-      subscriptionPlan: user.subscriptionPlan,
       type: 'access',
     };
+    if (user.subscriptionPlan) {
+      payload.subscriptionPlan = user.subscriptionPlan;
+    }
 
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: this.config.get('JWT_ACCESS_SECRET'),
