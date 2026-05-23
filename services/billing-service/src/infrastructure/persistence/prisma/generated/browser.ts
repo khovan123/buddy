@@ -43,6 +43,11 @@ export type UserResourceOwnership = Prisma.UserResourceOwnershipModel
  */
 export type PayoutAccount = Prisma.PayoutAccountModel
 /**
+ * Model SubscriptionPlanCatalog
+ * 
+ */
+export type SubscriptionPlanCatalog = Prisma.SubscriptionPlanCatalogModel
+/**
  * Model Subscription
  * 
  */

@@ -125,6 +125,17 @@ export class BillingProxyController {
 
   // ── Payout Account ─────────────────────────────────────────────────
 
+  @Get('banks')
+  @Public()
+  @Version('1')
+  getBanks(@Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'billing',
+      path: '/v1/billing/banks',
+      method: 'GET',
+    });
+  }
+
   /**
    * Executes the verify bank account operation.
    *
@@ -180,6 +191,17 @@ export class BillingProxyController {
   }
 
   // ── Subscription ───────────────────────────────────────────────────
+
+  @Get('subscription/plans')
+  @Public()
+  @Version('1')
+  getSubscriptionPlans(@Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'billing',
+      path: '/v1/billing/subscription/plans',
+      method: 'GET',
+    });
+  }
 
   /**
    * Executes the create subscription operation.

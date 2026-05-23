@@ -134,6 +134,44 @@ enum SubscriptionStatus {
   EXPIRED
 }
 
+enum SubscriptionAudience {
+  CREATOR
+  STUDENT
+}
+
+model SubscriptionPlanCatalog {
+  id                      String               @id @default(uuid())
+  code                    SubscriptionPlan     @unique
+  audience                SubscriptionAudience
+  tier                    String
+  title                   String
+  groupDescription        String               @map("group_description")
+  iconKey                 String               @map("icon_key")
+  label                   String
+  cta                     String
+  description             String
+  badge                   String?
+  currency                String               @default("USD")
+  monthlyPriceCents       Int                  @default(0) @map("monthly_price_cents")
+  yearlyMonthlyPriceCents Int?                 @map("yearly_monthly_price_cents")
+  storageBytes            BigInt               @default(0) @map("storage_bytes")
+  maxResources            Int                  @default(0) @map("max_resources")
+  maxTutorials            Int                  @default(0) @map("max_tutorials")
+  maxCollections          Int                  @default(0) @map("max_collections")
+  canCreateContent        Boolean              @default(false) @map("can_create_content")
+  maxSearchResults        Int                  @default(0) @map("max_search_results")
+  featureValues           Json?                @map("feature_values")
+  pbac                    Json?
+  metadata                Json?
+  displayOrder            Int                  @default(0) @map("display_order")
+  active                  Boolean              @default(true)
+  createdAt               DateTime             @default(now()) @map("created_at")
+  updatedAt               DateTime             @updatedAt @map("updated_at")
+
+  @@index([audience, active, displayOrder])
+  @@map("subscription_plan_catalog")
+}
+
 model Subscription {
   id        String             @id @default(uuid())
   userId    String             @unique @map("user_id")

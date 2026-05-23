@@ -1,3 +1,6 @@
+import { fetchApi } from "@/lib/fetch"
+import type { ApiResponse } from "@/types/api"
+
 /* ------------------------------------------------------------------ */
 /*  Icon key type — serializable identifier for Lucide icons           */
 /* ------------------------------------------------------------------ */
@@ -561,6 +564,21 @@ export async function getAboutData(): Promise<AboutData> {
 }
 
 export async function getPricingData(): Promise<PricingData> {
+  try {
+    const response = await fetchApi("GET", "/billing/subscription/plans")
+
+    if (!response.ok) {
+      return PRICING_FALLBACK
+    }
+
+    const payload = (await response.json()) as ApiResponse<PricingData>
+    return payload.data ?? PRICING_FALLBACK
+  } catch {
+    return PRICING_FALLBACK
+  }
+}
+
+export function getPricingFallbackData(): PricingData {
   return PRICING_FALLBACK
 }
 

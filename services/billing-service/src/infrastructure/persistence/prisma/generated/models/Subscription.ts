@@ -371,10 +371,6 @@ export type SubscriptionMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
-export type EnumSubscriptionPlanFieldUpdateOperationsInput = {
-  set?: $Enums.SubscriptionPlan
-}
-
 export type EnumSubscriptionStatusFieldUpdateOperationsInput = {
   set?: $Enums.SubscriptionStatus
 }

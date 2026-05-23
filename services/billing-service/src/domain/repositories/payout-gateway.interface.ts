@@ -6,6 +6,18 @@ export type VerifyBankAccountInput = {
 export type VerifyBankAccountResult = {
   valid: boolean;
   accountName: string | null;
+  bankName?: string | null;
+};
+
+export type BankProvider = {
+  id: string;
+  name: string;
+  shortName: string;
+  code: string;
+  bin: string;
+  logo?: string;
+  lookupSupported: boolean;
+  transferSupported: boolean;
 };
 
 export type CreatePayoutInput = {
@@ -23,6 +35,7 @@ export type CreatePayoutResult = {
 
 /** Interface for payout (chi) operations via a payment gateway. */
 export interface IPayoutGateway {
+  listBankProviders(): Promise<BankProvider[]>;
   verifyBankAccount(input: VerifyBankAccountInput): Promise<VerifyBankAccountResult>;
   createPayout(input: CreatePayoutInput): Promise<CreatePayoutResult>;
 }

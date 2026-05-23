@@ -1,5 +1,7 @@
 "use client"
 
+import type { ReactNode } from "react"
+
 import Link from "next/link"
 
 import { AnimatePresence, motion } from "framer-motion"
@@ -37,12 +39,16 @@ export function PlanCard({
   isPro,
   yearly,
   audienceIcon: AudienceIcon,
+  action,
+  className,
 }: {
   plan: PlanTier
   features: PlanFeature[]
   isPro: boolean
   yearly: boolean
   audienceIcon: typeof Palette
+  action?: ReactNode
+  className?: string
 }) {
   const proplan = plan as PlanTier & { yearlyPrice: number; badge: string }
   const price = isPro && yearly ? proplan.yearlyPrice : plan.price
@@ -53,7 +59,8 @@ export function PlanCard({
         "relative min-w-96 gap-0 overflow-visible rounded-2xl border py-0 shadow-none transition-all duration-300",
         isPro
           ? "border-pricing-accent/40 bg-linear-to-b from-pricing-accent-muted to-transparent shadow-lg shadow-pricing-accent/5"
-          : "border-border bg-pricing-surface-alt"
+          : "border-border bg-pricing-surface-alt",
+        className
       )}
     >
       {isPro && proplan.badge && (
@@ -102,21 +109,22 @@ export function PlanCard({
           )}
         </div>
 
-        {/* CTA */}
-        <Button
-          asChild
-          size="lg"
-          className={cn(
-            "mb-6 w-full rounded-full",
-            isPro
-              ? "bg-foreground text-background hover:bg-foreground/90"
-              : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-          )}
-        >
-          <Link href="/sign-up">
-            {plan.cta} <ArrowRight className="ml-2 size-4" />
-          </Link>
-        </Button>
+        {action ?? (
+          <Button
+            asChild
+            size="lg"
+            className={cn(
+              "mb-6 w-full rounded-full",
+              isPro
+                ? "bg-foreground text-background hover:bg-foreground/90"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            )}
+          >
+            <Link href="/sign-up">
+              {plan.cta} <ArrowRight className="ml-2 size-4" />
+            </Link>
+          </Button>
+        )}
 
         <Separator className="mb-4" />
 

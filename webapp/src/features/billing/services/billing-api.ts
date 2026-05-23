@@ -2,7 +2,9 @@ import type { ApiResponse } from "@/types/api"
 
 import { baseApi } from "../../../lib/redux/base-api"
 import type {
+  BankProvider,
   Subscription,
+  SubscriptionPricingData,
   SubscriptionPlan,
   WalletBalance,
 } from "../types/billing-types"
@@ -32,6 +34,7 @@ interface VerifyBankAccountRequest {
 interface VerifyBankAccountResponse {
   valid: boolean
   accountName: string | null
+  bankName?: string | null
 }
 
 interface SavePayoutAccountRequest {
@@ -55,9 +58,27 @@ export const billingApi = baseApi.injectEndpoints({
       providesTags: ["Wallet"],
     }),
 
+    getBankProviders: build.query<ApiResponse<BankProvider[]>, void>({
+      query: () => ({
+        url: "/v1/billing/banks",
+        method: "GET",
+      }),
+    }),
+
     getSubscription: build.query<ApiResponse<Subscription | null>, void>({
       query: () => ({
         url: "/v1/billing/subscription",
+        method: "GET",
+      }),
+      providesTags: ["Subscription"],
+    }),
+
+    getSubscriptionPlans: build.query<
+      ApiResponse<SubscriptionPricingData>,
+      void
+    >({
+      query: () => ({
+        url: "/v1/billing/subscription/plans",
         method: "GET",
       }),
       providesTags: ["Subscription"],
@@ -129,7 +150,9 @@ export const billingApi = baseApi.injectEndpoints({
 
 export const {
   useGetWalletBalanceQuery,
+  useGetBankProvidersQuery,
   useGetSubscriptionQuery,
+  useGetSubscriptionPlansQuery,
   useCreateSubscriptionMutation,
   useTopUpWalletMutation,
   useWithdrawWalletMutation,

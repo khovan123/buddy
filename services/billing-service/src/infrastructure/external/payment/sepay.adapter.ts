@@ -15,6 +15,7 @@ import {
   VerifyWebhookResult,
 } from '../../../domain/repositories/payment-gateway.interface';
 import type {
+  BankProvider,
   CreatePayoutInput,
   CreatePayoutResult,
   IPayoutGateway,
@@ -30,8 +31,13 @@ export class SePayAdapter implements IPaymentGateway, IPayoutGateway {
   private readonly secretKey: string;
   private readonly userApiBaseUrl: string;
   private readonly userApiToken?: string;
+  private readonly vietQrApiKey?: string;
+  private readonly bankProvidersUrl: string;
+  private readonly vietQrClientId?: string;
+  private readonly vietQrLookupUrl: string;
   private readonly webhookApiKey?: string;
   private readonly webhookSecretKey: string;
+  private bankProvidersCache: { data: BankProvider[]; expiresAt: number } | null = null;
 
   constructor(private readonly config: ConfigService) {
     const merchantId = this.config.get<string>('SEPAY_MERCHANT_ID');
@@ -48,6 +54,14 @@ export class SePayAdapter implements IPaymentGateway, IPayoutGateway {
     this.webhookSecretKey = this.config.get<string>('SEPAY_WEBHOOK_SECRET_KEY') ?? secretKey;
     // this.webhookApiKey = this.config.get<string>('SEPAY_WEBHOOK_API_KEY');
     this.userApiToken = this.config.get<string>('SEPAY_API_TOKEN');
+    this.vietQrApiKey = this.config.get<string>('VIETQR_API_KEY');
+    this.vietQrClientId = this.config.get<string>('VIETQR_CLIENT_ID');
+    this.bankProvidersUrl =
+      this.config.get<string>('BANK_PROVIDERS_URL') ??
+      this.config.get<string>('VIETQR_BANKS_URL') ??
+      'https://api.vietqr.io/v2/banks';
+    this.vietQrLookupUrl =
+      this.config.get<string>('VIETQR_LOOKUP_URL') ?? 'https://api.vietqr.io/v2/lookup';
     this.userApiBaseUrl = this.normalizeBaseUrl(
       this.config.get<string>('SEPAY_USER_API_BASE_URL') ??
         (env === 'production'
@@ -130,9 +144,56 @@ export class SePayAdapter implements IPaymentGateway, IPayoutGateway {
   // ── IPayoutGateway ─────────────────────────────────────────────────
 
   /**
+   * Lists bank providers from a compatible JSON endpoint.
+   *
+   * Expected shape: `{ data: [{ id, name, code, bin, shortName, logo,
+   * transferSupported, lookupSupported }] }`, the same shape returned by VietQR.
+   * Configure `BANK_PROVIDERS_URL=https://link.com` to use another maintained list.
+   * The static fallback keeps payout setup usable if the configured catalog is unavailable.
+   */
+  async listBankProviders(): Promise<BankProvider[]> {
+    if (this.bankProvidersCache && this.bankProvidersCache.expiresAt > Date.now()) {
+      return this.bankProvidersCache.data;
+    }
+
+    try {
+      const response = await fetch(this.bankProvidersUrl, {
+        headers: { Accept: 'application/json' },
+      });
+      const body = (await response.json().catch(() => undefined)) as unknown;
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const parsedBanks =
+        body && typeof body === 'object' ? (body as VietQrBanksResponse).data : undefined;
+      const data: VietQrBank[] = Array.isArray(parsedBanks) ? parsedBanks : [];
+
+      const banks = data
+        .map((bank) => this.toBankProvider(bank))
+        .filter((bank): bank is BankProvider => Boolean(bank));
+
+      const result = banks.length > 0 ? banks : FALLBACK_BANK_PROVIDERS;
+      this.bankProvidersCache = {
+        data: result,
+        expiresAt: Date.now() + 1000 * 60 * 60,
+      };
+      return result;
+    } catch {
+      return FALLBACK_BANK_PROVIDERS;
+    }
+  }
+
+  /**
    * Verifies that a bank account is present in the merchant's linked SePay API v2 accounts.
    */
   async verifyBankAccount(input: VerifyBankAccountInput): Promise<VerifyBankAccountResult> {
+    const vietQrResult = await this.verifyBankAccountWithVietQr(input);
+    if (vietQrResult) {
+      return vietQrResult;
+    }
+
     const token = this.requireUserApiToken('verify bank account');
     const params = new URLSearchParams({
       q: input.accountNumber,
@@ -156,6 +217,7 @@ export class SePayAdapter implements IPaymentGateway, IPayoutGateway {
     return {
       valid: Boolean(account),
       accountName: account?.account_holder_name ?? null,
+      bankName: account?.bank_full_name ?? account?.bank_short_name ?? null,
     };
   }
 
@@ -336,6 +398,76 @@ export class SePayAdapter implements IPaymentGateway, IPayoutGateway {
     return body as T;
   }
 
+  private async verifyBankAccountWithVietQr(
+    input: VerifyBankAccountInput,
+  ): Promise<VerifyBankAccountResult | null> {
+    if (!this.vietQrApiKey || !this.vietQrClientId) {
+      return null;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(this.vietQrLookupUrl, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'x-api-key': this.vietQrApiKey,
+          'x-client-id': this.vietQrClientId,
+        },
+        body: JSON.stringify({
+          bin: Number(this.normalizeDigits(input.bankBin)),
+          accountNumber: this.normalizeDigits(input.accountNumber),
+        }),
+      });
+    } catch {
+      return null;
+    }
+
+    const body = (await response.json().catch(() => undefined)) as unknown;
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = body as VietQrLookupResponse;
+    const accountName =
+      payload.code === '00' && typeof payload.data?.accountName === 'string'
+        ? payload.data.accountName.trim()
+        : '';
+
+    if (!accountName) {
+      return { valid: false, accountName: null };
+    }
+
+    const bank = (await this.listBankProviders()).find(
+      (item) => item.bin === this.normalizeDigits(input.bankBin),
+    );
+
+    return {
+      valid: true,
+      accountName,
+      bankName: bank?.name ?? bank?.shortName ?? null,
+    };
+  }
+
+  private toBankProvider(bank: VietQrBank): BankProvider | null {
+    const bin = this.normalizeDigits(bank.bin);
+    if (!bin) {
+      return null;
+    }
+
+    return {
+      id: String(bank.id ?? bin),
+      name: bank.name || bank.shortName || bank.code || bin,
+      shortName: bank.shortName || bank.code || bank.name || bin,
+      code: bank.code || bank.shortName || bin,
+      bin,
+      logo: bank.logo || undefined,
+      lookupSupported: String(bank.lookupSupported ?? '0') === '1',
+      transferSupported: String(bank.transferSupported ?? '0') === '1',
+    };
+  }
+
   private extractExternalReference(payload: SePayWebhookPayload): string {
     const code = typeof payload.code === 'string' ? payload.code.trim() : '';
     if (code) {
@@ -468,3 +600,76 @@ type SePayBankAccountsResponse = {
   status: string;
   data: SePayBankAccount[];
 };
+
+type VietQrBank = {
+  id?: number | string;
+  name?: string;
+  code?: string;
+  bin?: string | number;
+  shortName?: string;
+  logo?: string;
+  transferSupported?: number | string;
+  lookupSupported?: number | string;
+};
+
+type VietQrBanksResponse = {
+  code?: string;
+  desc?: string;
+  data?: VietQrBank[];
+};
+
+type VietQrLookupResponse = {
+  code?: string;
+  desc?: string;
+  data?: {
+    accountName?: string;
+  };
+};
+
+const FALLBACK_BANK_PROVIDERS: BankProvider[] = [
+  {
+    id: '970415',
+    name: 'Ngan hang TMCP Cong Thuong Viet Nam',
+    shortName: 'VietinBank',
+    code: 'ICB',
+    bin: '970415',
+    lookupSupported: true,
+    transferSupported: true,
+  },
+  {
+    id: '970436',
+    name: 'Ngan hang TMCP Ngoai Thuong Viet Nam',
+    shortName: 'Vietcombank',
+    code: 'VCB',
+    bin: '970436',
+    lookupSupported: true,
+    transferSupported: true,
+  },
+  {
+    id: '970418',
+    name: 'Ngan hang TMCP Dau tu va Phat trien Viet Nam',
+    shortName: 'BIDV',
+    code: 'BIDV',
+    bin: '970418',
+    lookupSupported: true,
+    transferSupported: true,
+  },
+  {
+    id: '970422',
+    name: 'Ngan hang TMCP Quan Doi',
+    shortName: 'MB Bank',
+    code: 'MB',
+    bin: '970422',
+    lookupSupported: true,
+    transferSupported: true,
+  },
+  {
+    id: '970416',
+    name: 'Ngan hang TMCP A Chau',
+    shortName: 'ACB',
+    code: 'ACB',
+    bin: '970416',
+    lookupSupported: true,
+    transferSupported: true,
+  },
+];

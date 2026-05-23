@@ -31,8 +31,8 @@ export class SavePayoutAccountHandler implements ICommandHandler<SavePayoutAccou
       userId: command.userId,
       bankBin: command.bankBin,
       bankAccountNumber: command.bankAccountNumber,
-      bankAccountName: command.bankAccountName,
-      bankName: command.bankName,
+      bankAccountName: verification.accountName ?? command.bankAccountName,
+      bankName: verification.bankName ?? command.bankName,
       verified: true,
       verifiedAt: new Date(),
     });

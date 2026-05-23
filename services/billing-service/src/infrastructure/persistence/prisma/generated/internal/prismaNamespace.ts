@@ -389,6 +389,7 @@ export const ModelName = {
   Outbox: 'Outbox',
   UserResourceOwnership: 'UserResourceOwnership',
   PayoutAccount: 'PayoutAccount',
+  SubscriptionPlanCatalog: 'SubscriptionPlanCatalog',
   Subscription: 'Subscription'
 } as const
 
@@ -405,7 +406,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "wallet" | "walletTransaction" | "outbox" | "userResourceOwnership" | "payoutAccount" | "subscription"
+    modelProps: "wallet" | "walletTransaction" | "outbox" | "userResourceOwnership" | "payoutAccount" | "subscriptionPlanCatalog" | "subscription"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -779,6 +780,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SubscriptionPlanCatalog: {
+      payload: Prisma.$SubscriptionPlanCatalogPayload<ExtArgs>
+      fields: Prisma.SubscriptionPlanCatalogFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SubscriptionPlanCatalogFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPlanCatalogPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SubscriptionPlanCatalogFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPlanCatalogPayload>
+        }
+        findFirst: {
+          args: Prisma.SubscriptionPlanCatalogFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPlanCatalogPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SubscriptionPlanCatalogFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPlanCatalogPayload>
+        }
+        findMany: {
+          args: Prisma.SubscriptionPlanCatalogFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPlanCatalogPayload>[]
+        }
+        create: {
+          args: Prisma.SubscriptionPlanCatalogCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPlanCatalogPayload>
+        }
+        createMany: {
+          args: Prisma.SubscriptionPlanCatalogCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.SubscriptionPlanCatalogCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPlanCatalogPayload>[]
+        }
+        delete: {
+          args: Prisma.SubscriptionPlanCatalogDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPlanCatalogPayload>
+        }
+        update: {
+          args: Prisma.SubscriptionPlanCatalogUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPlanCatalogPayload>
+        }
+        deleteMany: {
+          args: Prisma.SubscriptionPlanCatalogDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SubscriptionPlanCatalogUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.SubscriptionPlanCatalogUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPlanCatalogPayload>[]
+        }
+        upsert: {
+          args: Prisma.SubscriptionPlanCatalogUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SubscriptionPlanCatalogPayload>
+        }
+        aggregate: {
+          args: Prisma.SubscriptionPlanCatalogAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSubscriptionPlanCatalog>
+        }
+        groupBy: {
+          args: Prisma.SubscriptionPlanCatalogGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SubscriptionPlanCatalogGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SubscriptionPlanCatalogCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SubscriptionPlanCatalogCountAggregateOutputType> | number
+        }
+      }
+    }
     Subscription: {
       payload: Prisma.$SubscriptionPayload<ExtArgs>
       fields: Prisma.SubscriptionFieldRefs
@@ -963,6 +1038,39 @@ export const PayoutAccountScalarFieldEnum = {
 } as const
 
 export type PayoutAccountScalarFieldEnum = (typeof PayoutAccountScalarFieldEnum)[keyof typeof PayoutAccountScalarFieldEnum]
+
+
+export const SubscriptionPlanCatalogScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  audience: 'audience',
+  tier: 'tier',
+  title: 'title',
+  groupDescription: 'groupDescription',
+  iconKey: 'iconKey',
+  label: 'label',
+  cta: 'cta',
+  description: 'description',
+  badge: 'badge',
+  currency: 'currency',
+  monthlyPriceCents: 'monthlyPriceCents',
+  yearlyMonthlyPriceCents: 'yearlyMonthlyPriceCents',
+  storageBytes: 'storageBytes',
+  maxResources: 'maxResources',
+  maxTutorials: 'maxTutorials',
+  maxCollections: 'maxCollections',
+  canCreateContent: 'canCreateContent',
+  maxSearchResults: 'maxSearchResults',
+  featureValues: 'featureValues',
+  pbac: 'pbac',
+  metadata: 'metadata',
+  displayOrder: 'displayOrder',
+  active: 'active',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SubscriptionPlanCatalogScalarFieldEnum = (typeof SubscriptionPlanCatalogScalarFieldEnum)[keyof typeof SubscriptionPlanCatalogScalarFieldEnum]
 
 
 export const SubscriptionScalarFieldEnum = {
@@ -1181,6 +1289,20 @@ export type ListEnumSubscriptionPlanFieldRefInput<$PrismaModel> = FieldRefInputT
 
 
 /**
+ * Reference to a field of type 'SubscriptionAudience'
+ */
+export type EnumSubscriptionAudienceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SubscriptionAudience'>
+    
+
+
+/**
+ * Reference to a field of type 'SubscriptionAudience[]'
+ */
+export type ListEnumSubscriptionAudienceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SubscriptionAudience[]'>
+    
+
+
+/**
  * Reference to a field of type 'SubscriptionStatus'
  */
 export type EnumSubscriptionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SubscriptionStatus'>
@@ -1322,6 +1444,7 @@ export type GlobalOmitConfig = {
   outbox?: Prisma.OutboxOmit
   userResourceOwnership?: Prisma.UserResourceOwnershipOmit
   payoutAccount?: Prisma.PayoutAccountOmit
+  subscriptionPlanCatalog?: Prisma.SubscriptionPlanCatalogOmit
   subscription?: Prisma.SubscriptionOmit
 }
 
