@@ -88,6 +88,7 @@ export function PlanSelectorDialog() {
   const [open, setOpen] = useState(false)
   const [selectedAudience, setSelectedAudience] =
     useState<PlanAudience>("student")
+  const [pendingPlan, setPendingPlan] = useState<SubscriptionPlan | null>(null)
   const { data, isFetching } = useGetSubscriptionQuery()
   const { data: plansData, isFetching: isPlansFetching } =
     useGetSubscriptionPlansQuery()
@@ -127,11 +128,14 @@ export function PlanSelectorDialog() {
     }
 
     try {
+      setPendingPlan(plan)
       await createSubscription({ plan }).unwrap()
       toast.success(`${PLAN_DISPLAY_NAMES[plan]} is now active.`)
       setOpen(false)
     } catch (error) {
       toast.error(extractApiError(error))
+    } finally {
+      setPendingPlan(null)
     }
   }
 
@@ -193,6 +197,7 @@ export function PlanSelectorDialog() {
           <div className="grid gap-4 md:grid-cols-2">
             {visiblePlanCards.map((card) => {
               const active = card.code === currentPlan
+              const submitting = pendingPlan === card.code
               const disabled = active || isLoading
 
               return (
@@ -223,7 +228,7 @@ export function PlanSelectorDialog() {
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                       )}
                     >
-                      {isLoading && !active ? (
+                      {submitting ? (
                         <Loader2 className="size-4 animate-spin" />
                       ) : active ? (
                         <Check className="size-4" />

@@ -80,7 +80,7 @@ export async function getPayoutAccount(): Promise<PayoutAccount | null> {
       headers,
       false,
       {
-        next: { revalidate: 60, tags: ["payout-account"] },
+        cache: "no-store",
       }
     )
 
