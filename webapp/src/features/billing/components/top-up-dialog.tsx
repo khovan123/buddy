@@ -33,6 +33,31 @@ const PRESET_AMOUNTS = [
   { label: "₫500,000", value: "500000" },
 ]
 
+function submitCheckout(checkoutUrl: string) {
+  const url = new URL(checkoutUrl)
+
+  if (!url.search) {
+    globalThis.location.href = checkoutUrl
+    return
+  }
+
+  const form = document.createElement("form")
+  form.method = "POST"
+  form.action = `${url.origin}${url.pathname}`
+  form.style.display = "none"
+
+  url.searchParams.forEach((value, key) => {
+    const input = document.createElement("input")
+    input.type = "hidden"
+    input.name = key
+    input.value = value
+    form.appendChild(input)
+  })
+
+  document.body.appendChild(form)
+  form.submit()
+}
+
 export function TopUpDialog({ open, onOpenChange }: TopUpDialogProps) {
   const [amount, setAmount] = useState("")
   const [topUp, { isLoading }] = useTopUpWalletMutation()
@@ -56,7 +81,7 @@ export function TopUpDialog({ open, onOpenChange }: TopUpDialogProps) {
       }).unwrap()
 
       if (res.data?.checkoutUrl) {
-        globalThis.location.href = res.data.checkoutUrl
+        submitCheckout(res.data.checkoutUrl)
       }
     } catch (err) {
       toast.error(extractApiError(err))
