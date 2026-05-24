@@ -276,7 +276,7 @@ export function ContentModerationNotifications() {
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-88 max-w-[calc(100vw-1rem)] gap-3">
+      <PopoverContent align="end" className="w-[22rem] max-w-[calc(100vw-1rem)] gap-3">
         <PopoverHeader>
           <PopoverTitle className="text-sm font-semibold">
             Content moderation
