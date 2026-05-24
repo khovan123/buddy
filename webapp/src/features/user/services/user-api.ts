@@ -8,6 +8,7 @@ export type { CareerItem, SkillItem }
 
 export interface UserProfile {
   id: string
+  userId?: string
   email: string
   nickname: string
   profile: {

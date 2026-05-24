@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
+
+import { useSession } from "next-auth/react"
 
 import { Bell } from "lucide-react"
 
@@ -53,13 +55,48 @@ interface PrivateHeaderProps {
  * `ProfileCompleteBanner` and `UserMenuPopover` can trigger it.
  */
 export function PrivateHeader({ user }: PrivateHeaderProps) {
+  const { data: session } = useSession()
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
 
   const openProfileDialog = () => setProfileDialogOpen(true)
+  const headerUser = useMemo<UserProfile | null>(() => {
+    if (user?.email && (user.profile?.nickname || user.nickname)) {
+      return user
+    }
+
+    const sessionUser = session?.user
+    if (!sessionUser?.id && !sessionUser?.email) {
+      return user
+    }
+
+    const nickname =
+      user?.profile?.nickname ||
+      user?.nickname ||
+      sessionUser.nickname ||
+      sessionUser.email?.split("@")[0] ||
+      "Buddy"
+
+    return {
+      id: user?.id ?? sessionUser.id ?? "",
+      userId: user?.userId ?? sessionUser.id,
+      email: user?.email ?? sessionUser.email ?? "",
+      nickname,
+      profile: {
+        ...(user?.profile ?? { nickname }),
+        nickname,
+      },
+      isActive: user?.isActive ?? true,
+      createdAt: user?.createdAt ?? new Date().toISOString(),
+      updatedAt: user?.updatedAt ?? new Date().toISOString(),
+    }
+  }, [session?.user, user])
 
   return (
     <>
-      <ProfileCompleteBanner user={user} onUpdateClick={openProfileDialog} />
+      <ProfileCompleteBanner
+        user={headerUser}
+        onUpdateClick={openProfileDialog}
+      />
 
       <Navigation
         brandLabel="Buddy"
@@ -79,14 +116,17 @@ export function PrivateHeader({ user }: PrivateHeaderProps) {
               <Bell className="size-4" />
               <span className="absolute top-2 right-2 size-2 rounded-full bg-primary" />
             </Button>
-            <UserMenuPopover user={user} onEditProfile={openProfileDialog} />
+            <UserMenuPopover
+              user={headerUser}
+              onEditProfile={openProfileDialog}
+            />
           </>
         }
       />
 
       {/* Profile update dialog – rendered once, shared across triggers */}
       <ProfileUpdateDialog
-        user={user}
+        user={headerUser}
         open={profileDialogOpen}
         onOpenChange={setProfileDialogOpen}
       />

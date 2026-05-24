@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { UserProfile } from "@/features/user/services/user-api"
 
-import { RAGServiceError, askRAG } from "../services/rag.service"
-import type { RAGMessage } from "../types"
+import { RAGServiceError, askRAG, getRAGHistory } from "../services/rag.service"
+import type { RAGHistoryTurn, RAGMessage } from "../types"
 
 import { RAGMessageBlock } from "./rag-message"
 
@@ -24,6 +24,30 @@ let messageCounter = 0
 function nextMessageId(prefix: string): string {
   messageCounter += 1
   return `${prefix}-${messageCounter}`
+}
+
+function historyTurnToMessages(
+  turn: RAGHistoryTurn,
+  index: number
+): RAGMessage[] {
+  const timestamp = new Date()
+  return [
+    {
+      id: `history-${index}-user`,
+      role: "user",
+      content: turn.query,
+      timestamp,
+    },
+    {
+      id: `history-${index}-assistant`,
+      role: "assistant",
+      content: turn.answer,
+      sources: turn.sources,
+      retrievalTimeMs: turn.retrievalTimeMs ?? undefined,
+      generationTimeMs: turn.generationTimeMs ?? undefined,
+      timestamp,
+    },
+  ]
 }
 
 type RAGChatProps = {
@@ -45,6 +69,31 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  useEffect(() => {
+    if (!accessToken || !user?.id) {
+      return
+    }
+
+    let cancelled = false
+
+    getRAGHistory(accessToken)
+      .then((response) => {
+        if (cancelled || response.history.length === 0) {
+          return
+        }
+
+        const restoredMessages = response.history.flatMap(historyTurnToMessages)
+        setMessages((prev) => (prev.length > 0 ? prev : restoredMessages))
+      })
+      .catch((error) => {
+        console.error("Failed to load RAG history:", error)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [accessToken, user?.id])
 
   const handleSend = useCallback(
     async (query?: string) => {
@@ -111,7 +160,7 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
   }
 
   return (
-    <div className="mx-auto flex h-chat w-full max-w-4xl flex-col bg-background font-sans">
+    <div className="h-chat mx-auto flex w-full max-w-4xl flex-col bg-background font-sans">
       {/* ── Header ───────────────────────────────────────────────── */}
       <div className="flex flex-col items-center justify-center border-b border-border/40 pt-10 pb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -124,25 +173,27 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
 
       {/* ── Messages area ────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-4 py-8 md:px-10">
-        <div className="mx-auto mt-10 flex max-w-2xl animate-in flex-col items-center justify-center duration-700 fade-in">
-          <div className="mb-8 flex size-16 items-center justify-center rounded-2xl bg-secondary/30 text-primary">
-            <Bot className="size-8 stroke-1.5" />
-          </div>
+        {messages.length === 0 && (
+          <div className="mx-auto mt-10 flex max-w-2xl animate-in flex-col items-center justify-center duration-700 fade-in">
+            <div className="mb-8 flex size-16 items-center justify-center rounded-2xl bg-secondary/30 text-primary">
+              <Bot className="stroke-1.5 size-8" />
+            </div>
 
-          <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2">
-            {SUGGESTIONS.map((suggestion) => (
-              <button
-                key={suggestion}
-                onClick={() => handleSend(suggestion)}
-                className="flex flex-col items-start gap-1 rounded-xl border border-border/40 bg-card p-4 text-left transition-colors hover:bg-secondary/20"
-              >
-                <span className="text-sm leading-relaxed font-medium text-foreground/90">
-                  {suggestion}
-                </span>
-              </button>
-            ))}
+            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2">
+              {SUGGESTIONS.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => handleSend(suggestion)}
+                  className="flex flex-col items-start gap-1 rounded-xl border border-border/40 bg-card p-4 text-left transition-colors hover:bg-secondary/20"
+                >
+                  <span className="text-sm leading-relaxed font-medium text-foreground/90">
+                    {suggestion}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="mx-auto flex max-w-3xl flex-col gap-8">
           {messages.map((msg) => (
@@ -156,9 +207,9 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
               </div>
               <div className="flex flex-col justify-center">
                 <div className="flex gap-1.5">
-                  <span className="size-1.5 animate-pulse rounded-full bg-primary/50 anim-delay-0" />
-                  <span className="size-1.5 animate-pulse rounded-full bg-primary/50 anim-delay-150" />
-                  <span className="size-1.5 animate-pulse rounded-full bg-primary/50 anim-delay-300" />
+                  <span className="anim-delay-0 size-1.5 animate-pulse rounded-full bg-primary/50" />
+                  <span className="anim-delay-150 size-1.5 animate-pulse rounded-full bg-primary/50" />
+                  <span className="anim-delay-300 size-1.5 animate-pulse rounded-full bg-primary/50" />
                 </div>
               </div>
             </div>
@@ -190,10 +241,6 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
             <SendHorizontal className="size-5" />
           </Button>
         </div>
-        <p className="mt-3 text-center text-2xs tracking-widest text-muted-foreground/60 uppercase">
-          Buddy Intelligence can make mistakes. Consider verifying important
-          information.
-        </p>
       </div>
     </div>
   )

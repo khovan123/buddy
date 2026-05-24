@@ -23,6 +23,18 @@ export interface RAGRetrieveResponse {
   chunksRetrieved: number
 }
 
+export interface RAGHistoryTurn {
+  query: string
+  answer: string
+  sources?: RAGSource[]
+  retrievalTimeMs?: number | null
+  generationTimeMs?: number | null
+}
+
+export interface RAGHistoryResponse {
+  history: RAGHistoryTurn[]
+}
+
 export interface RAGRequest {
   query: string
   userId?: string

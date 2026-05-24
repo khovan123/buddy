@@ -1,6 +1,11 @@
 "use client"
 
-import type { RAGRequest, RAGResponse, RAGRetrieveResponse } from "../types"
+import type {
+  RAGHistoryResponse,
+  RAGRequest,
+  RAGResponse,
+  RAGRetrieveResponse,
+} from "../types"
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -59,6 +64,26 @@ export async function askRAG(
       }
     }
     throw error
+  }
+
+  return res.json()
+}
+
+export async function getRAGHistory(
+  token?: string
+): Promise<RAGHistoryResponse> {
+  const headers: Record<string, string> = {}
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`
+  }
+
+  const res = await fetch(`${API_BASE}/v1/recommendations/rag/history`, {
+    method: "GET",
+    headers,
+  })
+
+  if (!res.ok) {
+    throw await toRAGServiceError(res)
   }
 
   return res.json()

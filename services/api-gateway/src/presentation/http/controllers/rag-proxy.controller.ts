@@ -6,7 +6,7 @@ import {
   SearchResultLimitPolicy,
   SubscriptionRequiredPolicy,
 } from '@libs/common';
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
 
@@ -40,6 +40,36 @@ export class RagProxyController {
       method: 'POST',
       body,
       timeoutMs: 100_000,
+    });
+  }
+
+  @Get('history')
+  @UseGuards(JwtAuthGuard)
+  history(@Req() req: FastifyRequest) {
+    const userId = (req as FastifyRequest & { user?: { sub?: string } }).user?.sub;
+    return this.proxy.forward(req, {
+      service: 'rag',
+      resilienceKey: 'recommendation-rag',
+      path: '/v1/rag/history',
+      method: 'GET',
+      query: userId ? { userId } : {},
+      timeoutMs: 10_000,
+      skipRetry: true,
+    });
+  }
+
+  @Delete('history')
+  @UseGuards(JwtAuthGuard)
+  clearHistory(@Req() req: FastifyRequest) {
+    const userId = (req as FastifyRequest & { user?: { sub?: string } }).user?.sub;
+    return this.proxy.forward(req, {
+      service: 'rag',
+      resilienceKey: 'recommendation-rag',
+      path: '/v1/rag/history',
+      method: 'DELETE',
+      query: userId ? { userId } : {},
+      timeoutMs: 10_000,
+      skipRetry: true,
     });
   }
 

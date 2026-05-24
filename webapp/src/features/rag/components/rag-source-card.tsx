@@ -11,11 +11,11 @@ import type { RAGSource } from "../types"
 function getContentHref(source: RAGSource): string {
   switch (source.itemType) {
     case "RESOURCE":
-      return `/home/resources/${source.slug}`
+      return `/explore/resources/${source.slug}`
     case "TUTORIAL":
-      return `/home/tutorials/${source.slug}`
+      return `/explore/tutorials/${source.slug}`
     default:
-      return `/home/resources/${source.slug}`
+      return `/explore/resources/${source.slug}`
   }
 }
 

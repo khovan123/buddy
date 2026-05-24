@@ -64,12 +64,16 @@ export default async function ProfilePage() {
   // Fetch user info first (needed for stats userId), then parallel-fetch the rest
   const me = await getMe()
 
+  const statsUserId = me?.userId ?? me?.id
+
   const [tuts, resData, tutCols, resCols, stats, authMe] = await Promise.all([
     getMyTutorials().catch(() => emptyTutorials),
     getMyResources().catch(() => emptyResources),
     getMyTutorialCollections().catch(() => emptyCols),
     getMyResourceCollections().catch(() => emptyCols),
-    me ? getCreatorStats(me.id).catch(() => null) : Promise.resolve(null),
+    statsUserId
+      ? getCreatorStats(statsUserId).catch(() => null)
+      : Promise.resolve(null),
     getAuthMe().catch(() => null),
   ])
 
