@@ -1,5 +1,7 @@
 "use client"
 
+import { useEffect } from "react"
+
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
@@ -9,6 +11,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { useDispatch } from "react-redux"
+import { toast } from "sonner"
 
 import { SectionHeading } from "@/components/atoms/section-heading"
 import { Button } from "@/components/ui/button"
@@ -32,6 +35,17 @@ export function LoginForm() {
   const router = useRouter()
   const dispatch = useDispatch()
   const { handleError, clearError } = useGlobalError()
+
+  useEffect(() => {
+    const url = new URL(globalThis.location.href)
+    if (url.searchParams.get("sessionExpired") !== "1") {
+      return
+    }
+
+    toast.error("Your session has expired. Please log in again.")
+    url.searchParams.delete("sessionExpired")
+    globalThis.history.replaceState(null, "", `${url.pathname}${url.search}`)
+  }, [])
 
   const {
     register,

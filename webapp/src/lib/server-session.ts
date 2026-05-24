@@ -3,6 +3,10 @@
 
 import { cookies } from "next/headers"
 
+import { getServerSession } from "next-auth"
+
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+
 /**
  * Server-only session helper.
  *
@@ -20,6 +24,11 @@ export async function getAccessToken(): Promise<string | null> {
  * can always spread it: `{ ...await getAuthHeaders() }`.
  */
 export async function getAuthHeaders(): Promise<Record<string, string>> {
+  const session = await getServerSession(authOptions)
+  if (session?.accessToken) {
+    return { Authorization: `Bearer ${session.accessToken}` }
+  }
+
   const token = await getAccessToken()
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
