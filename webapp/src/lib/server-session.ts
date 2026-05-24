@@ -1,11 +1,22 @@
 // Server session helpers — only usable in server components / route handlers.
 // cookies() will throw at runtime if called from client context.
 
+import { cache } from "react"
+
 import { cookies } from "next/headers"
 
 import { getServerSession } from "next-auth"
 
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+
+/**
+ * Per-request memoised session lookup.
+ *
+ * React `cache()` deduplicates calls within the same server request,
+ * so multiple server components / service helpers that need the session
+ * (e.g. layout.tsx + getMe()) only decode it once.
+ */
+export const getCachedSession = cache(() => getServerSession(authOptions))
 
 /**
  * Server-only session helper.
@@ -22,13 +33,22 @@ export async function getAccessToken(): Promise<string | null> {
  * Builds an `Authorization` header from the current session cookie.
  * Returns an empty object for unauthenticated visitors so services
  * can always spread it: `{ ...await getAuthHeaders() }`.
+ *
+ * Tries the cheap cookie read first; falls back to the cached session
+ * so the token is resolved exactly once per request.
  */
 export async function getAuthHeaders(): Promise<Record<string, string>> {
-  const session = await getServerSession(authOptions)
+  // Fast path: cookie already available (avoids session decode entirely)
+  const token = await getAccessToken()
+  if (token) {
+    return { Authorization: `Bearer ${token}` }
+  }
+
+  // Slow path: decode session (memoised per request)
+  const session = await getCachedSession()
   if (session?.accessToken) {
     return { Authorization: `Bearer ${session.accessToken}` }
   }
 
-  const token = await getAccessToken()
-  return token ? { Authorization: `Bearer ${token}` } : {}
+  return {}
 }
