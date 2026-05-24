@@ -245,6 +245,7 @@ export class AuthProxyController {
    * @param req - The req parameter
    */
   @Get('users/:id/verification')
+  @Public()
   getUserVerification(@Param('id') id: string, @Req() req: FastifyRequest) {
     return this.proxy.forward(req, {
       service: 'auth',

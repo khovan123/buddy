@@ -254,6 +254,7 @@ export class AuthController {
    * @param id - The user id parameter
    */
   @Get('users/:id/verification')
+  @Public()
   @Version('1')
   async getUserVerification(@Param('id') id: string) {
     const result = await this.queryBus.execute(new GetUserVerificationQuery(id));
