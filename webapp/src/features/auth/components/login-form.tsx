@@ -44,7 +44,7 @@ export function LoginForm() {
 
     toast.error("Your session has expired. Please log in again.")
     url.searchParams.delete("sessionExpired")
-    globalThis.history.replaceState(null, "", `${url.pathname}${url.search}`)
+    globalThis.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`)
   }, [])
 
   const {
