@@ -13,6 +13,9 @@ import type {
   CreateTutorialPayload,
   CreateTutorialResponse,
   Major,
+  PaginatedResult,
+  ResourceQueryItem,
+  TutorialQueryItem,
   UpdateCoursePayload,
   UpdateMajorPayload,
 } from "../types"
@@ -92,6 +95,26 @@ export const contentApi = baseApi.injectEndpoints({
         method: "GET",
       }),
       providesTags: ["Major", "Course"],
+    }),
+    getMyResources: builder.query<
+      ApiResponse<PaginatedResult<ResourceQueryItem>>,
+      void
+    >({
+      query: () => ({
+        url: "/v1/resources/me?page=1&limit=20",
+        method: "GET",
+      }),
+      providesTags: ["Resource"],
+    }),
+    getMyTutorials: builder.query<
+      ApiResponse<PaginatedResult<TutorialQueryItem>>,
+      void
+    >({
+      query: () => ({
+        url: "/v1/tutorials/me?page=1&limit=20",
+        method: "GET",
+      }),
+      providesTags: ["Tutorial"],
     }),
     getCoursesByMajor: builder.query<ApiResponse<Course[]>, string>({
       query: (majorId) => ({
@@ -212,6 +235,8 @@ export const {
   useConfirmResourceUploadMutation,
   useConfirmTutorialUploadMutation,
   useGetContentMetaQuery,
+  useGetMyResourcesQuery,
+  useGetMyTutorialsQuery,
   useGetCoursesByMajorQuery,
   useCreateMajorMutation,
   useUpdateMajorMutation,

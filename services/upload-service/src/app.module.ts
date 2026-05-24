@@ -23,7 +23,9 @@ import { COMMAND_HANDLERS } from './application/commands/command.module';
 import { OutboxCleanupService } from './application/cronjobs/outbox-cleanup.cron';
 import { QUERY_HANDLERS } from './application/queries/query.module';
 import { FILE_METADATA_REPOSITORY, STORAGE_PROVIDER } from './domain/repositories/tokens';
+import { ContentExtractionService } from './domain/services/content-extraction.service';
 import { PreviewProcessorContext } from './domain/services/preview-processor.context';
+import { VideoTranscriptService } from './domain/services/video-transcript.service';
 import { MESSAGE_COMPONENTS, MESSAGE_CONTROLLERS } from './infrastructure/messaging/message.module';
 import { S3Module } from './infrastructure/persistence/aws/s3.module';
 import { S3Service } from './infrastructure/persistence/aws/s3.service';
@@ -32,6 +34,10 @@ import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module'
 import { PrismaService } from './infrastructure/persistence/prisma/prisma.service';
 import { FileMetadataPrismaRepository } from './infrastructure/persistence/prisma/repositories/file-metadata.prisma-repository';
 import { DocumentPreviewWorker } from './infrastructure/workers/document-preview.worker';
+import {
+  CONTENT_EXTRACTION_QUEUE,
+  ContentExtractionWorker,
+} from './infrastructure/workers/content-extraction.worker';
 import { VideoProcessorWorker } from './infrastructure/workers/video-processor.worker';
 import { UploadController } from './presentation/http/controllers/upload.controller';
 import { WebhookController } from './presentation/webhooks/controllers/upload.webhook.controller';
@@ -90,6 +96,18 @@ import { WebhookController } from './presentation/webhooks/controllers/upload.we
         },
       },
     }),
+    BullModule.registerQueue({
+      name: CONTENT_EXTRACTION_QUEUE,
+      defaultJobOptions: {
+        removeOnComplete: 100,
+        removeOnFail: 500,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 5_000,
+        },
+      },
+    }),
     MessagingModule,
   ],
   controllers: [UploadController, WebhookController, ...MESSAGE_CONTROLLERS, HealthController],
@@ -110,7 +128,10 @@ import { WebhookController } from './presentation/webhooks/controllers/upload.we
     OutboxCleanupService,
     VideoProcessorWorker,
     DocumentPreviewWorker,
+    ContentExtractionWorker,
     PreviewProcessorContext,
+    ContentExtractionService,
+    VideoTranscriptService,
     SubscriptionRequiredPolicy,
     {
       provide: UPLOAD_ROUTINGKEYS.VIDEO_PROCESSING_JOB,

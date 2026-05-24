@@ -46,6 +46,7 @@ import {
   TutorialLimitPolicy,
 } from './domain/policies/content-limit.policies';
 import { ContentCountService } from './infrastructure/services/content-count.service';
+import { ContentModerationService } from './infrastructure/services/content-moderation.service';
 
 /** NestJS Module for  app. */
 @Module({
@@ -91,6 +92,7 @@ import { ContentCountService } from './infrastructure/services/content-count.ser
     CleanupPendingCron,
     // PBAC policies
     ContentCountService,
+    ContentModerationService,
     SubscriptionRequiredPolicy,
     CreatorOnlyPolicy,
     ResourceLimitPolicy,

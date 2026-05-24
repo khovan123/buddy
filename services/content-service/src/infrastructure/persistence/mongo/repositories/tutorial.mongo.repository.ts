@@ -4,6 +4,7 @@ import { ClientSession, InferSchemaType, Model, Types } from 'mongoose';
 
 import { Tutorial, TutorialMedia } from '../../../../domain/entities/tutorial.entity';
 import {
+  ContentModerationPersistenceResult,
   ITutorialRepository,
   TutorialCollectionDetails,
   TutorialListQueryParams,
@@ -14,6 +15,7 @@ import {
 import { CourseSchema } from '../schemas/course.schema';
 import { MajorSchema } from '../schemas/major.schema';
 import {
+  ContentModerationStatus,
   TutorialDocument,
   TutorialSchema,
   Tutorial as TutorialSchemaClass,
@@ -334,6 +336,19 @@ export class TutorialMongoRepository implements ITutorialRepository {
       .populate<Pick<TutorialQueryWithPopulate, 'collectionId'>>('collectionId')
       .populate<Pick<TutorialQueryWithPopulate, 'resourceIds'>>('resourceIds')
       .populate('steps.resources.resource')
+      .populate('major')
+      .populate('course')
+      .lean<TutorialQueryWithPopulate>()
+      .exec();
+
+    return row ? this.toQueryItem(row) : null;
+  }
+
+  async findByMediaFileIdWithDetails(fileId: string): Promise<TutorialQueryItem | null> {
+    const row = await this.tutorialModel
+      .findOne({ 'media.fileId': fileId })
+      .populate<Pick<TutorialQueryWithPopulate, 'collectionId'>>('collectionId')
+      .populate<Pick<TutorialQueryWithPopulate, 'resourceIds'>>('resourceIds')
       .populate('major')
       .populate('course')
       .lean<TutorialQueryWithPopulate>()
@@ -733,6 +748,11 @@ export class TutorialMongoRepository implements ITutorialRepository {
       courseId: row.courseId?.toString() ?? '',
       price: row.price,
       status: row.status,
+      moderationStatus: row.moderationStatus,
+      moderationScore: row.moderationScore ?? null,
+      moderationReasons: row.moderationReasons ?? [],
+      moderationRuleVersion: row.moderationRuleVersion ?? null,
+      moderatedAt: row.moderatedAt ?? null,
       isVerified: row.isVerified,
       discountBundle: row.discountBundle,
       createdAt: row.createdAt,
@@ -1132,7 +1152,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
     const { streamingUrl, trailerUrl, fileSize } = params;
 
     const updatePayload: Record<string, any> = {
-      status: TutorialStatus.AVAILABLE,
+      status: TutorialStatus.PROCESSING,
     };
 
     if (streamingUrl !== undefined) {
@@ -1180,6 +1200,44 @@ export class TutorialMongoRepository implements ITutorialRepository {
     if (result.modifiedCount === 0) {
       console.warn(
         `[TutorialMongoRepository] markFailedByFileId failed: fileId=${fileId} not found`,
+      );
+    }
+  }
+
+  async applyModerationResult(
+    tutorialId: string,
+    result: ContentModerationPersistenceResult,
+    options?: { session?: unknown },
+  ): Promise<void> {
+    const status =
+      result.status === ContentModerationStatus.APPROVED
+        ? TutorialStatus.AVAILABLE
+        : result.status === ContentModerationStatus.REJECTED
+          ? TutorialStatus.BANNED
+          : TutorialStatus.PROCESSING;
+
+    const query = this.tutorialModel.updateOne(
+      { _id: tutorialId, deletedAt: null },
+      {
+        $set: {
+          status,
+          moderationStatus: result.status,
+          moderationScore: result.score ?? null,
+          moderationReasons: result.reasons,
+          moderationRuleVersion: result.ruleVersion ?? null,
+          moderatedAt: new Date(),
+        },
+      },
+    );
+    const session = options?.session as ClientSession | undefined;
+    if (session) {
+      query.session(session);
+    }
+    const updateResult = await query.exec();
+
+    if (updateResult.modifiedCount === 0) {
+      console.warn(
+        `[TutorialMongoRepository] applyModerationResult failed: tutorialId=${tutorialId}`,
       );
     }
   }

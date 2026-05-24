@@ -14,6 +14,7 @@ export const UPLOAD_ROUTINGKEYS = {
   FILE_PROCESSED: 'upload.file.processed', // Bắn ra khi transcode/upload S3 hoàn tất
   FILE_PROCESSING_FAILED: 'upload.file.processing_failed',
   RESOURCE_UPLOAD_COMPLETED: 'upload.resource.upload.completed',
+  CONTENT_EXTRACTED: 'upload.content.extracted',
   VIDEO_UPLOAD_REQUEST: 'video.upload_request', // Thường dùng khi các service khác gửi request xử lý
   UPLOAD_THUMBNAIL: 'upload.upload_thumbnail', // Event: request thumbnail upload to Cloudinary
   THUMBNAIL_UPLOADED: 'upload.thumbnail.uploaded', // Event: thumbnail upload completed
@@ -153,6 +154,9 @@ export class FileProcessedEvent extends BaseEvent {
       fileSize: number;
       uploadedBy: string;
       processedAt: string;
+      extractedText?: string | null;
+      extractionStatus?: 'AVAILABLE' | 'UNSUPPORTED' | 'FAILED';
+      extractionError?: string | null;
       // Đã xóa tutorialId vì Consumer sẽ query updateByFileId
     },
     correlationId?: string,
@@ -216,8 +220,41 @@ export class ResourceUploadCompletedEvent extends BaseEvent {
         downloadUrl: string;
         size: number;
         extension: string;
+        mimeType?: string;
+        originalFilename?: string;
+        extractedText?: string | null;
+        extractionStatus?: 'AVAILABLE' | 'UNSUPPORTED' | 'FAILED';
+        extractionError?: string | null;
       }>;
       completedAt: string;
+    },
+    correlationId?: string,
+  ) {
+    super(correlationId);
+  }
+}
+
+/** Represents extracted upload content ready for moderation. */
+export class ContentExtractedEvent extends BaseEvent {
+  get routingKey() {
+    return UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED;
+  }
+
+  constructor(
+    public readonly payload: {
+      contentId: string;
+      contentType: 'RESOURCE' | 'TUTORIAL';
+      files: Array<{
+        fileId: string;
+        s3Key: string;
+        downloadUrl?: string | null;
+        mimeType: string;
+        originalFilename: string;
+        extractedText?: string | null;
+        extractionStatus: 'AVAILABLE' | 'UNSUPPORTED' | 'FAILED';
+        extractionError?: string | null;
+      }>;
+      extractedAt: string;
     },
     correlationId?: string,
   ) {

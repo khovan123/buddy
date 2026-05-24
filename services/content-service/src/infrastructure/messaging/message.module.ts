@@ -1,3 +1,4 @@
+import { ContentExtractedConsumer } from './consumers/content-extracted.consumer';
 import { ContentValidationConsumer } from './consumers/content-validation.consumer';
 import { PurchaseCatalogConsumer } from './consumers/purchase-catalog.consumer';
 import { PurchaseConsumer } from './consumers/purchase.consumer';
@@ -14,6 +15,7 @@ export const MESSAGE_CONTROLLERS = [
   ContentValidationConsumer,
   PurchaseCatalogConsumer,
   PurchaseConsumer,
+  ContentExtractedConsumer,
   UploadProcessedConsumer,
   ResourceUploadedConsumer,
   ThumbnailUploadedConsumer,

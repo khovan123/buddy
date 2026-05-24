@@ -5,10 +5,10 @@ import {
   UPLOAD_ROUTINGKEYS,
   VideoProcessingJobEvent,
 } from '@libs/contracts';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffprobeInstaller from '@ffprobe-installer/ffprobe';
-import { Job } from 'bullmq';
+import { Job, Queue } from 'bullmq';
 import ffmpeg from 'fluent-ffmpeg';
 import { randomUUID } from 'crypto';
 import { createReadStream } from 'node:fs';
@@ -24,6 +24,10 @@ import { OutboxService } from '../messaging/publishers/outbox.service';
 import { S3Service } from '../persistence/aws/s3.service';
 import { CloudinaryService } from '../persistence/cloudinary/cloudinary.service';
 import { PrismaService } from '../persistence/prisma/prisma.service';
+import {
+  CONTENT_EXTRACTION_QUEUE,
+  type ContentExtractionJobData,
+} from './content-extraction.worker';
 
 /** Represents the  video processor worker component. */
 @Processor(QUEUES.VIDEO_PROCESSING_QUEUE)
@@ -35,6 +39,8 @@ export class VideoProcessorWorker extends WorkerHost {
     private readonly outboxService: OutboxService,
     private readonly supabaseStorage: S3Service,
     private readonly cloudinaryStorage: CloudinaryService,
+    @InjectQueue(CONTENT_EXTRACTION_QUEUE)
+    private readonly extractionQueue: Queue<ContentExtractionJobData>,
   ) {
     super();
   }
@@ -115,6 +121,21 @@ export class VideoProcessorWorker extends WorkerHost {
 
       // Transaction committed → trigger relay immediately
       this.outboxService.notifyFlush();
+
+      void this.extractionQueue
+        .add('extract-tutorial-content', {
+          contentId: fileId,
+          contentType: 'TUTORIAL',
+          fileIds: [fileId],
+          uploadedBy,
+          correlationId: processedEvent.correlationId ?? fileId,
+        })
+        .catch((error) => {
+          this.logger.error(
+            `Failed to queue transcript extraction for tutorial file ${fileId}`,
+            error instanceof Error ? error.message : String(error),
+          );
+        });
 
       this.logger.log(`Successfully processed media file ${fileId}`);
     } catch (error) {

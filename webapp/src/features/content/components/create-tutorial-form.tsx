@@ -380,10 +380,13 @@ export function CreateTutorialForm() {
               fileId: response.fileId,
               s3Key: response.s3Key,
             }).unwrap()
+            toast.success(
+              "Video uploaded. Transcript and moderation will continue in background."
+            )
           } catch (error) {
             console.error("Failed to confirm tutorial:", error)
             toast.error(
-              "Video uploaded, but failed to alert processing server."
+              "Video uploaded, but failed to alert the processing server."
             )
           }
         }

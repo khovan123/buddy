@@ -10,6 +10,14 @@ export enum ResourceStatus {
   DELETED = 'DELETED',
 }
 
+export enum ContentModerationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  NEEDS_REVIEW = 'NEEDS_REVIEW',
+  ERROR = 'ERROR',
+}
+
 /** Represents the  resource meta component. */
 @Schema({ _id: false })
 export class ResourceMeta {
@@ -63,6 +71,25 @@ export class Resource {
 
   @Prop({ type: String, enum: ResourceStatus, default: ResourceStatus.AVAILABLE })
   status!: ResourceStatus;
+
+  @Prop({
+    type: String,
+    enum: ContentModerationStatus,
+    default: ContentModerationStatus.PENDING,
+  })
+  moderationStatus!: ContentModerationStatus;
+
+  @Prop({ type: Number, required: false, default: null })
+  moderationScore?: number | null;
+
+  @Prop({ type: [String], default: [] })
+  moderationReasons?: string[];
+
+  @Prop({ type: String, required: false, default: null })
+  moderationRuleVersion?: string | null;
+
+  @Prop({ type: Date, default: null })
+  moderatedAt?: Date | null;
 
   @Prop({ default: false })
   isVerified!: boolean;

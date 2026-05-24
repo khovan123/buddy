@@ -10,6 +10,14 @@ export enum TutorialStatus {
   DELETED = 'DELETED',
 }
 
+export enum ContentModerationStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  NEEDS_REVIEW = 'NEEDS_REVIEW',
+  ERROR = 'ERROR',
+}
+
 /** Represents the  media meta component. */
 @Schema({ _id: false })
 class MediaMeta {
@@ -110,6 +118,25 @@ export class Tutorial {
 
   @Prop({ type: String, enum: TutorialStatus, default: TutorialStatus.AVAILABLE })
   status!: TutorialStatus;
+
+  @Prop({
+    type: String,
+    enum: ContentModerationStatus,
+    default: ContentModerationStatus.PENDING,
+  })
+  moderationStatus!: ContentModerationStatus;
+
+  @Prop({ type: Number, required: false, default: null })
+  moderationScore?: number | null;
+
+  @Prop({ type: [String], default: [] })
+  moderationReasons?: string[];
+
+  @Prop({ type: String, required: false, default: null })
+  moderationRuleVersion?: string | null;
+
+  @Prop({ type: Date, default: null })
+  moderatedAt?: Date | null;
 
   @Prop({ default: 15, min: 15 })
   discountBundle!: number;
