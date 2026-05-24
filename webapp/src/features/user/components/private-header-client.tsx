@@ -61,7 +61,7 @@ export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
 
   const openProfileDialog = () => setProfileDialogOpen(true)
-  const headerUser = useMemo<UserProfile | null>(() => {
+  const menuUser = useMemo<UserProfile | null>(() => {
     if (user?.email && (user.profile?.nickname || user.nickname)) {
       return user
     }
@@ -94,10 +94,7 @@ export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
 
   return (
     <>
-      <ProfileCompleteBanner
-        user={headerUser}
-        onUpdateClick={openProfileDialog}
-      />
+      <ProfileCompleteBanner user={user} onUpdateClick={openProfileDialog} />
 
       <Navigation
         brandLabel="Buddy"
@@ -118,7 +115,7 @@ export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
               <span className="absolute top-2 right-2 size-2 rounded-full bg-primary" />
             </Button>
             <UserMenuPopover
-              user={headerUser}
+              user={menuUser}
               onEditProfile={openProfileDialog}
             />
           </>
@@ -127,7 +124,7 @@ export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
 
       {/* Profile update dialog – rendered once, shared across triggers */}
       <ProfileUpdateDialog
-        user={headerUser}
+        user={user}
         open={profileDialogOpen}
         onOpenChange={setProfileDialogOpen}
       />
