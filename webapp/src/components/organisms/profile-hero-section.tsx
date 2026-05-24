@@ -33,7 +33,7 @@ export function ProfileHeroSection({
   stats,
   authVerification,
 }: ProfileHeroSectionProps) {
-  const profileName = me?.profile?.nickname || me?.nickname || "Elena Rodriguez"
+  const profileName = me?.profile?.nickname || me?.nickname || "Buddy"
   const bio =
     me?.profile?.bio ||
     "Bridging the gap between theoretical human-computer interaction and practical product design. Currently pursuing a Ph.D. in Cognitive Psychology while mentoring 500+ students on Unibuddy. Resources focus on accessibility, ethical AI, and design systems that scale."
@@ -84,7 +84,7 @@ export function ProfileHeroSection({
                 {profileName}
               </h1>
               <p className="font-semibold text-primary">
-                {me?.profile.career?.name || "Career Not Set"}
+                {me?.profile?.career?.name || "Career Not Set"}
               </p>
             </div>
           </div>
