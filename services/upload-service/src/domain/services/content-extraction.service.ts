@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 export type ContentExtractionStatus = 'AVAILABLE' | 'UNSUPPORTED' | 'FAILED';
 
@@ -12,7 +13,12 @@ const DEFAULT_MAX_CHARS = 20_000;
 
 @Injectable()
 export class ContentExtractionService {
-  async extract(buffer: Buffer, mimeType: string, fileName?: string): Promise<ContentExtractionResult> {
+  constructor(private readonly config: ConfigService) {}
+  async extract(
+    buffer: Buffer,
+    mimeType: string,
+    fileName?: string,
+  ): Promise<ContentExtractionResult> {
     const normalizedMime = mimeType.toLowerCase();
     const normalizedName = (fileName ?? '').toLowerCase();
 
@@ -61,7 +67,7 @@ export class ContentExtractionService {
 
   private truncate(text: string): string {
     const maxChars = Number.parseInt(
-      process.env.CONTENT_EXTRACTION_MAX_CHARS ?? `${DEFAULT_MAX_CHARS}`,
+      this.config.get<string>('CONTENT_EXTRACTION_MAX_CHARS', `${DEFAULT_MAX_CHARS}`),
       10,
     );
     const safeMaxChars = Number.isFinite(maxChars) && maxChars > 0 ? maxChars : DEFAULT_MAX_CHARS;
