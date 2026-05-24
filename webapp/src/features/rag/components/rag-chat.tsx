@@ -71,7 +71,7 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
   }, [])
 
   useEffect(() => {
-    if (!accessToken || !user?.id) {
+    if (!accessToken) {
       return
     }
 
@@ -93,7 +93,7 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
     return () => {
       cancelled = true
     }
-  }, [accessToken, user?.id])
+  }, [accessToken])
 
   const handleSend = useCallback(
     async (query?: string) => {

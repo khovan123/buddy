@@ -3,9 +3,53 @@ import { fetchApi } from "@/lib/fetch"
 
 import type {
   CollectionQueryItem,
+  PaginatedResult,
   ResourceQueryItem,
   TutorialQueryItem,
 } from "../types"
+
+const COLLECTION_PAGE_LIMIT = 100
+
+async function fetchMyResourceCollectionPage(
+  page: number
+): Promise<PaginatedResult<CollectionQueryItem>> {
+  const res = await fetchApi(
+    "GET",
+    `/collections/resources/me?page=${page}&limit=${COLLECTION_PAGE_LIMIT}`,
+    undefined,
+    await getClientAuthHeaders(),
+    true,
+    { cache: "no-store" }
+  )
+
+  if (!res.ok) {
+    throw new Error(`Failed with status: ${res.status}`)
+  }
+
+  const json = await res.json()
+  return json.data
+}
+
+async function fetchAllMyResourceCollections(): Promise<CollectionQueryItem[]> {
+  const collections: CollectionQueryItem[] = []
+  let page = 1
+  let totalPages = 1
+
+  do {
+    const result = await fetchMyResourceCollectionPage(page)
+    const pageItems = result.data ?? []
+    collections.push(...pageItems)
+    totalPages = result.meta?.totalPages ?? page
+
+    if (pageItems.length === 0) {
+      break
+    }
+
+    page += 1
+  } while (page <= totalPages)
+
+  return collections
+}
 
 /** Fetch resources by courseId that are NOT in any collection — uses backend filtering */
 export const fetchResourcesByCourse = async (
@@ -132,21 +176,7 @@ export const fetchMyResourceCollectionsByTaxonomy = async (
   }
 
   try {
-    const res = await fetchApi(
-      "GET",
-      "/collections/resources/me?limit=100",
-      undefined,
-      await getClientAuthHeaders(),
-      true,
-      { cache: "no-store" }
-    )
-
-    if (!res.ok) {
-      throw new Error(`Failed with status: ${res.status}`)
-    }
-
-    const json = await res.json()
-    const collections = (json.data?.data ?? []) as CollectionQueryItem[]
+    const collections = await fetchAllMyResourceCollections()
     return collections.filter(
       (collection) =>
         collection.majorId === majorId && collection.courseId === courseId
