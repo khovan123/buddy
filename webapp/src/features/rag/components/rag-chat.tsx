@@ -117,7 +117,7 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
         const response = await askRAG(
           {
             query: text,
-            userId: user?.id,
+            userId: user?.userId ?? user?.id,
           },
           accessToken
         )

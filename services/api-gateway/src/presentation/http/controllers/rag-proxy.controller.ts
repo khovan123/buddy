@@ -15,16 +15,29 @@ import { HttpProxyService } from '../../../infrastructure/http/http-proxy.servic
 export class RagProxyController {
   constructor(private readonly proxy: HttpProxyService) {}
 
+  private getAuthUserId(req: FastifyRequest): string | undefined {
+    return (req as FastifyRequest & { user?: { sub?: string } }).user?.sub;
+  }
+
+  private withAuthUserId(body: unknown, userId: string | undefined): unknown {
+    if (!userId || !body || typeof body !== 'object' || Array.isArray(body)) {
+      return body;
+    }
+
+    return { ...(body as Record<string, unknown>), userId };
+  }
+
   @Post('ask')
   @UseGuards(JwtAuthGuard, PoliciesGuard)
   @RequirePolicy(SubscriptionRequiredPolicy, SearchResultLimitPolicy)
   ask(@Body() body: unknown, @Req() req: FastifyRequest) {
+    const userId = this.getAuthUserId(req);
     return this.proxy.forward(req, {
       service: 'rag',
       resilienceKey: 'recommendation-rag',
       path: '/v1/rag/ask',
       method: 'POST',
-      body,
+      body: this.withAuthUserId(body, userId),
       timeoutMs: 100_000,
     });
   }
@@ -33,12 +46,13 @@ export class RagProxyController {
   @UseGuards(JwtAuthGuard, PoliciesGuard)
   @RequirePolicy(SubscriptionRequiredPolicy, SearchResultLimitPolicy)
   retrieve(@Body() body: unknown, @Req() req: FastifyRequest) {
+    const userId = this.getAuthUserId(req);
     return this.proxy.forward(req, {
       service: 'rag',
       resilienceKey: 'recommendation-rag',
       path: '/v1/rag/retrieve',
       method: 'POST',
-      body,
+      body: this.withAuthUserId(body, userId),
       timeoutMs: 100_000,
     });
   }
@@ -46,7 +60,7 @@ export class RagProxyController {
   @Get('history')
   @UseGuards(JwtAuthGuard)
   history(@Req() req: FastifyRequest) {
-    const userId = (req as FastifyRequest & { user?: { sub?: string } }).user?.sub;
+    const userId = this.getAuthUserId(req);
     return this.proxy.forward(req, {
       service: 'rag',
       resilienceKey: 'recommendation-rag',
@@ -61,7 +75,7 @@ export class RagProxyController {
   @Delete('history')
   @UseGuards(JwtAuthGuard)
   clearHistory(@Req() req: FastifyRequest) {
-    const userId = (req as FastifyRequest & { user?: { sub?: string } }).user?.sub;
+    const userId = this.getAuthUserId(req);
     return this.proxy.forward(req, {
       service: 'rag',
       resilienceKey: 'recommendation-rag',
