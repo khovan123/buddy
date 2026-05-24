@@ -381,7 +381,7 @@ export function CreateTutorialForm() {
               s3Key: response.s3Key,
             }).unwrap()
             toast.success(
-              "Video uploaded. Transcript and moderation will continue in background."
+              "Video uploaded. Transcript and moderation will continue in the background."
             )
           } catch (error) {
             console.error("Failed to confirm tutorial:", error)
