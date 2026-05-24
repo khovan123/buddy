@@ -1,1 +1,1 @@
-export { SettingsSidebar } from "@/features/billing"
+export { SettingsSidebar } from "./components/settings-sidebar"

@@ -1,5 +1,6 @@
 "use client"
 
+import type { ComponentProps } from "react"
 import { useState } from "react"
 
 import { Check, Loader2, Palette, Users } from "lucide-react"
@@ -43,7 +44,16 @@ type PlanCardOption = {
   audienceIcon: typeof Palette
 }
 
-function getPlanCards(data: SubscriptionPricingData | undefined): PlanCardOption[] {
+type PlanSelectorDialogProps = {
+  triggerClassName?: string
+  triggerSize?: ComponentProps<typeof Button>["size"]
+  triggerText?: string
+  triggerVariant?: ComponentProps<typeof Button>["variant"]
+}
+
+function getPlanCards(
+  data: SubscriptionPricingData | undefined
+): PlanCardOption[] {
   if (!data) {
     return []
   }
@@ -84,7 +94,12 @@ function getPlanCards(data: SubscriptionPricingData | undefined): PlanCardOption
   ]
 }
 
-export function PlanSelectorDialog() {
+export function PlanSelectorDialog({
+  triggerClassName = "hidden min-w-28 font-semibold md:inline-flex",
+  triggerSize = "sm",
+  triggerText,
+  triggerVariant = "secondary",
+}: PlanSelectorDialogProps = {}) {
   const [open, setOpen] = useState(false)
   const [selectedAudience, setSelectedAudience] =
     useState<PlanAudience>("student")
@@ -103,11 +118,13 @@ export function PlanSelectorDialog() {
   const visiblePlanCards = planCards.filter(
     (card) => card.audience === selectedAudience
   )
-  const triggerLabel = isFetching
-    ? "Plans"
-    : currentPlan
-      ? PLAN_DISPLAY_NAMES[currentPlan]
-      : "Choose plan"
+  const triggerLabel =
+    triggerText ??
+    (isFetching
+      ? "Plans"
+      : currentPlan
+        ? PLAN_DISPLAY_NAMES[currentPlan]
+        : "Choose plan")
   const dialogOpen = open || requiresPlanSelection
 
   const handleOpenChange = (nextOpen: boolean) => {
@@ -143,9 +160,9 @@ export function PlanSelectorDialog() {
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
-          variant="secondary"
-          size="sm"
-          className="hidden min-w-28 font-semibold md:inline-flex"
+          variant={triggerVariant}
+          size={triggerSize}
+          className={triggerClassName}
           aria-label="Choose subscription plan"
         >
           {isFetching ? <Loader2 className="size-3.5 animate-spin" /> : null}

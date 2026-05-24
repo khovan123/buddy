@@ -26,7 +26,22 @@ export const authApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+
+    changePassword: build.mutation<
+      ApiResponse<null>,
+      { currentPassword: string; newPassword: string }
+    >({
+      query: (body) => ({
+        url: "/v1/auth/password",
+        method: "PATCH",
+        body,
+      }),
+    }),
   }),
 })
 
-export const { useRegisterMutation, useResendOtpMutation } = authApi
+export const {
+  useRegisterMutation,
+  useResendOtpMutation,
+  useChangePasswordMutation,
+} = authApi

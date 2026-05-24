@@ -19,7 +19,7 @@ export default async function IntroLayout({
     : navActions
 
   return (
-    <div className="relative min-h-screen">
+    <div className="relative flex min-h-screen flex-col">
       {/* Shared navigation for all marketing / intro pages */}
       <header className="sticky top-0 z-50">
         <Navigation
@@ -31,7 +31,7 @@ export default async function IntroLayout({
         />
       </header>
 
-      {children}
+      <main className="flex-1">{children}</main>
 
       <SiteFooter />
     </div>
