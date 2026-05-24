@@ -697,7 +697,7 @@ export class ResourceMongoRepository implements IResourceRepository {
       courseId: row.courseId?.toString() ?? '',
       price: row.price,
       status: row.status,
-      moderationStatus: row.moderationStatus,
+      moderationStatus: row.moderationStatus ?? ContentModerationStatus.PENDING,
       moderationScore: row.moderationScore ?? null,
       moderationReasons: row.moderationReasons ?? [],
       moderationRuleVersion: row.moderationRuleVersion ?? null,

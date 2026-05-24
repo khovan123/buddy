@@ -122,20 +122,15 @@ export class VideoProcessorWorker extends WorkerHost {
       // Transaction committed → trigger relay immediately
       this.outboxService.notifyFlush();
 
-      void this.extractionQueue
-        .add('extract-tutorial-content', {
-          contentId: fileId,
-          contentType: 'TUTORIAL',
-          fileIds: [fileId],
-          uploadedBy,
-          correlationId: processedEvent.correlationId ?? fileId,
-        })
-        .catch((error) => {
-          this.logger.error(
-            `Failed to queue transcript extraction for tutorial file ${fileId}`,
-            error instanceof Error ? error.message : String(error),
-          );
-        });
+      // Enqueue transcript extraction — awaited so failures propagate into
+      // the BullMQ retry loop instead of silently dropping moderation input.
+      await this.extractionQueue.add('extract-tutorial-content', {
+        contentId: fileId,
+        contentType: 'TUTORIAL',
+        fileIds: [fileId],
+        uploadedBy,
+        correlationId: processedEvent.correlationId ?? fileId,
+      });
 
       this.logger.log(`Successfully processed media file ${fileId}`);
     } catch (error) {

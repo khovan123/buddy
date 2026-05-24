@@ -15,10 +15,12 @@ import type { ITutorialRepository } from '../../../domain/repositories/tutorial.
 import { ContentModerationStatus as ResourceModerationStatus } from '../../persistence/mongo/schemas/resource.schema';
 import { ContentModerationStatus as TutorialModerationStatus } from '../../persistence/mongo/schemas/tutorial.schema';
 import { ContentModerationService } from '../../services/content-moderation.service';
+import { IdempotentConsumerService } from '../../services/idempotent-consumer.service';
 import { RecommendationSyncPublisher } from '../publishers/recommendation-sync.publisher';
 
 @Controller()
 export class ContentExtractedConsumer {
+  private static readonly MAX_RETRIES = 3;
   private readonly logger = new AppLogger(ContentExtractedConsumer.name);
 
   constructor(
@@ -28,6 +30,7 @@ export class ContentExtractedConsumer {
     private readonly tutorialRepository: ITutorialRepository,
     private readonly contentModeration: ContentModerationService,
     private readonly recommendationSync: RecommendationSyncPublisher,
+    private readonly idempotentConsumer: IdempotentConsumerService,
   ) {}
 
   @RabbitSubscribe({
@@ -41,22 +44,43 @@ export class ContentExtractedConsumer {
   })
   async handleContentExtracted(
     messageData: RmqMessagePayload<ContentExtractedEvent['payload']>,
-    _message: ConsumeMessage,
+    message: ConsumeMessage,
   ): Promise<void | Nack> {
     const payload = extractRmqPayload(messageData);
+    const correlationId = this.idempotentConsumer.resolveCorrelationId(
+      message as unknown as Record<string, unknown>,
+      payload.contentId,
+    );
 
     try {
-      if (payload.contentType === 'RESOURCE') {
-        await this.moderateResource(payload);
-      } else {
-        await this.moderateTutorial(payload);
-      }
+      await this.idempotentConsumer.runWithIdempotency(
+        correlationId,
+        UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+        async () => {
+          if (payload.contentType === 'RESOURCE') {
+            await this.moderateResource(payload);
+          } else {
+            await this.moderateTutorial(payload);
+          }
+        },
+      );
+
+      this.logger.log(
+        `Successfully processed ${UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED} for ${payload.contentType} ${payload.contentId}`,
+      );
     } catch (error) {
-      this.logger.error(
-        `Failed to moderate extracted ${payload.contentType} content ${payload.contentId}`,
+      const deliveryCount = this.getDeliveryCount(message);
+      const willRetry = deliveryCount < ContentExtractedConsumer.MAX_RETRIES;
+
+      this.logger[willRetry ? 'warn' : 'error'](
+        `Failed to moderate extracted ${payload.contentType} content ${payload.contentId}` +
+          ` (attempt ${deliveryCount + 1}/${ContentExtractedConsumer.MAX_RETRIES + 1})` +
+          (willRetry ? ' — requeuing for retry' : ' — sending to DLQ'),
         String(error),
       );
-      return new Nack(false);
+
+      // Requeue for transient failures; DLQ once retries exhausted
+      return new Nack(willRetry);
     }
   }
 
@@ -76,9 +100,9 @@ export class ContentExtractedConsumer {
       major: resource.major?.name,
       course: resource.course?.name,
       extractedText: this.joinExtractedText(payload),
-      mediaUrls: payload.files.map((item) => item.downloadUrl).filter((url): url is string =>
-        Boolean(url),
-      ),
+      mediaUrls: payload.files
+        .map((item) => item.downloadUrl)
+        .filter((url): url is string => Boolean(url)),
       extractionStatus: this.resolveExtractionStatus(payload),
       extractionError: this.joinExtractionErrors(payload),
     });
@@ -173,6 +197,30 @@ export class ContentExtractedConsumer {
     return payload.files.every((item) => item.extractionStatus === 'AVAILABLE')
       ? 'AVAILABLE'
       : 'PARTIAL';
+  }
+
+  /**
+   * Extract delivery count from RabbitMQ message headers.
+   * `x-delivery-count` is set by quorum queues; for classic queues the
+   * `x-death` array length approximates the same value. Returns 0 on
+   * first delivery.
+   */
+  private getDeliveryCount(message: ConsumeMessage): number {
+    const headers = message.properties?.headers;
+    if (!headers) return 0;
+
+    // Quorum queues provide this natively
+    if (typeof headers['x-delivery-count'] === 'number') {
+      return headers['x-delivery-count'];
+    }
+
+    // Classic queues: count via x-death entries
+    const xDeath = headers['x-death'];
+    if (Array.isArray(xDeath) && xDeath.length > 0) {
+      return xDeath.reduce((sum, entry) => sum + (entry.count ?? 0), 0);
+    }
+
+    return 0;
   }
 
   private toResourceStatus(decision: string): ResourceModerationStatus {
