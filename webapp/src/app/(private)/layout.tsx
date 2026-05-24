@@ -2,12 +2,10 @@ import type { ReactNode } from "react"
 
 import type { Metadata } from "next"
 
-import { getServerSession } from "next-auth"
-
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { SiteFooter } from "@/components/organisms/site-footer"
 import { PrivateHeader } from "@/features/user/components/private-header-client"
 import { getMe } from "@/features/user/services/user.service"
+import { getCachedSession } from "@/lib/server-session"
 
 export const metadata: Metadata = {
   robots: {
@@ -28,7 +26,7 @@ export default async function PrivateLayout({
 }: {
   children: ReactNode
 }) {
-  const [user, session] = await Promise.all([getMe(), getServerSession(authOptions)])
+  const [user, session] = await Promise.all([getMe(), getCachedSession()])
 
   return (
     <div className="flex min-h-screen flex-col bg-background">

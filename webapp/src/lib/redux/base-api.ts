@@ -61,7 +61,7 @@ const baseQueryWithReauth: BaseQueryFn<
       api.dispatch(clearToken())
 
       await clearAuthCookies().catch(console.error)
-      signOut({ redirect: true, callbackUrl: "/login" })
+      signOut({ redirect: true, callbackUrl: "/login?sessionExpired=1" })
     }
   }
 
