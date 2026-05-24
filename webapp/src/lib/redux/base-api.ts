@@ -6,7 +6,6 @@ import type {
   FetchBaseQueryError,
 } from "@reduxjs/toolkit/query"
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import { toast } from "sonner"
 
 import { clearAuthCookies } from "@/features/auth/actions"
 import { clearToken, setToken } from "@/features/auth/store/auth-slice"
@@ -14,7 +13,6 @@ import { clearToken, setToken } from "@/features/auth/store/auth-slice"
 import type { RootState } from "./store"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? ""
-let sessionExpiredToastShown = false
 
 const baseQuery = fetchBaseQuery({
   baseUrl: API_BASE_URL,
@@ -63,10 +61,6 @@ const baseQueryWithReauth: BaseQueryFn<
       api.dispatch(clearToken())
 
       await clearAuthCookies().catch(console.error)
-      if (!sessionExpiredToastShown) {
-        sessionExpiredToastShown = true
-        toast.error("Your session has expired. Please log in again.")
-      }
       signOut({ redirect: true, callbackUrl: "/login?sessionExpired=1" })
     }
   }
