@@ -2,8 +2,6 @@
 
 import { useMemo, useState } from "react"
 
-import { useSession } from "next-auth/react"
-
 import { Bell } from "lucide-react"
 
 import type { NavigationItem } from "@/components/atoms/nav-dropdown-item"
@@ -45,6 +43,11 @@ const NAV_ITEMS: NavigationItem[] = [
 
 interface PrivateHeaderProps {
   user: UserProfile | null
+  accountFallback?: {
+    id?: string
+    email?: string
+    nickname?: string
+  } | null
 }
 
 /**
@@ -54,8 +57,7 @@ interface PrivateHeaderProps {
  * Manages the shared `ProfileUpdateDialog` state so both
  * `ProfileCompleteBanner` and `UserMenuPopover` can trigger it.
  */
-export function PrivateHeader({ user }: PrivateHeaderProps) {
-  const { data: session } = useSession()
+export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
 
   const openProfileDialog = () => setProfileDialogOpen(true)
@@ -64,32 +66,31 @@ export function PrivateHeader({ user }: PrivateHeaderProps) {
       return user
     }
 
-    const sessionUser = session?.user
-    if (!sessionUser?.id && !sessionUser?.email) {
+    if (!accountFallback?.id && !accountFallback?.email) {
       return user
     }
 
     const nickname =
       user?.profile?.nickname ||
       user?.nickname ||
-      sessionUser.nickname ||
-      sessionUser.email?.split("@")[0] ||
+      accountFallback.nickname ||
+      accountFallback.email?.split("@")[0] ||
       "Buddy"
 
     return {
-      id: user?.id ?? sessionUser.id ?? "",
-      userId: user?.userId ?? sessionUser.id,
-      email: user?.email ?? sessionUser.email ?? "",
+      id: user?.id ?? accountFallback.id ?? "",
+      userId: user?.userId ?? accountFallback.id,
+      email: user?.email ?? accountFallback.email ?? "",
       nickname,
       profile: {
         ...(user?.profile ?? { nickname }),
         nickname,
       },
       isActive: user?.isActive ?? true,
-      createdAt: user?.createdAt ?? new Date().toISOString(),
-      updatedAt: user?.updatedAt ?? new Date().toISOString(),
+      createdAt: user?.createdAt ?? "",
+      updatedAt: user?.updatedAt ?? "",
     }
-  }, [session?.user, user])
+  }, [accountFallback, user])
 
   return (
     <>
