@@ -198,16 +198,18 @@ export function ContentModerationNotifications() {
     isFetching: resourcesFetching,
     isError: resourcesError,
   } = useGetMyResourcesQuery(undefined, {
-    pollingInterval: 30_000,
-    refetchOnMountOrArgChange: true,
+    pollingInterval: open ? 30_000 : 0,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   })
   const {
     data: tutorialResponse,
     isFetching: tutorialsFetching,
     isError: tutorialsError,
   } = useGetMyTutorialsQuery(undefined, {
-    pollingInterval: 30_000,
-    refetchOnMountOrArgChange: true,
+    pollingInterval: open ? 30_000 : 0,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   })
 
   const { activeCount, notifications } = useMemo(() => {
