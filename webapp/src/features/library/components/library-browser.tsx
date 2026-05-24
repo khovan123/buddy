@@ -349,7 +349,7 @@ export default function LibraryBrowser({
             </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+          <div className="grid auto-rows-fr items-stretch gap-6 md:grid-cols-2 2xl:grid-cols-3">
             {visibleContent.assets.map((asset) => (
               <LibraryAssetCard
                 key={asset.title}

@@ -124,7 +124,7 @@ export default async function ExploreResourceCollectionsPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {featuredCollections.length > 0 &&
               featuredCollections.map((featuredCollection) => (
                 <CollectionCard

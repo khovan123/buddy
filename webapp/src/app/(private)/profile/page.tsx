@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 
 import { ProfileHeroSection } from "@/components/organisms/profile-hero-section"
 import { ProfilePublishedSection } from "@/components/organisms/profile-published-section"
+import { getAuthMe } from "@/features/auth/services/auth.service"
 import { fetchProfileTab } from "@/features/content"
 import { mapTutorialToProfileItem } from "@/features/content"
 import {
@@ -63,12 +64,13 @@ export default async function ProfilePage() {
   // Fetch user info first (needed for stats userId), then parallel-fetch the rest
   const me = await getMe()
 
-  const [tuts, resData, tutCols, resCols, stats] = await Promise.all([
+  const [tuts, resData, tutCols, resCols, stats, authMe] = await Promise.all([
     getMyTutorials().catch(() => emptyTutorials),
     getMyResources().catch(() => emptyResources),
     getMyTutorialCollections().catch(() => emptyCols),
     getMyResourceCollections().catch(() => emptyCols),
     me ? getCreatorStats(me.id).catch(() => null) : Promise.resolve(null),
+    getAuthMe().catch(() => null),
   ])
 
   const initialItems = (tuts.data || []).map(mapTutorialToProfileItem)
@@ -90,7 +92,12 @@ export default async function ProfilePage() {
         ]}
       />
       <section className="space-y-14 pb-10">
-        <ProfileHeroSection seoBadge={seo.badge} me={me} stats={stats} />
+        <ProfileHeroSection
+          seoBadge={seo.badge}
+          me={me}
+          stats={stats}
+          authVerification={authMe}
+        />
         <ProfileSettingsCard user={me} />
         <ProfilePublishedSection
           initialItems={initialItems}
@@ -105,4 +112,3 @@ export default async function ProfilePage() {
     </>
   )
 }
-

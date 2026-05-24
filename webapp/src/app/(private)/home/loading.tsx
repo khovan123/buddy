@@ -46,7 +46,7 @@ export default function HomeLoading() {
             title="Today's Highlights"
             description="Quickly access content streams with the highest engagement."
           />
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid auto-rows-fr items-stretch gap-4 md:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <article
                 key={i}

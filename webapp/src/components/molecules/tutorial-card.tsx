@@ -57,7 +57,7 @@ function TutorialCardInner({
       </div>
 
       {/* Content Body */}
-      <div className="flex w-full flex-col gap-1 px-2 pt-3 pb-4">
+      <div className="flex w-full flex-1 flex-col gap-1 px-2 pt-3 pb-4">
         {/* Title */}
         <h3 className="text-body line-clamp-2 leading-tight font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
           {tutorial?.title || "Tutorial Title"}
@@ -103,7 +103,7 @@ function TutorialCardInner({
         </div>
 
         {/* Pricing Row */}
-        <div className="mt-1 flex items-baseline gap-2">
+        <div className="mt-auto flex items-baseline gap-2 pt-2">
           {tutorial?.discount ? (
             <>
               <span className="text-base font-bold text-foreground">

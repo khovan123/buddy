@@ -1,181 +1,277 @@
-# Buddy MVP
+# Buddy Marketing MVP
 
-This document defines the Minimum Viable Product for Buddy. It follows the MVP
-guidance from ScrumPass: identify the core problem and customer, keep only the
-most important features, release a usable version quickly, collect real
-feedback, and measure whether the idea is worth deeper investment.
+This document defines the MVP from a marketing and launch perspective. It
+focuses on what Buddy can credibly promise to early users based on the product
+features already built in the webapp and services.
 
-Reference: https://scrumpass.com/mvp-minimum-viable-product-la-gi-va-8-luu-y-khi-thiet-ke-mvp-cho-du-an/
+## One-Line Positioning
 
-## 1. Problem And Core Value
+Buddy is an AI-powered learning marketplace where students find trusted study
+materials, learn from tutorials and resources, and ask grounded questions from
+the content they are studying.
 
-### Problem
+## Core Promise
 
-Students often lose time searching across scattered course files, social posts,
-creator pages, generic videos, and AI answers that are not grounded in the
-actual study material. Creators also need a low-friction way to publish one
-useful resource before committing to a full course catalogue.
+Students should not need to search across random links, scattered documents,
+generic videos, and ungrounded AI answers. Buddy gives them one place to:
 
-### Core Value
+- Discover relevant learning resources and tutorials.
+- Follow a clearer study path through collections.
+- Ask an AI assistant questions grounded in learning content.
+- Get personalized recommendations and trending study material.
 
-Buddy helps a learner find course-specific material, study it, and get a
-grounded next step from the content.
+For creators, Buddy makes it possible to publish useful learning content and
+begin earning from their knowledge without needing to build a separate audience,
+payment flow, or content platform.
 
-The MVP should validate one learning loop:
-
-1. A learner discovers a relevant resource or tutorial.
-2. The learner studies the material.
-3. The learner asks or decides the next study step.
-4. Buddy captures feedback or behavior that shows whether the loop is useful.
-
-## 2. Target Users
+## Target Audience
 
 ### Primary Learner
 
-- Student who needs a relevant resource, tutorial, or collection quickly.
-- Has a practical study goal, such as preparing for an exam, reviewing a topic,
-  or learning a skill for a project.
-- Needs trusted course-specific guidance more than a large generic content feed.
+Students who need practical study help now:
+
+- They want course resources, tutorials, documents, and videos in one place.
+- They care more about relevance and clarity than a large generic content feed.
+- They want AI help, but only if the answer is connected to real study content.
 
 ### Primary Creator
 
-- Student creator, mentor, teaching assistant, or instructor.
-- Can publish one useful resource or tutorial without a full production setup.
-- Wants early feedback before investing in a complete learning product.
+Student creators, mentors, teaching assistants, and instructors who already
+have useful knowledge to share:
 
-## 3. MVP Feature Scope
+- They want to publish resources, tutorials, and curated collections.
+- They want learner feedback and engagement signals.
+- They want a simple way to monetize content through wallet, subscription, and
+  payout flows.
 
-The first version should focus on 1-3 core features that validate the value
-proposition. Everything else is secondary.
+## MVP Story
 
-### Feature 1: Discover Learning Content
+The MVP should be marketed around one learning loop:
 
-Learners can browse or search existing resources, tutorials, and collections.
+1. Find a relevant resource, tutorial, or collection.
+2. Study the material inside Buddy.
+3. Ask the AI assistant for a grounded explanation or next step.
+4. Continue with recommended or trending learning content.
 
-Minimum behavior:
+For creators, the matching loop is:
 
-- View available resources and tutorials.
-- Open a content detail page.
-- Understand what the material helps them learn.
+1. Publish a useful resource, tutorial, or collection.
+2. Attach media, documents, or supporting learning material.
+3. Let learners discover, buy, study, and interact with the content.
+4. Track creator-facing signals such as profile presence, ratings, followers,
+   sales, wallet activity, and upload history.
 
-Validated question:
+## Marketing Feature Pillars
 
-- Can a learner find a relevant item in under 2 minutes?
+### 1. Discover Better Study Material
 
-### Feature 2: Publish One Useful Item
+Buddy gives learners a searchable and browsable study library, not just a
+static course page.
 
-Creators can publish a first resource or tutorial.
+Marketable features:
 
-Minimum behavior:
+- Explore resources, tutorials, and collections.
+- Browse trending and recommended content.
+- Filter content by learning context such as major, course, and semester.
+- Open detail pages for learning materials.
+- Use library pages for organized resource and tutorial browsing.
 
-- Create a resource or tutorial with a title, description, course/topic context,
-  and attached learning material or video.
-- Make it available for learners to discover.
+Suggested message:
 
-Validated question:
+> Find the study material you need faster, from resources and tutorials built
+> around real learning goals.
 
-- Can a creator publish one useful item without onboarding help?
+### 2. Learn With A Grounded AI Assistant
 
-### Feature 3: Ask A Grounded Study Question
+Buddy's AI assistant is not positioned as a generic chatbot. It should be
+marketed as a study assistant that works from indexed learning material and
+returns useful source references.
 
-Learners can ask the AI study assistant questions based on the learning
-material.
+Marketable features:
 
-Minimum behavior:
+- Ask study questions inside the private app.
+- Receive answers grounded in learning content.
+- Review source cards that point back to relevant material.
+- Fall back to source retrieval when answer generation is temporarily
+  unavailable.
 
-- Ask a question about course or uploaded content.
-- Receive a useful answer grounded in the material.
-- Use the answer to decide the next study action.
+Suggested message:
 
-Validated question:
+> Ask questions about what you are studying and get answers connected to the
+> material, not generic advice.
 
-- Does the answer reduce study friction compared with generic search or chat?
+### 3. Publish Learning Content
 
-## 4. MVP Format
+Creators can publish practical learning content without waiting for a full
+course launch.
 
-Buddy's MVP should be a working prototype, not a full marketplace.
+Marketable features:
 
-Required release shape:
+- Create resources.
+- Create tutorials.
+- Create collections.
+- Build tutorial steps and collection roadmaps.
+- Upload files, videos, thumbnails, and supporting materials.
+- Track upload status and history.
 
-- Public landing page that explains the core value and routes users to the main
-  learning flow.
-- Authenticated app flow for exploring content, creating first content, and
-  asking study questions.
-- Manual or lightweight operational support is acceptable if it helps validate
-  the idea faster.
+Suggested message:
 
-Not required for MVP:
+> Turn your notes, videos, and learning guides into content students can
+> discover and study.
 
-- Fully automated monetization.
-- Institution-level admin workflows.
-- Large recommendation model optimization.
-- Full creator business tooling.
+### 4. Personalize The Learning Feed
 
-## 5. Feedback Collection
+Buddy can present recommendations and trending items based on available content
+and learning signals.
 
-The MVP exists to learn from real users. Feedback should combine behavioral data
-and direct qualitative input.
+Marketable features:
 
-### Behavioral Signals
+- Personalized recommendation sections.
+- Trending content sections.
+- Interaction tracking for learning behavior.
+- Profile, course, popularity, and behavior signals behind discovery.
 
-- Search or browse path used before opening a resource.
-- Content detail views.
-- Tutorial or resource completion intent.
-- Saves, returns, or repeat visits.
-- AI question count and follow-up question count.
-- Creator publish completion rate.
+Suggested message:
 
-### Qualitative Questions
+> Buddy helps surface what to study next instead of leaving every learner to
+> start from a blank search box.
 
-- Which feature was most useful?
-- What made the learning flow confusing or slow?
-- What content was missing?
-- Would you use this again for a real course?
-- What should Buddy improve before adding more features?
+### 5. Support Creator Monetization
 
-## 6. Success Metrics
+The MVP already includes enough monetization surface to market Buddy as a
+creator-friendly learning marketplace.
 
-The MVP is successful if it proves that learners and creators value the core
-loop enough to justify more investment.
+Marketable features:
 
-### Learner Metrics
+- Wallet balance.
+- Wallet top-up.
+- Withdrawals.
+- Transaction history.
+- Payout account setup.
+- Subscription plans.
+- Purchase flow.
+- Creator sales count.
 
-- At least 60% of test learners find a relevant item in under 2 minutes.
-- At least 40% of test learners open a content detail page and take a next
-  action, such as asking AI, saving, or continuing to another item.
-- At least 30% of test learners return within 7 days.
+Suggested message:
 
-### Creator Metrics
+> Publish learning content, sell access, and manage creator earnings from the
+> same workspace.
 
-- At least 50% of invited creators publish one item.
-- At least 70% of published items include enough context for learners to decide
-  whether the material is useful.
+### 6. Build Trust Around Profiles And Preferences
 
-### Feedback Metrics
+Learners and creators need identity, profile context, and basic account control
+before the marketplace can feel credible.
 
-- At least 10 early users provide qualitative feedback.
-- The top 3 friction points are clear enough to rank the next iteration.
+Marketable features:
 
-## 7. Deferred Scope
+- Sign up, log in, OTP verification, and OAuth entry points.
+- Profile completion and profile editing.
+- Career, skill, major, course, and semester context.
+- Follow, rating, and creator profile signals.
+- Password settings.
+- Notification preferences.
 
-These features should not block the MVP release.
+Suggested message:
 
-- Advanced subscriptions, payouts, wallet flows, and creator monetization.
-- Institution dashboards, custom integrations, and enterprise reporting.
-- Complex gamification, badges, social feeds, and referral systems.
-- Large-scale recommendation training and personalization optimization.
-- Full notification automation.
-- Advanced analytics dashboards.
-- Multi-role administration beyond what is needed to keep the test safe.
+> Create a learning profile that helps Buddy understand your goals and connect
+> you with better content.
 
-## 8. Next Iteration Rules
+## Launch Page Messaging
 
-After the MVP release, new features should be prioritized only when they answer
-one of these questions:
+### Headline Options
 
-- Does this remove a validated learner friction point?
-- Does this increase creator publishing quality or completion?
-- Does this improve the core learning loop more than a simpler manual process?
-- Does this produce measurable learning, retention, or conversion signal?
+- Learn faster with trusted resources and grounded AI.
+- Find better study material. Ask smarter questions.
+- The learning marketplace for students and creators.
+- Study from real content, not random search results.
 
-If the answer is no, the feature should remain outside the MVP roadmap.
+### Subheadline Options
+
+- Buddy helps students discover resources, tutorials, and collections, then ask
+  AI-powered questions grounded in the material they are studying.
+- A workspace for learning content, creator publishing, recommendations, and
+  grounded AI support.
+- Explore curated study material, learn with an AI assistant, and support the
+  creators who make learning easier.
+
+### Primary CTA Options
+
+- Start Learning
+- Explore Resources
+- Get Started
+
+### Creator CTA Options
+
+- Publish Content
+- Start Creating
+- Share Your Knowledge
+
+## MVP Landing Page Sections
+
+Recommended marketing page structure:
+
+1. Hero: Buddy as the AI learning marketplace for students and creators.
+2. Problem: students waste time searching across scattered material and generic
+   AI answers.
+3. Solution: discover content, study it, and ask grounded questions in one
+   place.
+4. Feature pillars: discovery, grounded AI, creator publishing,
+   recommendations, monetization.
+5. Learner journey: explore, study, ask, continue.
+6. Creator journey: publish, attach material, reach learners, earn.
+7. Pricing/subscription preview.
+8. Trust and account control: profiles, ratings, follows, notifications, and
+   secure auth.
+9. CTA: start learning or publish content.
+
+## Proof Points To Use In Marketing
+
+Use these as product proof, not implementation detail:
+
+- Built-in resource, tutorial, and collection discovery.
+- AI assistant with source-backed answers.
+- Creator publishing and upload workflow.
+- Personalized and trending content surfaces.
+- Wallet, subscription, purchase, payout, and transaction features.
+- Profiles with skills, careers, follows, ratings, and creator stats.
+- Notification and security settings.
+
+## What Not To Market As The MVP
+
+Avoid leading with these until they are proven in live user usage:
+
+- Enterprise or institution administration.
+- Full analytics suite.
+- Full support/ticket operations.
+- Large social network or community feed.
+- Gamification.
+- Claims about guaranteed learning outcomes.
+- Claims that the AI is always correct or replaces instructors.
+
+## Success Signals For The Marketing MVP
+
+The launch should measure whether the positioning is working:
+
+- Learners sign up from the public site and reach Explore or Ask.
+- Learners open resources, tutorials, or collections after browsing.
+- Learners ask AI questions after opening study content.
+- Creators complete at least one publish/upload flow.
+- Users interact with recommendations or trending content.
+- Users engage with wallet, subscription, or purchase flows when paid content is
+  available.
+- Early users can explain Buddy in one sentence after trying it.
+
+## Short Product Description
+
+Buddy is an AI-powered learning marketplace for students and creators. Students
+can discover resources, tutorials, and curated collections, then ask grounded
+questions from the material they are studying. Creators can publish learning
+content, organize it into collections, and manage monetization through wallet,
+subscription, payout, and transaction flows.
+
+## Source Scope
+
+This marketing MVP is based on the current Buddy webapp and service surfaces,
+including public pages, auth, profile, content discovery, publishing, upload,
+RAG assistant, recommendations, billing, settings, notifications, dashboard,
+library, and interaction tracking.

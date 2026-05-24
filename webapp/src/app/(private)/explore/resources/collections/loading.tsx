@@ -34,7 +34,7 @@ export default function ResourceCollectionsLoading() {
           <div className="h-5 w-24 animate-pulse rounded bg-muted" />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <CollectionCard key={i} isLoading={true} />
           ))}

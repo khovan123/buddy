@@ -4,6 +4,7 @@ import { useState } from "react"
 
 import { Bell } from "lucide-react"
 
+import type { NavigationItem } from "@/components/atoms/nav-dropdown-item"
 import { CreateContentCTA } from "@/components/molecules/create-content-cta"
 import { Navigation } from "@/components/organisms/navigation"
 import { Button } from "@/components/ui/button"
@@ -16,9 +17,25 @@ import type { UserProfile } from "@/features/user/services/user-api"
 
 /* ── Navigation items (same as previously in the server layout) ── */
 
-const NAV_ITEMS = [
+const NAV_ITEMS: NavigationItem[] = [
   { href: "/home", label: "Home" },
-  { href: "/explore", label: "Explore" },
+  {
+    label: "Explore",
+    dropdown: [
+      {
+        href: "/explore/resources",
+        label: "Resource",
+        description: "Browse study materials, notes, and documents",
+        iconKey: "BookOpen",
+      },
+      {
+        href: "/explore/tutorials",
+        label: "Tutorial",
+        description: "Browse guided videos and learning sessions",
+        iconKey: "GraduationCap",
+      },
+    ],
+  },
   { href: "/library", label: "Library" },
   { href: "/profile", label: "Profile" },
   { href: "/dashboard", label: "Dashboard" },

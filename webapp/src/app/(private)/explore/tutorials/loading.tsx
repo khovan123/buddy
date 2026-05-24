@@ -30,7 +30,7 @@ export default function ExploreTutorialsLoading() {
           </div>
           <div className="h-4 w-24 animate-pulse rounded bg-muted" />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 19 }).map((_, i) => (
             <TutorialCard key={i} isLoading={true} />
           ))}

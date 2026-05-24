@@ -238,7 +238,7 @@ export function ExploreModeSwitcher({
           </div>
 
           <MotionStagger
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            className="grid auto-rows-fr items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3"
             staggerDelay={0.1}
           >
             {filteredCollections.map((collection) => (
@@ -299,7 +299,7 @@ export function ExploreModeSwitcher({
           </div>
 
           <MotionStagger
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            className="grid auto-rows-fr items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3"
             staggerDelay={0.08}
           >
             {mode === "resources"

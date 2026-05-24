@@ -67,7 +67,7 @@ export function LibraryAssetCard({ asset, onClick }: LibraryAssetCardProps) {
         </div>
 
         {/* Content Body */}
-        <div className="flex w-full flex-col gap-1 pt-2 pb-4">
+        <div className="flex w-full flex-1 flex-col gap-1 pt-2 pb-4">
           <h3 className="text-body line-clamp-2 leading-tight font-bold tracking-tight text-foreground">
             {asset.title}
           </h3>
@@ -104,7 +104,7 @@ export function LibraryAssetCard({ asset, onClick }: LibraryAssetCardProps) {
         </div>
 
         {/* Content Body */}
-        <div className="flex flex-col pt-2 pb-4 gap-1 w-full">
+        <div className="flex w-full flex-1 flex-col gap-1 pt-2 pb-4">
            <h3 className="line-clamp-2 text-body font-bold leading-tight tracking-tight text-foreground group-hover:text-primary transition-colors">
              {asset.title}
            </h3>
@@ -112,7 +112,7 @@ export function LibraryAssetCard({ asset, onClick }: LibraryAssetCardProps) {
              {asset.author}
            </p>
            {/* Progress Placeholder (Udemy style My Learning) */}
-           <div className="mt-2 text-xs font-semibold text-primary">
+           <div className="mt-auto pt-2 text-xs font-semibold text-primary">
               {asset.kind === LibraryAssetKind.Tutorial ? "START COURSE" : "OPEN RESOURCE"}
            </div>
         </div>

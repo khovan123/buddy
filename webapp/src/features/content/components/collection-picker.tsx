@@ -16,6 +16,9 @@ interface CollectionPickerProps {
   selectedId: string | undefined
   onSelect: (id: string) => void
   isLoading: boolean
+  helperText?: string
+  emptyTitle?: string
+  emptyDescription?: string
 }
 
 export function CollectionPicker({
@@ -23,6 +26,9 @@ export function CollectionPicker({
   selectedId,
   onSelect,
   isLoading,
+  helperText = "Select a Resource Collection to attach to this tutorial.",
+  emptyTitle = "No Resource Collections found",
+  emptyDescription = "Create a Resource Collection first, then come back here.",
 }: CollectionPickerProps) {
   if (isLoading) {
     return (
@@ -40,10 +46,10 @@ export function CollectionPicker({
       <div className="flex h-60 flex-col items-center justify-center rounded-xl border border-dashed border-border/60">
         <Package className="mb-3 size-8 text-muted-foreground/40" />
         <p className="text-sm font-medium text-muted-foreground">
-          No Resource Collections found
+          {emptyTitle}
         </p>
         <p className="mt-1 text-xs text-muted-foreground/70">
-          Create a Resource Collection first, then come back here.
+          {emptyDescription}
         </p>
       </div>
     )
@@ -51,9 +57,7 @@ export function CollectionPicker({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">
-        Select a Resource Collection to attach to this tutorial.
-      </p>
+      <p className="text-sm text-muted-foreground">{helperText}</p>
       <div className="max-h-100 space-y-2 overflow-y-auto">
         {collections.map((collection) => {
           const isSelected = selectedId === collection.id

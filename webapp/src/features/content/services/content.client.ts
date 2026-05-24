@@ -117,3 +117,45 @@ export const fetchResourceCollectionsByCourse = async (
     return []
   }
 }
+
+/**
+ * Fetch the current user's RESOURCE collections for a selected major/course.
+ * The account-scoped endpoint currently supports pagination/search only, so
+ * the form filters by taxonomy client-side after fetching the user's collections.
+ */
+export const fetchMyResourceCollectionsByTaxonomy = async (
+  majorId: string,
+  courseId: string
+): Promise<CollectionQueryItem[]> => {
+  if (!majorId || !courseId) {
+    return []
+  }
+
+  try {
+    const res = await fetchApi(
+      "GET",
+      "/collections/resources/me?limit=100",
+      undefined,
+      await getClientAuthHeaders(),
+      true,
+      { cache: "no-store" }
+    )
+
+    if (!res.ok) {
+      throw new Error(`Failed with status: ${res.status}`)
+    }
+
+    const json = await res.json()
+    const collections = (json.data?.data ?? []) as CollectionQueryItem[]
+    return collections.filter(
+      (collection) =>
+        collection.majorId === majorId && collection.courseId === courseId
+    )
+  } catch (error) {
+    console.error(
+      `Failed to fetch my resource collections for course ${courseId}:`,
+      error
+    )
+    return []
+  }
+}

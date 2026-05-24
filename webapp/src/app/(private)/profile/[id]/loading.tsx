@@ -40,7 +40,7 @@ export default function ProfileDetailLoading() {
           <div className="h-6 w-28 animate-pulse rounded bg-muted" />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid auto-rows-fr items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <ProfileCard key={i} isLoading={true} />
           ))}

@@ -63,7 +63,7 @@ function ResourceCardInner({
       </div>
 
       {/* Content Body */}
-      <div className="flex w-full flex-col gap-1 px-2 pt-3 pb-4">
+      <div className="flex w-full flex-1 flex-col gap-1 px-2 pt-3 pb-4">
         {/* Title */}
         <h3 className="text-body line-clamp-2 leading-tight font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
           {resource?.title || "Resource Title"}
@@ -104,7 +104,7 @@ function ResourceCardInner({
 
         {/* Pricing Row */}
         {!resource?.owned && (
-          <div className="mt-1 flex items-baseline gap-2">
+          <div className="mt-auto flex items-baseline gap-2 pt-2">
             <span className="text-base font-bold text-foreground">
               {resource?.price || "—"}
             </span>
@@ -113,7 +113,7 @@ function ResourceCardInner({
 
         {/* Bestseller Badge */}
         {resource?.bestseller && (
-          <div className="mt-1">
+          <div className={resource?.owned ? "mt-auto pt-2" : "mt-1"}>
             <Badge className="w-fit rounded-full border border-accent/30 bg-accent/30 px-2.5 py-0.5 font-sans text-xs font-bold text-accent-foreground shadow-none hover:bg-accent/40">
               Bestseller
             </Badge>

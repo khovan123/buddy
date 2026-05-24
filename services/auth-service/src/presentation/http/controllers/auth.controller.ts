@@ -6,6 +6,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Patch,
   Post,
   Req,
@@ -25,6 +26,7 @@ import { RegisterUserCommand } from '../../../application/commands/register-user
 import { ResendOtpCommand } from '../../../application/commands/resend-otp.command';
 import { VerifyOtpCommand } from '../../../application/commands/verify-otp.command';
 import { GetMeQuery } from '../../../application/queries/get-me.query';
+import { GetUserVerificationQuery } from '../../../application/queries/get-user-verification.query';
 import { ChangePasswordDto } from '../dtos/change-password.dto';
 import { LoginDto } from '../dtos/login.dto';
 import { OAuthLoginDto } from '../dtos/oauth-login.dto';
@@ -243,6 +245,18 @@ export class AuthController {
   @Version('1')
   async getMe(@Req() req: FastifyRequest & { user: { sub: string } }) {
     const result = await this.queryBus.execute(new GetMeQuery(req.user.sub));
+    return successResponse(result, undefined, getCorrelationId());
+  }
+
+  /**
+   * Executes the get user verification operation.
+   *
+   * @param id - The user id parameter
+   */
+  @Get('users/:id/verification')
+  @Version('1')
+  async getUserVerification(@Param('id') id: string) {
+    const result = await this.queryBus.execute(new GetUserVerificationQuery(id));
     return successResponse(result, undefined, getCorrelationId());
   }
 

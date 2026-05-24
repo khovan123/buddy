@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Patch,
   Post,
   Req,
@@ -233,6 +234,21 @@ export class AuthProxyController {
     return this.proxy.forward(req, {
       service: 'auth',
       path: '/v1/auth/me',
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Executes the get user verification operation.
+   *
+   * @param id - The user id parameter
+   * @param req - The req parameter
+   */
+  @Get('users/:id/verification')
+  getUserVerification(@Param('id') id: string, @Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'auth',
+      path: `/v1/auth/users/${id}/verification`,
       method: 'GET',
     });
   }
