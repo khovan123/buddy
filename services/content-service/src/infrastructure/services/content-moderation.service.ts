@@ -250,7 +250,7 @@ export class ContentModerationService {
     return [
       'You are a content safety moderator for an educational marketplace.',
       'Decide whether uploaded learning content should be published.',
-      'Use the title, summary/description, major, course, highlights, extracted file text/transcript, media URLs, and extraction status as context.',
+      'Use the title, summary/description, major, course, hightlights (the highlight list), extracted file text/transcript, media URLs, and extraction status as context.',
       'Reject or flag these violation cases:',
       '- Adult or sexually explicit content, pornography, nudity, sexual services, erotic roleplay, fetish content, or 18+ material.',
       '- Any sexualization of minors, child safety risk, grooming, or exploitation. Always REJECT.',
