@@ -30,7 +30,7 @@ export function LoadMoreGrid<T>({
   fetchMore,
   renderItem,
   getKey,
-  gridClassName = "grid gap-4 sm:grid-cols-2 xl:grid-cols-3",
+  gridClassName = "grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3",
 }: LoadMoreGridProps<T>) {
   const [items, setItems] = useState<T[]>(initialItems)
   const [meta, setMeta] = useState<PaginationMeta>(initialMeta)
@@ -56,7 +56,9 @@ export function LoadMoreGrid<T>({
     <>
       <div className={gridClassName}>
         {items.map((item, index) => (
-          <div key={getKey(item)}>{renderItem(item, index)}</div>
+          <div key={getKey(item)} className="h-full">
+            {renderItem(item, index)}
+          </div>
         ))}
       </div>
 

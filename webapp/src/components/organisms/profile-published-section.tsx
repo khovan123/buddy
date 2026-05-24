@@ -93,7 +93,7 @@ export function ProfilePublishedSection({
 
       <div
         className={cn(
-          "grid items-stretch gap-6 transition-opacity md:grid-cols-2 xl:grid-cols-3",
+          "grid auto-rows-fr items-stretch gap-6 transition-opacity md:grid-cols-2 xl:grid-cols-3",
           isPending && "pointer-events-none opacity-50"
         )}
       >

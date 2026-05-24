@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 import { Bell } from "lucide-react"
 
+import type { NavigationItem } from "@/components/atoms/nav-dropdown-item"
 import { CreateContentCTA } from "@/components/molecules/create-content-cta"
 import { Navigation } from "@/components/organisms/navigation"
 import { Button } from "@/components/ui/button"
@@ -16,9 +17,25 @@ import type { UserProfile } from "@/features/user/services/user-api"
 
 /* ── Navigation items (same as previously in the server layout) ── */
 
-const NAV_ITEMS = [
+const NAV_ITEMS: NavigationItem[] = [
   { href: "/home", label: "Home" },
-  { href: "/explore", label: "Explore" },
+  {
+    label: "Explore",
+    dropdown: [
+      {
+        href: "/explore/resources",
+        label: "Resource",
+        description: "Browse study materials, notes, and documents",
+        iconKey: "BookOpen",
+      },
+      {
+        href: "/explore/tutorials",
+        label: "Tutorial",
+        description: "Browse guided videos and learning sessions",
+        iconKey: "GraduationCap",
+      },
+    ],
+  },
   { href: "/library", label: "Library" },
   { href: "/profile", label: "Profile" },
   { href: "/dashboard", label: "Dashboard" },
@@ -26,6 +43,11 @@ const NAV_ITEMS = [
 
 interface PrivateHeaderProps {
   user: UserProfile | null
+  accountFallback?: {
+    id?: string
+    email?: string
+    nickname?: string
+  } | null
 }
 
 /**
@@ -35,10 +57,40 @@ interface PrivateHeaderProps {
  * Manages the shared `ProfileUpdateDialog` state so both
  * `ProfileCompleteBanner` and `UserMenuPopover` can trigger it.
  */
-export function PrivateHeader({ user }: PrivateHeaderProps) {
+export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
 
   const openProfileDialog = () => setProfileDialogOpen(true)
+  const menuUser = useMemo<UserProfile | null>(() => {
+    if (user?.email && (user.profile?.nickname || user.nickname)) {
+      return user
+    }
+
+    if (!accountFallback?.id && !accountFallback?.email) {
+      return user
+    }
+
+    const nickname =
+      user?.profile?.nickname ||
+      user?.nickname ||
+      accountFallback.nickname ||
+      accountFallback.email?.split("@")[0] ||
+      "Buddy"
+
+    return {
+      id: user?.id ?? accountFallback.id ?? "",
+      userId: user?.userId ?? accountFallback.id,
+      email: user?.email ?? accountFallback.email ?? "",
+      nickname,
+      profile: {
+        ...(user?.profile ?? { nickname }),
+        nickname,
+      },
+      isActive: user?.isActive ?? true,
+      createdAt: user?.createdAt ?? "",
+      updatedAt: user?.updatedAt ?? "",
+    }
+  }, [accountFallback, user])
 
   return (
     <>
@@ -62,7 +114,10 @@ export function PrivateHeader({ user }: PrivateHeaderProps) {
               <Bell className="size-4" />
               <span className="absolute top-2 right-2 size-2 rounded-full bg-primary" />
             </Button>
-            <UserMenuPopover user={user} onEditProfile={openProfileDialog} />
+            <UserMenuPopover
+              user={menuUser}
+              onEditProfile={openProfileDialog}
+            />
           </>
         }
       />

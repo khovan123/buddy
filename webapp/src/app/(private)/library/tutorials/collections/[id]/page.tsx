@@ -123,9 +123,12 @@ export default async function LibraryTutorialCollectionDetailPage({
           Tutorials in this collection
         </p>
         {resourceCount > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid auto-rows-fr items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
             {collection.resourceIds.map((tutorialId) => (
-              <Card key={tutorialId} className="transition-all hover:shadow-md">
+              <Card
+                key={tutorialId}
+                className="flex h-full flex-col transition-all hover:shadow-md"
+              >
                 <CardContent className="flex items-center gap-3 p-4">
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                     <Video className="size-5 text-primary" />
@@ -139,7 +142,7 @@ export default async function LibraryTutorialCollectionDetailPage({
                     </p>
                   </div>
                 </CardContent>
-                <CardFooter className="border-t p-3">
+                <CardFooter className="mt-auto border-t p-3">
                   <Link
                     href={`/library/tutorials/${tutorialId}`}
                     className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"

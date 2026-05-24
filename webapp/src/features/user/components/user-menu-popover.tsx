@@ -79,7 +79,11 @@ export function UserMenuPopover({ user, onEditProfile }: UserMenuPopoverProps) {
           aria-label="User menu"
           id="user-menu-trigger"
         >
-          <UserAvatar className="size-8 border border-border" name={nickname} />
+          <UserAvatar
+            className="size-8 border border-border"
+            name={nickname}
+            src={user?.profile?.avatarUrl}
+          />
         </button>
       </PopoverTrigger>
 

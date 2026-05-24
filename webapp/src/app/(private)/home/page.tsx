@@ -103,7 +103,7 @@ export default async function HomePage() {
           title="Today's Highlights"
           description="Quickly access content streams with the highest engagement."
         />
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid auto-rows-fr items-stretch gap-4 md:grid-cols-3">
           <FeatureCard
             chip="Resource"
             title="Featured resources"

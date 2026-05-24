@@ -33,7 +33,11 @@ export function WithSkeletonLink<P extends object>(
     )
 
     return (
-      <Skeleton name={skeletonName} loading={isLoading} className="rounded-xl">
+      <Skeleton
+        name={skeletonName}
+        loading={isLoading}
+        className="h-full rounded-xl"
+      >
         {isLoading || !href ? (
           <div className={wrapperClass}>
             <WrappedComponent {...(rest as P)} />

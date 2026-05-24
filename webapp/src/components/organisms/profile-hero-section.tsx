@@ -5,6 +5,8 @@ import { Bell, Mail, Wallet } from "lucide-react"
 import { UserAvatar } from "@/components/atoms/user-avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import type { AuthVerification } from "@/features/auth/services/auth.service"
+import { isAuthVerified } from "@/features/auth/services/auth.service"
 import type { UserProfile } from "@/features/user/services/user-api"
 import type { CreatorStats } from "@/features/user/services/user.service"
 
@@ -12,6 +14,7 @@ type ProfileHeroSectionProps = {
   seoBadge: string
   me?: UserProfile | null
   stats?: CreatorStats | null
+  authVerification?: AuthVerification | null
 }
 
 function formatCompact(n: number): string {
@@ -28,6 +31,7 @@ export function ProfileHeroSection({
   seoBadge,
   me,
   stats,
+  authVerification,
 }: ProfileHeroSectionProps) {
   const profileName = me?.profile?.nickname || me?.nickname || "Elena Rodriguez"
   const bio =
@@ -65,9 +69,11 @@ export function ProfileHeroSection({
                   name={profileName}
                 />
               </div>
-              <span className="text-2xs absolute right-2 bottom-2 rounded-full bg-primary px-2 py-1 font-bold text-primary-foreground">
-                Verified
-              </span>
+              {isAuthVerified(authVerification) ? (
+                <span className="text-2xs absolute right-2 bottom-2 rounded-full bg-primary px-2 py-1 font-bold text-primary-foreground">
+                  Verified
+                </span>
+              ) : null}
             </div>
 
             <div className="space-y-1 pb-2">
@@ -171,4 +177,3 @@ export function ProfileHeroSection({
     </section>
   )
 }
-

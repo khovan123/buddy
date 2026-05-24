@@ -4,6 +4,10 @@ import { MetaChip } from "@/components/atoms/meta-chip"
 import { SectionHeading } from "@/components/atoms/section-heading"
 import { SeoHero } from "@/components/molecules/seo-hero"
 import { ProfilePublishedSection } from "@/components/organisms/profile-published-section"
+import {
+  getAuthVerification,
+  isAuthVerified,
+} from "@/features/auth/services/auth.service"
 import { fetchUserProfileTab } from "@/features/content"
 import { mapTutorialToProfileItem } from "@/features/content"
 import { getTutorials } from "@/features/content"
@@ -60,8 +64,12 @@ export default async function ProfileDetailPage({
   }
 
   // Only fetch tutorials (default tab) server-side
-  const tuts = await getTutorials({ userId: id }).catch(() => emptyTutorials)
+  const [tuts, authVerification] = await Promise.all([
+    getTutorials({ userId: id }).catch(() => emptyTutorials),
+    getAuthVerification(id).catch(() => null),
+  ])
   const initialItems = (tuts.data || []).map(mapTutorialToProfileItem)
+  const verified = isAuthVerified(authVerification)
 
   // Bind userId to the server action for lazy tab loading
   const fetchTab = fetchUserProfileTab.bind(null, id)
@@ -100,6 +108,7 @@ export default async function ProfileDetailPage({
         />
         <div className="flex flex-wrap gap-2">
           <MetaChip>id: {id}</MetaChip>
+          {verified ? <MetaChip>Verified</MetaChip> : null}
           <MetaChip>12 courses</MetaChip>
           <MetaChip>4.9 rating</MetaChip>
         </div>

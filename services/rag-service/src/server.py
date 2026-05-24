@@ -86,6 +86,18 @@ class RAGResponse(BaseModel):
     generationTimeMs: float
 
 
+class RAGHistoryTurn(BaseModel):
+    query: str
+    answer: str
+    sources: list[RAGSource] = Field(default_factory=list)
+    retrievalTimeMs: float | None = None
+    generationTimeMs: float | None = None
+
+
+class RAGHistoryResponse(BaseModel):
+    history: list[RAGHistoryTurn]
+
+
 def _rag_module_ready() -> bool:
     return bool(rag_pipeline and rag_indexer and rag_vector_store)
 
@@ -383,6 +395,50 @@ async def rag_retrieve(body: RAGRequest):
         timeout=RAG_ASK_TIMEOUT_SECONDS,
     )
     return result
+
+
+@rag_router.get("/history", response_model=RAGHistoryResponse)
+async def rag_history(userId: str):
+    module = await _run_blocking_with_timeout(
+        "RAG module init",
+        get_rag_module,
+        timeout=RAG_STATS_TIMEOUT_SECONDS,
+    )
+    if isinstance(module, JSONResponse):
+        return module
+    pipeline, _, _ = module
+
+    history = await _run_blocking_with_timeout(
+        "RAG history",
+        pipeline.get_chat_history,
+        user_id=userId,
+        timeout=RAG_STATS_TIMEOUT_SECONDS,
+    )
+    if isinstance(history, JSONResponse):
+        return history
+    return {"history": history}
+
+
+@rag_router.delete("/history")
+async def rag_clear_history(userId: str):
+    module = await _run_blocking_with_timeout(
+        "RAG module init",
+        get_rag_module,
+        timeout=RAG_STATS_TIMEOUT_SECONDS,
+    )
+    if isinstance(module, JSONResponse):
+        return module
+    pipeline, _, _ = module
+
+    result = await _run_blocking_with_timeout(
+        "RAG clear history",
+        pipeline.clear_chat_history,
+        user_id=userId,
+        timeout=RAG_STATS_TIMEOUT_SECONDS,
+    )
+    if isinstance(result, JSONResponse):
+        return result
+    return {"ok": True}
 
 
 @rag_router.post("/index")

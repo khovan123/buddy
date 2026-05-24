@@ -123,9 +123,12 @@ export default async function LibraryResourceCollectionDetailPage({
           Resources in this collection
         </p>
         {resourceCount > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid auto-rows-fr items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
             {collection.resourceIds.map((resourceId) => (
-              <Card key={resourceId} className="transition-all hover:shadow-md">
+              <Card
+                key={resourceId}
+                className="flex h-full flex-col transition-all hover:shadow-md"
+              >
                 <CardContent className="flex items-center gap-3 p-4">
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
                     <FileText className="size-5 text-primary" />
@@ -139,7 +142,7 @@ export default async function LibraryResourceCollectionDetailPage({
                     </p>
                   </div>
                 </CardContent>
-                <CardFooter className="border-t p-3">
+                <CardFooter className="mt-auto border-t p-3">
                   <Link
                     href={`/library/resources/${resourceId}`}
                     className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"

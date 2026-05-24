@@ -47,7 +47,7 @@ async function TrendingList({ majorId, days, limit = 6 }: Props) {
         title="Top Trending"
         description="Most interacted and highly rated content this week."
       />
-      <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid auto-rows-fr items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {validItems.map((rec) => {
           const itemType = rec.itemType
           const content = rec.content

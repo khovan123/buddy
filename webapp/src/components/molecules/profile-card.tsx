@@ -54,7 +54,7 @@ export function ProfileCard({
           ) : null}
         </div>
 
-        <CardContent className="space-y-4 p-6">
+        <CardContent className="flex flex-1 flex-col space-y-4 p-6">
           <div className="flex items-start justify-between gap-3">
             <h4 className="text-lg leading-tight font-bold text-foreground transition group-hover:text-primary">
               {item?.title || "Item Title"}
@@ -67,7 +67,7 @@ export function ProfileCard({
             {item?.description || "Description placeholder"}
           </p>
         </CardContent>
-        <CardFooter className="flex-1 items-end pb-6">
+        <CardFooter className="mt-auto items-end pb-6">
           <div className="flex w-full items-center justify-between border-t border-border pt-4">
             <Item variant="default" size="xs" className="w-auto border-0 p-0">
               <ItemMedia variant="icon">

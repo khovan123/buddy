@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
@@ -46,13 +46,19 @@ import {
 import { extractApiError } from "@/types/api"
 
 import { ResourceFormValues, resourceSchema } from "../schema"
+import { fetchMyResourceCollectionsByTaxonomy } from "../services/content.client"
 import {
   startBatchUpload,
   type UploadBatch,
   useUploadStore,
 } from "../store/upload-store"
-import type { CreateResourceResponse, PresignedUrlItem } from "../types"
+import type {
+  CollectionQueryItem,
+  CreateResourceResponse,
+  PresignedUrlItem,
+} from "../types"
 
+import { CollectionPicker } from "./collection-picker"
 import { ThumbnailPicker } from "./thumbnail-picker"
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -92,6 +98,10 @@ export function CreateResourceForm() {
   // Track upload result to display presigned URLs after successful creation
   const [uploadResult, setUploadResult] =
     useState<CreateResourceResponse | null>(null)
+  const [resourceCollections, setResourceCollections] = useState<
+    CollectionQueryItem[]
+  >([])
+  const [isLoadingCollections, setIsLoadingCollections] = useState(false)
 
   // Hidden file input refs – one per file row
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([])
@@ -151,6 +161,7 @@ export function CreateResourceForm() {
   // Watch for Cascading Dropdowns
   const selectedMajorId = useWatch({ name: "majorId", control })
   const selectedCourseId = useWatch({ name: "courseId", control })
+  const selectedCollectionId = useWatch({ name: "collectionId", control })
   const thumbnailBase64 = useWatch({ name: "thumbnailBase64", control })
   const watchedFiles = useWatch({ name: "files", control }) || []
 
@@ -165,6 +176,34 @@ export function CreateResourceForm() {
       skip: !selectedMajorId,
     })
   const courses = coursesData?.data ?? []
+
+  useEffect(() => {
+    setValue("collectionId", "", { shouldValidate: true })
+
+    if (!selectedMajorId || !selectedCourseId) {
+      queueMicrotask(() => setResourceCollections([]))
+      return
+    }
+
+    let ignore = false
+    queueMicrotask(() => setIsLoadingCollections(true))
+    fetchMyResourceCollectionsByTaxonomy(selectedMajorId, selectedCourseId)
+      .then((collections) => {
+        if (!ignore) {
+          queueMicrotask(() => setResourceCollections(collections))
+        }
+      })
+      .catch(() => toast.error("Failed to fetch your resource collections."))
+      .finally(() => {
+        if (!ignore) {
+          queueMicrotask(() => setIsLoadingCollections(false))
+        }
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [selectedCourseId, selectedMajorId, setValue])
 
   // ── Error-to-tab auto-navigation (called on validation failure) ──
   const onInvalid = useCallback(
@@ -663,6 +702,7 @@ export function CreateResourceForm() {
             onValueChange={(val) => {
               setValue("majorId", val, { shouldValidate: true })
               setValue("courseId", "")
+              setValue("collectionId", "")
             }}
           >
             <SelectTrigger className="w-full justify-between rounded-xl">
@@ -691,6 +731,7 @@ export function CreateResourceForm() {
             value={selectedCourseId}
             onValueChange={(val) => {
               setValue("courseId", val, { shouldValidate: true })
+              setValue("collectionId", "")
             }}
             disabled={!selectedMajorId}
           >
@@ -716,13 +757,30 @@ export function CreateResourceForm() {
           )}
         </Field>
       </div>
-      <div className="grid grid-cols-2 gap-4 border-t border-border/50 pt-4">
+      <div className="border-t border-border/50 pt-4">
         <Field>
-          <Label htmlFor="resource-collection">Collection ID (optional)</Label>
-          <Input
-            id="resource-collection"
+          <Label>Collection (optional)</Label>
+          {!selectedMajorId || !selectedCourseId ? (
+            <div className="rounded-xl border border-dashed border-border/60 p-6 text-sm text-muted-foreground">
+              Select a major and course to load your matching resource
+              collections.
+            </div>
+          ) : (
+            <CollectionPicker
+              collections={resourceCollections}
+              selectedId={selectedCollectionId || undefined}
+              onSelect={(id) =>
+                setValue("collectionId", id, { shouldValidate: true })
+              }
+              isLoading={isLoadingCollections}
+              helperText="Select one of your matching Resource Collections for this resource."
+              emptyTitle="No matching Resource Collections found"
+              emptyDescription="Create a Resource Collection for this major and course, then come back here."
+            />
+          )}
+          <input
+            type="hidden"
             {...form.register("collectionId")}
-            placeholder="Leave empty if not part of a collection"
           />
         </Field>
       </div>

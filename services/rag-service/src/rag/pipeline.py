@@ -159,7 +159,7 @@ class RAGPipeline:
 
         # ── Cache & History ──────────────────────────────────────────────
         if user_id and generation_succeeded:
-            self._save_chat_history(user_id, query, answer)
+            self._save_chat_history(user_id, query, answer, sources, retrieval_ms, generation_ms)
         elif user_id:
             logger.info("Skipping RAG chat history save for degraded generation response")
         elif generation_succeeded:
@@ -269,14 +269,44 @@ class RAGPipeline:
             logger.warning(f"Failed to get chat history: {e}")
             return None
 
-    def _save_chat_history(self, user_id: str, query: str, answer: str) -> None:
+    def get_chat_history(self, user_id: str) -> list[dict]:
+        """Return recent chat history for display in clients."""
+        return self._get_chat_history(user_id) or []
+
+    def clear_chat_history(self, user_id: str) -> None:
+        """Delete recent chat history for a user."""
+        if not self._redis or not user_id:
+            return
+        key = f"rag:history:{user_id}"
+        try:
+            self._redis.delete(key)
+        except Exception as e:
+            logger.warning(f"Failed to clear chat history: {e}")
+
+    def _save_chat_history(
+        self,
+        user_id: str,
+        query: str,
+        answer: str,
+        sources: list[dict] | None = None,
+        retrieval_ms: float | None = None,
+        generation_ms: float | None = None,
+    ) -> None:
         """Save a new chat turn to Redis and trim to the last 5 turns."""
         if not self._redis or not user_id:
             return
         key = f"rag:history:{user_id}"
         try:
             history = self._get_chat_history(user_id) or []
-            history.append({"query": query, "answer": answer})
+            history.append(
+                {
+                    "query": query,
+                    "answer": answer,
+                    "sources": sources or [],
+                    "retrievalTimeMs": round(retrieval_ms, 2) if retrieval_ms is not None else None,
+                    "generationTimeMs": round(generation_ms, 2) if generation_ms is not None else None,
+                }
+            )
             # Keep only the last 5 turns to limit context window and prevent drift
             history = history[-5:]
             # Set TTL to 1 hour (3600 seconds)

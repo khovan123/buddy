@@ -75,14 +75,14 @@ export function CreateContentModal({
           </DialogHeader>
 
           {/* Option Cards */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid auto-rows-fr items-stretch grid-cols-1 gap-4 md:grid-cols-3">
             {contentOptions.map((option) => (
               <button
                 key={option.type}
                 type="button"
                 onClick={() => handleSelect(option.href)}
                 className={cn(
-                  "group relative flex flex-col items-start rounded-xl p-5 text-left transition-all duration-300",
+                  "group relative flex h-full flex-col items-start rounded-xl p-5 text-left transition-all duration-300",
                   option.featured
                     ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 md:-translate-y-1"
                     : "bg-muted/50 hover:bg-muted hover:shadow-md"

@@ -10,7 +10,7 @@ export const getMe = async (): Promise<UserProfile | null> => {
   try {
     const headers = await getAuthHeaders()
     const res = await fetchApi("GET", `/users/me`, undefined, headers, false, {
-      next: { revalidate: 60, tags: ["profile-me"] },
+      cache: "no-store",
     })
 
     if (!res.ok) {
@@ -57,7 +57,7 @@ export const getCreatorStats = async (
       undefined,
       headers,
       false,
-      { next: { revalidate: 60, tags: ["creator-stats"] } }
+      { cache: "no-store" }
     )
 
     if (!res.ok) {
@@ -74,4 +74,3 @@ export const getCreatorStats = async (
     return defaultStats
   }
 }
-
