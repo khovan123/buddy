@@ -297,7 +297,7 @@ export class VideoProcessorWorker extends WorkerHost {
     } catch (error) {
       this.logger.error(
         `Failed to enqueue tutorial content extraction for ${data.contentId}`,
-        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? (error.stack ?? error.message) : String(error),
       );
       throw error;
     }
