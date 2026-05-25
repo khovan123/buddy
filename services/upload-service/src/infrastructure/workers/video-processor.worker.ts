@@ -283,22 +283,23 @@ export class VideoProcessorWorker extends WorkerHost {
     });
   }
 
-  private enqueueTutorialExtraction(data: {
+  private async enqueueTutorialExtraction(data: {
     contentId: string;
     fileIds: string[];
     uploadedBy: string;
     correlationId: string;
-  }): void {
-    void this.extractionQueue
-      .add('extract-tutorial-content', {
+  }): Promise<void> {
+    try {
+      await this.extractionQueue.add('extract-tutorial-content', {
         ...data,
         contentType: 'TUTORIAL',
-      })
-      .catch((error) => {
-        this.logger.error(
-          `Failed to enqueue tutorial content extraction for ${data.contentId}`,
-          error instanceof Error ? error.message : String(error),
-        );
       });
+    } catch (error) {
+      this.logger.error(
+        `Failed to enqueue tutorial content extraction for ${data.contentId}`,
+        error instanceof Error ? error.message : String(error),
+      );
+      throw error;
+    }
   }
 }
