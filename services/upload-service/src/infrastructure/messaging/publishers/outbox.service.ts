@@ -3,12 +3,15 @@ import { BaseEvent } from '@libs/contracts';
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '../../persistence/prisma/generated/client';
-import { TransactionClient } from '../../persistence/prisma/prisma.service';
+import { PrismaService, TransactionClient } from '../../persistence/prisma/prisma.service';
 
 /** Service handling business logic for  outbox. */
 @Injectable()
 export class OutboxService {
-  constructor(private readonly eventEmitter: EventEmitter2) {}
+  constructor(
+    private readonly eventEmitter: EventEmitter2,
+    private readonly prisma: PrismaService,
+  ) {}
 
   /**
    * Executes the put operation.
@@ -36,6 +39,25 @@ export class OutboxService {
    */
   notifyFlush(): void {
     this.eventEmitter.emit(OUTBOX_EVENTS.FLUSHED);
+  }
+
+  /**
+   * Compensate outbox rows when a post-commit operation fails.
+   *
+   * Marks all PENDING rows matching the given correlationId + routingKey
+   * as FAILED so the relay does not publish events whose downstream
+   * scheduling (e.g. extraction queue) never completed.
+   */
+  async compensate(correlationId: string, routingKey: string): Promise<number> {
+    const result = await this.prisma.client.outbox.updateMany({
+      where: {
+        correlationId,
+        routingKey,
+        status: 'PENDING',
+      },
+      data: { status: 'FAILED' },
+    });
+    return result.count;
   }
 
   /**
