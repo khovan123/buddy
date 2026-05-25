@@ -1,4 +1,4 @@
-import { AppLogger } from '@libs/common';
+import { AppLogger, QUEUES } from '@libs/common';
 import { ContentExtractedEvent } from '@libs/contracts';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
@@ -17,9 +17,10 @@ export interface ContentExtractionJobData {
   correlationId?: string;
 }
 
-export const CONTENT_EXTRACTION_QUEUE = 'upload.content.extraction';
+/** @deprecated Import QUEUES.CONTENT_EXTRACTION_QUEUE from @libs/common instead. */
+export const CONTENT_EXTRACTION_QUEUE = QUEUES.CONTENT_EXTRACTION_QUEUE;
 
-@Processor(CONTENT_EXTRACTION_QUEUE)
+@Processor(QUEUES.CONTENT_EXTRACTION_QUEUE)
 export class ContentExtractionWorker extends WorkerHost {
   private readonly logger = new AppLogger(ContentExtractionWorker.name);
 
@@ -48,31 +49,51 @@ export class ContentExtractionWorker extends WorkerHost {
 
     const extractedFiles = await Promise.all(
       files.map(async (file) => {
-        const extraction = file.mimeType.startsWith('video/')
-          ? await this.videoTranscript.transcribe({
-              fileId: file.id,
-              s3Key: file.s3Key,
-              signedUrl: await this.s3Service.generatePresignedDownloadUrl(file.s3Key),
-              originalFilename: file.originalFilename,
-              mimeType: file.mimeType,
-              uploadedBy,
-            })
-          : await this.contentExtraction.extract(
-              await this.s3Service.getObjectBuffer(file.s3Key),
-              file.mimeType,
-              file.originalFilename,
-            );
+        try {
+          const extraction = file.mimeType.startsWith('video/')
+            ? await this.videoTranscript.transcribe({
+                fileId: file.id,
+                s3Key: file.s3Key,
+                signedUrl: await this.s3Service.generatePresignedDownloadUrl(file.s3Key),
+                originalFilename: file.originalFilename,
+                mimeType: file.mimeType,
+                uploadedBy,
+              })
+            : await this.contentExtraction.extract(
+                await this.s3Service.getObjectBuffer(file.s3Key),
+                file.mimeType,
+                file.originalFilename,
+              );
 
-        return {
-          fileId: file.id,
-          s3Key: file.s3Key,
-          downloadUrl: file.downloadUrl,
-          mimeType: file.mimeType,
-          originalFilename: file.originalFilename,
-          extractedText: extraction.text,
-          extractionStatus: extraction.status,
-          extractionError: extraction.error ?? null,
-        };
+          return {
+            fileId: file.id,
+            s3Key: file.s3Key,
+            downloadUrl: file.downloadUrl,
+            mimeType: file.mimeType,
+            originalFilename: file.originalFilename,
+            extractedText: extraction.text,
+            extractionStatus: extraction.status,
+            extractionError: extraction.error ?? null,
+          };
+        } catch (error) {
+          // Capture per-file failures so the event is still published
+          // with partial results.  The downstream moderation consumer
+          // already handles PARTIAL status and aggregated errors.
+          const reason = error instanceof Error ? error.message : String(error);
+          this.logger.warn(
+            `Extraction failed for file ${file.id} (${file.originalFilename}): ${reason}`,
+          );
+          return {
+            fileId: file.id,
+            s3Key: file.s3Key,
+            downloadUrl: file.downloadUrl,
+            mimeType: file.mimeType,
+            originalFilename: file.originalFilename,
+            extractedText: null,
+            extractionStatus: 'FAILED' as const,
+            extractionError: reason,
+          };
+        }
       }),
     );
 

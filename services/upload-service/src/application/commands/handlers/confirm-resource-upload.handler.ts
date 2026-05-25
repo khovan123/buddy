@@ -13,10 +13,7 @@ import { resolveExtension } from '../../../domain/services/resolver';
 import { OutboxService } from '../../../infrastructure/messaging/publishers/outbox.service';
 import { S3Service } from '../../../infrastructure/persistence/aws/s3.service';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
-import {
-  CONTENT_EXTRACTION_QUEUE,
-  type ContentExtractionJobData,
-} from '../../../infrastructure/workers/content-extraction.worker';
+import { type ContentExtractionJobData } from '../../../infrastructure/workers/content-extraction.worker';
 import type { DocumentPreviewJobData } from '../../../infrastructure/workers/document-preview.worker';
 import { ConfirmResourceUploadCommand } from '../confirm-resource-upload.command';
 
@@ -34,7 +31,7 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
     private readonly previewProcessor: PreviewProcessorContext,
     @InjectQueue(QUEUES.DOCUMENT_PREVIEW_QUEUE)
     private readonly previewQueue: Queue<DocumentPreviewJobData>,
-    @InjectQueue(CONTENT_EXTRACTION_QUEUE)
+    @InjectQueue(QUEUES.CONTENT_EXTRACTION_QUEUE)
     private readonly extractionQueue: Queue<ContentExtractionJobData>,
   ) {}
 
@@ -99,23 +96,17 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
           {
             resourceId: command.resourceId,
             uploadedBy: command.userId,
-            meta: metaPayload.map(({
-              fileId,
-              s3Key,
-              downloadUrl,
-              size,
-              extension,
-              mimeType,
-              originalFilename,
-            }) => ({
-              fileId,
-              s3Key,
-              downloadUrl,
-              size,
-              extension,
-              mimeType,
-              originalFilename,
-            })),
+            meta: metaPayload.map(
+              ({ fileId, s3Key, downloadUrl, size, extension, mimeType, originalFilename }) => ({
+                fileId,
+                s3Key,
+                downloadUrl,
+                size,
+                extension,
+                mimeType,
+                originalFilename,
+              }),
+            ),
             completedAt: new Date().toISOString(),
           },
           correlationId,

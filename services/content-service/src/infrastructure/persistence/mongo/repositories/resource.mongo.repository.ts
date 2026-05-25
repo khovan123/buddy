@@ -697,7 +697,17 @@ export class ResourceMongoRepository implements IResourceRepository {
       courseId: row.courseId?.toString() ?? '',
       price: row.price,
       status: row.status,
-      moderationStatus: row.moderationStatus ?? ContentModerationStatus.PENDING,
+      // Legacy documents predating the moderation system have no
+      // moderationStatus field.  Defaulting blindly to PENDING would
+      // make every published resource appear as "awaiting moderation"
+      // in the UI.  Instead, infer APPROVED for resources already in
+      // AVAILABLE status — they were implicitly approved before
+      // moderation was introduced.
+      moderationStatus:
+        row.moderationStatus ??
+        (row.status === 'AVAILABLE'
+          ? ContentModerationStatus.APPROVED
+          : ContentModerationStatus.PENDING),
       moderationScore: row.moderationScore ?? null,
       moderationReasons: row.moderationReasons ?? [],
       moderationRuleVersion: row.moderationRuleVersion ?? null,

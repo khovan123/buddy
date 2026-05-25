@@ -34,10 +34,7 @@ import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module'
 import { PrismaService } from './infrastructure/persistence/prisma/prisma.service';
 import { FileMetadataPrismaRepository } from './infrastructure/persistence/prisma/repositories/file-metadata.prisma-repository';
 import { DocumentPreviewWorker } from './infrastructure/workers/document-preview.worker';
-import {
-  CONTENT_EXTRACTION_QUEUE,
-  ContentExtractionWorker,
-} from './infrastructure/workers/content-extraction.worker';
+import { ContentExtractionWorker } from './infrastructure/workers/content-extraction.worker';
 import { VideoProcessorWorker } from './infrastructure/workers/video-processor.worker';
 import { UploadController } from './presentation/http/controllers/upload.controller';
 import { WebhookController } from './presentation/webhooks/controllers/upload.webhook.controller';
@@ -97,7 +94,7 @@ import { WebhookController } from './presentation/webhooks/controllers/upload.we
       },
     }),
     BullModule.registerQueue({
-      name: CONTENT_EXTRACTION_QUEUE,
+      name: QUEUES.CONTENT_EXTRACTION_QUEUE,
       defaultJobOptions: {
         removeOnComplete: 100,
         removeOnFail: 500,
