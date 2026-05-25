@@ -62,6 +62,14 @@ export class VideoProcessorWorker extends WorkerHost {
     const hlsDir = path.join(tmpRoot, 'hls');
     const trailerFile = path.join(tmpRoot, 'trailer.mp4');
 
+    // Hoisted so the post-processing steps (flush + extraction enqueue)
+    // can access it after the main try/catch/finally completes.
+    let processedEvent: FileProcessedEvent | undefined;
+
+    // Deterministic correlationId so BullMQ retries produce the same
+    // correlation trace instead of a new UUID each attempt.
+    const correlationId = fileId;
+
     try {
       await mkdir(hlsDir, { recursive: true });
 
@@ -93,14 +101,17 @@ export class VideoProcessorWorker extends WorkerHost {
       );
 
       // 6. CẬP NHẬT DB + GHI OUTBOX TRONG CÙNG MỘT ACID TRANSACTION
-      const processedEvent = new FileProcessedEvent({
-        fileId,
-        streamingUrl,
-        trailerUrl,
-        fileSize: fileSizeBytes,
-        uploadedBy,
-        processedAt: new Date().toISOString(),
-      });
+      processedEvent = new FileProcessedEvent(
+        {
+          fileId,
+          streamingUrl,
+          trailerUrl,
+          fileSize: fileSizeBytes,
+          uploadedBy,
+          processedAt: new Date().toISOString(),
+        },
+        correlationId,
+      );
 
       await this.prisma.client.$transaction(async (tx) => {
         await tx.mediaFile.update({
@@ -113,30 +124,7 @@ export class VideoProcessorWorker extends WorkerHost {
           },
         });
 
-        await this.outboxService.put(processedEvent, tx);
-      });
-
-      // Transaction committed → trigger relay immediately
-      this.outboxService.notifyFlush();
-
-      // Resolve the logical content identifier (tutorialId) from the
-      // MediaFile record so downstream consumers receive a semantically
-      // correct contentId rather than the raw fileId.  fileIds keeps the
-      // actual media linkage intact.
-      const mediaFile = await this.prisma.client.mediaFile.findUnique({
-        where: { id: fileId },
-        select: { contentId: true },
-      });
-      const logicalContentId = mediaFile?.contentId ?? fileId;
-
-      // Enqueue transcript extraction — awaited so failures propagate into
-      // the BullMQ retry loop instead of silently dropping moderation input.
-      await this.extractionQueue.add('extract-tutorial-content', {
-        contentId: logicalContentId,
-        contentType: 'TUTORIAL',
-        fileIds: [fileId],
-        uploadedBy,
-        correlationId: processedEvent.correlationId ?? logicalContentId,
+        await this.outboxService.put(processedEvent!, tx);
       });
 
       this.logger.log(`Successfully processed media file ${fileId}`);
@@ -147,12 +135,15 @@ export class VideoProcessorWorker extends WorkerHost {
       const isFinalAttempt = job.attemptsMade + 1 >= attempts;
 
       if (isFinalAttempt) {
-        const failedEvent = new FileProcessingFailedEvent({
-          fileId,
-          reason,
-          uploadedBy,
-          failedAt: new Date().toISOString(),
-        });
+        const failedEvent = new FileProcessingFailedEvent(
+          {
+            fileId,
+            reason,
+            uploadedBy,
+            failedAt: new Date().toISOString(),
+          },
+          correlationId,
+        );
 
         await this.prisma.client.$transaction(async (tx) => {
           await tx.mediaFile.update({
@@ -183,6 +174,53 @@ export class VideoProcessorWorker extends WorkerHost {
     } finally {
       // 7. CLEANUP: Xóa thư mục tạm (bao gồm cả file gốc vừa tải về và file HLS)
       await rm(tmpRoot, { recursive: true, force: true });
+    }
+
+    // ── Post-processing (success path only) ────────────────────
+    // Runs AFTER the main try/catch/finally so failures here do NOT
+    // trigger the processing-failed path.  The video artifacts (HLS,
+    // trailer) and FileProcessedEvent are already committed in the DB.
+    if (processedEvent) {
+      // Flush the outbox AFTER all throwable processing steps have
+      // completed, so a BullMQ retry cannot cause duplicate event
+      // emissions via an already-relayed outbox entry.
+      this.outboxService.notifyFlush();
+
+      // Resolve the logical content identifier (tutorialId) from the
+      // MediaFile record so downstream consumers receive a semantically
+      // correct contentId rather than the raw fileId.
+      let logicalContentId = fileId; // safe default
+      try {
+        const mediaFile = await this.prisma.client.mediaFile.findUnique({
+          where: { id: fileId },
+          select: { contentId: true },
+        });
+        logicalContentId = mediaFile?.contentId ?? fileId;
+      } catch (lookupError) {
+        this.logger.warn(
+          `Could not resolve logicalContentId for file ${fileId}, using fileId as fallback`,
+          lookupError instanceof Error ? lookupError.message : String(lookupError),
+        );
+      }
+
+      try {
+        await this.extractionQueue.add('extract-tutorial-content', {
+          contentId: logicalContentId,
+          contentType: 'TUTORIAL',
+          fileIds: [fileId],
+          uploadedBy,
+          correlationId,
+        });
+      } catch (enqueueError) {
+        // Log loudly but do NOT throw — the video processing succeeded.
+        // Moderation can be triggered manually or via a sweep job later.
+        this.logger.error(
+          `Video ${fileId} processed successfully but failed to enqueue ` +
+            `content extraction for tutorial ${logicalContentId}. ` +
+            `Moderation will not run automatically until re-enqueued.`,
+          enqueueError instanceof Error ? enqueueError.message : String(enqueueError),
+        );
+      }
     }
   }
 

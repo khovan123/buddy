@@ -748,7 +748,11 @@ export class TutorialMongoRepository implements ITutorialRepository {
       courseId: row.courseId?.toString() ?? '',
       price: row.price,
       status: row.status,
-      moderationStatus: row.moderationStatus,
+      moderationStatus:
+        row.moderationStatus ??
+        (row.status === TutorialStatus.AVAILABLE
+          ? ContentModerationStatus.APPROVED
+          : ContentModerationStatus.PENDING),
       moderationScore: row.moderationScore ?? null,
       moderationReasons: row.moderationReasons ?? [],
       moderationRuleVersion: row.moderationRuleVersion ?? null,
