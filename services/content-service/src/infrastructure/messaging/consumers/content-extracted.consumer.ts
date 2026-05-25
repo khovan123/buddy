@@ -82,13 +82,22 @@ export class ContentExtractedConsumer {
       );
 
       if (willRetry) {
-        await this.contentRetry.republishForRetry(
-          UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
-          messageData,
-          retryCount + 1,
-          correlationId,
-        );
-        return; // ack original; retry is the republished copy
+        try {
+          await this.contentRetry.republishForRetry(
+            UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+            messageData,
+            retryCount + 1,
+            correlationId,
+          );
+          return; // ack original; retry is the republished copy
+        } catch (publishErr) {
+          this.logger.error(
+            `Republish failed for ${payload.contentType} ${payload.contentId}` +
+              ` — sending original to DLQ to prevent message loss`,
+            String(publishErr),
+          );
+          return new Nack(false);
+        }
       }
 
       return new Nack(false); // → dead-letter exchange

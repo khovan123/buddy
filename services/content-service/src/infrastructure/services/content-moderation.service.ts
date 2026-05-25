@@ -228,9 +228,7 @@ export class ContentModerationService {
         ? rawDecision
         : 'NEEDS_REVIEW';
     const decision: ModerationDecision =
-      categoryReasons.length > 0 && providerDecision === 'APPROVED'
-        ? 'REJECTED'
-        : providerDecision;
+      categoryReasons.length > 0 && providerDecision === 'APPROVED' ? 'REJECTED' : providerDecision;
     const providerReasons = Array.isArray(data.reasons)
       ? data.reasons
       : data.reason

@@ -35,26 +35,19 @@ export class ContentRetryPublisher {
     retryCount: number,
     correlationId?: string,
   ): Promise<void> {
-    try {
-      this.amqpConnection.publish(EXCHANGES.UPLOAD, routingKey, data, {
-        persistent: true,
-        correlationId,
-        headers: mergeTraceContextIntoHeaders({
-          'x-retry-count': retryCount,
-          'x-original-routing-key': routingKey,
-          ...(correlationId ? { [CORRELATION_ID_HEADER]: correlationId } : {}),
-        }),
-      });
+    this.amqpConnection.publish(EXCHANGES.UPLOAD, routingKey, data, {
+      persistent: true,
+      correlationId,
+      headers: mergeTraceContextIntoHeaders({
+        'x-retry-count': retryCount,
+        'x-original-routing-key': routingKey,
+        ...(correlationId ? { [CORRELATION_ID_HEADER]: correlationId } : {}),
+      }),
+    });
 
-      this.logger.warn(
-        `Message republished for retry #${retryCount} [${routingKey}] ` +
-          `(max ${RETRY_OPTIONS.MAX_RETRIES})`,
-      );
-    } catch (err) {
-      this.logger.error(
-        `Failed to republish message [${routingKey}] for retry #${retryCount}`,
-        String(err),
-      );
-    }
+    this.logger.warn(
+      `Message republished for retry #${retryCount} [${routingKey}] ` +
+        `(max ${RETRY_OPTIONS.MAX_RETRIES})`,
+    );
   }
 }

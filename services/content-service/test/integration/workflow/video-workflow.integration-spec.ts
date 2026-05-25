@@ -41,9 +41,7 @@ import {
   TUTORIAL_REPOSITORY,
 } from '../../../src/domain/repositories/tokens';
 import { UploadProcessedConsumer } from '../../../src/infrastructure/messaging/consumers/upload-processed.consumer';
-import {
-  MESSAGE_COMPONENTS,
-} from '../../../src/infrastructure/messaging/message.module';
+import { MESSAGE_COMPONENTS } from '../../../src/infrastructure/messaging/message.module';
 import { RecommendationSyncPublisher } from '../../../src/infrastructure/messaging/publishers/recommendation-sync.publisher';
 import { StorageBrokerPublisher } from '../../../src/infrastructure/messaging/publishers/storage-broker.rpc';
 import { UserServicePublisher } from '../../../src/infrastructure/messaging/publishers/user-service.rpc';

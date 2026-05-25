@@ -23,16 +23,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import {
+  useGetMyResourcesQuery,
+  useGetMyTutorialsQuery,
+} from "@/features/content/services/content-api"
+import {
   ContentModerationStatus,
   ResourceStatus,
   TutorialStatus,
   type ResourceQueryItem,
   type TutorialQueryItem,
 } from "@/features/content/types"
-import {
-  useGetMyResourcesQuery,
-  useGetMyTutorialsQuery,
-} from "@/features/content/services/content-api"
 import { cn } from "@/lib/utils"
 
 type ModerationNotificationTone = "info" | "success" | "warning" | "danger"

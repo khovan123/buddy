@@ -552,6 +552,26 @@ describe('ContentExtractedConsumer', () => {
       expect((result as Nack).requeue).toBe(false);
       expect(mockContentRetry.republishForRetry).not.toHaveBeenCalled();
     });
+
+    it('should DLQ (Nack(false)) when republishForRetry throws (broker unavailable)', async () => {
+      const payload = makeResourcePayload();
+      mockIdempotentConsumer.runWithIdempotency.mockRejectedValue(
+        new Error('Moderation provider timeout'),
+      );
+      mockContentRetry.republishForRetry.mockRejectedValue(
+        new Error('Channel closed — broker unavailable'),
+      );
+
+      const result = await consumer.handleContentExtracted(
+        { payload },
+        makeConsumeMessage() as any,
+      );
+
+      // Must NOT ack — the original must go to DLQ so it isn't lost
+      expect(result).toBeInstanceOf(Nack);
+      expect((result as Nack).requeue).toBe(false);
+      expect(mockContentRetry.republishForRetry).toHaveBeenCalled();
+    });
   });
 
   // ────────────────────────────────────────────────────────────────
