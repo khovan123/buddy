@@ -127,6 +127,18 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
       correlationId,
     });
 
+    // Enqueue content extraction — awaited so failures propagate as an
+    // HTTP error instead of silently leaving the resource in PROCESSING
+    // with no moderation path.  Mirrors the tutorial path in
+    // video-processor.worker.ts.
+    await this.extractionQueue.add('extract-resource-content', {
+      contentId: command.resourceId,
+      contentType: 'RESOURCE',
+      fileIds: uniqueFileIds,
+      uploadedBy: command.userId,
+      correlationId,
+    });
+
     // ── Pre-generation: queue preview for supported formats ─────
     // Fire-and-forget — failures handled by BullMQ retry mechanism
     for (const meta of validFileMetas) {
