@@ -56,6 +56,33 @@ export class VideoProcessorWorker extends WorkerHost {
     // 1. Lấy dữ liệu từ Job theo chuẩn mới (s3Key thay vì temporaryPath)
     const { fileId, s3Key, uploadedBy } = job.data;
 
+    // ── Idempotency guard ──────────────────────────────────────
+    // If a previous attempt already transcoded and committed the
+    // FileProcessedEvent but the extraction enqueue failed (transient
+    // Redis/BullMQ error), the job will be retried by BullMQ.  Detect
+    // this by checking the MediaFile status — if already AVAILABLE,
+    // skip all video processing and jump straight to extraction.
+    const existingFile = await this.prisma.client.mediaFile.findUnique({
+      where: { id: fileId },
+      select: { status: true, contentId: true },
+    });
+
+    if (existingFile?.status === 'AVAILABLE') {
+      this.logger.log(
+        `File ${fileId} already processed (status=AVAILABLE), skipping to extraction enqueue`,
+      );
+
+      const logicalContentId = existingFile.contentId ?? fileId;
+      await this.extractionQueue.add('extract-tutorial-content', {
+        contentId: logicalContentId,
+        contentType: 'TUTORIAL',
+        fileIds: [fileId],
+        uploadedBy,
+        correlationId: fileId,
+      });
+      return;
+    }
+
     // 2. Tạo thư mục tạm thời trên ổ cứng của Worker
     const tmpRoot = await mkdtemp(path.join(os.tmpdir(), `upload-${fileId}-`));
     const localOriginalPath = path.join(tmpRoot, 'original.mp4');
@@ -203,24 +230,16 @@ export class VideoProcessorWorker extends WorkerHost {
         );
       }
 
-      try {
-        await this.extractionQueue.add('extract-tutorial-content', {
-          contentId: logicalContentId,
-          contentType: 'TUTORIAL',
-          fileIds: [fileId],
-          uploadedBy,
-          correlationId,
-        });
-      } catch (enqueueError) {
-        // Log loudly but do NOT throw — the video processing succeeded.
-        // Moderation can be triggered manually or via a sweep job later.
-        this.logger.error(
-          `Video ${fileId} processed successfully but failed to enqueue ` +
-            `content extraction for tutorial ${logicalContentId}. ` +
-            `Moderation will not run automatically until re-enqueued.`,
-          enqueueError instanceof Error ? enqueueError.message : String(enqueueError),
-        );
-      }
+      // Re-throw on failure so BullMQ retries the job.  The idempotency
+      // guard at the top of process() will detect status=AVAILABLE and
+      // skip straight to this enqueue on the next attempt.
+      await this.extractionQueue.add('extract-tutorial-content', {
+        contentId: logicalContentId,
+        contentType: 'TUTORIAL',
+        fileIds: [fileId],
+        uploadedBy,
+        correlationId,
+      });
     }
   }
 
