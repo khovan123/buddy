@@ -1,4 +1,4 @@
-import { EXCHANGES, OUTBOX_EVENTS } from '@libs/common';
+import { EXCHANGES, OUTBOX_EVENTS, RETRY_OPTIONS } from '@libs/common';
 import { BaseEvent } from '@libs/contracts';
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -47,6 +47,9 @@ export class OutboxService {
    * Marks all PENDING rows matching the given correlationId + routingKey
    * as FAILED so the relay does not publish events whose downstream
    * scheduling (e.g. extraction queue) never completed.
+   *
+   * Sets retryCount to MAX_RETRIES and processedAt to now() so the
+   * OutboxCleanupService can garbage-collect these rows on its next run.
    */
   async compensate(correlationId: string, routingKey: string): Promise<number> {
     const result = await this.prisma.client.outbox.updateMany({
@@ -55,7 +58,11 @@ export class OutboxService {
         routingKey,
         status: 'PENDING',
       },
-      data: { status: 'FAILED' },
+      data: {
+        status: 'FAILED',
+        retryCount: RETRY_OPTIONS.MAX_RETRIES,
+        processedAt: new Date(),
+      },
     });
     return result.count;
   }
