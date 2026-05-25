@@ -1147,7 +1147,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
    * Finds tutorial with media.fileId == fileId and updates:
    * - media.streamingUrl, media.trailerUrl, media.fileSize
    * - status → PROCESSING (awaiting content moderation)
-   * - resets moderation fields (moderationStatus → PENDING, score/reasons/version/date → null)
+   * - resets moderation fields (moderationStatus → PENDING, score/version/date → null, reasons → [])
    */
   async updateByFileId(
     fileId: string,
