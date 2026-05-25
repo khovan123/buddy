@@ -198,13 +198,14 @@ export function ContentModerationNotifications() {
     isFetching: resourcesFetching,
     isError: resourcesError,
   } = useGetMyResourcesQuery(undefined, {
-    // Only fetch/poll while the popover is open to avoid constant background load.
-    // refetchOnMountOrArgChange is kept unconditionally so the badge count
-    // renders correctly on the initial mount.
+    // Poll only while the popover is open (expensive, every 30s).
+    // refetchOnFocus / refetchOnReconnect stay unconditional so the
+    // badge count refreshes when the user returns to the tab or
+    // reconnects — these are cheap one-shot fetches, not continuous.
     pollingInterval: open ? 30_000 : 0,
     refetchOnMountOrArgChange: true,
-    refetchOnFocus: open,
-    refetchOnReconnect: open,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   })
   const {
     data: tutorialResponse,
@@ -213,8 +214,8 @@ export function ContentModerationNotifications() {
   } = useGetMyTutorialsQuery(undefined, {
     pollingInterval: open ? 30_000 : 0,
     refetchOnMountOrArgChange: true,
-    refetchOnFocus: open,
-    refetchOnReconnect: open,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
   })
 
   const { activeCount, notifications } = useMemo(() => {
@@ -276,14 +277,17 @@ export function ContentModerationNotifications() {
             <Bell className="size-4" />
           )}
           {activeCount > 0 ? (
-            <span className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-4 text-destructive-foreground">
+            <span className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] leading-4 font-bold text-destructive-foreground">
               {activeCount > 9 ? "9+" : activeCount}
             </span>
           ) : null}
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-[22rem] max-w-[calc(100vw-1rem)] gap-3">
+      <PopoverContent
+        align="end"
+        className="w-88 max-w-[calc(100vw-1rem)] gap-3"
+      >
         <PopoverHeader>
           <PopoverTitle className="text-sm font-semibold">
             Content moderation
