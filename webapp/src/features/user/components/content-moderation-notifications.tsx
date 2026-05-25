@@ -286,7 +286,7 @@ export function ContentModerationNotifications() {
 
       <PopoverContent
         align="end"
-        className="w-88 max-w-[calc(100vw-1rem)] gap-3"
+        className="w-[22rem] max-w-[calc(100vw-1rem)] gap-3"
       >
         <PopoverHeader>
           <PopoverTitle className="text-sm font-semibold">
