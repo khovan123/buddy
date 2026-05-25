@@ -2,6 +2,7 @@
 /// <reference types="jest" />
 
 import { Nack } from '@golevelup/nestjs-rabbitmq';
+import { RETRY_OPTIONS } from '@libs/common';
 import { UPLOAD_ROUTINGKEYS, type ContentExtractedEvent } from '@libs/contracts';
 
 import type { ResourceQueryItem } from '../../src/domain/repositories/resource.repository.interface';
@@ -214,6 +215,10 @@ describe('ContentExtractedConsumer', () => {
     ),
   };
 
+  const mockContentRetry = {
+    republishForRetry: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
 
@@ -231,6 +236,7 @@ describe('ContentExtractedConsumer', () => {
       mockContentModeration as any,
       mockRecommendationSync as any,
       mockIdempotentConsumer as any,
+      mockContentRetry as any,
     );
   });
 
@@ -471,7 +477,7 @@ describe('ContentExtractedConsumer', () => {
   // ────────────────────────────────────────────────────────────────
 
   describe('Error handling & retry', () => {
-    it('should requeue (Nack(true)) on first failure (no delivery count header)', async () => {
+    it('should republish for retry on first failure (no x-retry-count header)', async () => {
       const payload = makeResourcePayload();
       mockIdempotentConsumer.runWithIdempotency.mockRejectedValue(
         new Error('Moderation provider timeout'),
@@ -482,24 +488,35 @@ describe('ContentExtractedConsumer', () => {
         makeConsumeMessage() as any,
       );
 
-      expect(result).toBeInstanceOf(Nack);
-      expect((result as Nack).requeue).toBe(true);
+      // Original message is acked (no Nack), retry is a republished copy
+      expect(result).toBeUndefined();
+      expect(mockContentRetry.republishForRetry).toHaveBeenCalledWith(
+        UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+        { payload },
+        1,
+        'corr-test-001',
+      );
     });
 
-    it('should requeue (Nack(true)) when delivery count is below MAX_RETRIES', async () => {
+    it('should republish for retry when x-retry-count is below MAX_RETRIES', async () => {
       const payload = makeResourcePayload();
       mockIdempotentConsumer.runWithIdempotency.mockRejectedValue(new Error('Network hiccup'));
 
       const result = await consumer.handleContentExtracted(
         { payload },
-        makeConsumeMessage(undefined, { 'x-delivery-count': 2 }) as any,
+        makeConsumeMessage(undefined, { 'x-retry-count': 2 }) as any,
       );
 
-      expect(result).toBeInstanceOf(Nack);
-      expect((result as Nack).requeue).toBe(true);
+      expect(result).toBeUndefined();
+      expect(mockContentRetry.republishForRetry).toHaveBeenCalledWith(
+        UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+        { payload },
+        3,
+        'corr-test-001',
+      );
     });
 
-    it('should DLQ (Nack(false)) when delivery count reaches MAX_RETRIES', async () => {
+    it('should DLQ (Nack(false)) when x-retry-count reaches MAX_RETRIES', async () => {
       const payload = makeResourcePayload();
       mockIdempotentConsumer.runWithIdempotency.mockRejectedValue(
         new Error('Persistent moderation failure'),
@@ -507,11 +524,12 @@ describe('ContentExtractedConsumer', () => {
 
       const result = await consumer.handleContentExtracted(
         { payload },
-        makeConsumeMessage(undefined, { 'x-delivery-count': 3 }) as any,
+        makeConsumeMessage(undefined, { 'x-retry-count': RETRY_OPTIONS.MAX_RETRIES }) as any,
       );
 
       expect(result).toBeInstanceOf(Nack);
       expect((result as Nack).requeue).toBe(false);
+      expect(mockContentRetry.republishForRetry).not.toHaveBeenCalled();
     });
 
     it('should DLQ (Nack(false)) when repository throws after retries exhausted', async () => {
@@ -527,36 +545,12 @@ describe('ContentExtractedConsumer', () => {
 
       const result = await consumer.handleContentExtracted(
         { payload },
-        makeConsumeMessage(undefined, { 'x-delivery-count': 3 }) as any,
+        makeConsumeMessage(undefined, { 'x-retry-count': RETRY_OPTIONS.MAX_RETRIES }) as any,
       );
 
       expect(result).toBeInstanceOf(Nack);
       expect((result as Nack).requeue).toBe(false);
-    });
-
-    it('should count retries from x-death headers on classic queues', async () => {
-      const payload = makeResourcePayload();
-      mockIdempotentConsumer.runWithIdempotency.mockRejectedValue(new Error('Transient'));
-
-      // x-death with count=3 → retries exhausted
-      const result = await consumer.handleContentExtracted(
-        { payload },
-        makeConsumeMessage(undefined, {
-          'x-death': [
-            {
-              count: 3,
-              reason: 'rejected',
-              queue: 'q',
-              exchange: 'e',
-              'routing-keys': [],
-              time: { '!': 'timestamp', value: 0 },
-            },
-          ],
-        }) as any,
-      );
-
-      expect(result).toBeInstanceOf(Nack);
-      expect((result as Nack).requeue).toBe(false);
+      expect(mockContentRetry.republishForRetry).not.toHaveBeenCalled();
     });
   });
 

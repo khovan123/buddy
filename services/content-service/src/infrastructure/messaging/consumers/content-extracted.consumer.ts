@@ -1,5 +1,5 @@
 import { Nack, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
-import { AppLogger, EXCHANGES, QUEUES } from '@libs/common';
+import { AppLogger, EXCHANGES, QUEUES, RETRY_OPTIONS } from '@libs/common';
 import {
   ContentExtractedEvent,
   UPLOAD_ROUTINGKEYS,
@@ -16,11 +16,11 @@ import { ContentModerationStatus as ResourceModerationStatus } from '../../persi
 import { ContentModerationStatus as TutorialModerationStatus } from '../../persistence/mongo/schemas/tutorial.schema';
 import { ContentModerationService } from '../../services/content-moderation.service';
 import { IdempotentConsumerService } from '../../services/idempotent-consumer.service';
+import { ContentRetryPublisher } from '../publishers/content-retry.publisher';
 import { RecommendationSyncPublisher } from '../publishers/recommendation-sync.publisher';
 
 @Controller()
 export class ContentExtractedConsumer {
-  private static readonly MAX_RETRIES = 3;
   private readonly logger = new AppLogger(ContentExtractedConsumer.name);
 
   constructor(
@@ -31,6 +31,7 @@ export class ContentExtractedConsumer {
     private readonly contentModeration: ContentModerationService,
     private readonly recommendationSync: RecommendationSyncPublisher,
     private readonly idempotentConsumer: IdempotentConsumerService,
+    private readonly contentRetry: ContentRetryPublisher,
   ) {}
 
   @RabbitSubscribe({
@@ -69,18 +70,28 @@ export class ContentExtractedConsumer {
         `Successfully processed ${UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED} for ${payload.contentType} ${payload.contentId}`,
       );
     } catch (error) {
-      const deliveryCount = this.getDeliveryCount(message);
-      const willRetry = deliveryCount < ContentExtractedConsumer.MAX_RETRIES;
+      const headers = message.properties?.headers;
+      const retryCount: number = headers?.['x-retry-count'] ?? 0;
+      const willRetry = retryCount < RETRY_OPTIONS.MAX_RETRIES;
 
       this.logger[willRetry ? 'warn' : 'error'](
         `Failed to moderate extracted ${payload.contentType} content ${payload.contentId}` +
-          ` (attempt ${deliveryCount + 1}/${ContentExtractedConsumer.MAX_RETRIES + 1})` +
-          (willRetry ? ' — requeuing for retry' : ' — sending to DLQ'),
+          ` (attempt ${retryCount + 1}/${RETRY_OPTIONS.MAX_RETRIES + 1})` +
+          (willRetry ? ' — republishing for retry' : ' — sending to DLQ'),
         String(error),
       );
 
-      // Requeue for transient failures; DLQ once retries exhausted
-      return new Nack(willRetry);
+      if (willRetry) {
+        await this.contentRetry.republishForRetry(
+          UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+          messageData,
+          retryCount + 1,
+          correlationId,
+        );
+        return; // ack original; retry is the republished copy
+      }
+
+      return new Nack(false); // → dead-letter exchange
     }
   }
 
@@ -197,30 +208,6 @@ export class ContentExtractedConsumer {
     return payload.files.every((item) => item.extractionStatus === 'AVAILABLE')
       ? 'AVAILABLE'
       : 'PARTIAL';
-  }
-
-  /**
-   * Extract delivery count from RabbitMQ message headers.
-   * `x-delivery-count` is set by quorum queues; for classic queues the
-   * `x-death` array length approximates the same value. Returns 0 on
-   * first delivery.
-   */
-  private getDeliveryCount(message: ConsumeMessage): number {
-    const headers = message.properties?.headers;
-    if (!headers) return 0;
-
-    // Quorum queues provide this natively
-    if (typeof headers['x-delivery-count'] === 'number') {
-      return headers['x-delivery-count'];
-    }
-
-    // Classic queues: count via x-death entries
-    const xDeath = headers['x-death'];
-    if (Array.isArray(xDeath) && xDeath.length > 0) {
-      return xDeath.reduce((sum, entry) => sum + (entry.count ?? 0), 0);
-    }
-
-    return 0;
   }
 
   private toResourceStatus(decision: string): ResourceModerationStatus {
