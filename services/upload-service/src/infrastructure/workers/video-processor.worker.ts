@@ -72,6 +72,10 @@ export class VideoProcessorWorker extends WorkerHost {
         `File ${fileId} already processed (status=AVAILABLE), skipping to extraction enqueue`,
       );
 
+      // Flush any PENDING outbox rows from the prior attempt that
+      // committed FileProcessedEvent but was interrupted before relay.
+      this.outboxService.notifyFlush();
+
       const logicalContentId = existingFile.contentId ?? fileId;
       await this.extractionQueue.add('extract-tutorial-content', {
         contentId: logicalContentId,
