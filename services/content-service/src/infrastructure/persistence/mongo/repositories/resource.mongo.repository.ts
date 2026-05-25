@@ -933,7 +933,7 @@ export class ResourceMongoRepository implements IResourceRepository {
    * Finds resource with meta[].fileId == fileId and updates:
    * - meta[].downloadUrl, meta[].fileSize
    * - status → PROCESSING (awaiting content moderation)
-   * - resets moderation fields (moderationStatus → PENDING, score/reasons/version/date → null)
+   * - resets moderation fields (moderationStatus → PENDING, score/version/date → null, reasons → [])
    */
   async updateByFileId(
     fileId: string,
