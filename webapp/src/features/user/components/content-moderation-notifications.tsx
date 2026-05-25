@@ -198,11 +198,13 @@ export function ContentModerationNotifications() {
     isFetching: resourcesFetching,
     isError: resourcesError,
   } = useGetMyResourcesQuery(undefined, {
-    // Only poll while the popover is open to avoid constant background load
+    // Only fetch/poll while the popover is open to avoid constant background load.
+    // refetchOnMountOrArgChange is kept unconditionally so the badge count
+    // renders correctly on the initial mount.
     pollingInterval: open ? 30_000 : 0,
     refetchOnMountOrArgChange: true,
-    refetchOnFocus: true,
-    refetchOnReconnect: true,
+    refetchOnFocus: open,
+    refetchOnReconnect: open,
   })
   const {
     data: tutorialResponse,
@@ -211,8 +213,8 @@ export function ContentModerationNotifications() {
   } = useGetMyTutorialsQuery(undefined, {
     pollingInterval: open ? 30_000 : 0,
     refetchOnMountOrArgChange: true,
-    refetchOnFocus: true,
-    refetchOnReconnect: true,
+    refetchOnFocus: open,
+    refetchOnReconnect: open,
   })
 
   const { activeCount, notifications } = useMemo(() => {
