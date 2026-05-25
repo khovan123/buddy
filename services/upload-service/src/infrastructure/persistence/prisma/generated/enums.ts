@@ -20,6 +20,7 @@ export type MediaProcessingStatus = (typeof MediaProcessingStatus)[keyof typeof 
 
 
 export const OutboxStatus = {
+  HELD: 'HELD',
   PENDING: 'PENDING',
   PROCESSED: 'PROCESSED',
   FAILED: 'FAILED'

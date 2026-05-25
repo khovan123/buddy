@@ -1146,7 +1146,8 @@ export class TutorialMongoRepository implements ITutorialRepository {
    * Update tutorial by fileId (from file.processed event consumer).
    * Finds tutorial with media.fileId == fileId and updates:
    * - media.streamingUrl, media.trailerUrl, media.fileSize
-   * - status: AVAILABLE
+   * - status → PROCESSING (awaiting content moderation)
+   * - resets moderation fields (moderationStatus → PENDING, score/version/date → null, reasons → [])
    */
   async updateByFileId(
     fileId: string,
@@ -1157,6 +1158,11 @@ export class TutorialMongoRepository implements ITutorialRepository {
 
     const updatePayload: Record<string, any> = {
       status: TutorialStatus.PROCESSING,
+      moderationStatus: ContentModerationStatus.PENDING,
+      moderationScore: null,
+      moderationReasons: [],
+      moderationRuleVersion: null,
+      moderatedAt: null,
     };
 
     if (streamingUrl !== undefined) {

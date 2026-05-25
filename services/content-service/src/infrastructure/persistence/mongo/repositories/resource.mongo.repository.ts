@@ -386,6 +386,11 @@ export class ResourceMongoRepository implements IResourceRepository {
       {
         $set: {
           status: ResourceStatus.PROCESSING,
+          moderationStatus: ContentModerationStatus.PENDING,
+          moderationScore: null,
+          moderationReasons: [],
+          moderationRuleVersion: null,
+          moderatedAt: null,
           meta,
           ...(primaryS3Key ? { primaryS3Key } : {}),
         },
@@ -927,7 +932,8 @@ export class ResourceMongoRepository implements IResourceRepository {
    * Update resource by fileId (from file.processed event consumer).
    * Finds resource with meta[].fileId == fileId and updates:
    * - meta[].downloadUrl, meta[].fileSize
-   * - status: AVAILABLE
+   * - status → PROCESSING (awaiting content moderation)
+   * - resets moderation fields (moderationStatus → PENDING, score/version/date → null, reasons → [])
    */
   async updateByFileId(
     fileId: string,
@@ -938,6 +944,11 @@ export class ResourceMongoRepository implements IResourceRepository {
 
     const updatePayload: Record<string, any> = {
       status: ResourceStatus.PROCESSING,
+      moderationStatus: ContentModerationStatus.PENDING,
+      moderationScore: null,
+      moderationReasons: [],
+      moderationRuleVersion: null,
+      moderatedAt: null,
     };
 
     if (downloadUrl !== undefined) {

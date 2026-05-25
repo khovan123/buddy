@@ -1,3 +1,5 @@
+import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
+import ffprobeInstaller from '@ffprobe-installer/ffprobe';
 import { AppLogger, QUEUES } from '@libs/common';
 import {
   FileProcessedEvent,
@@ -6,11 +8,9 @@ import {
   VideoProcessingJobEvent,
 } from '@libs/contracts';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
-import ffprobeInstaller from '@ffprobe-installer/ffprobe';
 import { Job, Queue } from 'bullmq';
-import ffmpeg from 'fluent-ffmpeg';
 import { randomUUID } from 'crypto';
+import ffmpeg from 'fluent-ffmpeg';
 import { createReadStream } from 'node:fs';
 import { mkdir, mkdtemp, rm, stat } from 'node:fs/promises';
 import * as os from 'node:os';
@@ -56,12 +56,14 @@ export class VideoProcessorWorker extends WorkerHost {
     // 1. Lấy dữ liệu từ Job theo chuẩn mới (s3Key thay vì temporaryPath)
     const { fileId, s3Key, uploadedBy } = job.data;
 
+    // Deterministic correlationId so BullMQ retries produce the same
+    // correlation trace instead of a new UUID each attempt.
+    const correlationId = fileId;
+
     // ── Idempotency guard ──────────────────────────────────────
     // If a previous attempt already transcoded and committed the
-    // FileProcessedEvent but the extraction enqueue failed (transient
-    // Redis/BullMQ error), the job will be retried by BullMQ.  Detect
-    // this by checking the MediaFile status — if already AVAILABLE,
-    // skip all video processing and jump straight to extraction.
+    // FileProcessedEvent, avoid duplicate video work and enqueue the
+    // extraction/transcript step again in the background.
     const existingFile = await this.prisma.client.mediaFile.findUnique({
       where: { id: fileId },
       select: { status: true, contentId: true },
@@ -72,18 +74,18 @@ export class VideoProcessorWorker extends WorkerHost {
         `File ${fileId} already processed (status=AVAILABLE), skipping to extraction enqueue`,
       );
 
-      // Flush any PENDING outbox rows from the prior attempt that
-      // committed FileProcessedEvent but was interrupted before relay.
-      this.outboxService.notifyFlush();
-
       const logicalContentId = existingFile.contentId ?? fileId;
-      await this.extractionQueue.add('extract-tutorial-content', {
+      await this.enqueueExtractionWithCompensation(job, {
         contentId: logicalContentId,
-        contentType: 'TUTORIAL',
-        fileIds: [fileId],
+        fileId,
         uploadedBy,
-        correlationId: fileId,
+        correlationId,
       });
+
+      // Extraction confirmed — promote the HELD outbox row to PENDING
+      // so the relay can publish it, then trigger a flush tick.
+      await this.outboxService.markReady(correlationId, UPLOAD_ROUTINGKEYS.FILE_PROCESSED);
+      this.outboxService.notifyFlush();
       return;
     }
 
@@ -96,10 +98,6 @@ export class VideoProcessorWorker extends WorkerHost {
     // Hoisted so the post-processing steps (flush + extraction enqueue)
     // can access it after the main try/catch/finally completes.
     let processedEvent: FileProcessedEvent | undefined;
-
-    // Deterministic correlationId so BullMQ retries produce the same
-    // correlation trace instead of a new UUID each attempt.
-    const correlationId = fileId;
 
     try {
       await mkdir(hlsDir, { recursive: true });
@@ -155,7 +153,7 @@ export class VideoProcessorWorker extends WorkerHost {
           },
         });
 
-        await this.outboxService.put(processedEvent!, tx);
+        await this.outboxService.put(processedEvent!, tx, { held: true });
       });
 
       this.logger.log(`Successfully processed media file ${fileId}`);
@@ -212,11 +210,6 @@ export class VideoProcessorWorker extends WorkerHost {
     // trigger the processing-failed path.  The video artifacts (HLS,
     // trailer) and FileProcessedEvent are already committed in the DB.
     if (processedEvent) {
-      // Flush the outbox AFTER all throwable processing steps have
-      // completed, so a BullMQ retry cannot cause duplicate event
-      // emissions via an already-relayed outbox entry.
-      this.outboxService.notifyFlush();
-
       // Resolve the logical content identifier (tutorialId) from the
       // MediaFile record so downstream consumers receive a semantically
       // correct contentId rather than the raw fileId.
@@ -234,16 +227,17 @@ export class VideoProcessorWorker extends WorkerHost {
         );
       }
 
-      // Re-throw on failure so BullMQ retries the job.  The idempotency
-      // guard at the top of process() will detect status=AVAILABLE and
-      // skip straight to this enqueue on the next attempt.
-      await this.extractionQueue.add('extract-tutorial-content', {
+      await this.enqueueExtractionWithCompensation(job, {
         contentId: logicalContentId,
-        contentType: 'TUTORIAL',
-        fileIds: [fileId],
+        fileId,
         uploadedBy,
         correlationId,
       });
+
+      // Extraction confirmed — promote the HELD outbox row to PENDING
+      // so the relay can publish it, then trigger a flush tick.
+      await this.outboxService.markReady(correlationId, UPLOAD_ROUTINGKEYS.FILE_PROCESSED);
+      this.outboxService.notifyFlush();
     }
   }
 
@@ -288,5 +282,81 @@ export class VideoProcessorWorker extends WorkerHost {
         .on('error', (err) => reject(err))
         .run();
     });
+  }
+
+  /**
+   * Enqueue tutorial extraction with final-attempt compensation.
+   *
+   * On non-final attempts the error is re-thrown so BullMQ retries the
+   * job — the idempotency guard at the top of process() will detect
+   * status=AVAILABLE and skip straight to this enqueue.
+   *
+   * On the final attempt, a FileProcessingFailedEvent is committed so
+   * content-service receives a terminal failure signal instead of
+   * leaving the tutorial stuck in PROCESSING indefinitely.
+   */
+  private async enqueueExtractionWithCompensation(
+    job: Job<VideoProcessingJobEvent['payload']>,
+    params: {
+      contentId: string;
+      fileId: string;
+      uploadedBy: string;
+      correlationId: string;
+    },
+  ): Promise<void> {
+    const { contentId, fileId, uploadedBy, correlationId } = params;
+
+    try {
+      await this.extractionQueue.add('extract-tutorial-content', {
+        contentId,
+        contentType: 'TUTORIAL',
+        fileIds: [fileId],
+        uploadedBy,
+        correlationId,
+      });
+    } catch (enqueueError) {
+      this.logger.error(
+        `Failed to enqueue tutorial content extraction for ${contentId}`,
+        enqueueError instanceof Error
+          ? (enqueueError.stack ?? enqueueError.message)
+          : String(enqueueError),
+      );
+
+      const attempts =
+        typeof job.opts.attempts === 'number' && job.opts.attempts > 0 ? job.opts.attempts : 1;
+      const isFinalAttempt = job.attemptsMade + 1 >= attempts;
+
+      if (isFinalAttempt) {
+        // Compensate the HELD FileProcessedEvent row so it is never
+        // relayed without a matching extraction job.
+        await this.outboxService.compensate(correlationId, UPLOAD_ROUTINGKEYS.FILE_PROCESSED);
+
+        const reason =
+          enqueueError instanceof Error
+            ? `Extraction enqueue failed: ${enqueueError.message}`
+            : 'Extraction enqueue failed: unknown error';
+
+        const failedEvent = new FileProcessingFailedEvent(
+          { fileId, reason, uploadedBy, failedAt: new Date().toISOString() },
+          correlationId,
+        );
+
+        await this.prisma.client.$transaction(async (tx) => {
+          await tx.mediaFile.update({
+            where: { id: fileId },
+            data: { status: 'FAILED', processingError: reason },
+          });
+          await this.outboxService.put(failedEvent, tx);
+        });
+
+        this.outboxService.notifyFlush();
+
+        this.logger.error(
+          `Extraction enqueue failed for file ${fileId} after ${attempts} attempts, marked as FAILED`,
+        );
+      }
+
+      throw enqueueError;
+    }
   }
 }
