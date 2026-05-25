@@ -71,7 +71,9 @@ export class ContentExtractedConsumer {
       );
     } catch (error) {
       const headers = message.properties?.headers;
-      const retryCount: number = headers?.['x-retry-count'] ?? 0;
+      const rawRetryCount = headers?.['x-retry-count'];
+      const parsedRetryCount = Number(rawRetryCount ?? 0);
+      const retryCount = Number.isNaN(parsedRetryCount) ? 0 : parsedRetryCount;
       const willRetry = retryCount < RETRY_OPTIONS.MAX_RETRIES;
 
       this.logger[willRetry ? 'warn' : 'error'](
@@ -214,9 +216,12 @@ export class ContentExtractedConsumer {
   }
 
   private resolveExtractionStatus(payload: ContentExtractedEvent['payload']): string {
-    return payload.files.every((item) => item.extractionStatus === 'AVAILABLE')
-      ? 'AVAILABLE'
-      : 'PARTIAL';
+    const [firstFile] = payload.files;
+    const firstStatus = firstFile?.extractionStatus;
+    if (firstStatus && payload.files.every((item) => item.extractionStatus === firstStatus)) {
+      return firstStatus;
+    }
+    return 'PARTIAL';
   }
 
   private toResourceStatus(decision: string): ResourceModerationStatus {

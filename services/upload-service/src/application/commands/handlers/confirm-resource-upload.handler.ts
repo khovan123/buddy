@@ -115,13 +115,10 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
       );
     });
 
-    // Transaction committed → trigger relay immediately
-    this.outboxService.notifyFlush();
-
     // Enqueue content extraction — awaited so failures propagate as an
     // HTTP error instead of silently leaving the resource in PROCESSING
-    // with no moderation path.  Mirrors the tutorial path in
-    // video-processor.worker.ts.
+    // with no moderation path.  Runs BEFORE flushing the outbox so a
+    // failed enqueue doesn't leave a relayed event with no extraction job.
     await this.extractionQueue.add('extract-resource-content', {
       contentId: command.resourceId,
       contentType: 'RESOURCE',
@@ -144,6 +141,10 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
         }
       }
     }
+
+    // Flush the outbox AFTER all throwable steps have completed, so a
+    // client retry on failure cannot cause duplicate event emissions.
+    this.outboxService.notifyFlush();
 
     return {
       message: 'Resource files confirmed and outbox event queued',
