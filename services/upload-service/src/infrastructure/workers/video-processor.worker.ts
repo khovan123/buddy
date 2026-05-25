@@ -82,9 +82,9 @@ export class VideoProcessorWorker extends WorkerHost {
         correlationId,
       });
 
-      // Flush PENDING outbox rows from the prior attempt only AFTER the
-      // extraction job is confirmed scheduled, so the relay never
-      // publishes FileProcessedEvent without a matching extraction job.
+      // Extraction confirmed — promote the HELD outbox row to PENDING
+      // so the relay can publish it, then trigger a flush tick.
+      await this.outboxService.markReady(correlationId, UPLOAD_ROUTINGKEYS.FILE_PROCESSED);
       this.outboxService.notifyFlush();
       return;
     }
@@ -153,7 +153,7 @@ export class VideoProcessorWorker extends WorkerHost {
           },
         });
 
-        await this.outboxService.put(processedEvent!, tx);
+        await this.outboxService.put(processedEvent!, tx, { held: true });
       });
 
       this.logger.log(`Successfully processed media file ${fileId}`);
@@ -234,9 +234,9 @@ export class VideoProcessorWorker extends WorkerHost {
         correlationId,
       });
 
-      // Flush the outbox AFTER the extraction job is confirmed scheduled,
-      // so the relay never publishes FileProcessedEvent without a
-      // matching extraction/moderation job downstream.
+      // Extraction confirmed — promote the HELD outbox row to PENDING
+      // so the relay can publish it, then trigger a flush tick.
+      await this.outboxService.markReady(correlationId, UPLOAD_ROUTINGKEYS.FILE_PROCESSED);
       this.outboxService.notifyFlush();
     }
   }
@@ -317,7 +317,9 @@ export class VideoProcessorWorker extends WorkerHost {
     } catch (enqueueError) {
       this.logger.error(
         `Failed to enqueue tutorial content extraction for ${contentId}`,
-        enqueueError instanceof Error ? (enqueueError.stack ?? enqueueError.message) : String(enqueueError),
+        enqueueError instanceof Error
+          ? (enqueueError.stack ?? enqueueError.message)
+          : String(enqueueError),
       );
 
       const attempts =
@@ -325,6 +327,10 @@ export class VideoProcessorWorker extends WorkerHost {
       const isFinalAttempt = job.attemptsMade + 1 >= attempts;
 
       if (isFinalAttempt) {
+        // Compensate the HELD FileProcessedEvent row so it is never
+        // relayed without a matching extraction job.
+        await this.outboxService.compensate(correlationId, UPLOAD_ROUTINGKEYS.FILE_PROCESSED);
+
         const reason =
           enqueueError instanceof Error
             ? `Extraction enqueue failed: ${enqueueError.message}`

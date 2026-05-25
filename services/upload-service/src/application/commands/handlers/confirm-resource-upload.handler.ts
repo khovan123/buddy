@@ -112,6 +112,7 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
           correlationId,
         ),
         tx,
+        { held: true },
       );
     });
 
@@ -127,6 +128,13 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
         uploadedBy: command.userId,
         correlationId,
       });
+
+      // Extraction job confirmed — promote HELD → PENDING so the relay
+      // can publish the event on the next flush tick.
+      await this.outboxService.markReady(
+        correlationId,
+        UPLOAD_ROUTINGKEYS.RESOURCE_UPLOAD_COMPLETED,
+      );
     } catch (enqueueError) {
       this.logger.error(
         `Extraction enqueue failed for resource ${command.resourceId}, compensating outbox`,
@@ -155,7 +163,6 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
         }
       }
     }
-
 
     this.outboxService.notifyFlush();
 

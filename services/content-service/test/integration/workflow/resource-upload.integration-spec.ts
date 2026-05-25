@@ -235,7 +235,7 @@ describe('Resource Multi-files Upload Integration', () => {
       if (command.constructor.name === 'ConfirmResourceUploadCommand') {
         const handler = new ConfirmResourceUploadHandler(
           mockUploadFileRepository as any,
-          new OutboxService(new EventEmitter2()),
+          new OutboxService(new EventEmitter2(), mockPrismaService as any),
           mockS3Service as any,
           { client: mockPrismaService } as any,
           { isSupported: jest.fn().mockReturnValue(false) } as any,
