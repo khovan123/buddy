@@ -115,23 +115,16 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
       );
     });
 
-    // Enqueue content extraction without blocking the confirm response.
-    // The extraction worker performs text extraction/transcript + moderation
-    // asynchronously and reports failures through logs/worker retries.
-    void this.extractionQueue
-      .add('extract-resource-content', {
-        contentId: command.resourceId,
-        contentType: 'RESOURCE',
-        fileIds: uniqueFileIds,
-        uploadedBy: command.userId,
-        correlationId,
-      })
-      .catch((error) => {
-        this.logger.error(
-          `Failed to enqueue content extraction for resource ${command.resourceId}`,
-          error instanceof Error ? error.message : String(error),
-        );
-      });
+    // Enqueue content extraction as part of the confirm workflow.
+    // If scheduling fails, fail the command so the client can retry
+    // instead of returning success without an extraction/moderation job.
+    await this.extractionQueue.add('extract-resource-content', {
+      contentId: command.resourceId,
+      contentType: 'RESOURCE',
+      fileIds: uniqueFileIds,
+      uploadedBy: command.userId,
+      correlationId,
+    });
 
     // ── Pre-generation: queue preview for supported formats ─────
     // Fire-and-forget — failures handled by BullMQ retry mechanism
