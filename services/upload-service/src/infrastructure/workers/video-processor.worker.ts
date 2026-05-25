@@ -79,7 +79,7 @@ export class VideoProcessorWorker extends WorkerHost {
       this.outboxService.notifyFlush();
 
       const logicalContentId = existingFile.contentId ?? fileId;
-      this.enqueueTutorialExtraction({
+      await this.enqueueTutorialExtraction({
         contentId: logicalContentId,
         fileIds: [fileId],
         uploadedBy,
@@ -231,7 +231,7 @@ export class VideoProcessorWorker extends WorkerHost {
         );
       }
 
-      this.enqueueTutorialExtraction({
+      await this.enqueueTutorialExtraction({
         contentId: logicalContentId,
         fileIds: [fileId],
         uploadedBy,

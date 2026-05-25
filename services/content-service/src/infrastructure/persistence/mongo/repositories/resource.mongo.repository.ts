@@ -932,7 +932,8 @@ export class ResourceMongoRepository implements IResourceRepository {
    * Update resource by fileId (from file.processed event consumer).
    * Finds resource with meta[].fileId == fileId and updates:
    * - meta[].downloadUrl, meta[].fileSize
-   * - status: AVAILABLE
+   * - status → PROCESSING (awaiting content moderation)
+   * - resets moderation fields (moderationStatus → PENDING, score/reasons/version/date → null)
    */
   async updateByFileId(
     fileId: string,

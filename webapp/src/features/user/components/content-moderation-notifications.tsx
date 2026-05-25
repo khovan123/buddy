@@ -198,7 +198,8 @@ export function ContentModerationNotifications() {
     isFetching: resourcesFetching,
     isError: resourcesError,
   } = useGetMyResourcesQuery(undefined, {
-    pollingInterval: 30_000,
+    // Only poll while the popover is open to avoid constant background load
+    pollingInterval: open ? 30_000 : 0,
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
     refetchOnReconnect: true,
@@ -208,7 +209,7 @@ export function ContentModerationNotifications() {
     isFetching: tutorialsFetching,
     isError: tutorialsError,
   } = useGetMyTutorialsQuery(undefined, {
-    pollingInterval: 30_000,
+    pollingInterval: open ? 30_000 : 0,
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
     refetchOnReconnect: true,
