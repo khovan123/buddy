@@ -11,7 +11,7 @@ jest.mock(
 
 import request from 'supertest';
 
-import { JwtAuthGuard, PoliciesGuard, QUEUES } from '@libs/common';
+import { JwtAuthGuard, PoliciesGuard, QUEUES, SubscriptionRequiredPolicy } from '@libs/common';
 import { UPLOAD_ROUTINGKEYS } from '@libs/contracts';
 import { CanActivate, ExecutionContext, VersioningType } from '@nestjs/common';
 import { CommandBus, CqrsModule, QueryBus } from '@nestjs/cqrs';
@@ -239,7 +239,8 @@ describe('Resource Multi-files Upload Integration', () => {
           mockS3Service as any,
           { client: mockPrismaService } as any,
           { isSupported: jest.fn().mockReturnValue(false) } as any,
-          { add: jest.fn() } as any,
+          { add: jest.fn().mockResolvedValue(undefined) } as any,
+          { add: jest.fn().mockResolvedValue(undefined) } as any,
         );
         return handler.execute(command);
       }
@@ -323,6 +324,10 @@ describe('Resource Multi-files Upload Integration', () => {
         { provide: CommandBus, useValue: mockUploadCommandBus },
         { provide: QueryBus, useValue: { execute: jest.fn() } },
         { provide: FILE_METADATA_REPOSITORY, useValue: mockUploadFileRepository },
+        {
+          provide: SubscriptionRequiredPolicy,
+          useValue: { handle: jest.fn().mockReturnValue(true) },
+        },
         { provide: UploadEventPublisher, useValue: mockUploadPublisher },
         { provide: S3Service, useValue: mockS3Service },
         { provide: PrismaService, useValue: mockPrismaService },

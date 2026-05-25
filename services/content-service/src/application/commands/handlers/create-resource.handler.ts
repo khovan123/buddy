@@ -18,7 +18,6 @@ import {
   RESOURCE_REPOSITORY,
 } from '../../../domain/repositories/tokens';
 import type { IContentValidationService } from '../../../domain/services/content-validation.service';
-import { RecommendationSyncPublisher } from '../../../infrastructure/messaging/publishers/recommendation-sync.publisher';
 import { StorageBrokerPublisher } from '../../../infrastructure/messaging/publishers/storage-broker.rpc';
 import { CollectionType } from '../../../infrastructure/persistence/mongo/schemas/collection.schema';
 import { ResourceStatus } from '../../../infrastructure/persistence/mongo/schemas/resource.schema';
@@ -47,7 +46,6 @@ export class CreateResourceHanlder implements ICommandHandler<CreateResourceComm
     @Inject(CONTENT_VALIDATION_SERVICE)
     private readonly contentValidationService: IContentValidationService,
     private readonly storageBrokerPublisher: StorageBrokerPublisher,
-    private readonly recommendationSync: RecommendationSyncPublisher,
   ) {}
 
   /**
@@ -182,19 +180,6 @@ export class CreateResourceHanlder implements ICommandHandler<CreateResourceComm
         );
       }
     }
-
-    // 8. Sync to recommendation-service (fire-and-forget)
-    this.recommendationSync.send({
-      type: 'ITEM_UPSERT',
-      itemId: resource.id,
-      itemType: 'RESOURCE',
-      majorId,
-      courseId,
-      title,
-      slug: resource.slug,
-      summary,
-      hightlights,
-    });
 
     // 9. Return resourceId + danh sách uploadUrls cho client upload trực tiếp
     return {

@@ -5,10 +5,10 @@ import {
   UPLOAD_ROUTINGKEYS,
   VideoProcessingJobEvent,
 } from '@libs/contracts';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg';
 import ffprobeInstaller from '@ffprobe-installer/ffprobe';
-import { Job } from 'bullmq';
+import { Job, Queue } from 'bullmq';
 import ffmpeg from 'fluent-ffmpeg';
 import { randomUUID } from 'crypto';
 import { createReadStream } from 'node:fs';
@@ -24,6 +24,7 @@ import { OutboxService } from '../messaging/publishers/outbox.service';
 import { S3Service } from '../persistence/aws/s3.service';
 import { CloudinaryService } from '../persistence/cloudinary/cloudinary.service';
 import { PrismaService } from '../persistence/prisma/prisma.service';
+import { type ContentExtractionJobData } from './content-extraction.worker';
 
 /** Represents the  video processor worker component. */
 @Processor(QUEUES.VIDEO_PROCESSING_QUEUE)
@@ -35,6 +36,8 @@ export class VideoProcessorWorker extends WorkerHost {
     private readonly outboxService: OutboxService,
     private readonly supabaseStorage: S3Service,
     private readonly cloudinaryStorage: CloudinaryService,
+    @InjectQueue(QUEUES.CONTENT_EXTRACTION_QUEUE)
+    private readonly extractionQueue: Queue<ContentExtractionJobData>,
   ) {
     super();
   }
@@ -115,6 +118,26 @@ export class VideoProcessorWorker extends WorkerHost {
 
       // Transaction committed → trigger relay immediately
       this.outboxService.notifyFlush();
+
+      // Resolve the logical content identifier (tutorialId) from the
+      // MediaFile record so downstream consumers receive a semantically
+      // correct contentId rather than the raw fileId.  fileIds keeps the
+      // actual media linkage intact.
+      const mediaFile = await this.prisma.client.mediaFile.findUnique({
+        where: { id: fileId },
+        select: { contentId: true },
+      });
+      const logicalContentId = mediaFile?.contentId ?? fileId;
+
+      // Enqueue transcript extraction — awaited so failures propagate into
+      // the BullMQ retry loop instead of silently dropping moderation input.
+      await this.extractionQueue.add('extract-tutorial-content', {
+        contentId: logicalContentId,
+        contentType: 'TUTORIAL',
+        fileIds: [fileId],
+        uploadedBy,
+        correlationId: processedEvent.correlationId ?? logicalContentId,
+      });
 
       this.logger.log(`Successfully processed media file ${fileId}`);
     } catch (error) {

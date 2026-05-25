@@ -13,6 +13,7 @@ import { resolveExtension } from '../../../domain/services/resolver';
 import { OutboxService } from '../../../infrastructure/messaging/publishers/outbox.service';
 import { S3Service } from '../../../infrastructure/persistence/aws/s3.service';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
+import { type ContentExtractionJobData } from '../../../infrastructure/workers/content-extraction.worker';
 import type { DocumentPreviewJobData } from '../../../infrastructure/workers/document-preview.worker';
 import { ConfirmResourceUploadCommand } from '../confirm-resource-upload.command';
 
@@ -30,6 +31,8 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
     private readonly previewProcessor: PreviewProcessorContext,
     @InjectQueue(QUEUES.DOCUMENT_PREVIEW_QUEUE)
     private readonly previewQueue: Queue<DocumentPreviewJobData>,
+    @InjectQueue(QUEUES.CONTENT_EXTRACTION_QUEUE)
+    private readonly extractionQueue: Queue<ContentExtractionJobData>,
   ) {}
 
   /**
@@ -68,6 +71,8 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
           size: Number(meta.fileSizeBytes),
           extension: resolveExtension(meta.originalFilename),
           s3Key: meta.s3Key,
+          mimeType: meta.mimeType,
+          originalFilename: meta.originalFilename,
         };
       }),
     );
@@ -91,13 +96,17 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
           {
             resourceId: command.resourceId,
             uploadedBy: command.userId,
-            meta: metaPayload.map(({ fileId, s3Key, downloadUrl, size, extension }) => ({
-              fileId,
-              s3Key,
-              downloadUrl,
-              size,
-              extension,
-            })),
+            meta: metaPayload.map(
+              ({ fileId, s3Key, downloadUrl, size, extension, mimeType, originalFilename }) => ({
+                fileId,
+                s3Key,
+                downloadUrl,
+                size,
+                extension,
+                mimeType,
+                originalFilename,
+              }),
+            ),
             completedAt: new Date().toISOString(),
           },
           correlationId,
@@ -108,6 +117,21 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
 
     // Transaction committed → trigger relay immediately
     this.outboxService.notifyFlush();
+
+    void this.extractionQueue
+      .add('extract-resource-content', {
+        contentId: command.resourceId,
+        contentType: 'RESOURCE',
+        fileIds: uniqueFileIds,
+        uploadedBy: command.userId,
+        correlationId,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Failed to queue content extraction for resource ${command.resourceId}`,
+          error instanceof Error ? error.message : String(error),
+        );
+      });
 
     // ── Pre-generation: queue preview for supported formats ─────
     // Fire-and-forget — failures handled by BullMQ retry mechanism

@@ -4,6 +4,7 @@ import { ClientSession, InferSchemaType, Model, Types } from 'mongoose';
 
 import { Resource, ResourceMeta } from '../../../../domain/entities/resource.entity';
 import {
+  ContentModerationPersistenceResult,
   IResourceRepository,
   ResourceCollectionDetails,
   ResourceListQueryParams,
@@ -13,6 +14,7 @@ import {
 import { CourseSchema } from '../schemas/course.schema';
 import { MajorSchema } from '../schemas/major.schema';
 import {
+  ContentModerationStatus,
   ResourceDocument,
   ResourceSchema,
   Resource as ResourceSchemaClass,
@@ -383,7 +385,7 @@ export class ResourceMongoRepository implements IResourceRepository {
       { _id: resourceId, deletedAt: null },
       {
         $set: {
-          status: ResourceStatus.AVAILABLE,
+          status: ResourceStatus.PROCESSING,
           meta,
           ...(primaryS3Key ? { primaryS3Key } : {}),
         },
@@ -695,6 +697,21 @@ export class ResourceMongoRepository implements IResourceRepository {
       courseId: row.courseId?.toString() ?? '',
       price: row.price,
       status: row.status,
+      // Legacy documents predating the moderation system have no
+      // moderationStatus field.  Defaulting blindly to PENDING would
+      // make every published resource appear as "awaiting moderation"
+      // in the UI.  Instead, infer APPROVED for resources already in
+      // AVAILABLE status — they were implicitly approved before
+      // moderation was introduced.
+      moderationStatus:
+        row.moderationStatus ??
+        (row.status === 'AVAILABLE'
+          ? ContentModerationStatus.APPROVED
+          : ContentModerationStatus.PENDING),
+      moderationScore: row.moderationScore ?? null,
+      moderationReasons: row.moderationReasons ?? [],
+      moderationRuleVersion: row.moderationRuleVersion ?? null,
+      moderatedAt: row.moderatedAt ?? null,
       resourceVerified: row.isVerified,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -920,7 +937,7 @@ export class ResourceMongoRepository implements IResourceRepository {
     const { downloadUrl, fileSize } = params;
 
     const updatePayload: Record<string, any> = {
-      status: ResourceStatus.AVAILABLE,
+      status: ResourceStatus.PROCESSING,
     };
 
     if (downloadUrl !== undefined) {
@@ -964,6 +981,44 @@ export class ResourceMongoRepository implements IResourceRepository {
     if (result.modifiedCount === 0) {
       console.warn(
         `[ResourceMongoRepository] markFailedByFileId failed: fileId=${fileId} not found`,
+      );
+    }
+  }
+
+  async applyModerationResult(
+    resourceId: string,
+    result: ContentModerationPersistenceResult,
+    options?: { session?: unknown },
+  ): Promise<void> {
+    const status =
+      result.status === ContentModerationStatus.APPROVED
+        ? ResourceStatus.AVAILABLE
+        : result.status === ContentModerationStatus.REJECTED
+          ? ResourceStatus.BANNED
+          : ResourceStatus.PROCESSING;
+
+    const query = this.resourceModel.updateOne(
+      { _id: resourceId, deletedAt: null },
+      {
+        $set: {
+          status,
+          moderationStatus: result.status,
+          moderationScore: result.score ?? null,
+          moderationReasons: result.reasons,
+          moderationRuleVersion: result.ruleVersion ?? null,
+          moderatedAt: new Date(),
+        },
+      },
+    );
+    const session = options?.session as ClientSession | undefined;
+    if (session) {
+      query.session(session);
+    }
+    const updateResult = await query.exec();
+
+    if (updateResult.modifiedCount === 0) {
+      console.warn(
+        `[ResourceMongoRepository] applyModerationResult failed: resourceId=${resourceId}`,
       );
     }
   }

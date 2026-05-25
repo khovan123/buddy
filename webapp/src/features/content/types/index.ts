@@ -48,6 +48,14 @@ export enum TutorialStatus {
   DELETED = "DELETED",
 }
 
+export enum ContentModerationStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  NEEDS_REVIEW = "NEEDS_REVIEW",
+  ERROR = "ERROR",
+}
+
 /** collection.schema.ts → CollectionType */
 export enum CollectionType {
   RESOURCE = "RESOURCE",
@@ -116,6 +124,11 @@ export interface Resource {
   courseId: string
   price: number
   status: ResourceStatus
+  moderationStatus?: ContentModerationStatus
+  moderationScore?: number | null
+  moderationReasons?: string[]
+  moderationRuleVersion?: string | null
+  moderatedAt?: string | null
   isVerified: boolean
   tutorialId?: string | null
   collectionId?: string | null
@@ -178,6 +191,11 @@ export interface ResourceQueryItem {
   courseId: string
   price: number
   status: ResourceStatus
+  moderationStatus?: ContentModerationStatus
+  moderationScore?: number | null
+  moderationReasons?: string[]
+  moderationRuleVersion?: string | null
+  moderatedAt?: string | null
   isVerified: boolean
   createdAt: string
   updatedAt: string
@@ -219,6 +237,11 @@ export interface Tutorial {
   price: number
   isVerified: boolean
   status: TutorialStatus
+  moderationStatus?: ContentModerationStatus
+  moderationScore?: number | null
+  moderationReasons?: string[]
+  moderationRuleVersion?: string | null
+  moderatedAt?: string | null
   discountBundle: number
   collectionId?: string | null
   resourceIds?: string[] | null
@@ -282,6 +305,11 @@ export interface TutorialQueryItem {
   courseId: string
   price: number
   status: TutorialStatus
+  moderationStatus?: ContentModerationStatus
+  moderationScore?: number | null
+  moderationReasons?: string[]
+  moderationRuleVersion?: string | null
+  moderatedAt?: string | null
   isVerified: boolean
   discountBundle: number
   createdAt: string

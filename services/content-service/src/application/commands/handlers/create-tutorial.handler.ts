@@ -17,7 +17,6 @@ import {
 } from '../../../domain/repositories/tokens';
 import type { ITutorialRepository } from '../../../domain/repositories/tutorial.repository.interface';
 import type { IContentValidationService } from '../../../domain/services/content-validation.service';
-import { RecommendationSyncPublisher } from '../../../infrastructure/messaging/publishers/recommendation-sync.publisher';
 import { StorageBrokerPublisher } from '../../../infrastructure/messaging/publishers/storage-broker.rpc';
 import { CollectionType } from '../../../infrastructure/persistence/mongo/schemas/collection.schema';
 import { TutorialStatus } from '../../../infrastructure/persistence/mongo/schemas/tutorial.schema';
@@ -45,7 +44,6 @@ export class CreateTutorialHanlder implements ICommandHandler<CreateTutorialComm
     @Inject(CONTENT_VALIDATION_SERVICE)
     private readonly contentValidationService: IContentValidationService,
     private readonly storageBrokerPublisher: StorageBrokerPublisher,
-    private readonly recommendationSync: RecommendationSyncPublisher,
   ) {}
 
   /**
@@ -198,20 +196,6 @@ export class CreateTutorialHanlder implements ICommandHandler<CreateTutorialComm
     await this.tutorialRepository.updateMedia(tutorial.id, {
       ...media,
       fileId: presignedUrlResponse.uploadUrl.fileId,
-    });
-
-    // 6.5 Sync to recommendation-service (fire-and-forget)
-    this.recommendationSync.send({
-      type: 'ITEM_UPSERT',
-      itemId: tutorial.id,
-      itemType: 'TUTORIAL',
-      majorId,
-      courseId,
-      title,
-      slug,
-      description,
-      hightlights,
-      steps: steps?.map((s) => ({ title: s.title })),
     });
 
     // 7. Return tutorial metadata + presigned URL + estimatedTime
