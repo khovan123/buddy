@@ -83,7 +83,7 @@ export class VideoProcessorWorker extends WorkerHost {
         contentId: logicalContentId,
         fileIds: [fileId],
         uploadedBy,
-        correlationId: fileId,
+        correlationId,
       });
       return;
     }
