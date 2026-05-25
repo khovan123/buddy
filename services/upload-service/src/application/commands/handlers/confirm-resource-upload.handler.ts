@@ -5,7 +5,7 @@ import { Queue } from 'bullmq';
 
 import { AppLogger, getCorrelationId, QUEUES } from '@libs/common';
 
-import { ResourceUploadCompletedEvent } from '@libs/contracts';
+import { ResourceUploadCompletedEvent, UPLOAD_ROUTINGKEYS } from '@libs/contracts';
 import type { FileMetadataRepository } from '../../../domain/repositories/file-metadata.repository.interface';
 import { FILE_METADATA_REPOSITORY } from '../../../domain/repositories/tokens';
 import { PreviewProcessorContext } from '../../../domain/services/preview-processor.context';
@@ -116,15 +116,30 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
     });
 
     // Enqueue content extraction as part of the confirm workflow.
-    // If scheduling fails, fail the command so the client can retry
-    // instead of returning success without an extraction/moderation job.
-    await this.extractionQueue.add('extract-resource-content', {
-      contentId: command.resourceId,
-      contentType: 'RESOURCE',
-      fileIds: uniqueFileIds,
-      uploadedBy: command.userId,
-      correlationId,
-    });
+    // If scheduling fails, compensate the outbox row so the relay
+    // does not publish ResourceUploadCompletedEvent without an
+    // extraction/moderation job, then re-throw so the client can retry.
+    try {
+      await this.extractionQueue.add('extract-resource-content', {
+        contentId: command.resourceId,
+        contentType: 'RESOURCE',
+        fileIds: uniqueFileIds,
+        uploadedBy: command.userId,
+        correlationId,
+      });
+    } catch (enqueueError) {
+      this.logger.error(
+        `Extraction enqueue failed for resource ${command.resourceId}, compensating outbox`,
+        enqueueError instanceof Error ? enqueueError.stack : String(enqueueError),
+      );
+
+      await this.outboxService.compensate(
+        correlationId,
+        UPLOAD_ROUTINGKEYS.RESOURCE_UPLOAD_COMPLETED,
+      );
+
+      throw enqueueError;
+    }
 
     // ── Pre-generation: queue preview for supported formats ─────
     // Fire-and-forget — failures handled by BullMQ retry mechanism
