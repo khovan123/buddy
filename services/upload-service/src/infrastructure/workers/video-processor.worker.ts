@@ -98,6 +98,7 @@ export class VideoProcessorWorker extends WorkerHost {
     // can access it after the main try/catch/finally completes.
     let processedEvent: FileProcessedEvent | undefined;
 
+
     try {
       await mkdir(hlsDir, { recursive: true });
 

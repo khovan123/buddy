@@ -156,6 +156,7 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
       }
     }
 
+
     this.outboxService.notifyFlush();
 
     return {
