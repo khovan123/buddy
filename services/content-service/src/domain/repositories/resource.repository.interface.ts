@@ -1,4 +1,7 @@
-import { ResourceStatus } from '../../infrastructure/persistence/mongo/schemas/resource.schema';
+import {
+  ContentModerationStatus,
+  ResourceStatus,
+} from '../../infrastructure/persistence/mongo/schemas/resource.schema';
 import { CourseStatus } from '../entities/course.entity';
 import { MajorStatus } from '../entities/major.entity';
 import { Resource, ResourceMeta } from '../entities/resource.entity';
@@ -74,6 +77,11 @@ export interface ResourceQueryItem {
   courseId: string;
   price: number;
   status: ResourceStatus;
+  moderationStatus: ContentModerationStatus;
+  moderationScore?: number | null;
+  moderationReasons: string[];
+  moderationRuleVersion?: string | null;
+  moderatedAt?: Date | null;
   resourceVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -93,6 +101,13 @@ export interface ResourceQueryItem {
 export interface ResourceQueryResult {
   data: ResourceQueryItem[];
   meta: ResourceQueryMeta;
+}
+
+export interface ContentModerationPersistenceResult {
+  status: ContentModerationStatus;
+  score?: number | null;
+  reasons: string[];
+  ruleVersion?: string | null;
 }
 
 /** Interface representing data constraints for  i resource repository. */
@@ -117,6 +132,11 @@ export interface IResourceRepository {
   completeUpload(
     resourceId: string,
     meta: ResourceMeta[],
+    options?: { session?: unknown },
+  ): Promise<void>;
+  applyModerationResult(
+    resourceId: string,
+    result: ContentModerationPersistenceResult,
     options?: { session?: unknown },
   ): Promise<void>;
   /**

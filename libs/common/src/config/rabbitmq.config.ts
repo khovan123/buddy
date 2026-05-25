@@ -27,6 +27,7 @@ export const QUEUES = {
   CONTENT_COMMANDS: 'content.commands',
   CONTENT_VIDEO_EVENTS: 'content.video.events',
   CONTENT_RESOURCE_EVENTS: 'content.resource.events',
+  CONTENT_EXTRACTION_QUEUE: 'upload.content.extraction',
   VIDEO_PROCESSING_QUEUE: 'upload.video.processing',
   DOCUMENT_PREVIEW_QUEUE: 'upload.document.preview',
   USER_RPC_GET_PROFILES: 'user.rpc.get_profiles',

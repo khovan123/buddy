@@ -53,6 +53,11 @@ export interface ContentResourceItem {
   courseId: string
   price: number
   status: string
+  moderationStatus?: string
+  moderationScore?: number | null
+  moderationReasons?: string[]
+  moderationRuleVersion?: string | null
+  moderatedAt?: string | null
   resourceVerified: boolean
   createdAt: string
   updatedAt: string
@@ -70,6 +75,11 @@ export interface ContentTutorialItem {
   courseId: string
   price: number
   status: string
+  moderationStatus?: string
+  moderationScore?: number | null
+  moderationReasons?: string[]
+  moderationRuleVersion?: string | null
+  moderatedAt?: string | null
   isVerified: boolean
   discountBundle: number
   createdAt: string

@@ -17,7 +17,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Badge } from "@/components/ui/badge"
 import { UploadHistory } from "@/features/content/components/upload-history"
 import { useGetTutorialUploadHistoryByIdQuery } from "@/features/content/services/content-api"
 import type {
@@ -28,6 +27,10 @@ import { cn } from "@/lib/utils"
 
 import { DashboardHeader } from "../dashboard-header"
 import { EmptyPlaceholder } from "../empty-placeholder"
+import {
+  ModerationReason,
+  ModerationStatusBadge,
+} from "../moderation-status-badge"
 import { ServerHistoryFileRow } from "../server-history-file-row"
 
 function TutorialHistoryList({ tutorialId }: { tutorialId: string }) {
@@ -138,20 +141,15 @@ export function TutorialsDashboard({
                           tutorial.isVerified ? "text-primary" : "text-gray-500"
                         )}
                       />
-                      <Badge
-                        variant={
-                          tutorial.status === "AVAILABLE"
-                            ? "default"
-                            : "secondary"
-                        }
-                        className="text-2xs h-5 px-1.5 leading-none font-semibold uppercase"
-                      >
-                        {tutorial.status}
-                      </Badge>
+                      <ModerationStatusBadge
+                        status={tutorial.status}
+                        moderationStatus={tutorial.moderationStatus}
+                      />
                     </div>
                     <p className="mt-1 line-clamp-2 pr-8 text-sm leading-relaxed text-muted-foreground">
                       {tutorial.description}
                     </p>
+                    <ModerationReason reasons={tutorial.moderationReasons} />
                     <div className="mt-3 flex flex-wrap items-center gap-5 text-xs font-medium text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <DollarSign className="h-4 w-4 opacity-70" />

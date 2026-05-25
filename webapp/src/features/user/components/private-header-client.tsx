@@ -2,12 +2,10 @@
 
 import { useMemo, useState } from "react"
 
-import { Bell } from "lucide-react"
-
 import type { NavigationItem } from "@/components/atoms/nav-dropdown-item"
 import { CreateContentCTA } from "@/components/molecules/create-content-cta"
 import { Navigation } from "@/components/organisms/navigation"
-import { Button } from "@/components/ui/button"
+import { ContentModerationNotifications } from "@/features/user/components/content-moderation-notifications"
 import { HeaderWalletPopover } from "@/features/user/components/header-wallet-popover"
 import { PlanSelectorDialog } from "@/features/user/components/plan-selector-dialog"
 import { ProfileCompleteBanner } from "@/features/user/components/profile-complete-banner"
@@ -105,15 +103,7 @@ export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
             <CreateContentCTA />
             <PlanSelectorDialog />
             <HeaderWalletPopover />
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Notifications"
-              className="relative hidden md:inline-flex"
-            >
-              <Bell className="size-4" />
-              <span className="absolute top-2 right-2 size-2 rounded-full bg-primary" />
-            </Button>
+            <ContentModerationNotifications />
             <UserMenuPopover
               user={menuUser}
               onEditProfile={openProfileDialog}

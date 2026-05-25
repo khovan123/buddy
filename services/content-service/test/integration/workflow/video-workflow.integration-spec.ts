@@ -9,7 +9,12 @@ jest.mock(
   }),
 );
 
-import { CreatorOnlyPolicy, JwtAuthGuard, PoliciesGuard } from '@libs/common';
+import {
+  CreatorOnlyPolicy,
+  JwtAuthGuard,
+  PoliciesGuard,
+  SubscriptionRequiredPolicy,
+} from '@libs/common';
 import { FileProcessedEvent, FileProcessingFailedEvent, UPLOAD_ROUTINGKEYS } from '@libs/contracts';
 import { getQueueToken } from '@nestjs/bullmq';
 import { CanActivate, ExecutionContext, VersioningType } from '@nestjs/common';
@@ -36,18 +41,17 @@ import {
   TUTORIAL_REPOSITORY,
 } from '../../../src/domain/repositories/tokens';
 import { UploadProcessedConsumer } from '../../../src/infrastructure/messaging/consumers/upload-processed.consumer';
-import {
-  MESSAGE_COMPONENTS,
-  MESSAGE_CONTROLLERS,
-} from '../../../src/infrastructure/messaging/message.module';
+import { MESSAGE_COMPONENTS } from '../../../src/infrastructure/messaging/message.module';
 import { RecommendationSyncPublisher } from '../../../src/infrastructure/messaging/publishers/recommendation-sync.publisher';
 import { StorageBrokerPublisher } from '../../../src/infrastructure/messaging/publishers/storage-broker.rpc';
+import { UserServicePublisher } from '../../../src/infrastructure/messaging/publishers/user-service.rpc';
 import { MongoService } from '../../../src/infrastructure/persistence/mongo/mongo.service';
 import {
   ProcessedMessage,
   ProcessedMessageStatus,
 } from '../../../src/infrastructure/persistence/mongo/schemas/processed-message.schema';
 import { ContentCountService } from '../../../src/infrastructure/services/content-count.service';
+import { ContentModerationService } from '../../../src/infrastructure/services/content-moderation.service';
 import { TutorialController } from '../../../src/presentation/http/controllers/tutorial.controller';
 
 import { FILE_METADATA_REPOSITORY } from '../../../../upload-service/src/domain/repositories/tokens';
@@ -211,11 +215,14 @@ describe('Video Workflow Integration - Content + Upload', () => {
     saveMedia: jest.fn(),
     deleteAllByUserId: jest.fn(),
     findById: jest.fn(async (id: string) => tutorialDb.get(id) ?? null),
+    findBySlug: jest.fn().mockResolvedValue(null),
     findByResourceIds: jest.fn().mockResolvedValue([]),
     findByCollectionId: jest.fn().mockResolvedValue(null),
     findMediaById: jest.fn(),
     findMediaByTutorialId: jest.fn(),
     findByIdWithDetails: jest.fn(),
+    findBySlugWithDetails: jest.fn(),
+    findByMediaFileIdWithDetails: jest.fn(),
     findAvailableTutorials: jest.fn(),
     findAvailableTutorialCollections: jest.fn(),
     update: jest.fn(),
@@ -244,6 +251,7 @@ describe('Video Workflow Integration - Content + Upload', () => {
       tutorialDb.set(tutorial.id, tutorial);
     }),
     markAvailableWithProcessedMedia: jest.fn(),
+    applyModerationResult: jest.fn(),
     deletePendingOlderThan: jest.fn(),
     delete: jest.fn(async (id: string) => tutorialDb.delete(id)),
   };
@@ -284,10 +292,12 @@ describe('Video Workflow Integration - Content + Upload', () => {
       });
 
       return {
-        fileId,
-        s3Key,
-        uploadUrl: `https://mock-s3.local/upload/${fileId}`,
-        estimatedTime: 30,
+        uploadUrl: {
+          fileId,
+          s3Key,
+          uploadUrl: `https://mock-s3.local/upload/${fileId}`,
+          estimatedTime: 30,
+        },
       };
     }),
   };
@@ -360,7 +370,7 @@ describe('Video Workflow Integration - Content + Upload', () => {
     // Khởi tạo testing module của content-service, override các provider quan trọng để test E2E an toàn.
     const builder = Test.createTestingModule({
       imports: [CqrsModule],
-      controllers: [TutorialController, ...MESSAGE_CONTROLLERS],
+      controllers: [TutorialController, UploadProcessedConsumer],
       providers: [
         ...COMMAND_HANDLERS,
         ...MESSAGE_COMPONENTS,
@@ -382,9 +392,22 @@ describe('Video Workflow Integration - Content + Upload', () => {
         { provide: RESOURCE_REPOSITORY, useValue: mockResourceRepository },
         { provide: COLLECTION_REPOSITORY, useValue: mockCollectionRepository },
         { provide: StorageBrokerPublisher, useValue: mockStorageBrokerPublisher },
+        { provide: UserServicePublisher, useValue: { getUsersProfiles: jest.fn() } },
+        {
+          provide: ContentModerationService,
+          useValue: {
+            moderate: jest.fn().mockResolvedValue({
+              decision: 'APPROVED',
+              score: 0,
+              reasons: ['integration test'],
+              ruleVersion: 'test',
+            }),
+          },
+        },
         {
           provide: RecommendationSyncPublisher,
           useValue: {
+            send: jest.fn(),
             onModuleInit: jest.fn(async () => undefined),
             onModuleDestroy: jest.fn(async () => undefined),
           },
@@ -419,6 +442,10 @@ describe('Video Workflow Integration - Content + Upload', () => {
         { provide: CommandBus, useValue: mockUploadCommandBus },
         { provide: QueryBus, useValue: { execute: jest.fn() } },
         { provide: FILE_METADATA_REPOSITORY, useValue: mockUploadFileRepository },
+        {
+          provide: SubscriptionRequiredPolicy,
+          useValue: { handle: jest.fn().mockReturnValue(true) },
+        },
         { provide: UploadEventPublisher, useValue: mockUploadPublisher },
         { provide: OutboxService, useValue: { put: jest.fn() } },
         { provide: S3Service, useValue: mockS3Service },

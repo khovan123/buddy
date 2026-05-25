@@ -1,4 +1,7 @@
-import { TutorialStatus } from '../../infrastructure/persistence/mongo/schemas/tutorial.schema';
+import {
+  ContentModerationStatus,
+  TutorialStatus,
+} from '../../infrastructure/persistence/mongo/schemas/tutorial.schema';
 import { CourseStatus } from '../entities/course.entity';
 import { MajorStatus } from '../entities/major.entity';
 import { Tutorial, TutorialMedia } from '../entities/tutorial.entity';
@@ -90,6 +93,11 @@ export interface TutorialQueryItem {
   courseId: string;
   price: number;
   status: TutorialStatus;
+  moderationStatus: ContentModerationStatus;
+  moderationScore?: number | null;
+  moderationReasons: string[];
+  moderationRuleVersion?: string | null;
+  moderatedAt?: Date | null;
   isVerified: boolean;
   discountBundle: number;
   createdAt: Date;
@@ -127,6 +135,13 @@ export interface TutorialQueryResult {
   meta: TutorialQueryMeta;
 }
 
+export interface ContentModerationPersistenceResult {
+  status: ContentModerationStatus;
+  score?: number | null;
+  reasons: string[];
+  ruleVersion?: string | null;
+}
+
 /** Interface representing data constraints for  i tutorial repository. */
 export interface ITutorialRepository {
   save(tutorial: Tutorial): Promise<void>;
@@ -142,6 +157,7 @@ export interface ITutorialRepository {
   findByIdWithDetails(id: string): Promise<TutorialQueryItem | null>;
   findByIdsWithDetails(ids: string[]): Promise<TutorialQueryItem[]>;
   findBySlugWithDetails(slug: string): Promise<TutorialQueryItem | null>;
+  findByMediaFileIdWithDetails(fileId: string): Promise<TutorialQueryItem | null>;
   findAvailableTutorials(params: TutorialListQueryParams): Promise<TutorialQueryResult>;
   findMyTutorials(params: TutorialListQueryParams): Promise<TutorialQueryResult>;
   findAvailableTutorialCollections(params: TutorialListQueryParams): Promise<TutorialQueryResult>;
@@ -155,6 +171,11 @@ export interface ITutorialRepository {
   updateByFileId(
     fileId: string,
     params: { streamingUrl?: string | null; trailerUrl?: string | null; fileSize?: number },
+    options?: { session?: unknown },
+  ): Promise<void>;
+  applyModerationResult(
+    tutorialId: string,
+    result: ContentModerationPersistenceResult,
     options?: { session?: unknown },
   ): Promise<void>;
   markFailedByFileId(fileId: string, options?: { session?: unknown }): Promise<void>;

@@ -316,6 +316,9 @@ export function CreateResourceForm() {
               resourceId: response.resourceId,
               fileIds: currentBatch.files.map((f) => f.id),
             }).unwrap()
+            toast.success(
+              "Resource uploaded. Extraction and moderation will continue in the background."
+            )
           } catch (error) {
             console.error("Failed to confirm resource:", error)
             toast.error("Upload succeeded, but confirmation failed.")
