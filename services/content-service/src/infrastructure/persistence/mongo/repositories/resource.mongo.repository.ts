@@ -386,6 +386,11 @@ export class ResourceMongoRepository implements IResourceRepository {
       {
         $set: {
           status: ResourceStatus.PROCESSING,
+          moderationStatus: ContentModerationStatus.PENDING,
+          moderationScore: null,
+          moderationReasons: [],
+          moderationRuleVersion: null,
+          moderatedAt: null,
           meta,
           ...(primaryS3Key ? { primaryS3Key } : {}),
         },
@@ -938,6 +943,11 @@ export class ResourceMongoRepository implements IResourceRepository {
 
     const updatePayload: Record<string, any> = {
       status: ResourceStatus.PROCESSING,
+      moderationStatus: ContentModerationStatus.PENDING,
+      moderationScore: null,
+      moderationReasons: [],
+      moderationRuleVersion: null,
+      moderatedAt: null,
     };
 
     if (downloadUrl !== undefined) {

@@ -1157,6 +1157,11 @@ export class TutorialMongoRepository implements ITutorialRepository {
 
     const updatePayload: Record<string, any> = {
       status: TutorialStatus.PROCESSING,
+      moderationStatus: ContentModerationStatus.PENDING,
+      moderationScore: null,
+      moderationReasons: [],
+      moderationRuleVersion: null,
+      moderatedAt: null,
     };
 
     if (streamingUrl !== undefined) {

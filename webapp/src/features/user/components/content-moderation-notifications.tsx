@@ -198,7 +198,8 @@ export function ContentModerationNotifications() {
     isFetching: resourcesFetching,
     isError: resourcesError,
   } = useGetMyResourcesQuery(undefined, {
-    pollingInterval: open ? 30_000 : 0,
+    pollingInterval: 30_000,
+    refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
     refetchOnReconnect: true,
   })
@@ -207,7 +208,8 @@ export function ContentModerationNotifications() {
     isFetching: tutorialsFetching,
     isError: tutorialsError,
   } = useGetMyTutorialsQuery(undefined, {
-    pollingInterval: open ? 30_000 : 0,
+    pollingInterval: 30_000,
+    refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
     refetchOnReconnect: true,
   })
@@ -263,7 +265,7 @@ export function ContentModerationNotifications() {
           variant="ghost"
           size="icon"
           aria-label="Content moderation notifications"
-          className="relative hidden md:inline-flex"
+          className="relative inline-flex"
         >
           {isFetching ? (
             <Loader2 className="size-4 animate-spin" />

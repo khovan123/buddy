@@ -56,12 +56,14 @@ export class VideoProcessorWorker extends WorkerHost {
     // 1. Lấy dữ liệu từ Job theo chuẩn mới (s3Key thay vì temporaryPath)
     const { fileId, s3Key, uploadedBy } = job.data;
 
+    // Deterministic correlationId so BullMQ retries produce the same
+    // correlation trace instead of a new UUID each attempt.
+    const correlationId = fileId;
+
     // ── Idempotency guard ──────────────────────────────────────
     // If a previous attempt already transcoded and committed the
-    // FileProcessedEvent but the extraction enqueue failed (transient
-    // Redis/BullMQ error), the job will be retried by BullMQ.  Detect
-    // this by checking the MediaFile status — if already AVAILABLE,
-    // skip all video processing and jump straight to extraction.
+    // FileProcessedEvent, avoid duplicate video work and enqueue the
+    // extraction/transcript step again in the background.
     const existingFile = await this.prisma.client.mediaFile.findUnique({
       where: { id: fileId },
       select: { status: true, contentId: true },
@@ -77,9 +79,8 @@ export class VideoProcessorWorker extends WorkerHost {
       this.outboxService.notifyFlush();
 
       const logicalContentId = existingFile.contentId ?? fileId;
-      await this.extractionQueue.add('extract-tutorial-content', {
+      this.enqueueTutorialExtraction({
         contentId: logicalContentId,
-        contentType: 'TUTORIAL',
         fileIds: [fileId],
         uploadedBy,
         correlationId: fileId,
@@ -96,10 +97,6 @@ export class VideoProcessorWorker extends WorkerHost {
     // Hoisted so the post-processing steps (flush + extraction enqueue)
     // can access it after the main try/catch/finally completes.
     let processedEvent: FileProcessedEvent | undefined;
-
-    // Deterministic correlationId so BullMQ retries produce the same
-    // correlation trace instead of a new UUID each attempt.
-    const correlationId = fileId;
 
     try {
       await mkdir(hlsDir, { recursive: true });
@@ -234,12 +231,8 @@ export class VideoProcessorWorker extends WorkerHost {
         );
       }
 
-      // Re-throw on failure so BullMQ retries the job.  The idempotency
-      // guard at the top of process() will detect status=AVAILABLE and
-      // skip straight to this enqueue on the next attempt.
-      await this.extractionQueue.add('extract-tutorial-content', {
+      this.enqueueTutorialExtraction({
         contentId: logicalContentId,
-        contentType: 'TUTORIAL',
         fileIds: [fileId],
         uploadedBy,
         correlationId,
@@ -288,5 +281,24 @@ export class VideoProcessorWorker extends WorkerHost {
         .on('error', (err) => reject(err))
         .run();
     });
+  }
+
+  private enqueueTutorialExtraction(data: {
+    contentId: string;
+    fileIds: string[];
+    uploadedBy: string;
+    correlationId: string;
+  }): void {
+    void this.extractionQueue
+      .add('extract-tutorial-content', {
+        ...data,
+        contentType: 'TUTORIAL',
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Failed to enqueue tutorial content extraction for ${data.contentId}`,
+          error instanceof Error ? error.message : String(error),
+        );
+      });
   }
 }

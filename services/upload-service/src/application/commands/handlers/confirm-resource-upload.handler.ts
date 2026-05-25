@@ -115,17 +115,23 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
       );
     });
 
-    // Enqueue content extraction — awaited so failures propagate as an
-    // HTTP error instead of silently leaving the resource in PROCESSING
-    // with no moderation path.  Runs BEFORE flushing the outbox so a
-    // failed enqueue doesn't leave a relayed event with no extraction job.
-    await this.extractionQueue.add('extract-resource-content', {
-      contentId: command.resourceId,
-      contentType: 'RESOURCE',
-      fileIds: uniqueFileIds,
-      uploadedBy: command.userId,
-      correlationId,
-    });
+    // Enqueue content extraction without blocking the confirm response.
+    // The extraction worker performs text extraction/transcript + moderation
+    // asynchronously and reports failures through logs/worker retries.
+    void this.extractionQueue
+      .add('extract-resource-content', {
+        contentId: command.resourceId,
+        contentType: 'RESOURCE',
+        fileIds: uniqueFileIds,
+        uploadedBy: command.userId,
+        correlationId,
+      })
+      .catch((error) => {
+        this.logger.error(
+          `Failed to enqueue content extraction for resource ${command.resourceId}`,
+          error instanceof Error ? error.message : String(error),
+        );
+      });
 
     // ── Pre-generation: queue preview for supported formats ─────
     // Fire-and-forget — failures handled by BullMQ retry mechanism
@@ -142,8 +148,6 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
       }
     }
 
-    // Flush the outbox AFTER all throwable steps have completed, so a
-    // client retry on failure cannot cause duplicate event emissions.
     this.outboxService.notifyFlush();
 
     return {
