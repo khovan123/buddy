@@ -1,3 +1,5 @@
+/// <reference types="jest" />
+
 import 'reflect-metadata';
 
 import type { PlanLimits } from '@libs/contracts';
