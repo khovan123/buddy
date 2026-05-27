@@ -2,7 +2,7 @@ app = "buddy-auth-service"
 primary_region = "sin"
 
 [build]
-  dockerfile = "services/auth-service/Dockerfile"
+  dockerfile = "../../services/auth-service/Dockerfile"
 
 [env]
   NODE_ENV = "production"

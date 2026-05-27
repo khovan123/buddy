@@ -2,7 +2,7 @@ app = "buddy-billing-service"
 primary_region = "sin"
 
 [build]
-  dockerfile = "services/billing-service/Dockerfile"
+  dockerfile = "../../services/billing-service/Dockerfile"
 
 [env]
   NODE_ENV = "production"

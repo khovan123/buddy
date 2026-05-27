@@ -2,7 +2,7 @@ app = "buddy-rag-service"
 primary_region = "sin"
 
 [build]
-  dockerfile = "services/rag-service/Dockerfile"
+  dockerfile = "../../services/rag-service/Dockerfile"
 
 [env]
   NODE_ENV = "production"
