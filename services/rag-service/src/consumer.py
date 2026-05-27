@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 # Exchange and queue names (must match content-service publisher config)
 EXCHANGE_CONTENT_SYNC = "content.sync"
+EXCHANGE_DEAD_LETTER = "dead.letter"
 QUEUE_RAG_CONTENT_SYNC = "rag.content.sync"
 
 # Max parallel embedding workers — keeps memory bounded
@@ -75,13 +76,14 @@ class RAGContentConsumer:
             exchange=EXCHANGE_CONTENT_SYNC,
             exchange_type="fanout",
             durable=True,
+            arguments={"alternate-exchange": EXCHANGE_DEAD_LETTER},
         )
 
         # Declare our queue and bind to the fanout exchange
         self._channel.queue_declare(
             queue=QUEUE_RAG_CONTENT_SYNC,
             durable=True,
-            arguments={"x-dead-letter-exchange": "dead.letter"},
+            arguments={"x-dead-letter-exchange": EXCHANGE_DEAD_LETTER},
         )
         self._channel.queue_bind(
             queue=QUEUE_RAG_CONTENT_SYNC,

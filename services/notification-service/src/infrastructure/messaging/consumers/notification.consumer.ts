@@ -18,6 +18,11 @@ import { NotificationEventPublisher } from '../publishers/notification-event.pub
 import { SendOtpEmailCommand } from '../../../application/commands/send-otp-email.command';
 import { SendModelTrainedEmailCommand } from '../../../application/commands/send-model-trained-email.command';
 
+type EventEnvelope<T extends object> = {
+  payload?: T;
+  correlationId?: string;
+} & Partial<T>;
+
 /** RabbitMQ consumer for auth-related notification events. */
 @Controller()
 export class NotificationConsumer {
@@ -27,6 +32,10 @@ export class NotificationConsumer {
     private readonly commandBus: CommandBus,
     private readonly notificationPublisher: NotificationEventPublisher,
   ) {}
+
+  private getPayload<T extends object>(data: EventEnvelope<T>): T | undefined {
+    return data.payload ?? (data as T);
+  }
 
   // ─── auth.user.registered ─────────────────────────────────────────────────
   @RabbitSubscribe({
@@ -39,14 +48,12 @@ export class NotificationConsumer {
     },
   })
   async handleUserRegistered(
-    data: {
-      payload: { userId: string; email: string; nickname: string };
-      correlationId?: string;
-    },
+    data: EventEnvelope<{ userId: string; email: string; nickname: string }>,
     amqpMsg: ConsumeMessage,
   ): Promise<void | Nack> {
     const headers = amqpMsg.properties.headers ?? {};
     const retryCount: number = headers['x-retry-count'] ?? 0;
+    const payload = this.getPayload(data);
     const correlationId = ensureCorrelationId(
       data.correlationId,
       headers[CORRELATION_ID_HEADER],
@@ -54,18 +61,25 @@ export class NotificationConsumer {
       amqpMsg.properties.correlationId,
       amqpMsg.properties.messageId,
     );
+    if (!payload?.email || !payload.userId) {
+      this.logger.warn(`Dropping malformed [${AUTH_ROUTINGKEYS.USER_REGISTERED}] event`, {
+        correlationId,
+      });
+      return new Nack(false);
+    }
+
     try {
       await runWithCorrelationId(correlationId, async () => {
         this.logger.log(
-          `Processing welcome email for ${data.payload.email} [Retry: ${retryCount}]`,
+          `Processing welcome email for ${payload.email} [Retry: ${retryCount}]`,
           { correlationId },
         );
 
         await this.commandBus.execute(
           new SendWelcomeEmailCommand(
-            data.payload.userId,
-            data.payload.email,
-            data.payload.nickname,
+            payload.userId,
+            payload.email,
+            payload.nickname,
             correlationId,
           ),
         );
@@ -73,7 +87,7 @@ export class NotificationConsumer {
     } catch (error) {
       if (retryCount < RETRY_OPTIONS.MAX_RETRIES) {
         this.logger.warn(
-          `Failure handling [${AUTH_ROUTINGKEYS.USER_REGISTERED}] for ${data.payload.email}. ` +
+          `Failure handling [${AUTH_ROUTINGKEYS.USER_REGISTERED}] for ${payload.email}. ` +
             `Retrying (${retryCount + 1}/${RETRY_OPTIONS.MAX_RETRIES})...`,
           String(error),
         );
@@ -86,7 +100,7 @@ export class NotificationConsumer {
       }
 
       this.logger.error(
-        `MAX RETRIES EXCEEDED for [${AUTH_ROUTINGKEYS.USER_REGISTERED}] [${data.payload.email}]`,
+        `MAX RETRIES EXCEEDED for [${AUTH_ROUTINGKEYS.USER_REGISTERED}] [${payload.email}]`,
         String(error),
       );
       return new Nack(false); // → dead.letter exchange
@@ -104,20 +118,18 @@ export class NotificationConsumer {
     },
   })
   async handlePasswordResetRequested(
-    data: {
-      payload: {
-        userId: string;
-        email: string;
-        nickname: string;
-        resetToken: string;
-        expiresAt: string;
-      };
-      correlationId?: string;
-    },
+    data: EventEnvelope<{
+      userId: string;
+      email: string;
+      nickname: string;
+      resetToken: string;
+      expiresAt: string;
+    }>,
     amqpMsg: ConsumeMessage,
   ): Promise<void | Nack> {
     const headers = amqpMsg.properties.headers ?? {};
     const retryCount: number = headers['x-retry-count'] ?? 0;
+    const payload = this.getPayload(data);
     const correlationId = ensureCorrelationId(
       data.correlationId,
       headers[CORRELATION_ID_HEADER],
@@ -125,21 +137,27 @@ export class NotificationConsumer {
       amqpMsg.properties.correlationId,
       amqpMsg.properties.messageId,
     );
+    if (!payload?.email || !payload.resetToken || !payload.expiresAt) {
+      this.logger.warn(`Dropping malformed [${AUTH_ROUTINGKEYS.PASSWORD_RESET_REQUESTED}] event`, {
+        correlationId,
+      });
+      return new Nack(false);
+    }
 
     try {
       await runWithCorrelationId(correlationId, async () => {
         this.logger.log(
-          `Processing password reset email for ${data.payload.email} [Retry: ${retryCount}]`,
+          `Processing password reset email for ${payload.email} [Retry: ${retryCount}]`,
           { correlationId },
         );
 
         await this.commandBus.execute(
           new SendPasswordResetEmailCommand(
-            data.payload.userId,
-            data.payload.email,
-            data.payload.nickname,
-            data.payload.resetToken,
-            new Date(data.payload.expiresAt),
+            payload.userId,
+            payload.email,
+            payload.nickname,
+            payload.resetToken,
+            new Date(payload.expiresAt),
             correlationId,
           ),
         );
@@ -147,7 +165,7 @@ export class NotificationConsumer {
     } catch (error) {
       if (retryCount < RETRY_OPTIONS.MAX_RETRIES) {
         this.logger.warn(
-          `Failure handling [${AUTH_ROUTINGKEYS.PASSWORD_RESET_REQUESTED}] for ${data.payload.email}. ` +
+          `Failure handling [${AUTH_ROUTINGKEYS.PASSWORD_RESET_REQUESTED}] for ${payload.email}. ` +
             `Retrying (${retryCount + 1}/${RETRY_OPTIONS.MAX_RETRIES})...`,
           String(error),
         );
@@ -160,7 +178,7 @@ export class NotificationConsumer {
       }
 
       this.logger.error(
-        `MAX RETRIES EXCEEDED for [${AUTH_ROUTINGKEYS.PASSWORD_RESET_REQUESTED}] [${data.payload.email}]`,
+        `MAX RETRIES EXCEEDED for [${AUTH_ROUTINGKEYS.PASSWORD_RESET_REQUESTED}] [${payload.email}]`,
         String(error),
       );
       return new Nack(false);
@@ -178,19 +196,17 @@ export class NotificationConsumer {
     },
   })
   async handleOtpGenerated(
-    data: {
-      payload: {
-        email: string;
-        otp: string;
-        purpose: string;
-        expiresAt: string;
-      };
-      correlationId?: string;
-    },
+    data: EventEnvelope<{
+      email: string;
+      otp: string;
+      purpose: string;
+      expiresAt: string;
+    }>,
     amqpMsg: ConsumeMessage,
   ): Promise<void | Nack> {
     const headers = amqpMsg.properties.headers ?? {};
     const retryCount: number = headers['x-retry-count'] ?? 0;
+    const payload = this.getPayload(data);
     const correlationId = ensureCorrelationId(
       data.correlationId,
       headers[CORRELATION_ID_HEADER],
@@ -198,19 +214,25 @@ export class NotificationConsumer {
       amqpMsg.properties.correlationId,
       amqpMsg.properties.messageId,
     );
+    if (!payload?.email || !payload.otp || !payload.expiresAt) {
+      this.logger.warn(`Dropping malformed [${AUTH_ROUTINGKEYS.OTP_GENERATED}] event`, {
+        correlationId,
+      });
+      return new Nack(false);
+    }
 
     try {
       await runWithCorrelationId(correlationId, async () => {
-        this.logger.log(`Processing OTP email for ${data.payload.email} [Retry: ${retryCount}]`, {
+        this.logger.log(`Processing OTP email for ${payload.email} [Retry: ${retryCount}]`, {
           correlationId,
         });
 
         await this.commandBus.execute(
           new SendOtpEmailCommand(
-            data.payload.email,
-            data.payload.otp,
-            data.payload.purpose,
-            new Date(data.payload.expiresAt),
+            payload.email,
+            payload.otp,
+            payload.purpose,
+            new Date(payload.expiresAt),
             correlationId,
           ),
         );
@@ -218,7 +240,7 @@ export class NotificationConsumer {
     } catch (error) {
       if (retryCount < RETRY_OPTIONS.MAX_RETRIES) {
         this.logger.warn(
-          `Failure handling [${AUTH_ROUTINGKEYS.OTP_GENERATED}] for ${data.payload.email}. ` +
+          `Failure handling [${AUTH_ROUTINGKEYS.OTP_GENERATED}] for ${payload.email}. ` +
             `Retrying (${retryCount + 1}/${RETRY_OPTIONS.MAX_RETRIES})...`,
           String(error),
         );
@@ -231,7 +253,7 @@ export class NotificationConsumer {
       }
 
       this.logger.error(
-        `MAX RETRIES EXCEEDED for [${AUTH_ROUTINGKEYS.OTP_GENERATED}] [${data.payload.email}]`,
+        `MAX RETRIES EXCEEDED for [${AUTH_ROUTINGKEYS.OTP_GENERATED}] [${payload.email}]`,
         String(error),
       );
       return new Nack(false);
@@ -249,32 +271,30 @@ export class NotificationConsumer {
     },
   })
   async handleModelTrained(
-    data: {
-      payload: {
-        email: string;
-        status: string;
-        version: string;
-        timestamp: string;
-        epochs: number;
-        fineTuneRounds: number;
-        totalPairs: number;
-        positivePairs: number;
-        finalLoss: number;
-        finalAccuracy: number;
-        valLoss: number;
-        valAccuracy: number;
-        vocabSizes: Record<string, number>;
-        evalBaseline: { hitrateAt50: number; mrr: number; usersEvaluated: number };
-        evalFinal: { hitrateAt50: number; mrr: number; usersEvaluated: number };
-        reason: string;
-        threshold: number;
-      };
-      correlationId?: string;
-    },
+    data: EventEnvelope<{
+      email: string;
+      status: string;
+      version: string;
+      timestamp: string;
+      epochs: number;
+      fineTuneRounds: number;
+      totalPairs: number;
+      positivePairs: number;
+      finalLoss: number;
+      finalAccuracy: number;
+      valLoss: number;
+      valAccuracy: number;
+      vocabSizes: Record<string, number>;
+      evalBaseline: { hitrateAt50: number; mrr: number; usersEvaluated: number };
+      evalFinal: { hitrateAt50: number; mrr: number; usersEvaluated: number };
+      reason: string;
+      threshold: number;
+    }>,
     amqpMsg: ConsumeMessage,
   ): Promise<void | Nack> {
     const headers = amqpMsg.properties.headers ?? {};
     const retryCount: number = headers['x-retry-count'] ?? 0;
+    const payload = this.getPayload(data);
     const correlationId = ensureCorrelationId(
       data.correlationId,
       headers[CORRELATION_ID_HEADER],
@@ -282,15 +302,21 @@ export class NotificationConsumer {
       amqpMsg.properties.correlationId,
       amqpMsg.properties.messageId,
     );
+    if (!payload?.email || !payload.status) {
+      this.logger.warn(`Dropping malformed [${RECOMMENDATION_ROUTINGKEYS.MODEL_TRAINED}] event`, {
+        correlationId,
+      });
+      return new Nack(false);
+    }
 
     try {
       await runWithCorrelationId(correlationId, async () => {
         this.logger.log(
-          `Processing model training notification [${data.payload.status}] [Retry: ${retryCount}]`,
+          `Processing model training notification [${payload.status}] [Retry: ${retryCount}]`,
           { correlationId },
         );
 
-        const p = data.payload;
+        const p = payload;
         await this.commandBus.execute(
           new SendModelTrainedEmailCommand(
             p.email,
