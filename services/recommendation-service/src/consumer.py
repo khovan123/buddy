@@ -81,6 +81,12 @@ class EventConsumer:
         self._connection = pika.BlockingConnection(params)
         self._channel = self._connection.channel()
 
+        self._channel.exchange_declare(
+            exchange=EXCHANGE_DEAD_LETTER,
+            exchange_type="direct",
+            durable=True,
+        )
+
         # Declare queues
         for queue in [QUEUE_INTERACTIONS, QUEUE_CONTENT_SYNC, QUEUE_USER_SYNC]:
             self._channel.queue_declare(

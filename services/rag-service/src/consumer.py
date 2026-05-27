@@ -71,6 +71,12 @@ class RAGContentConsumer:
         self._connection = pika.BlockingConnection(params)
         self._channel = self._connection.channel()
 
+        self._channel.exchange_declare(
+            exchange=EXCHANGE_DEAD_LETTER,
+            exchange_type="direct",
+            durable=True,
+        )
+
         # Declare the fanout exchange (idempotent — must match NestJS declaration)
         self._channel.exchange_declare(
             exchange=EXCHANGE_CONTENT_SYNC,
