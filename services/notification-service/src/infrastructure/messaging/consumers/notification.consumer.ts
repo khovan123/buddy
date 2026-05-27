@@ -70,10 +70,9 @@ export class NotificationConsumer {
 
     try {
       await runWithCorrelationId(correlationId, async () => {
-        this.logger.log(
-          `Processing welcome email for ${payload.email} [Retry: ${retryCount}]`,
-          { correlationId },
-        );
+        this.logger.log(`Processing welcome email for ${payload.email} [Retry: ${retryCount}]`, {
+          correlationId,
+        });
 
         await this.commandBus.execute(
           new SendWelcomeEmailCommand(
