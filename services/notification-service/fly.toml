@@ -2,7 +2,7 @@ app = "buddy-notification-service"
 primary_region = "sin"
 
 [build]
-  dockerfile = "services/notification-service/Dockerfile"
+  dockerfile = "../../services/notification-service/Dockerfile"
 
 [env]
   NODE_ENV = "production"

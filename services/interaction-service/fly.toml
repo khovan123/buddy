@@ -2,7 +2,7 @@ app = "buddy-interaction-service"
 primary_region = "sin"
 
 [build]
-  dockerfile = "services/interaction-service/Dockerfile"
+  dockerfile = "../../services/interaction-service/Dockerfile"
 
 [env]
   NODE_ENV = "production"

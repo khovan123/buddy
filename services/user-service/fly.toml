@@ -2,7 +2,7 @@ app = "buddy-user-service"
 primary_region = "sin"
 
 [build]
-  dockerfile = "services/user-service/Dockerfile"
+  dockerfile = "../../services/user-service/Dockerfile"
 
 [env]
   NODE_ENV = "production"

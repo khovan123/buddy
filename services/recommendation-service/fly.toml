@@ -2,7 +2,7 @@ app = "buddy-recommendation-service"
 primary_region = "sin"
 
 [build]
-  dockerfile = "services/recommendation-service/Dockerfile"
+  dockerfile = "../../services/recommendation-service/Dockerfile"
 
 [env]
   NODE_ENV = "production"

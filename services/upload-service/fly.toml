@@ -2,7 +2,7 @@ app = "buddy-upload-service"
 primary_region = "sin"
 
 [build]
-  dockerfile = "services/upload-service/Dockerfile"
+  dockerfile = "../../services/upload-service/Dockerfile"
 
 [env]
   NODE_ENV = "production"
