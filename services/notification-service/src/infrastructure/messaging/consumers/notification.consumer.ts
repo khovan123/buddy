@@ -23,6 +23,26 @@ type EventEnvelope<T extends object> = {
   correlationId?: string;
 } & Partial<T>;
 
+type ModelTrainedPayload = {
+  email: string;
+  status: string;
+  version: string;
+  timestamp: string;
+  epochs: number;
+  fineTuneRounds: number;
+  totalPairs: number;
+  positivePairs: number;
+  finalLoss: number;
+  finalAccuracy: number;
+  valLoss: number;
+  valAccuracy: number;
+  vocabSizes: Record<string, number>;
+  evalBaseline: { hitrateAt50: number; mrr: number; usersEvaluated: number };
+  evalFinal: { hitrateAt50: number; mrr: number; usersEvaluated: number };
+  reason: string;
+  threshold: number;
+};
+
 /** RabbitMQ consumer for auth-related notification events. */
 @Controller()
 export class NotificationConsumer {
@@ -35,6 +55,69 @@ export class NotificationConsumer {
 
   private getPayload<T extends object>(data: EventEnvelope<T>): T | undefined {
     return data.payload ?? (data as T);
+  }
+
+  private isNonEmptyString(value: unknown): value is string {
+    return typeof value === 'string' && value.trim().length > 0;
+  }
+
+  private isValidDateString(value: unknown): value is string {
+    return this.isNonEmptyString(value) && !Number.isNaN(new Date(value).getTime());
+  }
+
+  private isFiniteNumber(value: unknown): value is number {
+    return typeof value === 'number' && Number.isFinite(value);
+  }
+
+  private isNumberRecord(value: unknown): value is Record<string, number> {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      !Array.isArray(value) &&
+      Object.values(value).every((entry) => this.isFiniteNumber(entry))
+    );
+  }
+
+  private isEvalMetrics(
+    value: unknown,
+  ): value is { hitrateAt50: number; mrr: number; usersEvaluated: number } {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+      return false;
+    }
+
+    const metrics = value as Record<string, unknown>;
+    return (
+      this.isFiniteNumber(metrics.hitrateAt50) &&
+      this.isFiniteNumber(metrics.mrr) &&
+      this.isFiniteNumber(metrics.usersEvaluated)
+    );
+  }
+
+  private isModelTrainedPayload(payload: unknown): payload is ModelTrainedPayload {
+    if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) {
+      return false;
+    }
+
+    const candidate = payload as Record<string, unknown>;
+    return (
+      this.isNonEmptyString(candidate.email) &&
+      this.isNonEmptyString(candidate.status) &&
+      this.isNonEmptyString(candidate.version) &&
+      this.isNonEmptyString(candidate.timestamp) &&
+      this.isFiniteNumber(candidate.epochs) &&
+      this.isFiniteNumber(candidate.fineTuneRounds) &&
+      this.isFiniteNumber(candidate.totalPairs) &&
+      this.isFiniteNumber(candidate.positivePairs) &&
+      this.isFiniteNumber(candidate.finalLoss) &&
+      this.isFiniteNumber(candidate.finalAccuracy) &&
+      this.isFiniteNumber(candidate.valLoss) &&
+      this.isFiniteNumber(candidate.valAccuracy) &&
+      this.isNumberRecord(candidate.vocabSizes) &&
+      this.isEvalMetrics(candidate.evalBaseline) &&
+      this.isEvalMetrics(candidate.evalFinal) &&
+      typeof candidate.reason === 'string' &&
+      this.isFiniteNumber(candidate.threshold)
+    );
   }
 
   // ─── auth.user.registered ─────────────────────────────────────────────────
@@ -61,7 +144,12 @@ export class NotificationConsumer {
       amqpMsg.properties.correlationId,
       amqpMsg.properties.messageId,
     );
-    if (!payload?.email || !payload.userId) {
+    if (
+      !payload ||
+      !this.isNonEmptyString(payload.userId) ||
+      !this.isNonEmptyString(payload.email) ||
+      !this.isNonEmptyString(payload.nickname)
+    ) {
       this.logger.warn(`Dropping malformed [${AUTH_ROUTINGKEYS.USER_REGISTERED}] event`, {
         correlationId,
       });
@@ -136,7 +224,14 @@ export class NotificationConsumer {
       amqpMsg.properties.correlationId,
       amqpMsg.properties.messageId,
     );
-    if (!payload?.email || !payload.resetToken || !payload.expiresAt) {
+    if (
+      !payload ||
+      !this.isNonEmptyString(payload.userId) ||
+      !this.isNonEmptyString(payload.email) ||
+      !this.isNonEmptyString(payload.nickname) ||
+      !this.isNonEmptyString(payload.resetToken) ||
+      !this.isValidDateString(payload.expiresAt)
+    ) {
       this.logger.warn(`Dropping malformed [${AUTH_ROUTINGKEYS.PASSWORD_RESET_REQUESTED}] event`, {
         correlationId,
       });
@@ -270,25 +365,7 @@ export class NotificationConsumer {
     },
   })
   async handleModelTrained(
-    data: EventEnvelope<{
-      email: string;
-      status: string;
-      version: string;
-      timestamp: string;
-      epochs: number;
-      fineTuneRounds: number;
-      totalPairs: number;
-      positivePairs: number;
-      finalLoss: number;
-      finalAccuracy: number;
-      valLoss: number;
-      valAccuracy: number;
-      vocabSizes: Record<string, number>;
-      evalBaseline: { hitrateAt50: number; mrr: number; usersEvaluated: number };
-      evalFinal: { hitrateAt50: number; mrr: number; usersEvaluated: number };
-      reason: string;
-      threshold: number;
-    }>,
+    data: EventEnvelope<ModelTrainedPayload>,
     amqpMsg: ConsumeMessage,
   ): Promise<void | Nack> {
     const headers = amqpMsg.properties.headers ?? {};
@@ -301,7 +378,7 @@ export class NotificationConsumer {
       amqpMsg.properties.correlationId,
       amqpMsg.properties.messageId,
     );
-    if (!payload?.email || !payload.status) {
+    if (!this.isModelTrainedPayload(payload)) {
       this.logger.warn(`Dropping malformed [${RECOMMENDATION_ROUTINGKEYS.MODEL_TRAINED}] event`, {
         correlationId,
       });
