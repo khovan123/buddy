@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 QUEUE_INTERACTIONS = "recommendation.events"
 QUEUE_CONTENT_SYNC = "recommendation.content.sync"
 QUEUE_USER_SYNC = "recommendation.user.sync"
+EXCHANGE_DEAD_LETTER = "dead.letter"
 
 
 class EventConsumer:
@@ -80,12 +81,18 @@ class EventConsumer:
         self._connection = pika.BlockingConnection(params)
         self._channel = self._connection.channel()
 
+        self._channel.exchange_declare(
+            exchange=EXCHANGE_DEAD_LETTER,
+            exchange_type="direct",
+            durable=True,
+        )
+
         # Declare queues
         for queue in [QUEUE_INTERACTIONS, QUEUE_CONTENT_SYNC, QUEUE_USER_SYNC]:
             self._channel.queue_declare(
                 queue=queue, 
                 durable=True,
-                arguments={"x-dead-letter-exchange": "dead.letter"}
+                arguments={"x-dead-letter-exchange": EXCHANGE_DEAD_LETTER}
             )
 
         # Bind content sync queue to the fanout exchange
@@ -93,6 +100,7 @@ class EventConsumer:
             exchange="content.sync",
             exchange_type="fanout",
             durable=True,
+            arguments={"alternate-exchange": EXCHANGE_DEAD_LETTER},
         )
         self._channel.queue_bind(
             queue=QUEUE_CONTENT_SYNC,
@@ -268,4 +276,3 @@ class EventConsumer:
                 self._connection.close()
         except Exception as e:
             logger.debug(f"Ignored error during consumer close: {e}")
-

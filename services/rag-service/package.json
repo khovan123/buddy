@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "PYTHONPATH=src python3 src/server.py",
-    "dev:prod": "cross-env PYTHONPATH=src dotenv -e .env.prod -- python3 src/server.py"
+    "setup:py": "node scripts/setup-python.js",
+    "dev": "node scripts/run-python.js src/server.py",
+    "dev:prod": "node scripts/run-python.js --env .env.prod src/server.py"
   }
 }
