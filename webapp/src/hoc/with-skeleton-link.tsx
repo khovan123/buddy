@@ -28,7 +28,7 @@ export function WithSkeletonLink<P extends object>(
     const href = getHref(rest as P)
 
     const wrapperClass = cn(
-      "group block h-full w-full overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+      "group flex h-full min-h-0 w-full flex-1 flex-col self-stretch overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
       className
     )
 
@@ -36,7 +36,7 @@ export function WithSkeletonLink<P extends object>(
       <Skeleton
         name={skeletonName}
         loading={isLoading}
-        className="h-full rounded-xl"
+        className="flex h-full flex-col items-stretch rounded-3xl *:data-boneyard-content:flex *:data-boneyard-content:h-full *:data-boneyard-content:min-h-0 *:data-boneyard-content:flex-1 *:data-boneyard-content:items-stretch [&>[data-boneyard-content]>*]:flex-1"
       >
         {isLoading || !href ? (
           <div className={wrapperClass}>
