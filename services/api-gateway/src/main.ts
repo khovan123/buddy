@@ -122,8 +122,9 @@ async function bootstrap() {
   const maxRetries = 5;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      await app.listen(port, '0.0.0.0');
-      logger.log(`API Gateway running on http://0.0.0.0:${port}`);
+      const host = process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '::' : '127.0.0.1');
+      await app.listen(port, host);
+      logger.log(`API Gateway running on http://${host}:${port}`);
       return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
