@@ -7,6 +7,7 @@ primary_region = "sin"
 [env]
   NODE_ENV = "production"
   PORT = "8080"
+  HOST = "::"
 
 [http_service]
   internal_port = 8080
