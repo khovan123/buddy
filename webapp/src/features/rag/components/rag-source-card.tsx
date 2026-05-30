@@ -8,14 +8,24 @@ import { cn } from "@/lib/utils"
 
 import type { RAGSource } from "../types"
 
-function getContentHref(source: RAGSource): string {
+function getSourceIdentifier(source: RAGSource): string | null {
+  const identifier = source.slug || source.itemId || source.id
+  return identifier?.trim() || null
+}
+
+function getContentHref(source: RAGSource): string | null {
+  const identifier = getSourceIdentifier(source)
+  if (!identifier) {
+    return null
+  }
+
   switch (source.itemType) {
     case "RESOURCE":
-      return `/explore/resources/${source.slug}`
+      return `/explore/resources/${identifier}`
     case "TUTORIAL":
-      return `/explore/tutorials/${source.slug}`
+      return `/explore/tutorials/${identifier}`
     default:
-      return `/explore/resources/${source.slug}`
+      return `/explore/resources/${identifier}`
   }
 }
 
@@ -25,44 +35,51 @@ interface RAGSourceCardProps {
 
 export function RAGSourceCard({ source }: RAGSourceCardProps) {
   const isTutorial = source.itemType === "TUTORIAL"
+  const href = getContentHref(source)
 
-  return (
-    <Link
-      href={getContentHref(source)}
-      target="_blank"
-      rel="noopener noreferrer"
+  const card = (
+    <div
+      className={cn(
+        "group relative flex flex-col gap-3 rounded-xl border border-border/40 bg-background/50 p-4 transition-all duration-300",
+        href
+          ? "hover:-translate-y-0.5 hover:bg-background hover:shadow-soft hover:ring-1 hover:ring-primary/20"
+          : "cursor-not-allowed opacity-70"
+      )}
     >
-      <div
-        className={cn(
-          "group relative flex flex-col gap-3 rounded-xl border border-border/40 bg-background/50 p-4 transition-all duration-300",
-          "hover:-translate-y-0.5 hover:bg-background hover:shadow-soft hover:ring-1 hover:ring-primary/20"
-        )}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-muted-foreground/80">
-            {isTutorial ? (
-              <BookOpen className="size-3.5" />
-            ) : (
-              <FileText className="size-3.5" />
-            )}
-            <span className="text-2xs font-semibold tracking-widest uppercase">
-              {isTutorial ? "Tutorial" : "Resource"}
-            </span>
-          </div>
-          <div className="flex items-center text-2xs font-medium text-primary/70">
-            {Math.round(source.score * 100)}% match
-          </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-muted-foreground/80">
+          {isTutorial ? (
+            <BookOpen className="size-3.5" />
+          ) : (
+            <FileText className="size-3.5" />
+          )}
+          <span className="text-2xs font-semibold tracking-widest uppercase">
+            {isTutorial ? "Tutorial" : "Resource"}
+          </span>
         </div>
-
-        <div>
-          <h4 className="line-clamp-1 text-sm font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
-            {source.title}
-          </h4>
-          <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground/70">
-            {source.chunkText}
-          </p>
+        <div className="flex items-center text-2xs font-medium text-primary/70">
+          {Math.round(source.score * 100)}% match
         </div>
       </div>
+
+      <div>
+        <h4 className="line-clamp-1 text-sm font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
+          {source.title}
+        </h4>
+        <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground/70">
+          {source.chunkText}
+        </p>
+      </div>
+    </div>
+  )
+
+  if (!href) {
+    return card
+  }
+
+  return (
+    <Link href={href} target="_blank" rel="noopener noreferrer">
+      {card}
     </Link>
   )
 }

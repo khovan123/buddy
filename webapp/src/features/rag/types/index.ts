@@ -1,6 +1,8 @@
 // ─── RAG Types ──────────────────────────────────────────────────────────────
 
 export interface RAGSource {
+  itemId?: string | null
+  id?: string | null
   slug: string
   itemType: string
   title: string

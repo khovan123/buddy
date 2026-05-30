@@ -1,4 +1,4 @@
-import { BullModule } from '@nestjs/bullmq';
+import { BullModule, getQueueToken } from '@nestjs/bullmq';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -39,6 +39,75 @@ import { VideoProcessorWorker } from './infrastructure/workers/video-processor.w
 import { UploadController } from './presentation/http/controllers/upload.controller';
 import { WebhookController } from './presentation/webhooks/controllers/upload.webhook.controller';
 
+const uploadWorkersEnabled = process.env.UPLOAD_WORKERS_ENABLED !== 'false';
+const uploadWorkerProviders = uploadWorkersEnabled
+  ? [VideoProcessorWorker, DocumentPreviewWorker, ContentExtractionWorker]
+  : [];
+const createDisabledQueueProvider = (name: string) => ({
+  provide: getQueueToken(name),
+  useValue: {
+    add: async () => ({ id: null }),
+    count: async () => 0,
+  },
+});
+const uploadQueueImports = uploadWorkersEnabled
+  ? [
+      BullModule.forRootAsync({
+        inject: [ConfigService],
+        useFactory: (config: ConfigService) => ({
+          connection: {
+            host: config.get<string>('REDIS_HOST', 'localhost'),
+            port: parseInt(config.get<string>('REDIS_PORT', '6379'), 10),
+            password: config.get<string>('REDIS_PASSWORD'),
+          },
+        }),
+      }),
+      BullModule.registerQueue({
+        name: QUEUES.VIDEO_PROCESSING_QUEUE,
+        defaultJobOptions: {
+          removeOnComplete: 100,
+          removeOnFail: 500,
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 5_000,
+          },
+        },
+      }),
+      BullModule.registerQueue({
+        name: QUEUES.DOCUMENT_PREVIEW_QUEUE,
+        defaultJobOptions: {
+          removeOnComplete: 100,
+          removeOnFail: 200,
+          attempts: 2,
+          backoff: {
+            type: 'exponential',
+            delay: 3_000,
+          },
+        },
+      }),
+      BullModule.registerQueue({
+        name: QUEUES.CONTENT_EXTRACTION_QUEUE,
+        defaultJobOptions: {
+          removeOnComplete: 100,
+          removeOnFail: 500,
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 5_000,
+          },
+        },
+      }),
+    ]
+  : [];
+const disabledQueueProviders = uploadWorkersEnabled
+  ? []
+  : [
+      createDisabledQueueProvider(QUEUES.VIDEO_PROCESSING_QUEUE),
+      createDisabledQueueProvider(QUEUES.DOCUMENT_PREVIEW_QUEUE),
+      createDisabledQueueProvider(QUEUES.CONTENT_EXTRACTION_QUEUE),
+    ];
+
 /** NestJS Module for  app. */
 @Module({
   imports: [
@@ -59,52 +128,7 @@ import { WebhookController } from './presentation/webhooks/controllers/upload.we
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
     TerminusModule,
-    BullModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        connection: {
-          host: config.get<string>('REDIS_HOST', 'localhost'),
-          port: parseInt(config.get<string>('REDIS_PORT', '6379'), 10),
-          password: config.get<string>('REDIS_PASSWORD'),
-        },
-      }),
-    }),
-    BullModule.registerQueue({
-      name: QUEUES.VIDEO_PROCESSING_QUEUE,
-      defaultJobOptions: {
-        removeOnComplete: 100,
-        removeOnFail: 500,
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 5_000,
-        },
-      },
-    }),
-    BullModule.registerQueue({
-      name: QUEUES.DOCUMENT_PREVIEW_QUEUE,
-      defaultJobOptions: {
-        removeOnComplete: 100,
-        removeOnFail: 200,
-        attempts: 2,
-        backoff: {
-          type: 'exponential',
-          delay: 3_000,
-        },
-      },
-    }),
-    BullModule.registerQueue({
-      name: QUEUES.CONTENT_EXTRACTION_QUEUE,
-      defaultJobOptions: {
-        removeOnComplete: 100,
-        removeOnFail: 500,
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 5_000,
-        },
-      },
-    }),
+    ...uploadQueueImports,
     MessagingModule,
   ],
   controllers: [UploadController, WebhookController, ...MESSAGE_CONTROLLERS, HealthController],
@@ -123,9 +147,8 @@ import { WebhookController } from './presentation/webhooks/controllers/upload.we
     S3Service,
     CloudinaryService,
     OutboxCleanupService,
-    VideoProcessorWorker,
-    DocumentPreviewWorker,
-    ContentExtractionWorker,
+    ...disabledQueueProviders,
+    ...uploadWorkerProviders,
     PreviewProcessorContext,
     ContentExtractionService,
     VideoTranscriptService,

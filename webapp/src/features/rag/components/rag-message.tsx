@@ -64,7 +64,10 @@ export function RAGMessageBlock({ message, user }: RAGMessageProps) {
             </p>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {message.sources.map((source) => (
-                <RAGSourceCard key={source.slug} source={source} />
+                <RAGSourceCard
+                  key={source.slug || source.itemId || source.id || source.title}
+                  source={source}
+                />
               ))}
             </div>
           </div>

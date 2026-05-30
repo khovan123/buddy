@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack -H 0.0.0.0 -p $(microfrontends port)",
     "dev:no-proxy": "next dev --turbopack -H 0.0.0.0 -p 8000",
-    "dev:prod": "dotenv -e .env.prod -- next dev --turbopack -H 0.0.0.0 -p 8000",
+    "dev:prod": "dotenv -e .env.prod -- next dev --turbopack -H 127.0.0.1 -p 8000",
     "build": "next build",
     "start": "next start -p 8000",
     "lint": "eslint",

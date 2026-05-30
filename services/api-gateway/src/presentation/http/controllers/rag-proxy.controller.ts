@@ -119,7 +119,7 @@ export class RagProxyController {
     return this.proxy.forward(req, {
       service: 'rag',
       resilienceKey: 'recommendation-rag-health',
-      path: '/v1/rag/health',
+      path: '/v1/health/liveness',
       method: 'GET',
       timeoutMs: 5_000,
       skipRetry: true,

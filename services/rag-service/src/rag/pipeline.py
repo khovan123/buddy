@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 class RAGSource:
     """A single source cited in the RAG response."""
 
+    item_id: str
     slug: str
     item_type: str
     title: str
@@ -212,6 +213,7 @@ class RAGPipeline:
 
         return [
             {
+                "itemId": c.item_id,
                 "slug": c.slug,
                 "itemType": c.item_type,
                 "title": c.title,
