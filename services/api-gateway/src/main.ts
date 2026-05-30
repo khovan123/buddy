@@ -122,9 +122,8 @@ async function bootstrap() {
   const maxRetries = 5;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const configuredHost = process.env.HOST ?? (
-        process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1'
-      );
+      const configuredHost =
+        process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
       const host = configuredHost === '::' ? '0.0.0.0' : configuredHost;
       await app.listen(port, host);
       logger.log(`API Gateway running on http://${host}:${port}`);
