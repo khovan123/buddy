@@ -38,9 +38,13 @@ logger = logging.getLogger(__name__)
 
 HEALTH_CHECK_TIMEOUT_SECONDS = 5
 RAG_STATS_TIMEOUT_SECONDS = 8
+RAG_EMBEDDING_INIT_TIMEOUT_SECONDS = int(os.getenv("RAG_EMBEDDING_INIT_TIMEOUT_SECONDS", "60"))
 RAG_ASK_TIMEOUT_SECONDS = 90
 RAG_STARTUP_WARMUP_ENABLED = (
     os.getenv("RAG_STARTUP_WARMUP_ENABLED", "true").lower() == "true"
+)
+RAG_BOOTSTRAP_INDEX_ENABLED = (
+    os.getenv("RAG_BOOTSTRAP_INDEX_ENABLED", "true").lower() == "true"
 )
 RAG_WORKER_LIMIT = int(os.getenv("RAG_BLOCKING_WORKERS", "4"))
 
@@ -70,6 +74,7 @@ class RAGRequest(BaseModel):
 
 
 class RAGSource(BaseModel):
+    itemId: str | None = None
     slug: str
     itemType: str
     title: str
@@ -121,6 +126,19 @@ def _embedding_not_ready_response() -> JSONResponse:
             "reason": "embedding_model_not_loaded",
         },
     )
+
+
+def _ensure_embedding_ready() -> bool:
+    if _rag_embedding_ready():
+        return True
+
+    try:
+        from rag.embedder import preload_model
+
+        return preload_model()
+    except Exception as e:
+        logger.warning("Embedding load failed: %s", e)
+        return False
 
 
 async def _run_blocking_with_timeout(name: str, func, *args, timeout: int, **kwargs):
@@ -216,6 +234,7 @@ def _bootstrap_rag_index_background() -> None:
 
 
 _consumer_shutdown = threading.Event()
+RAG_CONSUMER_ENABLED = os.getenv("RAG_CONSUMER_ENABLED", "true").lower() != "false"
 
 
 def _start_content_consumer() -> None:
@@ -259,11 +278,15 @@ def _start_content_consumer() -> None:
 async def lifespan(app: FastAPI):
     if RAG_STARTUP_WARMUP_ENABLED:
         threading.Thread(target=_warm_rag_background, daemon=True).start()
-    else:
+    elif RAG_BOOTSTRAP_INDEX_ENABLED:
         threading.Thread(target=_bootstrap_rag_index_background, daemon=True).start()
+    else:
+        logger.info("RAG startup warmup/bootstrap disabled by environment")
 
-    # Start content-sync consumer in a daemon thread
-    threading.Thread(target=_start_content_consumer, daemon=True, name="rag-consumer").start()
+    if RAG_CONSUMER_ENABLED:
+        threading.Thread(target=_start_content_consumer, daemon=True, name="rag-consumer").start()
+    else:
+        logger.info("RAG content-sync consumer disabled by environment")
 
     logger.info("RAG service started")
     yield
@@ -346,7 +369,14 @@ rag_router = APIRouter(prefix="/v1/rag", tags=["rag"])
 
 @rag_router.post("/ask", response_model=RAGResponse)
 async def rag_ask(body: RAGRequest):
-    if not _rag_embedding_ready():
+    embedding_ready = await _run_blocking_with_timeout(
+        "RAG embedding init",
+        _ensure_embedding_ready,
+        timeout=RAG_EMBEDDING_INIT_TIMEOUT_SECONDS,
+    )
+    if isinstance(embedding_ready, JSONResponse):
+        return embedding_ready
+    if not embedding_ready:
         return _embedding_not_ready_response()
 
     module = await _run_blocking_with_timeout(
@@ -373,7 +403,14 @@ async def rag_ask(body: RAGRequest):
 
 @rag_router.post("/retrieve")
 async def rag_retrieve(body: RAGRequest):
-    if not _rag_embedding_ready():
+    embedding_ready = await _run_blocking_with_timeout(
+        "RAG embedding init",
+        _ensure_embedding_ready,
+        timeout=RAG_EMBEDDING_INIT_TIMEOUT_SECONDS,
+    )
+    if isinstance(embedding_ready, JSONResponse):
+        return embedding_ready
+    if not embedding_ready:
         return _embedding_not_ready_response()
 
     module = await _run_blocking_with_timeout(

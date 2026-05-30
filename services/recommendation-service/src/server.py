@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
 HEALTH_CHECK_TIMEOUT_SECONDS = 5
 RECOMMENDATION_TIMEOUT_SECONDS = 25
 BLOCKING_WORKER_LIMIT = int(os.getenv("RECOMMENDATION_BLOCKING_WORKERS", "12"))
+RECOMMENDATION_CONSUMER_ENABLED = os.getenv("RECOMMENDATION_CONSUMER_ENABLED", "true").lower() != "false"
 blocking_executor = ThreadPoolExecutor(
     max_workers=BLOCKING_WORKER_LIMIT,
     thread_name_prefix="recommendation-blocking",
@@ -132,17 +133,19 @@ async def lifespan(app: FastAPI):
     def _background_init():
         """Run all heavy init in a single background thread."""
         try:
-            # 1. RabbitMQ consumer
             model_manager = scoring_engine.model_manager
-            consumer = EventConsumer(
-                user_store, popularity_store, catalog_store,
-                model_manager=model_manager,
-            )
-            app.state.consumer = consumer
-            consumer_thread = threading.Thread(
-                target=_start_consumer, args=(consumer,), daemon=True,
-            )
-            consumer_thread.start()
+            if RECOMMENDATION_CONSUMER_ENABLED:
+                consumer = EventConsumer(
+                    user_store, popularity_store, catalog_store,
+                    model_manager=model_manager,
+                )
+                app.state.consumer = consumer
+                consumer_thread = threading.Thread(
+                    target=_start_consumer, args=(consumer,), daemon=True,
+                )
+                consumer_thread.start()
+            else:
+                logger.info("Recommendation RabbitMQ consumer disabled by environment")
 
             # 2. Model scheduler
             drift_monitor = DriftMonitor(catalog_store, model_manager, scoring_engine)
@@ -154,7 +157,7 @@ async def lifespan(app: FastAPI):
             app.state.scheduler = scheduler
             scheduler.start()
 
-            logger.info("Background init complete (consumer + scheduler)")
+            logger.info("Background init complete")
 
         except Exception as e:
             logger.error(f"Background init failed: {e}")

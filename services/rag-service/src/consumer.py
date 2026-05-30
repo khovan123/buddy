@@ -16,6 +16,7 @@ delivered the message, avoiding stale-channel issues after reconnects.
 
 import json
 import logging
+import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -32,7 +33,8 @@ EXCHANGE_DEAD_LETTER = "dead.letter"
 QUEUE_RAG_CONTENT_SYNC = "rag.content.sync"
 
 # Max parallel embedding workers — keeps memory bounded
-_REINDEX_WORKERS = 2
+_REINDEX_WORKERS = int(os.getenv("RAG_REINDEX_WORKERS", "1"))
+_RABBITMQ_PREFETCH = int(os.getenv("RAG_RABBITMQ_PREFETCH", "2"))
 
 
 class RAGContentConsumer:
@@ -68,6 +70,10 @@ class RAGContentConsumer:
     def connect(self) -> None:
         """Establish blocking connection, declare exchange + queue + binding."""
         params = pika.URLParameters(RABBITMQ_URL)
+        params.heartbeat = int(os.getenv("RAG_RABBITMQ_HEARTBEAT", "30"))
+        params.blocked_connection_timeout = int(os.getenv("RAG_RABBITMQ_BLOCKED_TIMEOUT", "60"))
+        params.connection_attempts = int(os.getenv("RAG_RABBITMQ_CONNECTION_ATTEMPTS", "3"))
+        params.retry_delay = int(os.getenv("RAG_RABBITMQ_RETRY_DELAY", "5"))
         self._connection = pika.BlockingConnection(params)
         self._channel = self._connection.channel()
 
@@ -96,7 +102,7 @@ class RAGContentConsumer:
             exchange=EXCHANGE_CONTENT_SYNC,
         )
 
-        self._channel.basic_qos(prefetch_count=10)
+        self._channel.basic_qos(prefetch_count=_RABBITMQ_PREFETCH)
         logger.info("RAG consumer connected, bound %s to %s", QUEUE_RAG_CONTENT_SYNC, EXCHANGE_CONTENT_SYNC)
 
     # ─── Thread-safe ACK/NACK helpers ───────────────────────────────────

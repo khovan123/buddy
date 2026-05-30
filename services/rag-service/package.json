@@ -5,6 +5,6 @@
   "scripts": {
     "setup:py": "node scripts/setup-python.js",
     "dev": "node scripts/run-python.js src/server.py",
-    "dev:prod": "node scripts/run-python.js --env .env.prod src/server.py"
+    "dev:prod": "cross-env PORT=3010 RAG_CONSUMER_ENABLED=false node scripts/run-python.js --env .env.prod src/server.py"
   }
 }

@@ -37,6 +37,7 @@
   <img alt="TensorFlow" src="https://img.shields.io/badge/TensorFlow-ff6f00?style=for-the-badge&logo=tensorflow&logoColor=white">
   <img alt="Qdrant" src="https://img.shields.io/badge/Qdrant-vector_search-dc244c?style=for-the-badge">
   <img alt="Docker" src="https://img.shields.io/badge/Docker-ready-2496ed?style=for-the-badge&logo=docker&logoColor=white">
+  <img alt="Fly.io" src="https://img.shields.io/badge/Fly.io-services-8b5cf6?style=for-the-badge&logo=flydotio&logoColor=white">
   <img alt="Azure" src="https://img.shields.io/badge/Azure-Container_Apps-0078d4?style=for-the-badge&logo=microsoftazure&logoColor=white">
   <img alt="Vercel" src="https://img.shields.io/badge/Vercel-webapp-000000?style=for-the-badge&logo=vercel&logoColor=white">
 </p>
@@ -49,7 +50,7 @@
 
 Buddy is a full-stack learning marketplace where creators publish video tutorials and resources, students buy or enroll in content, and an AI assistant answers questions from the actual course material.
 
-It is intentionally built beyond CRUD: the system uses 10 deployable services, event-driven messaging, HLS media processing, payments, recommendations, RAG search, observability, and cloud deployment workflows.
+It is intentionally built beyond CRUD: the system uses 11 deployable services, event-driven messaging, HLS media processing, payments, recommendations, RAG search, observability, and cloud deployment workflows.
 
 | Area            | What is implemented                                                                              |
 | --------------- | ------------------------------------------------------------------------------------------------ |
@@ -65,12 +66,12 @@ It is intentionally built beyond CRUD: the system uses 10 deployable services, e
 ```txt
 Recruiter scan:
 
-  distributed systems        10 independently deployable services
+  distributed systems        11 independently deployable services
   AI product engineering     RAG + recommendation model, not a thin chatbot wrapper
   production thinking        auth, billing, observability, queues, resilience, CI/CD
   frontend depth             ReactJS 19, Next.js 16, shadcn/ui, streaming assistant UX
   data depth                 MongoDB, PostgreSQL, Prisma, Mongoose, Redis, Qdrant
-  deployment readiness       Docker Compose locally, Vercel + Azure Container Apps in cloud
+  deployment readiness       Docker Compose locally, Vercel + Fly.io/Azure in cloud
 ```
 
 ## Architecture
@@ -88,7 +89,8 @@ flowchart TB
   Gateway --> Access[Content Access Service]
   Gateway --> Interaction[Interaction Service]
   Gateway --> Notify[Notification Service]
-  Gateway --> Recommend[Recommendation Service<br/>FastAPI · ML · RAG]
+  Gateway --> Recommend[Recommendation Service<br/>FastAPI · ML scoring]
+  Gateway --> Rag[RAG Service<br/>FastAPI · Qdrant · Gemini]
 
   Auth --> Postgres[(PostgreSQL)]
   Billing --> Postgres
@@ -103,8 +105,8 @@ flowchart TB
 
   Upload --> S3[Supabase S3]
   Upload --> Cloudinary[Cloudinary]
-  Recommend --> Qdrant[(Qdrant)]
   Recommend --> FAISS[(FAISS Index)]
+  Rag --> Qdrant[(Qdrant)]
 
   Auth <--> Rabbit[RabbitMQ Event Bus]
   Content <--> Rabbit
@@ -149,6 +151,7 @@ course material -> chunking -> embeddings -> Qdrant retrieval -> Gemini generati
 - Profile, behavior, and popularity signals are combined for ranking.
 - FAISS powers fast nearest-neighbor lookup.
 - Drift checks track out-of-vocabulary rates and trigger retraining when needed.
+- RAG indexing and question answering run in the dedicated `rag-service`; recommendation-service focuses on scoring, trending, and model lifecycle.
 
 ### Media Pipeline
 
@@ -169,22 +172,23 @@ course material -> chunking -> embeddings -> Qdrant retrieval -> Gemini generati
 | **Messaging / Jobs** | RabbitMQ, BullMQ, event-driven workflows, background media processing                                     |
 | **Storage / Media**  | Supabase S3, Cloudinary, FFmpeg, HLS `.m3u8` streaming, presigned URLs                                    |
 | **Observability**    | OpenTelemetry, Prometheus, Grafana, Jaeger, service metrics and traces                                    |
-| **Delivery**         | Docker, Docker Compose, Turborepo, GitHub Actions, Vercel, Azure Container Registry, Azure Container Apps |
+| **Delivery**         | Docker, Docker Compose, Turborepo, GitHub Actions, Vercel, Fly.io, Azure Container Apps |
 
 ## Service Map
 
-| Service                  | Port | Storage          | Responsibility                               |
-| ------------------------ | ---: | ---------------- | -------------------------------------------- |
-| `api-gateway`            | 3000 | -                | Reverse proxy, resilience, API composition   |
-| `auth-service`           | 3001 | PostgreSQL       | Registration, login, JWT, refresh rotation   |
-| `user-service`           | 3002 | MongoDB          | Profiles, follows, careers, skills, ratings  |
-| `notification-service`   | 3003 | MongoDB          | Socket.io notifications and email events     |
-| `content-service`        | 3004 | MongoDB          | Courses, tutorials, resources, collections   |
-| `upload-service`         | 3005 | PostgreSQL       | Presigned uploads, HLS transcoding, trailers |
-| `billing-service`        | 3006 | PostgreSQL       | Wallets, payments, subscriptions, payouts    |
-| `content-access-service` | 3007 | PostgreSQL       | Ownership checks and access grants           |
-| `interaction-service`    | 3008 | MongoDB          | Views, saves, engagement tracking            |
-| `recommendation-service` | 3009 | MongoDB + Qdrant | Recommendations, RAG, trending, scoring      |
+| Service                  | Port | Storage          | Responsibility                                |
+| ------------------------ | ---: | ---------------- | --------------------------------------------- |
+| `api-gateway`            | 3000 | -                | Reverse proxy, resilience, API composition    |
+| `auth-service`           | 3001 | PostgreSQL       | Registration, login, JWT, refresh rotation    |
+| `user-service`           | 3002 | MongoDB          | Profiles, follows, careers, skills, ratings   |
+| `notification-service`   | 3003 | MongoDB          | Socket.io notifications and email events      |
+| `content-service`        | 3004 | MongoDB          | Courses, tutorials, resources, collections    |
+| `upload-service`         | 3005 | PostgreSQL       | Presigned uploads, HLS transcoding, trailers  |
+| `billing-service`        | 3006 | PostgreSQL       | Wallets, payments, subscriptions, payouts     |
+| `content-access-service` | 3007 | PostgreSQL       | Ownership checks and access grants            |
+| `interaction-service`    | 3008 | MongoDB          | Views, saves, engagement tracking             |
+| `recommendation-service` | 3009 | MongoDB + FAISS  | Recommendations, trending, ML scoring         |
+| `rag-service`            | 3010 | MongoDB + Qdrant | RAG indexing, retrieval, AI answer generation |
 
 ## Monorepo Shape
 
@@ -201,6 +205,7 @@ buddy/
     content-access-service/
     interaction-service/
     recommendation-service/
+    rag-service/
   webapp/
     src/app/
     src/features/
@@ -237,12 +242,47 @@ npm run prisma:db:push
 npm run dev
 ```
 
+### Production-backed local run
+
+Use this when you want to run the local app against the cloud-backed `.env.prod` configuration:
+
+```bash
+npm run dev:prod
+```
+
+For local parallel execution, `dev:prod` intentionally overrides container ports so every service can bind on one machine:
+
+| Service                  | Local `dev:prod` port | Container `.env.prod` port |
+| ------------------------ | --------------------: | -------------------------: |
+| `api-gateway`            |                  3000 |                       8080 |
+| `auth-service`           |                  3001 |                       8080 |
+| `user-service`           |                  3002 |                       8080 |
+| `notification-service`   |                  3003 |                       8080 |
+| `content-service`        |                  3004 |                       8080 |
+| `upload-service`         |                  3005 |                       8080 |
+| `billing-service`        |                  3006 |                       8080 |
+| `content-access-service` |                  3007 |                       8080 |
+| `interaction-service`    |                  3008 |                       8080 |
+| `recommendation-service` |                  3009 |                       8080 |
+| `rag-service`            |                  3010 |                       8080 |
+| `webapp`                 |                  8000 |                          - |
+
+Local `dev:prod` also disables the upload BullMQ workers and the Python RabbitMQ consumers for `recommendation-service` and `rag-service`. This keeps the HTTP surfaces, model loading, MongoDB, Qdrant, and cloud-backed runtime paths testable without exhausting shared Redis Cloud or CloudAMQP connection limits.
+
+For Fly.io, every service container binds to `PORT=8080` and `HOST=0.0.0.0`. The local `dev:prod` ports above are only for running all services on one development machine.
+
+The deployed `rag-service` web process is memory-sensitive, so it lazy-loads embeddings on the first `/v1/rag/ask` or `/v1/rag/retrieve` request and disables startup warmup, bootstrap indexing, and the RabbitMQ content-sync consumer in the web machine. The HTTP health surface stays lightweight at `/v1/health/liveness`; catalog backfills and indexing can still be triggered through the gateway RAG proxy. For realtime RAG sync, run the consumer as a separate worker process instead of inside the public web process.
+
+RAG citations returned to the Ask UI include `slug` and `itemId`. Source cards link directly to `/explore/resources/:slug` or `/explore/tutorials/:slug`, falling back to `:id` when the slug is unavailable, so clicking a card opens the actual content detail page instead of the listing page.
+
 ### Useful URLs
 
 | Surface             | URL                             |
 | ------------------- | ------------------------------- |
 | Webapp              | http://localhost:8000           |
 | API Gateway         | http://localhost:3000           |
+| Recommendation API  | http://localhost:3009/v1/health |
+| RAG API             | http://localhost:3010/v1/health |
 | API Docs            | http://localhost:8000/api-docs  |
 | Grafana             | http://localhost:3100           |
 | Prometheus          | http://localhost:9090           |
@@ -256,8 +296,8 @@ npm run dev
 GitHub
   -> Vercel for webapp previews and production
   -> GitHub Actions for changed-service Docker builds
-  -> Azure Container Registry
-  -> Azure Container Apps
+  -> Fly.io machines for service runtime
+  -> Azure Container Registry / Azure Container Apps for supported service deployments
 ```
 
 The backend workflow uses path-based filtering so only affected services are rebuilt and deployed on production pushes.

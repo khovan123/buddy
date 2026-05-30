@@ -61,8 +61,8 @@ function getPythonCommand() {
 }
 
 const env = {
-  ...process.env,
   ...loadEnvFile(envFile),
+  ...process.env,
   PYTHONPATH: [resolve('src'), process.env.PYTHONPATH].filter(Boolean).join(delimiter),
 };
 

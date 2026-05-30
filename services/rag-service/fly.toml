@@ -7,7 +7,11 @@ primary_region = "sin"
 [env]
   NODE_ENV = "production"
   PORT = "8080"
-  HOST = "::"
+  HOST = "0.0.0.0"
+  RAG_BLOCKING_WORKERS = "2"
+  RAG_STARTUP_WARMUP_ENABLED = "false"
+  RAG_BOOTSTRAP_INDEX_ENABLED = "false"
+  RAG_CONSUMER_ENABLED = "false"
 
 [http_service]
   internal_port = 8080
@@ -17,6 +21,6 @@ primary_region = "sin"
   min_machines_running = 1
 
 [[vm]]
-  memory = "512mb"
+  memory = "2048mb"
   cpu_kind = "shared"
   cpus = 1
