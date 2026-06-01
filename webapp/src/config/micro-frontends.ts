@@ -245,13 +245,7 @@ export const microFrontends = [
     mountMode: "package",
     owner: "AI Experience Web",
     sourceRoot: "webapp/src/features/rag",
-    routes: [
-      {
-        path: "/ask",
-        owner: "AI Experience Web",
-        description: "RAG chat workspace backed by recommendation and rag services.",
-      },
-    ],
+    routes: [],
     contract: {
       auth: "required",
       dataAccess: "api-gateway",

@@ -7,7 +7,6 @@ const PRIVATE_ROUTES = [
   "/library",
   "/settings",
   "/onboarding",
-  "/ask",
   "/dashboard",
   "/home/collections/create",
   "/home/resources/create",

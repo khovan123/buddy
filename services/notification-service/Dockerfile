@@ -1,16 +1,12 @@
-FROM node:22-alpine AS deps
-
-WORKDIR /app
-COPY package.json turbo.json ./
-COPY libs/ ./libs/
-COPY services/notification-service/package.json ./services/notification-service/
-RUN npm install --omit=dev --legacy-peer-deps
-
 FROM node:22-alpine AS builder
 WORKDIR /app
+COPY package.json package-lock.json turbo.json ./
+COPY libs/ ./libs/
+COPY services/notification-service/package.json ./services/notification-service/
+RUN npm ci --legacy-peer-deps
 COPY . .
-RUN npm install --legacy-peer-deps
 RUN npx turbo run build --filter=notification-service...
+RUN npm prune --omit=dev --legacy-peer-deps
 
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -19,7 +15,7 @@ USER nestjs
 ENV NODE_ENV=production SERVICE_NAME=notification-service
 COPY --from=builder --chown=nestjs:nodejs /app/services/notification-service/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/libs ./libs
-COPY --from=deps    --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 EXPOSE 3003
 STOPSIGNAL SIGTERM
 CMD ["node", "dist/src/main.js"]

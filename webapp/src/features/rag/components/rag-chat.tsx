@@ -7,6 +7,7 @@ import { Bot, SendHorizontal, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { UserProfile } from "@/features/user/services/user-api"
+import { cn } from "@/lib/utils"
 
 import { RAGServiceError, askRAG, getRAGHistory } from "../services/rag.service"
 import type { RAGHistoryTurn, RAGMessage } from "../types"
@@ -53,9 +54,16 @@ function historyTurnToMessages(
 type RAGChatProps = {
   user?: UserProfile
   accessToken?: string
+  className?: string
+  compact?: boolean
 }
 
-export function RAGChat({ user, accessToken }: RAGChatProps) {
+export function RAGChat({
+  user,
+  accessToken,
+  className,
+  compact = false,
+}: RAGChatProps) {
   const [messages, setMessages] = useState<RAGMessage[]>([])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -160,26 +168,68 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
   }
 
   return (
-    <div className="h-chat mx-auto flex w-full max-w-4xl flex-col bg-background font-sans">
+    <div
+      className={cn(
+        "h-chat mx-auto flex w-full max-w-4xl flex-col bg-background font-sans",
+        className
+      )}
+    >
       {/* ── Header ───────────────────────────────────────────────── */}
-      <div className="flex flex-col items-center justify-center border-b border-border/40 pt-10 pb-6">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+      <div
+        className={cn(
+          "flex flex-col items-center justify-center border-b border-border/40",
+          compact ? "px-10 pt-5 pb-4" : "pt-10 pb-6"
+        )}
+      >
+        <h1
+          className={cn(
+            "font-semibold tracking-tight text-foreground",
+            compact ? "text-base" : "text-2xl"
+          )}
+        >
           Buddy Intelligence
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p
+          className={cn(
+            "mt-2 text-center text-muted-foreground",
+            compact ? "text-xs" : "text-sm"
+          )}
+        >
           Academic analysis and content retrieval
         </p>
       </div>
 
       {/* ── Messages area ────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-4 py-8 md:px-10">
+      <div
+        className={cn(
+          "flex-1 overflow-y-auto px-4",
+          compact ? "py-5 md:px-5" : "py-8 md:px-10"
+        )}
+      >
         {messages.length === 0 && (
-          <div className="mx-auto mt-10 flex max-w-2xl animate-in flex-col items-center justify-center duration-700 fade-in">
-            <div className="mb-8 flex size-16 items-center justify-center rounded-2xl bg-secondary/30 text-primary">
-              <Bot className="stroke-1.5 size-8" />
+          <div
+            className={cn(
+              "mx-auto flex max-w-2xl animate-in flex-col items-center justify-center duration-700 fade-in",
+              compact ? "mt-4" : "mt-10"
+            )}
+          >
+            <div
+              className={cn(
+                "flex items-center justify-center rounded-2xl bg-secondary/30 text-primary",
+                compact ? "mb-5 size-12" : "mb-8 size-16"
+              )}
+            >
+              <Bot
+                className={cn("stroke-1.5", compact ? "size-6" : "size-8")}
+              />
             </div>
 
-            <div className="grid w-full grid-cols-1 gap-3 md:grid-cols-2">
+            <div
+              className={cn(
+                "grid w-full grid-cols-1 gap-3",
+                !compact && "md:grid-cols-2"
+              )}
+            >
               {SUGGESTIONS.map((suggestion) => (
                 <button
                   key={suggestion}
@@ -195,7 +245,12 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
           </div>
         )}
 
-        <div className="mx-auto flex max-w-3xl flex-col gap-8">
+        <div
+          className={cn(
+            "mx-auto flex max-w-3xl flex-col",
+            compact ? "gap-4" : "gap-8"
+          )}
+        >
           {messages.map((msg) => (
             <RAGMessageBlock key={msg.id} message={msg} user={user} />
           ))}
@@ -219,7 +274,12 @@ export function RAGChat({ user, accessToken }: RAGChatProps) {
       </div>
 
       {/* ── Input area ───────────────────────────────────────────── */}
-      <div className="mx-auto w-full max-w-3xl px-4 pb-8 md:px-0">
+      <div
+        className={cn(
+          "mx-auto w-full max-w-3xl px-4",
+          compact ? "pb-4 md:px-4" : "pb-8 md:px-0"
+        )}
+      >
         <div className="relative flex w-full items-center">
           <Input
             ref={inputRef}

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react"
 import type { NavigationItem } from "@/components/atoms/nav-dropdown-item"
 import { CreateContentCTA } from "@/components/molecules/create-content-cta"
 import { Navigation } from "@/components/organisms/navigation"
+import { RAGChatLauncher } from "@/features/rag"
 import { ContentModerationNotifications } from "@/features/user/components/content-moderation-notifications"
 import { HeaderWalletPopover } from "@/features/user/components/header-wallet-popover"
 import { PlanSelectorDialog } from "@/features/user/components/plan-selector-dialog"
@@ -46,6 +47,7 @@ interface PrivateHeaderProps {
     email?: string
     nickname?: string
   } | null
+  accessToken?: string | null
 }
 
 /**
@@ -55,7 +57,11 @@ interface PrivateHeaderProps {
  * Manages the shared `ProfileUpdateDialog` state so both
  * `ProfileCompleteBanner` and `UserMenuPopover` can trigger it.
  */
-export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
+export function PrivateHeader({
+  user,
+  accountFallback,
+  accessToken,
+}: PrivateHeaderProps) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
 
   const openProfileDialog = () => setProfileDialogOpen(true)
@@ -104,6 +110,7 @@ export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
             <PlanSelectorDialog />
             <HeaderWalletPopover />
             <ContentModerationNotifications />
+            <RAGChatLauncher user={menuUser} accessToken={accessToken} />
             <UserMenuPopover
               user={menuUser}
               onEditProfile={openProfileDialog}
