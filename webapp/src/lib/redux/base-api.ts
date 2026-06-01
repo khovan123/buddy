@@ -13,6 +13,9 @@ import { clearToken, setToken } from "@/features/auth/store/auth-slice"
 import type { RootState } from "./store"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? ""
+export const SESSION_LOGIN_REQUIRED_EVENT = "buddy:session-login-required"
+
+let isOpeningSessionLoginDialog = false
 
 const baseQuery = fetchBaseQuery({
   baseUrl: API_BASE_URL,
@@ -61,7 +64,23 @@ const baseQueryWithReauth: BaseQueryFn<
       api.dispatch(clearToken())
 
       await clearAuthCookies().catch(console.error)
-      signOut({ redirect: true, callbackUrl: "/login?sessionExpired=1" })
+
+      if (
+        !isOpeningSessionLoginDialog &&
+        typeof globalThis.window !== "undefined"
+      ) {
+        isOpeningSessionLoginDialog = true
+
+        await signOut({
+          redirect: false,
+          callbackUrl: globalThis.location.href,
+        }).catch(console.error)
+
+        globalThis.dispatchEvent(new Event(SESSION_LOGIN_REQUIRED_EVENT))
+        globalThis.setTimeout(() => {
+          isOpeningSessionLoginDialog = false
+        }, 1000)
+      }
     }
   }
 
