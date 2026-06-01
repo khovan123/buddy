@@ -15,6 +15,7 @@ import { AppInitializer } from "../lib/redux/app-initializer"
 import { ReduxProvider } from "../lib/redux/redux-provider"
 import { cn } from "../lib/utils"
 import { ErrorProvider } from "../providers/error-provider"
+import { SessionLoginDialogProvider } from "../providers/session-login-dialog-provider"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
 
@@ -152,11 +153,13 @@ export default function RootLayout({
               <TooltipProvider>
                 <ErrorProvider>
                   {/* <MotionProvider> */}
-                  <div className="relative flex min-h-screen flex-col">
-                    <Toaster />
-                    <UploadProgressPanel />
-                    {children}
-                  </div>
+                  <SessionLoginDialogProvider>
+                    <div className="relative flex min-h-screen flex-col">
+                      <Toaster />
+                      <UploadProgressPanel />
+                      {children}
+                    </div>
+                  </SessionLoginDialogProvider>
                   {/* </MotionProvider> */}
                 </ErrorProvider>
               </TooltipProvider>
