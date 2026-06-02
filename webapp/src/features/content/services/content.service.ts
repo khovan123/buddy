@@ -60,7 +60,10 @@ const excludePurchasedPage = async <T extends ContentWithId>(
     meta: {
       ...result.meta,
       total: Math.max(0, result.meta.total - hiddenCount),
-    },
+      totalPages: Math.ceil(
+        Math.max(0, result.meta.total - hiddenCount) / Math.max(result.meta.limit, 1)
+      ),
+    }
   }
 }
 
