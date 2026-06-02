@@ -50,6 +50,7 @@ export class ConfirmTopUpHandler implements ICommandHandler<ConfirmTopUpCommand>
       externalReference: verification.externalReference,
       provider: command.provider,
       amountInCents: verification.amountInCents,
+      occurredAt: this.getWebhookOccurredAt(verification.metadata),
       eventType: event.routingKey,
       eventPayload: {
         eventId: event.eventId,
@@ -64,5 +65,34 @@ export class ConfirmTopUpHandler implements ICommandHandler<ConfirmTopUpCommand>
     });
 
     return { transactionId: topUpResult.transactionId, userId: topUpResult.userId };
+  }
+
+  private getWebhookOccurredAt(metadata?: Record<string, unknown>): Date | undefined {
+    const candidates = [
+      metadata?.transactionDate,
+      metadata?.transaction_date,
+      typeof metadata?.transaction === 'object' && metadata.transaction !== null
+        ? (metadata.transaction as Record<string, unknown>).transaction_date
+        : undefined,
+      metadata?.timestamp,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'number') {
+        const date = new Date(candidate * 1000);
+        if (!Number.isNaN(date.getTime())) {
+          return date;
+        }
+      }
+
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        const date = new Date(candidate);
+        if (!Number.isNaN(date.getTime())) {
+          return date;
+        }
+      }
+    }
+
+    return undefined;
   }
 }

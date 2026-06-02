@@ -82,6 +82,7 @@ export class WalletPrismaRepository implements IWalletRepository {
     externalReference: string;
     provider: 'SEPAY';
     amountInCents: bigint;
+    occurredAt?: Date;
     eventType: string;
     eventPayload: Record<string, unknown>;
     correlationId: string;
@@ -110,18 +111,23 @@ export class WalletPrismaRepository implements IWalletRepository {
             provider: input.provider,
             amountInCents: input.amountInCents,
             createdAt: {
-              gte: new Date(Date.now() - 1000 * 60 * 60 * 24),
+              gte: new Date((input.occurredAt?.getTime() ?? Date.now()) - 1000 * 60 * 60 * 24),
+              lte: new Date((input.occurredAt?.getTime() ?? Date.now()) + 1000 * 60 * 10),
             },
           },
           orderBy: { createdAt: 'desc' },
-          take: 2,
+          take: 10,
         });
 
-        if (recentPendingMatches.length > 1) {
+        if (recentPendingMatches.length > 0) {
+          transaction = this.pickClosestTopUpCandidate(recentPendingMatches, input.occurredAt);
+        }
+
+        if (!transaction && recentPendingMatches.length > 1) {
           throw new BadRequestException('Top-up transaction reference is ambiguous');
         }
 
-        if (recentPendingMatches.length === 1) {
+        if (!transaction && recentPendingMatches.length === 1) {
           transaction = recentPendingMatches[0];
         }
       }
@@ -191,6 +197,46 @@ export class WalletPrismaRepository implements IWalletRepository {
     this.eventEmitter.emit(OUTBOX_EVENTS.FLUSHED);
 
     return result;
+  }
+
+  private pickClosestTopUpCandidate<
+    T extends {
+      id: string;
+      createdAt?: Date | string;
+    },
+  >(candidates: T[], occurredAt?: Date): T | null {
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    if (!occurredAt) {
+      return candidates.length === 1 ? candidates[0] : null;
+    }
+
+    const ranked = candidates
+      .map((candidate) => {
+        const createdAt =
+          candidate.createdAt instanceof Date
+            ? candidate.createdAt
+            : new Date(candidate.createdAt ?? 0);
+
+        return {
+          candidate,
+          distanceMs: Math.abs(createdAt.getTime() - occurredAt.getTime()),
+        };
+      })
+      .filter((entry) => Number.isFinite(entry.distanceMs))
+      .sort((left, right) => left.distanceMs - right.distanceMs);
+
+    if (ranked.length === 0) {
+      return null;
+    }
+
+    if (ranked.length > 1 && ranked[0].distanceMs === ranked[1].distanceMs) {
+      return null;
+    }
+
+    return ranked[0].candidate;
   }
 
   /**

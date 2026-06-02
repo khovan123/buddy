@@ -31,6 +31,7 @@ export interface IWalletRepository {
     externalReference: string;
     provider: 'SEPAY';
     amountInCents: bigint;
+    occurredAt?: Date;
     eventType: string;
     eventPayload: Record<string, unknown>;
     correlationId: string;

@@ -164,7 +164,7 @@ describe('WalletPrismaRepository purchase ownership', () => {
           provider: 'SEPAY',
           amountInCents: 50000n,
         }),
-        take: 2,
+        take: 10,
       }),
     );
     expect(tx.wallet.update).toHaveBeenCalledWith({
