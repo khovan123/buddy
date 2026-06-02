@@ -17,6 +17,7 @@ import { Controller, Inject } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { RabbitSubscribe, Nack } from '@golevelup/nestjs-rabbitmq';
 import type { ConsumeMessage } from 'amqplib';
+import { NotificationStreamService } from '../../../application/notifications/notification-stream.service';
 import { SendPasswordResetEmailCommand } from '../../../application/commands/send-password-reset-email.command';
 import { SendWelcomeEmailCommand } from '../../../application/commands/send-welcome-email.command';
 import { NotificationEventPublisher } from '../publishers/notification-event.publisher';
@@ -59,6 +60,7 @@ export class NotificationConsumer {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly notificationPublisher: NotificationEventPublisher,
+    private readonly notificationStream: NotificationStreamService,
     @Inject(NOTIFICATION_REPOSITORY)
     private readonly notificationRepository: INotificationRepository,
   ) {}
@@ -114,7 +116,7 @@ export class NotificationConsumer {
       purchasedAt: payload.purchasedAt,
     };
 
-    await Promise.all([
+    const [buyerNotification, sellerNotification] = await Promise.all([
       this.notificationRepository.save(
         Notification.create({
           userId: payload.buyerId,
@@ -143,6 +145,9 @@ export class NotificationConsumer {
         }),
       ),
     ]);
+
+    this.notificationStream.publish(buyerNotification);
+    this.notificationStream.publish(sellerNotification);
   }
 
   private isNumberRecord(value: unknown): value is Record<string, number> {

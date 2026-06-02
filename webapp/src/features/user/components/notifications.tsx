@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import Link from "next/link"
 
@@ -13,6 +13,7 @@ import {
   ShoppingBag,
   Video,
 } from "lucide-react"
+import { useDispatch } from "react-redux"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -36,6 +37,7 @@ import {
   type TutorialQueryItem,
 } from "@/features/content/types"
 import { useGetNotificationsQuery } from "@/features/user/services/notification-api"
+import { baseApi } from "@/lib/redux/base-api"
 import { cn } from "@/lib/utils"
 
 type ModerationNotificationTone = "info" | "success" | "warning" | "danger"
@@ -196,6 +198,7 @@ function toneClassName(tone: ModerationNotificationTone) {
 
 export function Notifications() {
   const [open, setOpen] = useState(false)
+  const dispatch = useDispatch()
   const {
     data: resourceResponse,
     isFetching: resourcesFetching,
@@ -296,6 +299,27 @@ export function Notifications() {
   const isFetching =
     resourcesFetching || tutorialsFetching || notificationsFetching
   const hasError = resourcesError || tutorialsError || notificationsError
+
+  useEffect(() => {
+    const events = new EventSource("/api/notifications/stream")
+
+    const refreshNotifications = () => {
+      dispatch(
+        baseApi.util.invalidateTags([
+          "Notification",
+          "Wallet",
+          "Transaction",
+        ])
+      )
+    }
+
+    events.addEventListener("notification", refreshNotifications)
+
+    return () => {
+      events.removeEventListener("notification", refreshNotifications)
+      events.close()
+    }
+  }, [dispatch])
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

@@ -354,25 +354,25 @@ export class SePayAdapter implements IPaymentGateway, IPayoutGateway {
   }
 
   private verifyHmacSignature(signature: string, timestamp: string, rawBody: string): boolean {
-    const timestampSeconds = Number.parseInt(timestamp, 10);
-    if (!Number.isFinite(timestampSeconds)) {
+    if (!timestamp.trim()) {
       return false;
     }
 
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    if (Math.abs(nowSeconds - timestampSeconds) > 300) {
-      return false;
-    }
+    const payload = this.stringifyWebhookPayload(rawBody);
 
     const expected = crypto
       .createHmac('sha256', this.webhookSecretKey)
-      .update(`${timestamp}.${rawBody}`)
+      .update(`${timestamp}.${payload}`)
       .digest('hex');
     const incoming = signature.startsWith('sha256=')
       ? signature.slice('sha256='.length)
       : signature;
 
     return this.safeEquals(incoming, expected);
+  }
+
+  private stringifyWebhookPayload(rawBody: string): string {
+    return JSON.stringify(this.parsePayload(rawBody));
   }
 
   private async callSePayUserApi<T>(path: string, token: string): Promise<T> {

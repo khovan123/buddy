@@ -327,7 +327,7 @@ export class BillingWebhookProxyController {
     if (input.secretKey) headers['x-secret-key'] = input.secretKey;
     if (input.sepaySignature) headers['x-sepay-signature'] = input.sepaySignature;
     if (input.sepayTimestamp) headers['x-sepay-timestamp'] = input.sepayTimestamp;
-    if (input.contentType) headers['content-type'] = input.contentType;
+    if (input.contentType) headers['content-type'] = 'application/json';
 
     const rawBody =
       typeof req.rawBody === 'string'

@@ -7,10 +7,14 @@ import {
   ParseIntPipe,
   Query,
   Req,
+  Sse,
   UseGuards,
+  type MessageEvent,
 } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import type { FastifyRequest } from 'fastify';
+import { Observable } from 'rxjs';
+import { NotificationStreamService } from '../../../application/notifications/notification-stream.service';
 import { GetNotificationsQuery } from '../../../application/queries/get-notifications.query';
 
 type AuthenticatedRequest = FastifyRequest & { user: { sub: string } };
@@ -19,7 +23,10 @@ type AuthenticatedRequest = FastifyRequest & { user: { sub: string } };
 @Controller({ path: 'notifications', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class NotificationController {
-  constructor(private readonly queryBus: QueryBus) {}
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly notificationStream: NotificationStreamService,
+  ) {}
 
   @Get()
   async getNotifications(
@@ -31,5 +38,10 @@ export class NotificationController {
     );
 
     return successResponse(notifications);
+  }
+
+  @Sse('stream')
+  streamNotifications(@Req() req: AuthenticatedRequest): Observable<MessageEvent> {
+    return this.notificationStream.subscribe(req.user.sub);
   }
 }
