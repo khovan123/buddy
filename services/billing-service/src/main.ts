@@ -19,13 +19,16 @@ function registerWebhookBodyParsers(app: NestFastifyApplication): void {
     done(null, rawBody);
   };
 
-  fastify.addContentTypeParser(
-    ['application/x-www-form-urlencoded', 'application/octet-stream'],
-    { parseAs: 'string' },
-    parseRawBody,
-  );
-  fastify.addContentTypeParser(/^multipart\/form-data/i, { parseAs: 'string' }, parseRawBody);
-  fastify.addContentTypeParser('*', { parseAs: 'string' }, parseRawBody);
+  const addRawParser = (contentType: string | RegExp) => {
+    if (!fastify.hasContentTypeParser(contentType)) {
+      fastify.addContentTypeParser(contentType, { parseAs: 'string' }, parseRawBody);
+    }
+  };
+
+  addRawParser('application/x-www-form-urlencoded');
+  addRawParser('application/octet-stream');
+  addRawParser(/^multipart\/form-data/i);
+  addRawParser('*');
 }
 
 async function bootstrap() {
@@ -45,8 +48,6 @@ async function bootstrap() {
     new FastifyAdapter({ logger: false, trustProxy: true }),
     { bufferLogs: true, rawBody: true },
   );
-
-  registerWebhookBodyParsers(app);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -84,6 +85,8 @@ async function bootstrap() {
   }
 
   app.enableShutdownHooks();
+  await app.init();
+  registerWebhookBodyParsers(app);
 
   const host = process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '::' : '127.0.0.1');
   const maxRetries = 5;

@@ -20,11 +20,14 @@ function registerWebhookBodyParsers(app: NestFastifyApplication): void {
     done(null, rawBody);
   };
 
-  fastify.addContentTypeParser(
-    ['application/x-www-form-urlencoded', 'application/octet-stream'],
-    { parseAs: 'string' },
-    parseRawBody,
-  );
+  const addRawParser = (contentType: string | RegExp) => {
+    if (!fastify.hasContentTypeParser(contentType)) {
+      fastify.addContentTypeParser(contentType, { parseAs: 'string' }, parseRawBody);
+    }
+  };
+
+  addRawParser('application/x-www-form-urlencoded');
+  addRawParser('application/octet-stream');
 }
 
 async function bootstrap() {
@@ -50,8 +53,6 @@ async function bootstrap() {
     }),
     { bufferLogs: true, rawBody: true },
   );
-
-  registerWebhookBodyParsers(app);
 
   // ── Security ──────────────────────────────────────────────────────
   await app.register(helmet, {
@@ -145,6 +146,8 @@ async function bootstrap() {
   }
 
   app.enableShutdownHooks();
+  await app.init();
+  registerWebhookBodyParsers(app);
 
   const maxRetries = 5;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
