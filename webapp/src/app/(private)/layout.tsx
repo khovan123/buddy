@@ -37,7 +37,7 @@ export default async function PrivateLayout({
   const roleAccess = buildRoleAccessInput(session?.user, accessToken)
 
   return (
-    <div className="relative isolate flex min-h-screen flex-col overflow-hidden bg-background">
+    <div className="relative isolate flex min-h-screen flex-col overflow-x-clip bg-background">
       <div className="pointer-events-none fixed inset-0 z-[-1] opacity-20">
         <EducationUniverse variant="ambient" />
       </div>

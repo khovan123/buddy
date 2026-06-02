@@ -5,6 +5,7 @@ import { useMemo, useState } from "react"
 import type { NavigationItem } from "@/components/atoms/nav-dropdown-item"
 import { CreateContentCTA } from "@/components/molecules/create-content-cta"
 import { Navigation } from "@/components/organisms/navigation"
+import { useGetSubscriptionQuery } from "@/features/billing/services/billing-api"
 import { HeaderWalletPopover } from "@/features/user/components/header-wallet-popover"
 import { Notifications } from "@/features/user/components/notifications"
 import { PlanSelectorDialog } from "@/features/user/components/plan-selector-dialog"
@@ -63,10 +64,15 @@ export function PrivateHeader({
   accountFallback,
 }: PrivateHeaderProps) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
+  const { data: subscriptionData } = useGetSubscriptionQuery()
 
   const openProfileDialog = () => setProfileDialogOpen(true)
   const isAdmin = isAdminAccess(accountFallback)
-  const isCreator = isCreatorAccess(accountFallback)
+  const isCreator = isCreatorAccess({
+    ...accountFallback,
+    subscriptionPlan:
+      subscriptionData?.data?.plan ?? accountFallback?.subscriptionPlan,
+  })
   const navigationItems = useMemo(
     () =>
       isAdmin
