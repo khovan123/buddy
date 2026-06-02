@@ -14,9 +14,11 @@ describe('NotificationConsumer purchase notifications', () => {
       channel: string;
       templateId: string;
     }> = [];
+    const stream = { publish: jest.fn() };
     const consumer = new NotificationConsumer(
       { execute: jest.fn() } as never,
       { republishWithDelay: jest.fn() } as never,
+      stream as never,
       {
         save: jest.fn(async (notification: Notification) => {
           savedNotifications.push({
@@ -56,5 +58,6 @@ describe('NotificationConsumer purchase notifications', () => {
         templateId: 'purchase-seller',
       },
     ]);
+    expect(stream.publish).toHaveBeenCalledTimes(2);
   });
 });

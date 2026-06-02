@@ -22,6 +22,7 @@ import { MESSAGE_COMPONENTS, MESSAGE_CONTROLLERS } from './infrastructure/messag
 import { NOTIFICATION_REPOSITORY } from './domain/repositories/tokens';
 import { NotificationController } from './presentation/http/controllers/notification.controller';
 import { NotificationPreferencesController } from './presentation/http/controllers/notification-preferences.controller';
+import { NotificationStreamService } from './application/notifications/notification-stream.service';
 
 /** NestJS Module for  app. */
 @Module({
@@ -66,6 +67,7 @@ import { NotificationPreferencesController } from './presentation/http/controlle
     ...QUERY_HANDLERS,
     ...MESSAGE_COMPONENTS,
     { provide: NOTIFICATION_REPOSITORY, useClass: NotificationMongoRepository },
+    NotificationStreamService,
     EmailService,
   ],
 })
