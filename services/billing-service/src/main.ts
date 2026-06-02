@@ -25,7 +25,6 @@ function registerWebhookBodyParsers(app: NestFastifyApplication): void {
     }
   };
 
-  addRawParser('application/x-www-form-urlencoded');
   addRawParser('application/octet-stream');
   addRawParser(/^multipart\/form-data/i);
   addRawParser('*');
@@ -84,9 +83,8 @@ async function bootstrap() {
     throw new Error('PORT must be a valid number');
   }
 
-  app.enableShutdownHooks();
-  await app.init();
   registerWebhookBodyParsers(app);
+  app.enableShutdownHooks();
 
   const host = process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '::' : '127.0.0.1');
   const maxRetries = 5;
