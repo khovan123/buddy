@@ -65,10 +65,19 @@ export const buildRoleAccessInput = (
 ): RoleAccessInput => {
   const claims = decodeAccessTokenClaims(accessToken)
 
+  const role =
+    input?.role?.trim() ||
+    claims?.role?.trim() ||
+    claims?.roles?.[0]?.trim() ||
+    null
+
   return {
-    role: input?.role ?? claims?.role ?? claims?.roles?.[0] ?? null,
-    roles: input?.roles ?? claims?.roles ?? null,
+    role,
+    roles:
+      input?.roles && input.roles.length > 0
+        ? input.roles
+        : claims?.roles ?? null,
     subscriptionPlan:
-      input?.subscriptionPlan ?? claims?.subscriptionPlan ?? null,
+      input?.subscriptionPlan?.trim() || claims?.subscriptionPlan?.trim() || null,
   }
 }
