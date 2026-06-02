@@ -152,7 +152,7 @@ export function PlanSelectorDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open || requiresPlanSelection} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant={triggerVariant}
