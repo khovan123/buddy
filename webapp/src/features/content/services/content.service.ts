@@ -1,3 +1,5 @@
+import { cache } from "react"
+
 import { isDynamicServerError } from "next/dist/client/components/hooks-server-context"
 
 import { fetchApi } from "@/lib/fetch"
@@ -14,6 +16,53 @@ import type {
   Tutorial,
   TutorialQueryItem,
 } from "../types"
+
+type ContentWithId = { id: string }
+
+const getPurchasedContentIds = cache(async (): Promise<Set<string>> => {
+  try {
+    const res = await fetchApi(
+      "GET",
+      "/libraries/purchased-ids",
+      undefined,
+      await getAuthHeaders(),
+      false,
+      { cache: "no-store" }
+    )
+
+    if (!res.ok) {
+      return new Set()
+    }
+
+    const json = (await res.json()) as ApiResponse<string[]>
+    return new Set(json.data ?? [])
+  } catch (error) {
+    if (isDynamicServerError(error)) {
+      throw error
+    }
+    return new Set()
+  }
+})
+
+const excludePurchased = async <T extends ContentWithId>(
+  items: T[]
+): Promise<T[]> => {
+  const purchasedIds = await getPurchasedContentIds()
+  return items.filter((item) => !purchasedIds.has(item.id))
+}
+
+const excludePurchasedPage = async <T extends ContentWithId>(
+  result: PaginatedResult<T>
+): Promise<PaginatedResult<T>> => {
+  const data = await excludePurchased(result.data)
+
+  return {
+    data,
+    meta: {
+      ...result.meta,
+    },
+  }
+}
 
 // ─────────────────────────────────────────────────────────────
 // Server-side Fetch Functions (dùng trong Server Components / RSC)
@@ -68,7 +117,7 @@ export const getTutorials = async (
     const json = (await res.json()) as ApiResponse<
       PaginatedResult<TutorialQueryItem>
     >
-    return (
+    return excludePurchasedPage(
       json.data ?? {
         data: [],
         meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
@@ -189,7 +238,7 @@ export const getTutorialCollections = async (
     const json = (await res.json()) as ApiResponse<
       PaginatedResult<CollectionQueryItem>
     >
-    return (
+    return excludePurchasedPage(
       json.data ?? {
         data: [],
         meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
@@ -319,7 +368,7 @@ export const getResources = async (
     const json = (await res.json()) as ApiResponse<
       PaginatedResult<ResourceQueryItem>
     >
-    return (
+    return excludePurchasedPage(
       json.data ?? {
         data: [],
         meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
@@ -441,7 +490,7 @@ export const getResourceCollections = async (
     const json = (await res.json()) as ApiResponse<
       PaginatedResult<CollectionQueryItem>
     >
-    return (
+    return excludePurchasedPage(
       json.data ?? {
         data: [],
         meta: { total: 0, page: 1, limit: 10, totalPages: 0 },
@@ -559,7 +608,7 @@ export const getTopResources = async (
     }
 
     const json = (await res.json()) as ApiResponse<ResourceQueryItem[]>
-    return json.data ?? []
+    return excludePurchased(json.data ?? [])
   } catch (error) {
     if (isDynamicServerError(error)) {
       throw error
@@ -603,7 +652,7 @@ export const getTopTutorials = async (
     }
 
     const json = (await res.json()) as ApiResponse<TutorialQueryItem[]>
-    return json.data ?? []
+    return excludePurchased(json.data ?? [])
   } catch (error) {
     if (isDynamicServerError(error)) {
       throw error
@@ -648,7 +697,7 @@ export const getTopResourceCollections = async (
     }
 
     const json = (await res.json()) as ApiResponse<CollectionQueryItem[]>
-    return json.data ?? []
+    return excludePurchased(json.data ?? [])
   } catch (error) {
     if (isDynamicServerError(error)) {
       throw error
@@ -693,7 +742,7 @@ export const getTopTutorialCollections = async (
     }
 
     const json = (await res.json()) as ApiResponse<CollectionQueryItem[]>
-    return json.data ?? []
+    return excludePurchased(json.data ?? [])
   } catch (error) {
     if (isDynamicServerError(error)) {
       throw error

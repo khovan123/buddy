@@ -24,6 +24,8 @@ export class GetNotificationsHandler implements IQueryHandler<GetNotificationsQu
       type: n.type,
       channel: n.channel,
       subject: n.subject,
+      templateId: n.templateId,
+      templateData: n.templateData,
       status: n.status,
       attempts: n.attempts,
       sentAt: n.createdAt,

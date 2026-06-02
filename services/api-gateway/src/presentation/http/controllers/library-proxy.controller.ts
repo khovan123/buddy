@@ -13,6 +13,15 @@ import { HttpProxyService } from '../../../infrastructure/http/http-proxy.servic
 export class LibraryProxyController {
   constructor(private readonly proxy: HttpProxyService) {}
 
+  @Get('purchased-ids')
+  getPurchasedContentIds(@Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'content',
+      path: '/v1/libraries/purchased-ids',
+      method: 'GET',
+    });
+  }
+
   // ── Resources ────────────────────────────────────────────────
 
   /**

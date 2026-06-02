@@ -21,6 +21,7 @@ import { GetLibraryTutorialBySlugQuery } from '../../../application/queries/get-
 import { GetLibraryTutorialsQuery } from '../../../application/queries/get-library-tutorials.query';
 import { GetLibraryTutorialCollectionBySlugQuery } from '../../../application/queries/get-library-tutorial-collection-by-slug.query';
 import { GetLibraryTutorialCollectionsQuery } from '../../../application/queries/get-library-tutorial-collections.query';
+import { GetPurchasedContentIdsQuery } from '../../../application/queries/get-purchased-content-ids.query';
 import { CollectionSlugParamDto } from '../dtos/collection-slug-param.dto';
 import { QueryDto } from '../dtos/query';
 import { ResourceSlugParamDto } from '../dtos/resource-slug-param.dto';
@@ -38,6 +39,14 @@ import { TutorialSlugParamDto } from '../dtos/tutorial-slug-param.dto';
 @UseGuards(JwtAuthGuard)
 export class LibraryController {
   constructor(private readonly queryBus: QueryBus) {}
+
+  @Get('purchased-ids')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async getPurchasedContentIds(@Req() req: FastifyRequest & { user: { sub: string } }) {
+    const result = await this.queryBus.execute(new GetPurchasedContentIdsQuery(req.user.sub));
+    return successResponse(result, 'Get purchased content ids successful', getCorrelationId());
+  }
 
   // ── Resources (list) ─────────────────────────────────────────
 

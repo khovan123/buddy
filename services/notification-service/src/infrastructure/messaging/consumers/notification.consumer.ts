@@ -7,8 +7,13 @@ import {
   ensureCorrelationId,
   runWithCorrelationId,
 } from '@libs/common';
-import { AUTH_ROUTINGKEYS, RECOMMENDATION_ROUTINGKEYS } from '@libs/contracts';
-import { Controller } from '@nestjs/common';
+import {
+  AUTH_ROUTINGKEYS,
+  BILLING_ROUTINGKEYS,
+  PurchaseCompletedEvent,
+  RECOMMENDATION_ROUTINGKEYS,
+} from '@libs/contracts';
+import { Controller, Inject } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { RabbitSubscribe, Nack } from '@golevelup/nestjs-rabbitmq';
 import type { ConsumeMessage } from 'amqplib';
@@ -17,6 +22,9 @@ import { SendWelcomeEmailCommand } from '../../../application/commands/send-welc
 import { NotificationEventPublisher } from '../publishers/notification-event.publisher';
 import { SendOtpEmailCommand } from '../../../application/commands/send-otp-email.command';
 import { SendModelTrainedEmailCommand } from '../../../application/commands/send-model-trained-email.command';
+import { Notification } from '../../../domain/entities/notification.entity';
+import type { INotificationRepository } from '../../../domain/repositories/notification.repository.interface';
+import { NOTIFICATION_REPOSITORY } from '../../../domain/repositories/tokens';
 
 type EventEnvelope<T extends object> = {
   payload?: T;
@@ -51,6 +59,8 @@ export class NotificationConsumer {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly notificationPublisher: NotificationEventPublisher,
+    @Inject(NOTIFICATION_REPOSITORY)
+    private readonly notificationRepository: INotificationRepository,
   ) {}
 
   private getPayload<T extends object>(data: EventEnvelope<T>): T | undefined {
@@ -67,6 +77,72 @@ export class NotificationConsumer {
 
   private isFiniteNumber(value: unknown): value is number {
     return typeof value === 'number' && Number.isFinite(value);
+  }
+
+  // ─── billing.purchase.completed ───────────────────────────────────────────
+  @RabbitSubscribe({
+    exchange: EXCHANGES.BILLING,
+    routingKey: BILLING_ROUTINGKEYS.PURCHASE_COMPLETED,
+    queue: QUEUES.NOTIFICATION_IN_APP,
+    queueOptions: {
+      durable: true,
+      arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
+    },
+  })
+  async handlePurchaseCompleted(
+    data: EventEnvelope<PurchaseCompletedEvent['payload']>,
+  ): Promise<void | Nack> {
+    const payload = this.getPayload(data);
+
+    if (
+      !payload ||
+      !this.isNonEmptyString(payload.purchaseId) ||
+      !this.isNonEmptyString(payload.buyerId) ||
+      !this.isNonEmptyString(payload.sellerId) ||
+      !this.isNonEmptyString(payload.amount) ||
+      !Array.isArray(payload.items)
+    ) {
+      this.logger.warn(`Dropping malformed [${BILLING_ROUTINGKEYS.PURCHASE_COMPLETED}] event`);
+      return new Nack(false);
+    }
+
+    const templateData = {
+      purchaseId: payload.purchaseId,
+      amount: payload.amount,
+      itemCount: payload.items.length,
+      items: payload.items,
+      purchasedAt: payload.purchasedAt,
+    };
+
+    await Promise.all([
+      this.notificationRepository.save(
+        Notification.create({
+          userId: payload.buyerId,
+          type: 'in_app',
+          channel: 'purchase',
+          recipient: payload.buyerId,
+          subject: 'Purchase completed',
+          templateId: 'purchase-buyer',
+          templateData,
+          correlationId: data.correlationId ?? payload.purchaseId,
+        }),
+      ),
+      this.notificationRepository.save(
+        Notification.create({
+          userId: payload.sellerId,
+          type: 'in_app',
+          channel: 'purchase',
+          recipient: payload.sellerId,
+          subject: 'New content sale',
+          templateId: 'purchase-seller',
+          templateData: {
+            ...templateData,
+            buyerId: payload.buyerId,
+          },
+          correlationId: data.correlationId ?? payload.purchaseId,
+        }),
+      ),
+    ]);
   }
 
   private isNumberRecord(value: unknown): value is Record<string, number> {

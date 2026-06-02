@@ -23,6 +23,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
+import { PurchaseButton } from "@/features/billing"
 import { getResourceCollectionBySlug } from "@/features/content"
 
 type PageParams = Promise<{ id: string }>
@@ -466,9 +467,12 @@ export default async function ExploreCollectionResourceDetailPage({
                 </div>
               </div>
 
-              <Button className="mb-4 w-full text-base font-bold" size="lg">
-                Buy Entire Collection
-              </Button>
+              <PurchaseButton
+                itemId={collection.id}
+                itemType="RESOURCE_COLLECTION"
+                label="Buy Entire Collection"
+                className="mb-4 w-full text-base font-bold"
+              />
               <div className="flex justify-center">
                 <Item
                   variant="default"

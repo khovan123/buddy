@@ -7,6 +7,8 @@ declare module "next-auth" {
     email: string
     nickname?: string
     role?: string
+    roles?: string[]
+    subscriptionPlan?: string | null
     accessToken?: string
     refreshToken?: string
     error?: string
@@ -19,6 +21,8 @@ declare module "next-auth" {
       email: string
       nickname: string
       role: string
+      roles?: string[]
+      subscriptionPlan?: string | null
     }
     error?: string
     isNewUser?: boolean
@@ -35,6 +39,8 @@ declare module "next-auth/jwt" {
       email: string
       nickname: string
       role: string
+      roles?: string[]
+      subscriptionPlan?: string | null
     }
     error?: string
     isNewUser?: boolean

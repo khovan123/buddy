@@ -32,8 +32,10 @@ import { GetSalesCountQuery } from '../../../application/queries/get-sales-count
 import { GetSubscriptionQuery } from '../../../application/queries/get-subscription.query';
 import { GetTransactionHistoryQuery } from '../../../application/queries/get-transaction-history.query';
 import { GetWalletBalanceQuery } from '../../../application/queries/get-wallet-balance.query';
-import { PAYOUT_GATEWAY } from '../../../domain/repositories/tokens';
+import { PAYOUT_GATEWAY, WALLET_REPOSITORY } from '../../../domain/repositories/tokens';
 import type { IPayoutGateway } from '../../../domain/repositories/payout-gateway.interface';
+import type { IWalletRepository } from '../../../domain/repositories/wallet.repository.interface';
+import { ContentCatalogRpcPublisher } from '../../../infrastructure/messaging/publishers/content-catalog.rpc';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import type { Prisma } from '../../../infrastructure/persistence/prisma/generated/client';
 import type {
@@ -413,6 +415,8 @@ export class BillingController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
     private readonly prisma: PrismaService,
+    private readonly contentCatalogRpcPublisher: ContentCatalogRpcPublisher,
+    @Inject(WALLET_REPOSITORY) private readonly walletRepository: IWalletRepository,
     @Inject(PAYOUT_GATEWAY) private readonly payoutGateway: IPayoutGateway,
   ) {}
 
@@ -456,12 +460,49 @@ export class BillingController {
     @Body() dto: ProcessPurchaseDto,
   ) {
     const correlationId = getCorrelationId() || crypto.randomUUID();
+    const idempotencyKey = req.headers['x-idempotency-key'] as string | undefined;
 
     const result = await this.commandBus.execute(
-      new ProcessPurchaseCommand(req.user.sub, dto.itemType, dto.itemId, correlationId),
+      new ProcessPurchaseCommand(
+        req.user.sub,
+        dto.itemType,
+        dto.itemId,
+        correlationId,
+        idempotencyKey,
+      ),
     );
 
     return successResponse(result, 'Purchase completed', correlationId);
+  }
+
+  @Post('purchase/quote')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async getPurchaseQuote(
+    @Req() req: FastifyRequest & { user: { sub: string } },
+    @Body() dto: ProcessPurchaseDto,
+  ) {
+    const [ownedResourceIds, ownedTutorialIds] = await Promise.all([
+      this.walletRepository.findSuccessfulPurchasedItemIds(req.user.sub, 'RESOURCE'),
+      this.walletRepository.findSuccessfulPurchasedItemIds(req.user.sub, 'TUTORIAL'),
+    ]);
+    const quote = await this.contentCatalogRpcPublisher.getPurchaseCatalog({
+      itemId: dto.itemId,
+      itemType: dto.itemType,
+      userId: req.user.sub,
+      ownedResourceIds: Array.from(ownedResourceIds),
+      ownedTutorialIds: Array.from(ownedTutorialIds),
+    });
+
+    return successResponse(
+      {
+        itemId: dto.itemId,
+        itemType: dto.itemType,
+        payableAmountInCents: quote.priceInCents.toString(),
+      },
+      'Purchase quote retrieved',
+      getCorrelationId() || crypto.randomUUID(),
+    );
   }
 
   // ── Payout Account ──────────────────────────────────────────────────

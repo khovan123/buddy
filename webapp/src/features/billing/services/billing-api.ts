@@ -48,6 +48,28 @@ interface CreateSubscriptionRequest {
   plan: SubscriptionPlan
 }
 
+export type PurchasableContentType =
+  | "RESOURCE"
+  | "TUTORIAL"
+  | "RESOURCE_COLLECTION"
+  | "TUTORIAL_COLLECTION"
+  | "TUTORIAL_BUNDLE"
+  | "TUTORIAL_BUNDLE_COLLECTION"
+
+interface PurchaseRequest {
+  itemId: string
+  itemType: PurchasableContentType
+}
+
+interface PurchaseQuoteResponse extends PurchaseRequest {
+  payableAmountInCents: string
+}
+
+interface PurchaseResponse {
+  purchaseId: string
+  payableAmountInCents: string
+}
+
 export const billingApi = baseApi.injectEndpoints({
   endpoints: (build) => ({
     getWalletBalance: build.query<ApiResponse<WalletBalance>, void>({
@@ -108,6 +130,32 @@ export const billingApi = baseApi.injectEndpoints({
       invalidatesTags: ["Wallet", "Transaction"],
     }),
 
+    getPurchaseQuote: build.mutation<
+      ApiResponse<PurchaseQuoteResponse>,
+      PurchaseRequest
+    >({
+      query: (body) => ({
+        url: "/v1/billing/purchase/quote",
+        method: "POST",
+        body,
+      }),
+    }),
+
+    purchase: build.mutation<
+      ApiResponse<PurchaseResponse>,
+      PurchaseRequest & { idempotencyKey?: string }
+    >({
+      query: ({ idempotencyKey, ...body }) => ({
+        url: "/v1/billing/purchase",
+        method: "POST",
+        body,
+        headers: idempotencyKey
+          ? { "x-idempotency-key": idempotencyKey }
+          : undefined,
+      }),
+      invalidatesTags: ["Wallet", "Transaction", "Notification"],
+    }),
+
     withdrawWallet: build.mutation<
       ApiResponse<unknown>,
       WithdrawWalletRequest & { idempotencyKey?: string }
@@ -155,6 +203,8 @@ export const {
   useGetSubscriptionPlansQuery,
   useCreateSubscriptionMutation,
   useTopUpWalletMutation,
+  useGetPurchaseQuoteMutation,
+  usePurchaseMutation,
   useWithdrawWalletMutation,
   useVerifyBankAccountMutation,
   useSavePayoutAccountMutation,

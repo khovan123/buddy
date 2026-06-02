@@ -7,6 +7,7 @@ import {
   webPageJsonLd,
 } from "@/features/seo/components/json-ld"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { requireCreatorAccess } from "@/lib/auth/server-role-access"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getSeoContent("create-collection")
@@ -32,6 +33,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CreateCollectionPage() {
+  await requireCreatorAccess()
+
   const seo = await getSeoContent("create-collection")
 
   return (

@@ -32,6 +32,20 @@ type GetPurchaseCatalogRpcMessage = {
   correlationId?: string;
 };
 
+type PurchasableResource = {
+  _id: { toString(): string };
+  price: number;
+};
+
+type TutorialBundleSource = {
+  _id: { toString(): string };
+  userId: string;
+  price: number;
+  discountBundle: number;
+  resourceIds?: Array<{ toString(): string } | string>;
+  collectionIds?: Array<{ toString(): string } | string>;
+};
+
 /** Represents the  purchase catalog consumer component. */
 @Controller()
 export class PurchaseCatalogConsumer {
@@ -160,10 +174,7 @@ export class PurchaseCatalogConsumer {
       throw new Error(`Resource collection ${itemId} was not found`);
     }
 
-    const resources = await this.resourceModel
-      .find({ collectionId: itemId, deletedAt: null })
-      .lean()
-      .exec();
+    const resources = await this.findResourceCollectionItems(itemId, collection.resourceIds);
     const remainingResources = resources.filter(
       (resource) => !ownedResourceIds.has(resource._id.toString()),
     );
@@ -243,27 +254,16 @@ export class PurchaseCatalogConsumer {
     ownedResourceIds: Set<string>,
     ownedTutorialIds: Set<string>,
   ): Promise<PurchaseCatalogResponse> {
-    const tutorial = await this.tutorialModel
-      .findById(itemId)
-      .populate('resources')
-      .lean<{
-        _id: { toString(): string };
-        userId: string;
-        price: number;
-        discountBundle: number;
-        resources?: Array<{ _id: { toString(): string }; price: number } | string>;
-      }>()
-      .exec();
+    const tutorial = await this.tutorialModel.findById(itemId).lean<TutorialBundleSource>().exec();
 
     if (!tutorial || tutorial.discountBundle == null) {
       throw new Error(`Tutorial bundle ${itemId} was not found`);
     }
 
-    const remainingResourcePrices = this.extractRemainingResourcePrices(
-      tutorial.resources,
-      ownedResourceIds,
-    );
-    const resourceCount = this.extractResourceIds(tutorial.resources).length;
+    const resources = await this.findTutorialBundleResources(tutorial);
+    const remainingResources = this.excludeOwnedResources(resources, ownedResourceIds);
+    const remainingResourcePrices = remainingResources.map((resource) => resource.price);
+    const resourceCount = resources.length;
     const shouldApplyDiscount = this.shouldApplyDiscount(
       resourceCount,
       remainingResourcePrices.length,
@@ -282,7 +282,7 @@ export class PurchaseCatalogConsumer {
           itemId,
           itemType: 'TUTORIAL_BUNDLE',
           tutorialId: itemId,
-          resourceIds: this.extractResourceIds(tutorial.resources),
+          resourceIds: this.extractResourceIds(resources),
         },
       ],
     };
@@ -308,30 +308,21 @@ export class PurchaseCatalogConsumer {
 
     const tutorials = await this.tutorialModel
       .find({ collectionId: itemId, deletedAt: null })
-      .populate('resources')
-      .lean<
-        {
-          _id: { toString(): string };
-          userId: string;
-          price: number;
-          discountBundle: number;
-          resources?: Array<{ _id: { toString(): string }; price: number } | string>;
-        }[]
-      >()
+      .lean<TutorialBundleSource[]>()
       .exec();
-    const tutorialPrices = tutorials.map((tutorial) => {
-      const remainingResourcePrices = this.extractRemainingResourcePrices(
-        tutorial.resources,
-        ownedResourceIds,
-      );
+    const tutorialResources = await Promise.all(
+      tutorials.map((tutorial) => this.findTutorialBundleResources(tutorial)),
+    );
+    const pricedResourceIds = new Set(ownedResourceIds);
+    const tutorialPrices = tutorials.map((tutorial, index) => {
+      const resources = tutorialResources[index] || [];
+      const remainingResources = this.excludeOwnedResources(resources, pricedResourceIds);
+      remainingResources.forEach((resource) => pricedResourceIds.add(resource._id.toString()));
       const basePrice =
         (ownedTutorialIds.has(tutorial._id.toString()) ? 0 : tutorial.price) +
-        this.sumPrices(remainingResourcePrices);
+        this.sumPrices(remainingResources.map((resource) => resource.price));
 
-      return this.shouldApplyDiscount(
-        this.extractResourceIds(tutorial.resources).length,
-        remainingResourcePrices.length,
-      )
+      return this.shouldApplyDiscount(resources.length, remainingResources.length)
         ? this.applyDiscount(basePrice, tutorial.discountBundle)
         : basePrice;
     });
@@ -352,7 +343,7 @@ export class PurchaseCatalogConsumer {
           itemType: 'TUTORIAL_BUNDLE_COLLECTION',
           tutorialIds: tutorials.map((tutorial) => tutorial._id.toString()),
           resourceIds: Array.from(
-            new Set(tutorials.flatMap((tutorial) => this.extractResourceIds(tutorial.resources))),
+            new Set(tutorialResources.flatMap((resources) => this.extractResourceIds(resources))),
           ),
         },
       ],
@@ -381,43 +372,64 @@ export class PurchaseCatalogConsumer {
    * @param value - The value parameter
    * @returns Result of type number[]
    */
-  private extractResourcePrices(
-    value?: Array<{ _id: { toString(): string }; price: number } | string> | null,
-  ): number[] {
-    if (!value || value.length === 0) {
-      return [];
-    }
-
-    return value
-      .map((item) => (typeof item === 'string' ? 0 : (item.price ?? 0)))
-      .filter((price) => price >= 0);
+  private excludeOwnedResources(
+    resources: PurchasableResource[],
+    ownedResourceIds: Set<string>,
+  ): PurchasableResource[] {
+    return resources.filter((resource) => !ownedResourceIds.has(resource._id.toString()));
   }
 
-  /**
-   * Executes the extract remaining resource prices operation.
-   *
-   * @param value - The value parameter
-   * @param ownedResourceIds - The ownedResourceIds parameter
-   * @returns Result of type number[]
-   */
-  private extractRemainingResourcePrices(
-    value?: Array<{ _id: { toString(): string }; price: number } | string> | null,
-    ownedResourceIds?: Set<string>,
-  ): number[] {
-    if (!value || value.length === 0) {
+  private async findResourceCollectionItems(
+    collectionId: string,
+    resourceIds?: Array<{ toString(): string } | string>,
+  ): Promise<PurchasableResource[]> {
+    const ids = this.extractStringIds(resourceIds);
+
+    return this.resourceModel
+      .find({
+        deletedAt: null,
+        $or: [{ _id: { $in: ids } }, { collectionId }],
+      })
+      .lean<PurchasableResource[]>()
+      .exec();
+  }
+
+  private async findTutorialBundleResources(
+    tutorial: TutorialBundleSource,
+  ): Promise<PurchasableResource[]> {
+    const directResourceIds = this.extractStringIds(tutorial.resourceIds);
+    const collectionIds = this.extractStringIds(tutorial.collectionIds);
+    const collections =
+      collectionIds.length === 0
+        ? []
+        : await this.collectionModel
+            .find({
+              _id: { $in: collectionIds },
+              type: CollectionType.RESOURCE,
+              deletedAt: null,
+            })
+            .lean()
+            .exec();
+    const collectionResourceIds = collections.flatMap((collection) =>
+      this.extractStringIds(collection.resourceIds),
+    );
+    const resourceIds = Array.from(new Set([...directResourceIds, ...collectionResourceIds]));
+
+    if (resourceIds.length === 0 && collectionIds.length === 0) {
       return [];
     }
 
-    return value
-      .filter((item) => {
-        if (typeof item === 'string') {
-          return !ownedResourceIds?.has(item);
-        }
-
-        return !ownedResourceIds?.has(item._id.toString());
+    return this.resourceModel
+      .find({
+        deletedAt: null,
+        $or: [{ _id: { $in: resourceIds } }, { collectionId: { $in: collectionIds } }],
       })
-      .map((item) => (typeof item === 'string' ? 0 : (item.price ?? 0)))
-      .filter((price) => price >= 0);
+      .lean<PurchasableResource[]>()
+      .exec();
+  }
+
+  private extractStringIds(value?: Array<{ toString(): string } | string> | null): string[] {
+    return (value || []).map((item) => item.toString());
   }
 
   /**

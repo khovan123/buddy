@@ -25,6 +25,8 @@ export interface AuthUser {
   email: string
   nickname: string
   role: string
+  roles?: string[]
+  subscriptionPlan?: string | null
 }
 
 /**

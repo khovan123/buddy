@@ -16,6 +16,16 @@ type PurchaseCompletedMessage =
       payload?: PurchaseCompletedPayload;
     };
 
+type SavedContentInput = {
+  userId: string;
+  itemId: string;
+  itemType: string;
+  metadata: {
+    purchaseId: string;
+    amount: string;
+  };
+};
+
 @Controller()
 export class PurchaseConsumer {
   private readonly logger = new Logger(PurchaseConsumer.name);
@@ -56,17 +66,9 @@ export class PurchaseConsumer {
           return;
         }
 
-        const { buyerId, items } = payload;
+        const { buyerId } = payload;
 
-        const savedContentDocs = items.map((item) => ({
-          userId: buyerId,
-          itemId: item.itemId,
-          itemType: item.itemType,
-          metadata: {
-            purchaseId: payload.purchaseId,
-            amount: payload.amount,
-          },
-        }));
+        const savedContentDocs = this.expandSavedContentDocs(buyerId, payload);
 
         if (savedContentDocs.length > 0) {
           await this.savedContentModel
@@ -85,5 +87,36 @@ export class PurchaseConsumer {
 
   private extractPayload(event: PurchaseCompletedMessage): PurchaseCompletedPayload | undefined {
     return event.payload;
+  }
+
+  private expandSavedContentDocs(
+    buyerId: string,
+    payload: PurchaseCompletedPayload,
+  ): SavedContentInput[] {
+    const docs = new Map<string, SavedContentInput>();
+    const add = (itemId: string | undefined, itemType: string) => {
+      if (!itemId) {
+        return;
+      }
+
+      docs.set(`${itemType}:${itemId}`, {
+        userId: buyerId,
+        itemId,
+        itemType,
+        metadata: {
+          purchaseId: payload.purchaseId,
+          amount: payload.amount,
+        },
+      });
+    };
+
+    for (const item of payload.items) {
+      add(item.itemId, item.itemType);
+      item.resourceIds?.forEach((resourceId) => add(resourceId, 'RESOURCE'));
+      add(item.tutorialId, 'TUTORIAL');
+      item.tutorialIds?.forEach((tutorialId) => add(tutorialId, 'TUTORIAL'));
+    }
+
+    return Array.from(docs.values());
   }
 }

@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
+import { PurchaseButton } from "@/features/billing"
 import { ResourceDocumentPreview } from "@/features/content"
 import {
   getResourceBySlug,
@@ -339,9 +340,11 @@ export default async function ExploreResourceDetailPage({
                 </div>
               </div>
 
-              <Button className="mb-4 w-full text-base font-bold" size="lg">
-                Buy Now
-              </Button>
+              <PurchaseButton
+                itemId={resource.id}
+                itemType="RESOURCE"
+                className="mb-4 w-full text-base font-bold"
+              />
               <div className="flex justify-center">
                 <Item
                   variant="default"

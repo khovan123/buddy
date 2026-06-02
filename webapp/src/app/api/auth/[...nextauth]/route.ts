@@ -15,6 +15,7 @@ import {
   type RefreshTokenResponse,
   type VerifyOtpResponse,
 } from "@/features/auth/type"
+import { decodeAccessTokenClaims } from "@/lib/auth/role-access"
 import { fetchApi } from "@/lib/fetch"
 import { extractApiError, type ApiResponse } from "@/types/api"
 
@@ -81,6 +82,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
       }
 
       const decoded = jwtDecode<{ exp: number }>(data.data.accessToken)
+      const claims = decodeAccessTokenClaims(data.data.accessToken)
 
       await saveAccessTokenCookie(data.data.accessToken)
 
@@ -95,6 +97,13 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
         accessToken: data.data.accessToken,
         refreshToken: newRefreshToken,
         expiresAt: decoded.exp * 1000,
+        user: {
+          ...token.user,
+          role: token.user?.role ?? claims?.role ?? claims?.roles?.[0] ?? "",
+          roles: token.user?.roles ?? claims?.roles,
+          subscriptionPlan:
+            claims?.subscriptionPlan ?? token.user?.subscriptionPlan ?? null,
+        },
         error: undefined,
       }
     } catch (error) {
@@ -282,6 +291,7 @@ export const authOptions: AuthOptions = {
             data.data.accessToken
           ) {
             const decoded = jwtDecode<{ exp: number }>(data.data.accessToken)
+            const claims = decodeAccessTokenClaims(data.data.accessToken)
 
             await saveAccessTokenCookie(data.data.accessToken)
 
@@ -292,7 +302,12 @@ export const authOptions: AuthOptions = {
             token.accessToken = data.data.accessToken
             token.refreshToken = parsedRefreshToken
             token.expiresAt = decoded.exp * 1000
-            token.user = data.data.user
+            token.user = {
+              ...data.data.user,
+              roles: claims?.roles ?? data.data.user.roles,
+              subscriptionPlan:
+                claims?.subscriptionPlan ?? data.data.user.subscriptionPlan ?? null,
+            }
             token.isNewUser = data.data.isNewUser ?? false
           }
         } catch {
@@ -306,14 +321,17 @@ export const authOptions: AuthOptions = {
       if (user) {
         const u = user
         const decoded = jwtDecode<{ exp: number }>(u.accessToken ?? "")
+        const claims = decodeAccessTokenClaims(u.accessToken)
         token.accessToken = u.accessToken ?? ""
         token.refreshToken = u.refreshToken ?? ""
         token.expiresAt = decoded.exp * 1000
         token.user = {
           id: u.id ?? "",
           email: u.email ?? "",
-          role: u.role ?? "",
+          role: u.role ?? claims?.role ?? claims?.roles?.[0] ?? "",
+          roles: u.roles ?? claims?.roles,
           nickname: u.nickname ?? "",
+          subscriptionPlan: u.subscriptionPlan ?? claims?.subscriptionPlan ?? null,
         }
         token.error = u.error
         token.isNewUser = false

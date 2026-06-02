@@ -1,12 +1,14 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 
 import {
+  Atom,
   ArrowRight,
+  BookOpen,
   Briefcase,
   CheckCircle2,
+  Code2,
   Layers3,
   MessageSquare,
   Rocket,
@@ -17,13 +19,13 @@ import {
 } from "lucide-react"
 
 import { AnimatedCounter } from "@/components/atoms/animated-counter"
+import { EducationUniverse } from "@/components/atoms/education-universe"
 import {
   MotionHero,
   MotionSection,
   MotionStagger,
 } from "@/components/atoms/motion-primitives"
 import { UserAvatar } from "@/components/atoms/user-avatar"
-import PixelTrail from "@/components/fancy/background/pixel-trail"
 import MarqueeAlongSvgPath from "@/components/fancy/blocks/marquee-along-svg-path"
 import BreathingText from "@/components/fancy/text/breathing-text"
 import Letter3DSwap from "@/components/fancy/text/letter-3d-swap"
@@ -102,17 +104,12 @@ export function LandingContent({
   return (
     <>
       {/* ── Hero ────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-background text-foreground">
-        {/* Animated background blobs with Pixel Trail */}
-        <div className="absolute inset-0 z-0">
-          <PixelTrail
-            pixelSize={32}
-            fadeDuration={800}
-            pixelClassName="bg-primary/5"
-          />
-        </div>
+      <section className="relative min-h-[min(58rem,calc(100dvh-4rem))] overflow-hidden bg-[#06151b] text-foreground">
+        <EducationUniverse variant="hero" className="opacity-95" />
+        <div className="learning-grid absolute inset-0 opacity-42" />
+        <div className="absolute inset-0 bg-linear-to-r from-[#06151b] via-[#06151b]/88 to-[#06151b]/22 lg:via-[#06151b]/58" />
 
-        <div className="relative mx-auto max-w-7xl px-6 pt-20 pb-20 md:pt-28 md:pb-32">
+        <div className="relative mx-auto max-w-7xl px-6 pt-20 pb-20 md:pt-28 md:pb-28">
           <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
             <div className="max-w-3xl space-y-8">
               {/* Trust badge */}
@@ -203,41 +200,27 @@ export function LandingContent({
               </MotionHero>
             </div>
 
-            <MotionHero
-              delay={0.25}
-              className="group relative isolate overflow-hidden rounded-3xl border border-border bg-card/80 p-3 shadow-[0_26px_80px_-52px_color-mix(in_oklch,var(--education-ink)_65%,transparent)] backdrop-blur"
-            >
-              <div className="absolute top-0 right-10 left-10 h-px bg-linear-to-r from-transparent via-primary/70 to-transparent" />
-              <div className="relative aspect-[4/3] overflow-hidden rounded-[1.25rem] bg-muted">
-                <Image
-                  src="https://github.com/SP-XD/SP-XD/blob/main/images/dev-working_rounded.gif?raw=true"
-                  alt="Developer working at a desk"
-                  fill
-                  unoptimized
-                  priority
-                  sizes="(min-width: 1024px) 42vw, 100vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-                />
-              </div>
-              <div className="grid gap-3 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                <div>
-                  <p className="text-sm font-semibold text-card-foreground">
-                    Ship, watch, refine.
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                    Keep the first learning loop close to the people building
-                    it.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-border bg-background/70 px-4 py-3 text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                  MVP lab
-                </div>
+            <MotionHero delay={0.25} className="relative hidden min-h-116 lg:block">
+              <div className="absolute right-0 bottom-4 grid w-72 gap-2">
+                {[
+                  { icon: BookOpen, label: "Curated knowledge" },
+                  { icon: Code2, label: "Creator tutorials" },
+                  { icon: Atom, label: "Connected learning paths" },
+                ].map((signal) => (
+                  <div
+                    key={signal.label}
+                    className="learning-glass flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-foreground/85"
+                  >
+                    <signal.icon className="size-4 text-primary" />
+                    {signal.label}
+                  </div>
+                ))}
               </div>
             </MotionHero>
           </div>
 
           {/* Stats lab with animated counters */}
-          <div className="relative isolate mt-16 overflow-hidden rounded-3xl border border-border bg-card/80 p-5 shadow-[0_24px_70px_-48px_color-mix(in_oklch,var(--education-ink)_55%,transparent)] backdrop-blur md:mt-24 md:p-7">
+          <div className="learning-glass relative isolate mt-16 overflow-hidden rounded-xl p-5 md:mt-20 md:p-7">
             <div className="absolute top-0 right-8 left-8 h-px bg-linear-to-r from-transparent via-primary/60 to-transparent" />
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
               <div>

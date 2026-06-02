@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   FileText,
   Loader2,
+  ShoppingBag,
   Video,
 } from "lucide-react"
 
@@ -22,6 +23,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { formatVND } from "@/features/billing/types/billing-types"
 import {
   useGetMyResourcesQuery,
   useGetMyTutorialsQuery,
@@ -33,6 +35,7 @@ import {
   type ResourceQueryItem,
   type TutorialQueryItem,
 } from "@/features/content/types"
+import { useGetNotificationsQuery } from "@/features/user/services/notification-api"
 import { cn } from "@/lib/utils"
 
 type ModerationNotificationTone = "info" | "success" | "warning" | "danger"
@@ -41,7 +44,7 @@ interface ModerationNotification {
   id: string
   href: string
   title: string
-  type: "Resource" | "Tutorial"
+  type: "Resource" | "Tutorial" | "Purchase"
   statusLabel: string
   description: string
   reason?: string
@@ -74,7 +77,7 @@ function getModerationMeta(
   ) {
     return {
       statusLabel: "Rejected",
-      description: "Nội dung không đạt kiểm duyệt.",
+      description: "This content did not pass moderation.",
       tone: "danger",
     }
   }
@@ -86,7 +89,7 @@ function getModerationMeta(
   ) {
     return {
       statusLabel: "Failed",
-      description: "Quá trình xử lý hoặc kiểm duyệt gặp lỗi.",
+      description: "Content processing or moderation failed.",
       tone: "danger",
     }
   }
@@ -94,7 +97,7 @@ function getModerationMeta(
   if (moderationStatus === ContentModerationStatus.NEEDS_REVIEW) {
     return {
       statusLabel: "Needs review",
-      description: "Nội dung cần admin xem xét thêm.",
+      description: "This content needs further admin review.",
       tone: "warning",
     }
   }
@@ -106,7 +109,7 @@ function getModerationMeta(
   ) {
     return {
       statusLabel: "Processing",
-      description: "Đang trích xuất nội dung và kiểm duyệt nền.",
+      description: "Extracting content and running moderation in the background.",
       tone: "info",
     }
   }
@@ -114,14 +117,14 @@ function getModerationMeta(
   if (moderationStatus === ContentModerationStatus.APPROVED) {
     return {
       statusLabel: "Approved",
-      description: "Nội dung đã được duyệt và có thể hiển thị.",
+      description: "This content has been approved and is ready to display.",
       tone: "success",
     }
   }
 
   return {
     statusLabel: "Pending",
-    description: "Nội dung đang chờ xử lý.",
+    description: "This content is waiting to be processed.",
     tone: "info",
   }
 }
@@ -191,7 +194,7 @@ function toneClassName(tone: ModerationNotificationTone) {
   }
 }
 
-export function ContentModerationNotifications() {
+export function Notifications() {
   const [open, setOpen] = useState(false)
   const {
     data: resourceResponse,
@@ -217,6 +220,16 @@ export function ContentModerationNotifications() {
     refetchOnFocus: true,
     refetchOnReconnect: true,
   })
+  const {
+    data: notificationResponse,
+    isFetching: notificationsFetching,
+    isError: notificationsError,
+  } = useGetNotificationsQuery(undefined, {
+    pollingInterval: open ? 30_000 : 0,
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  })
 
   const { activeCount, notifications } = useMemo(() => {
     const resources = resourceResponse?.data?.data ?? []
@@ -228,6 +241,23 @@ export function ContentModerationNotifications() {
       ...activeResources.map(buildResourceNotification),
       ...activeTutorials.map(buildTutorialNotification),
     ]
+    const purchaseNotifications: ModerationNotification[] = (
+      notificationResponse?.data ?? []
+    )
+      .filter((item) => item.channel === "purchase")
+      .map((item) => ({
+        id: `purchase-${item._id}`,
+        href:
+          item.templateId === "purchase-seller"
+            ? "/settings/billing/transactions"
+            : "/library",
+        title: item.subject ?? "Purchase completed",
+        type: "Purchase",
+        statusLabel: item.templateId === "purchase-seller" ? "Sold" : "Paid",
+        description: `${item.templateData.itemCount ?? 1} item(s) · ${formatVND(item.templateData.amount ?? "0")}`,
+        tone: "success",
+        updatedAt: item.createdAt,
+      }))
 
     const approvedFallback = [
       ...resources
@@ -246,7 +276,11 @@ export function ContentModerationNotifications() {
         .map(buildTutorialNotification),
     ]
 
-    const sorted = [...activeNotifications, ...approvedFallback]
+    const sorted = [
+      ...purchaseNotifications,
+      ...activeNotifications,
+      ...approvedFallback,
+    ]
       .sort(
         (a, b) =>
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -254,13 +288,14 @@ export function ContentModerationNotifications() {
       .slice(0, 6)
 
     return {
-      activeCount: activeNotifications.length,
+      activeCount: activeNotifications.length + purchaseNotifications.length,
       notifications: sorted,
     }
-  }, [resourceResponse, tutorialResponse])
+  }, [notificationResponse, resourceResponse, tutorialResponse])
 
-  const isFetching = resourcesFetching || tutorialsFetching
-  const hasError = resourcesError || tutorialsError
+  const isFetching =
+    resourcesFetching || tutorialsFetching || notificationsFetching
+  const hasError = resourcesError || tutorialsError || notificationsError
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -268,7 +303,7 @@ export function ContentModerationNotifications() {
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Content moderation notifications"
+          aria-label="Notifications"
           className="relative inline-flex"
         >
           {isFetching ? (
@@ -290,25 +325,30 @@ export function ContentModerationNotifications() {
       >
         <PopoverHeader>
           <PopoverTitle className="text-sm font-semibold">
-            Content moderation
+            Notifications
           </PopoverTitle>
           <PopoverDescription className="text-xs">
-            Trạng thái resource và tutorial vừa upload.
+            Recent content moderation and transaction updates.
           </PopoverDescription>
         </PopoverHeader>
 
         {hasError ? (
           <div className="rounded-2xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            Không tải được thông báo kiểm duyệt.
+            Unable to load notifications.
           </div>
         ) : notifications.length === 0 ? (
           <div className="rounded-2xl bg-secondary/70 px-3 py-4 text-center text-xs text-muted-foreground">
-            Không có thông báo kiểm duyệt.
+            No notifications yet.
           </div>
         ) : (
           <div className="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
             {notifications.map((item) => {
-              const Icon = item.type === "Tutorial" ? Video : FileText
+              const Icon =
+                item.type === "Tutorial"
+                  ? Video
+                  : item.type === "Purchase"
+                    ? ShoppingBag
+                    : FileText
               const StatusIcon =
                 item.tone === "success" ? CheckCircle2 : AlertTriangle
 

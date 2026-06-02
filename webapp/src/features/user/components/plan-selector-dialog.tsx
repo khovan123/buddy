@@ -125,15 +125,14 @@ export function PlanSelectorDialog({
       : currentPlan
         ? PLAN_DISPLAY_NAMES[currentPlan]
         : "Choose plan")
-  const dialogOpen = open || requiresPlanSelection
 
   const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen) {
-      setSelectedAudience(currentAudience)
-    }
-
     if (!nextOpen && requiresPlanSelection) {
       return
+    }
+
+    if (nextOpen) {
+      setSelectedAudience(currentAudience)
     }
 
     setOpen(nextOpen)
@@ -157,7 +156,7 @@ export function PlanSelectorDialog({
   }
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={open || requiresPlanSelection} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant={triggerVariant}

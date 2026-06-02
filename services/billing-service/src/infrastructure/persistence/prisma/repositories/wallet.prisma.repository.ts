@@ -196,14 +196,39 @@ export class WalletPrismaRepository implements IWalletRepository {
       select: { metadata: true },
     });
 
-    const purchasedItemIds = rows
-      .map((row) => row.metadata as Record<string, unknown> | null)
-      .filter((metadata): metadata is Record<string, unknown> => Boolean(metadata))
-      .filter((metadata) => metadata.itemType === itemType)
-      .map((metadata) => metadata.itemId)
-      .filter((itemId): itemId is string => typeof itemId === 'string' && itemId.length > 0);
+    const purchasedItemIds = new Set<string>();
 
-    return new Set(purchasedItemIds);
+    for (const row of rows) {
+      const metadata = row.metadata as Record<string, unknown> | null;
+      if (!metadata) {
+        continue;
+      }
+
+      if (metadata.itemType === itemType) {
+        this.addStringId(purchasedItemIds, metadata.itemId);
+      }
+
+      if (!Array.isArray(metadata.items)) {
+        continue;
+      }
+
+      for (const item of metadata.items) {
+        if (!item || typeof item !== 'object') {
+          continue;
+        }
+
+        const purchasedItem = item as Record<string, unknown>;
+        if (itemType === 'RESOURCE') {
+          this.addStringIds(purchasedItemIds, purchasedItem.resourceIds);
+        }
+        if (itemType === 'TUTORIAL') {
+          this.addStringId(purchasedItemIds, purchasedItem.tutorialId);
+          this.addStringIds(purchasedItemIds, purchasedItem.tutorialIds);
+        }
+      }
+    }
+
+    return purchasedItemIds;
   }
 
   /**
@@ -282,43 +307,46 @@ export class WalletPrismaRepository implements IWalletRepository {
             },
           },
         });
-
-        await tx.walletTransaction.createMany({
-          data: [
-            {
-              walletId: buyerWallet.id,
-              userId: input.buyerId,
-              type: 'PURCHASE_DEBIT',
-              status: 'SUCCESS',
-              amountInCents: input.amountInCents,
-              currency: 'VND',
-              externalRef: `${purchaseId}-debit`,
-              idempotencyKey: input.idempotencyKey ? `${input.idempotencyKey}-debit` : null,
-              metadata: {
-                itemType: input.itemType,
-                itemId: input.itemId,
-              } as Prisma.InputJsonValue,
-              confirmedAt: new Date(),
-            },
-            {
-              walletId: sellerWallet.id,
-              userId: input.sellerId,
-              type: 'PURCHASE_CREDIT',
-              status: 'SUCCESS',
-              amountInCents: input.amountInCents,
-              currency: 'VND',
-              externalRef: `${purchaseId}-credit`,
-              idempotencyKey: input.idempotencyKey ? `${input.idempotencyKey}-credit` : null,
-              metadata: {
-                itemType: input.itemType,
-                itemId: input.itemId,
-                buyerId: input.buyerId,
-              } as Prisma.InputJsonValue,
-              confirmedAt: new Date(),
-            },
-          ],
-        });
       }
+
+      await tx.walletTransaction.createMany({
+        data: [
+          {
+            walletId: buyerWallet.id,
+            userId: input.buyerId,
+            type: 'PURCHASE_DEBIT',
+            status: 'SUCCESS',
+            amountInCents: input.amountInCents,
+            currency: 'VND',
+            externalRef: `${purchaseId}-debit`,
+            idempotencyKey: input.idempotencyKey ? `${input.idempotencyKey}-debit` : null,
+            metadata: {
+              itemType: input.itemType,
+              itemId: input.itemId,
+              items: input.purchasedItems,
+              purchaseId,
+              amountInCents: input.amountInCents.toString(),
+            } as Prisma.InputJsonValue,
+            confirmedAt: new Date(),
+          },
+          {
+            walletId: sellerWallet.id,
+            userId: input.sellerId,
+            type: 'PURCHASE_CREDIT',
+            status: 'SUCCESS',
+            amountInCents: input.amountInCents,
+            currency: 'VND',
+            externalRef: `${purchaseId}-credit`,
+            idempotencyKey: input.idempotencyKey ? `${input.idempotencyKey}-credit` : null,
+            metadata: {
+              itemType: input.itemType,
+              itemId: input.itemId,
+              buyerId: input.buyerId,
+            } as Prisma.InputJsonValue,
+            confirmedAt: new Date(),
+          },
+        ],
+      });
 
       await tx.outbox.create({
         data: {
@@ -389,6 +417,20 @@ export class WalletPrismaRepository implements IWalletRepository {
     cloned.payload = payload;
 
     return cloned;
+  }
+
+  private addStringId(ids: Set<string>, value: unknown): void {
+    if (typeof value === 'string' && value.length > 0) {
+      ids.add(value);
+    }
+  }
+
+  private addStringIds(ids: Set<string>, value: unknown): void {
+    if (!Array.isArray(value)) {
+      return;
+    }
+
+    value.forEach((item) => this.addStringId(ids, item));
   }
 
   async createPendingWithdraw(input: {
@@ -503,8 +545,12 @@ export class WalletPrismaRepository implements IWalletRepository {
     status: 'PENDING' | 'SUCCESS' | 'FAILED';
     metadata: Record<string, unknown> | null;
   } | null> {
-    const transaction = await this.prisma.client.walletTransaction.findUnique({
-      where: { idempotencyKey },
+    const transaction = await this.prisma.client.walletTransaction.findFirst({
+      where: {
+        idempotencyKey: {
+          in: [idempotencyKey, `${idempotencyKey}-debit`],
+        },
+      },
     });
 
     if (!transaction) {

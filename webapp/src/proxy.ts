@@ -2,12 +2,26 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { getToken } from "next-auth/jwt"
 
+import {
+  buildRoleAccessInput,
+  isAdminAccess,
+  isCreatorAccess,
+} from "@/lib/auth/role-access"
+
 const PRIVATE_ROUTES = [
   "/profile",
   "/library",
   "/settings",
   "/onboarding",
   "/dashboard",
+  "/home/collections/create",
+  "/home/resources/create",
+  "/home/tutorials/create",
+]
+
+const ADMIN_ROUTES = ["/dashboard"]
+
+const CREATOR_ROUTES = [
   "/home/collections/create",
   "/home/resources/create",
   "/home/tutorials/create",
@@ -61,6 +75,22 @@ export default async function proxy(req: NextRequest) {
     return NextResponse.redirect(
       new URL(`/login?callbackUrl=${encodedCallbackUrl}`, req.url)
     )
+  }
+
+  const roleAccess = buildRoleAccessInput(token?.user, token?.accessToken)
+
+  if (
+    ADMIN_ROUTES.some((route) => pathname.startsWith(route)) &&
+    !isAdminAccess(roleAccess)
+  ) {
+    return NextResponse.redirect(new URL("/home", req.url))
+  }
+
+  if (
+    CREATOR_ROUTES.some((route) => pathname.startsWith(route)) &&
+    !isCreatorAccess(roleAccess)
+  ) {
+    return NextResponse.redirect(new URL("/home", req.url))
   }
 
   // Allow all other routes (public or authenticated private routes)
