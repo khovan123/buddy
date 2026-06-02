@@ -122,13 +122,20 @@ export class HttpProxyService {
       req.headers[CORRELATION_ID_HEADER],
     );
 
+    const optionHeaders = options.headers ?? {};
+    const requestedContentType =
+      optionHeaders['content-type'] ?? optionHeaders['Content-Type'] ?? 'application/json';
+    const forwardedHeaders = Object.fromEntries(
+      Object.entries(optionHeaders).filter(([key]) => key.toLowerCase() !== 'content-type'),
+    );
+
     const headers: Record<string, string> = {
       [CORRELATION_ID_HEADER]: correlationId,
       'x-forwarded-for': req.ip,
       'x-forwarded-host': req.hostname,
       ...(req.headers.authorization ? { authorization: req.headers.authorization } : {}),
       ...(req.headers.cookie ? { cookie: req.headers.cookie } : {}),
-      ...options.headers,
+      ...forwardedHeaders,
     };
 
     // Only set Content-Type and body for non-GET methods with a body
@@ -138,10 +145,7 @@ export class HttpProxyService {
     const hasJsonBody = options.body !== undefined && options.method !== 'GET';
     const hasBody = hasRawBody || hasJsonBody;
     if (hasBody) {
-      headers['Content-Type'] =
-        options.headers?.['content-type'] ??
-        options.headers?.['Content-Type'] ??
-        'application/json';
+      headers['Content-Type'] = requestedContentType;
     }
 
     const controller = new AbortController();

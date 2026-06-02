@@ -10,23 +10,57 @@ type RawBodyFastifyRequest = FastifyRequest & {
 
 function registerWebhookBodyParsers(app: NestFastifyApplication): void {
   const fastify = app.getHttpAdapter().getInstance();
+
+  const setRawBody = (req: FastifyRequest, body: string | Buffer): string => {
+    const rawBody = typeof body === 'string' ? body : body.toString('utf8');
+    (req as RawBodyFastifyRequest).rawBody = rawBody;
+    return rawBody;
+  };
+
   const parseRawBody = (
     req: FastifyRequest,
     body: string | Buffer,
     done: (error: Error | null, result?: unknown) => void,
   ) => {
-    const rawBody = typeof body === 'string' ? body : body.toString('utf8');
-    (req as RawBodyFastifyRequest).rawBody = rawBody;
-    done(null, rawBody);
+    done(null, setRawBody(req, body));
   };
 
-  const addRawParser = (contentType: string | RegExp) => {
-    if (!fastify.hasContentTypeParser(contentType)) {
-      fastify.addContentTypeParser(contentType, { parseAs: 'string' }, parseRawBody);
+  fastify.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (req, body: string, done) => {
+      const rawBody = setRawBody(req, body);
+      try {
+        done(null, rawBody.length > 0 ? JSON.parse(rawBody) : {});
+      } catch (error) {
+        done(error instanceof Error ? error : new Error('Invalid JSON body'));
+      }
+    },
+  );
+
+  fastify.addContentTypeParser(
+    'application/x-www-form-urlencoded',
+    { parseAs: 'string' },
+    (req, body: string, done) => {
+      const rawBody = setRawBody(req, body);
+      const payload: Record<string, string> = {};
+      for (const [key, value] of new URLSearchParams(rawBody).entries()) {
+        payload[key] = value;
+      }
+      done(null, payload);
+    },
+  );
+
+  fastify.addContentTypeParser('text/plain', { parseAs: 'string' }, parseRawBody);
+  fastify.addContentTypeParser('application/octet-stream', { parseAs: 'buffer' }, parseRawBody);
+  fastify.addContentTypeParser('*', { parseAs: 'string' }, (req, body: string, done) => {
+    const rawBody = setRawBody(req, body);
+    try {
+      done(null, rawBody.length > 0 ? JSON.parse(rawBody) : {});
+    } catch {
+      done(null, rawBody);
     }
-  };
-
-  addRawParser('application/octet-stream');
+  });
 }
 
 async function bootstrap() {
@@ -50,8 +84,9 @@ async function bootstrap() {
       trustProxy: true,
       bodyLimit: 10 * 1024 * 1024, // 10MB
     }),
-    { bufferLogs: true, rawBody: true },
+    { bodyParser: false, bufferLogs: true, rawBody: true },
   );
+  app.getHttpAdapter().getInstance().removeAllContentTypeParsers();
 
   // ── Security ──────────────────────────────────────────────────────
   await app.register(helmet, {
@@ -88,6 +123,8 @@ async function bootstrap() {
       fileSize: 50 * 1024 * 1024, //50MB
     },
   });
+
+  registerWebhookBodyParsers(app);
 
   // ── Global pipes ──────────────────────────────────────────────────
   app.useGlobalPipes(
@@ -144,7 +181,6 @@ async function bootstrap() {
     throw new Error('PORT must be a valid number');
   }
 
-  registerWebhookBodyParsers(app);
   app.enableShutdownHooks();
 
   const maxRetries = 5;
