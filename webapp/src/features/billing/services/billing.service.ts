@@ -21,7 +21,7 @@ export async function getWalletBalance(): Promise<WalletBalance | null> {
       headers,
       false,
       {
-        next: { revalidate: 30, tags: ["wallet-balance"] },
+        cache: "no-store",
       }
     )
 
@@ -52,7 +52,7 @@ export async function getTransactions(
       undefined,
       headers,
       false,
-      { next: { revalidate: 30, tags: ["transactions"] } }
+      { cache: "no-store" }
     )
 
     if (!res.ok) {

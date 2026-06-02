@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 
+import { useRouter } from "next/navigation"
+
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { v4 as uuid } from "uuid"
@@ -33,6 +35,7 @@ export function WithdrawDialog({
   onOpenChange,
   currentBalance,
 }: WithdrawDialogProps) {
+  const router = useRouter()
   const [amount, setAmount] = useState("")
   const [withdraw, { isLoading }] = useWithdrawWalletMutation()
 
@@ -54,6 +57,7 @@ export function WithdrawDialog({
       toast.success("Withdrawal request created!")
       setAmount("")
       onOpenChange(false)
+      router.refresh()
     } catch (err) {
       toast.error(extractApiError(err))
     }
