@@ -304,8 +304,9 @@ export const authOptions: AuthOptions = {
             token.expiresAt = decoded.exp * 1000
             token.user = {
               ...data.data.user,
-              roles: claims?.roles,
-              subscriptionPlan: claims?.subscriptionPlan ?? null,
+              roles: claims?.roles ?? data.data.user.roles,
+              subscriptionPlan:
+                claims?.subscriptionPlan ?? data.data.user.subscriptionPlan ?? null,
             }
             token.isNewUser = data.data.isNewUser ?? false
           }
