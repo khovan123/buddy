@@ -1,11 +1,12 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 
 import { FileText, FolderOpen, Video } from "lucide-react"
 
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -54,13 +55,6 @@ export function CreateContentModal({
   open,
   onOpenChange,
 }: CreateContentModalProps) {
-  const router = useRouter()
-
-  const handleSelect = (href: string) => {
-    onOpenChange(false)
-    router.push(href)
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="gap-0 overflow-hidden border-0 p-0 sm:max-w-2xl sm:rounded-2xl">
@@ -77,37 +71,37 @@ export function CreateContentModal({
           {/* Option Cards */}
           <div className="grid auto-rows-fr items-stretch grid-cols-1 gap-4 md:grid-cols-3">
             {contentOptions.map((option) => (
-              <button
-                key={option.type}
-                type="button"
-                onClick={() => handleSelect(option.href)}
-                className={cn(
-                  "group relative flex h-full flex-col items-start rounded-xl p-5 text-left transition-all duration-300",
-                  option.featured
-                    ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 md:-translate-y-1"
-                    : "bg-muted/50 hover:bg-muted hover:shadow-md"
-                )}
-              >
-                <div
+              <DialogClose key={option.type} asChild>
+                <Link
+                  href={option.href}
                   className={cn(
-                    "mb-4 flex size-11 items-center justify-center rounded-xl transition-transform group-hover:scale-110",
-                    option.iconBg
-                  )}
-                >
-                  <option.icon className="size-5" />
-                </div>
-                <h3 className="text-lg font-bold">{option.title}</h3>
-                <p
-                  className={cn(
-                    "mt-1 text-xs leading-relaxed",
+                    "group relative flex h-full flex-col items-start rounded-xl p-5 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     option.featured
-                      ? "text-primary-foreground/80"
-                      : "text-muted-foreground"
+                      ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 md:-translate-y-1"
+                      : "bg-muted/50 hover:bg-muted hover:shadow-md"
                   )}
                 >
-                  {option.description}
-                </p>
-              </button>
+                  <div
+                    className={cn(
+                      "mb-4 flex size-11 items-center justify-center rounded-xl transition-transform group-hover:scale-110",
+                      option.iconBg
+                    )}
+                  >
+                    <option.icon className="size-5" />
+                  </div>
+                  <h3 className="text-lg font-bold">{option.title}</h3>
+                  <p
+                    className={cn(
+                      "mt-1 text-xs leading-relaxed",
+                      option.featured
+                        ? "text-primary-foreground/80"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {option.description}
+                  </p>
+                </Link>
+              </DialogClose>
             ))}
           </div>
         </div>

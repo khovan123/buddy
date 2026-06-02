@@ -89,8 +89,16 @@ export class WalletPrismaRepository implements IWalletRepository {
     const result = await this.prisma.client.$transaction(async (tx) => {
       const transaction = await tx.walletTransaction.findFirst({
         where: {
-          externalRef: input.externalReference,
           provider: input.provider,
+          OR: [
+            { externalRef: input.externalReference },
+            {
+              metadata: {
+                path: ['orderCode'],
+                equals: input.externalReference,
+              },
+            },
+          ],
         },
       });
 

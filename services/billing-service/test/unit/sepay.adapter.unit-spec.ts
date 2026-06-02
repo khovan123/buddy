@@ -52,6 +52,32 @@ describe('SePayAdapter', () => {
     expect(result.amountInCents).toBe(50000n);
   });
 
+  it('prefers the invoice number from bank transfer content over SePay payment code', async () => {
+    const secret = 'hmac-secret';
+    const timestamp = '1764663000';
+    const payload = {
+      id: 1001,
+      transferType: 'in',
+      transferAmount: 50000,
+      code: 'SEPAY-1764663000',
+      content: 'SEPAY-1764663000 INV-1764663000-SEPAY-1764663000 Wallet top-up',
+    };
+    const rawBody = JSON.stringify(payload);
+    const adapter = createAdapter(secret);
+
+    const result = await adapter.verifyWebhook({
+      rawBody,
+      headers: {
+        'x-sepay-signature': sign(secret, timestamp, rawBody),
+        'x-sepay-timestamp': timestamp,
+      },
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.externalReference).toBe('INV-1764663000-SEPAY-1764663000');
+    expect(result.amountInCents).toBe(50000n);
+  });
+
   it('rejects invalid HMAC-SHA256 signatures', async () => {
     const adapter = createAdapter('hmac-secret');
     const payload = {

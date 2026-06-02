@@ -3,8 +3,8 @@
 import Link from "next/link"
 
 import {
-  Atom,
   ArrowRight,
+  Atom,
   BookOpen,
   Briefcase,
   CheckCircle2,

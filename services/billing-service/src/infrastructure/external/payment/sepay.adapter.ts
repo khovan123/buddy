@@ -95,7 +95,9 @@ export class SePayAdapter implements IPaymentGateway, IPayoutGateway {
         order_invoice_number: invoiceNumber,
         order_amount: amount,
         currency: 'VND',
-        order_description: input.description || `Top-up ${invoiceNumber}`,
+        order_description: input.description
+          ? `${input.orderCode} ${invoiceNumber} ${input.description}`
+          : `${input.orderCode} ${invoiceNumber}`,
         customer_id: input.userId,
         success_url: input.returnUrl,
         error_url: input.cancelUrl,
@@ -507,14 +509,19 @@ export class SePayAdapter implements IPaymentGateway, IPayoutGateway {
   }
 
   private extractExternalReference(payload: SePayWebhookPayload): string {
-    const code = typeof payload.code === 'string' ? payload.code.trim() : '';
-    if (code) {
-      return code;
+    const content = typeof payload.content === 'string' ? payload.content : '';
+    const invoiceMatch = content.match(/\bINV-\d+-[A-Za-z0-9_-]+\b/);
+    if (invoiceMatch?.[0]) {
+      return invoiceMatch[0];
     }
 
-    const content = typeof payload.content === 'string' ? payload.content : '';
-    const match = content.match(/\bINV-\d+-[A-Za-z0-9_-]+\b/);
-    return match?.[0] ?? '';
+    const orderCodeMatch = content.match(/\bSEPAY-\d+\b/);
+    if (orderCodeMatch?.[0]) {
+      return orderCodeMatch[0];
+    }
+
+    const code = typeof payload.code === 'string' ? payload.code.trim() : '';
+    return code;
   }
 
   private isPaymentGatewayIpn(payload: SePayIpnPayload): boolean {
