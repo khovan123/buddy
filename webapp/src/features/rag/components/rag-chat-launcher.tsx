@@ -1,6 +1,6 @@
 "use client"
 
-import { BotMessageSquare, Sparkles } from "lucide-react"
+import { Sparkles } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -11,12 +11,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import type { UserProfile } from "@/features/user/services/user-api"
 
 import { RAGChat } from "./rag-chat"
@@ -29,24 +23,6 @@ type RAGChatLauncherProps = {
 export function RAGChatLauncher({ user, accessToken }: RAGChatLauncherProps) {
   return (
     <Dialog>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="hidden rounded-full bg-background/80 shadow-sm backdrop-blur md:inline-flex"
-              >
-                <BotMessageSquare className="size-4" />
-                <span className="sr-only">Open Buddy Intelligence</span>
-              </Button>
-            </DialogTrigger>
-          </TooltipTrigger>
-          <TooltipContent>Buddy Intelligence</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
       <DialogTrigger asChild>
         <Button className="fixed right-4 bottom-4 z-40 h-12 rounded-full px-4 shadow-lg md:right-6 md:bottom-6">
           <Sparkles className="size-4" />

@@ -1,5 +1,5 @@
 import { JwtAuthGuard } from '@libs/common';
-import { Body, Controller, Get, Patch, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Query, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
 
@@ -8,6 +8,16 @@ import { HttpProxyService } from '../../../infrastructure/http/http-proxy.servic
 @UseGuards(JwtAuthGuard)
 export class NotificationProxyController {
   constructor(private readonly proxy: HttpProxyService) {}
+
+  @Get()
+  getNotifications(@Req() req: FastifyRequest, @Query() query: Record<string, string>) {
+    return this.proxy.forward(req, {
+      service: 'notification',
+      path: '/v1/notifications',
+      method: 'GET',
+      query,
+    });
+  }
 
   @Get('preferences')
   getPreferences(@Req() req: FastifyRequest) {

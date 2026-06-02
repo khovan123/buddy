@@ -103,6 +103,7 @@ export const baseApi = createApi({
     "Transaction",
     "PayoutAccount",
     "Subscription",
+    "Notification",
     "NotificationPreferences",
   ], // Centralize tag definitions here
   endpoints: () => ({}),

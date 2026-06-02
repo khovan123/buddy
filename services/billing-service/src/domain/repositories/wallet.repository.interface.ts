@@ -1,4 +1,5 @@
 import { ProductType } from '../../application/commands/process-purchase.command';
+import type { PurchasedItemPayload } from '@libs/contracts';
 import { Wallet } from '../entities/wallet.entity';
 
 export type PurchaseTransferInput = {
@@ -7,6 +8,7 @@ export type PurchaseTransferInput = {
   amountInCents: bigint;
   itemType: ProductType;
   itemId: string;
+  purchasedItems: PurchasedItemPayload[];
   correlationId: string;
   eventType: string;
   eventPayload: Record<string, unknown>;

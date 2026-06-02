@@ -1,4 +1,5 @@
 export { PayoutAccountCard } from "./components/payout-account-card"
+export { PurchaseButton } from "./components/purchase-button"
 export { default as PayoutSetupPage } from "./components/payout-setup-page"
 export { SettingsSidebar } from "./components/settings-sidebar"
 export { SubscriptionCard } from "./components/subscription-card"

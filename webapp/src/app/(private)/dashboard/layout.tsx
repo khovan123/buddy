@@ -8,12 +8,15 @@ import {
 } from "@/components/ui/sidebar"
 import { DashboardBreadcrumb } from "@/features/dashboard"
 import { DashboardSidebar } from "@/features/dashboard"
+import { requireAdminAccess } from "@/lib/auth/server-role-access"
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  await requireAdminAccess()
+
   return (
     <div className="sidebar-contained overflow-hidden rounded-xl border">
       <SidebarProvider defaultOpen>

@@ -123,6 +123,19 @@ export class BillingProxyController {
     });
   }
 
+  @Post('purchase/quote')
+  @UseGuards(JwtAuthGuard)
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  getPurchaseQuote(@Body() body: unknown, @Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'billing',
+      path: '/v1/billing/purchase/quote',
+      method: 'POST',
+      body,
+    });
+  }
+
   // ── Payout Account ─────────────────────────────────────────────────
 
   @Get('banks')

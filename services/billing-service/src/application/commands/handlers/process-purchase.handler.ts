@@ -91,6 +91,7 @@ export class ProcessPurchaseHandler implements ICommandHandler<ProcessPurchaseCo
       amountInCents: quote.priceInCents,
       itemId: command.itemId,
       itemType: command.itemType,
+      purchasedItems: quote.items,
       correlationId: command.correlationId,
       eventType: BILLING_ROUTINGKEYS.PURCHASE_COMPLETED,
       eventPayload: {

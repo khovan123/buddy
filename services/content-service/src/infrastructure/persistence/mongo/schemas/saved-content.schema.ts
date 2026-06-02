@@ -11,7 +11,17 @@ export class SavedContent {
   @Prop({ required: true })
   itemId!: string;
 
-  @Prop({ required: true, enum: ['RESOURCE', 'TUTORIAL', 'COLLECTION', 'BUNDLE'] })
+  @Prop({
+    required: true,
+    enum: [
+      'RESOURCE',
+      'TUTORIAL',
+      'RESOURCE_COLLECTION',
+      'TUTORIAL_COLLECTION',
+      'TUTORIAL_BUNDLE',
+      'TUTORIAL_BUNDLE_COLLECTION',
+    ],
+  })
   itemType!: string;
 
   @Prop({ type: MongooseSchema.Types.Mixed })

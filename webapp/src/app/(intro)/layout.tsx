@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 
 import { cookies } from "next/headers"
 
+import { EducationUniverse } from "@/components/atoms/education-universe"
 import { Navigation } from "@/components/organisms/navigation"
 import { SiteFooter } from "@/components/organisms/site-footer"
 import { navActions, navItems } from "@/config/nav"
@@ -19,7 +20,11 @@ export default async function IntroLayout({
     : navActions
 
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="relative isolate flex min-h-screen flex-col overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 z-[-1] opacity-18">
+        <EducationUniverse variant="ambient" />
+      </div>
+      <div className="learning-grid pointer-events-none fixed inset-0 z-[-1] opacity-40" />
       {/* Shared navigation for all marketing / intro pages */}
       <header className="sticky top-0 z-50">
         <Navigation

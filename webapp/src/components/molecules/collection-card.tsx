@@ -34,10 +34,10 @@ function CollectionCardInner({
   imageSizes = "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw",
 }: CollectionCardInnerProps) {
   return (
-    <article className="flex h-full flex-col rounded-3xl border border-border/60 bg-card/70 p-2 shadow-[0_18px_42px_-34px_color-mix(in_oklch,var(--education-ink)_44%,transparent)] transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/25 group-hover:bg-card">
+    <article className="learning-glass flex h-full flex-col rounded-lg p-2 transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:bg-card/86">
       {/* Cover Image */}
       <div
-        className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-muted"
+        className="relative w-full overflow-hidden rounded-md border border-border/60 bg-muted"
         style={{ aspectRatio: "304/171" }}
       >
         {collection?.thumbnailUrl ? (

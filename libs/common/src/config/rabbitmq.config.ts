@@ -20,6 +20,7 @@ export const QUEUES = {
   ACCESS_COMMANDS: 'access.commands',
   NOTIFICATION_EMAIL: 'notification.send.email',
   NOTIFICATION_PUSH: 'notification.send.push',
+  NOTIFICATION_IN_APP: 'notification.in_app',
   NOTIFICATION_RETRY: 'notification.retry.delay',
   UPLOAD_VIDEO_COMMANDS: 'upload.video.commands',
   UPLOAD_RPC: 'upload.rpc',

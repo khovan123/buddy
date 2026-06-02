@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Toggle } from "@/components/ui/toggle"
+import { PurchaseButton } from "@/features/billing"
 import { TutorialResourcePreviewDialog } from "@/features/content"
 import { TutorialVideoPlayer } from "@/features/content"
 import {
@@ -494,13 +495,11 @@ export default async function ExploreTutorialDetailPage({
               </div>
 
               <div className="mb-8 space-y-3">
-                <Button
-                  id="buy-tutorial-button"
+                <PurchaseButton
+                  itemId={tutorial.id}
+                  itemType="TUTORIAL_BUNDLE"
                   className="font-headline w-full py-4 font-bold shadow-lg"
-                  size="lg"
-                >
-                  Buy Now
-                </Button>
+                />
                 <Button
                   variant="secondary"
                   className="font-headline w-full py-4 font-bold"

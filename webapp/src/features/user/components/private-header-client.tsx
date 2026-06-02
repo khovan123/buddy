@@ -5,18 +5,18 @@ import { useMemo, useState } from "react"
 import type { NavigationItem } from "@/components/atoms/nav-dropdown-item"
 import { CreateContentCTA } from "@/components/molecules/create-content-cta"
 import { Navigation } from "@/components/organisms/navigation"
-import { RAGChatLauncher } from "@/features/rag"
-import { ContentModerationNotifications } from "@/features/user/components/content-moderation-notifications"
 import { HeaderWalletPopover } from "@/features/user/components/header-wallet-popover"
+import { Notifications } from "@/features/user/components/notifications"
 import { PlanSelectorDialog } from "@/features/user/components/plan-selector-dialog"
 import { ProfileCompleteBanner } from "@/features/user/components/profile-complete-banner"
 import { ProfileUpdateDialog } from "@/features/user/components/profile-update-dialog"
 import { UserMenuPopover } from "@/features/user/components/user-menu-popover"
 import type { UserProfile } from "@/features/user/services/user-api"
+import { isAdminAccess, isCreatorAccess } from "@/lib/auth/role-access"
 
 /* ── Navigation items (same as previously in the server layout) ── */
 
-const NAV_ITEMS: NavigationItem[] = [
+const BASE_NAV_ITEMS: NavigationItem[] = [
   { href: "/home", label: "Home" },
   {
     label: "Explore",
@@ -37,7 +37,6 @@ const NAV_ITEMS: NavigationItem[] = [
   },
   { href: "/library", label: "Library" },
   { href: "/profile", label: "Profile" },
-  { href: "/dashboard", label: "Dashboard" },
 ]
 
 interface PrivateHeaderProps {
@@ -46,8 +45,10 @@ interface PrivateHeaderProps {
     id?: string
     email?: string
     nickname?: string
+    role?: string | null
+    roles?: string[] | null
+    subscriptionPlan?: string | null
   } | null
-  accessToken?: string | null
 }
 
 /**
@@ -60,11 +61,19 @@ interface PrivateHeaderProps {
 export function PrivateHeader({
   user,
   accountFallback,
-  accessToken,
 }: PrivateHeaderProps) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
 
   const openProfileDialog = () => setProfileDialogOpen(true)
+  const isAdmin = isAdminAccess(accountFallback)
+  const isCreator = isCreatorAccess(accountFallback)
+  const navigationItems = useMemo(
+    () =>
+      isAdmin
+        ? [...BASE_NAV_ITEMS, { href: "/dashboard", label: "Dashboard" }]
+        : BASE_NAV_ITEMS,
+    [isAdmin]
+  )
   const menuUser = useMemo<UserProfile | null>(() => {
     if (user?.email && (user.profile?.nickname || user.nickname)) {
       return user
@@ -102,15 +111,14 @@ export function PrivateHeader({
 
       <Navigation
         brandLabel="Buddy"
-        items={NAV_ITEMS}
+        items={navigationItems}
         containerClassName="max-w-7xl"
         rightSlot={
           <>
-            <CreateContentCTA />
+            {isCreator ? <CreateContentCTA /> : null}
             <PlanSelectorDialog />
             <HeaderWalletPopover />
-            <ContentModerationNotifications />
-            <RAGChatLauncher user={menuUser} accessToken={accessToken} />
+            <Notifications />
             <UserMenuPopover
               user={menuUser}
               onEditProfile={openProfileDialog}

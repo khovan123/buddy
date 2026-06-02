@@ -24,6 +24,7 @@ import { formatVND } from "../types/billing-types"
 interface TopUpDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  returnUrl?: string
 }
 
 const PRESET_AMOUNTS = [
@@ -58,7 +59,7 @@ function submitCheckout(checkoutUrl: string) {
   form.submit()
 }
 
-export function TopUpDialog({ open, onOpenChange }: TopUpDialogProps) {
+export function TopUpDialog({ open, onOpenChange, returnUrl }: TopUpDialogProps) {
   const [amount, setAmount] = useState("")
   const [topUp, { isLoading }] = useTopUpWalletMutation()
 
@@ -76,7 +77,7 @@ export function TopUpDialog({ open, onOpenChange }: TopUpDialogProps) {
       const res = await topUp({
         amountInCents: amount,
         provider: "SEPAY",
-        returnUrl: `${origin}/settings/billing?topup=success`,
+        returnUrl: returnUrl ?? `${origin}/settings/billing?topup=success`,
         cancelUrl: `${origin}/settings/billing?topup=cancelled`,
       }).unwrap()
 

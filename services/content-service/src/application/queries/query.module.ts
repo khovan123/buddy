@@ -14,6 +14,7 @@ import { GetMyResourceCollectionsHandler } from './handlers/get-my-resource-coll
 import { GetMyResourcesHandler } from './handlers/get-my-resources.handler';
 import { GetMyTutorialCollectionsHandler } from './handlers/get-my-tutorial-collections.handler';
 import { GetMyTutorialsHandler } from './handlers/get-my-tutorials.handler';
+import { GetPurchasedContentIdsHandler } from './handlers/get-purchased-content-ids.handler';
 import { GetResourceByIdHandler } from './handlers/get-resource-by-id.handler';
 import { GetResourceBySlugHandler } from './handlers/get-resource-by-slug.handler';
 import { GetResourceCollectionBySlugHandler } from './handlers/get-resource-collection-by-slug.handler';
@@ -45,6 +46,7 @@ export const QUERY_HANDLERS = [
   GetTutorialsByUserHandler,
   GetTutorialsHandler,
   GetMyTutorialsHandler,
+  GetPurchasedContentIdsHandler,
   GetTopResourcesHandler,
   GetTopTutorialsHandler,
   GetTopResourceCollectionsHandler,

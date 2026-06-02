@@ -12,7 +12,6 @@ import {
   Play,
   PlayCircle,
   ShieldCheck,
-  Sparkles,
   Star,
   Users,
 } from "lucide-react"
@@ -29,6 +28,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
+import { PurchaseButton } from "@/features/billing"
 import { getTutorialCollectionBySlug } from "@/features/content"
 
 type PageParams = Promise<{ id: string }>
@@ -289,10 +289,12 @@ export default async function ExploreCollectionTutorialDetailPage({
                   </span>
                 </div>
 
-                <Button className="h-12 w-full text-base font-bold" size="lg">
-                  Unlock Collection
-                  <Sparkles className="size-4" />
-                </Button>
+                <PurchaseButton
+                  itemId={collection.id}
+                  itemType="TUTORIAL_BUNDLE_COLLECTION"
+                  label="Unlock Collection"
+                  className="h-12 w-full text-base font-bold"
+                />
 
                 <div className="space-y-3 border-t border-border/30 pt-4 text-sm">
                   {courseInclusions.map((item) => (

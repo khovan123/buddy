@@ -7,6 +7,7 @@ export type NotificationChannel =
   | 'password_reset'
   | 'generic'
   | 'alert'
+  | 'purchase'
   | 'model-trained';
 
 /** Interface representing data constraints for  notification props. */

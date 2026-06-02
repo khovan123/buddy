@@ -20,6 +20,7 @@ import { QUERY_HANDLERS } from './application/queries/query.module';
 import { HealthController, MessagingModule } from '@libs/common';
 import { MESSAGE_COMPONENTS, MESSAGE_CONTROLLERS } from './infrastructure/messaging/message.module';
 import { NOTIFICATION_REPOSITORY } from './domain/repositories/tokens';
+import { NotificationController } from './presentation/http/controllers/notification.controller';
 import { NotificationPreferencesController } from './presentation/http/controllers/notification-preferences.controller';
 
 /** NestJS Module for  app. */
@@ -54,7 +55,12 @@ import { NotificationPreferencesController } from './presentation/http/controlle
     TerminusModule,
     MessagingModule,
   ],
-  controllers: [...MESSAGE_CONTROLLERS, HealthController, NotificationPreferencesController],
+  controllers: [
+    ...MESSAGE_CONTROLLERS,
+    HealthController,
+    NotificationController,
+    NotificationPreferencesController,
+  ],
   providers: [
     ...COMMAND_HANDLERS,
     ...QUERY_HANDLERS,
