@@ -1,3 +1,5 @@
+import { cache } from "react"
+
 import { isDynamicServerError } from "next/dist/client/components/hooks-server-context"
 
 import { fetchApi } from "@/lib/fetch"
@@ -17,7 +19,7 @@ import type {
 
 type ContentWithId = { id: string }
 
-const getPurchasedContentIds = async (): Promise<Set<string>> => {
+const getPurchasedContentIds = cache(async (): Promise<Set<string>> => {
   try {
     const res = await fetchApi(
       "GET",
@@ -40,7 +42,7 @@ const getPurchasedContentIds = async (): Promise<Set<string>> => {
     }
     return new Set()
   }
-}
+})
 
 const excludePurchased = async <T extends ContentWithId>(
   items: T[]

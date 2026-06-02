@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
+import { Notification } from '../../src/domain/entities/notification.entity';
 import { NotificationConsumer } from '../../src/infrastructure/messaging/consumers/notification.consumer';
 
 process.env.LOG_LEVEL = 'silent';
@@ -17,7 +18,7 @@ describe('NotificationConsumer purchase notifications', () => {
       { execute: jest.fn() } as never,
       { republishWithDelay: jest.fn() } as never,
       {
-        save: jest.fn(async (notification) => {
+        save: jest.fn(async (notification: Notification) => {
           savedNotifications.push({
             userId: notification.userId,
             type: notification.type,

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "postinstall": "node -e \"try { require('child_process').execSync('python3 --version', {stdio: 'ignore'}); } catch(e) { console.log('python3 not found, skipping venv'); process.exit(0); } require('child_process').execSync('python3 -m venv .venv && .venv/bin/pip install -r requirements.txt', {stdio: 'inherit'});\"",
+    "setup:py": "node scripts/setup-python.js",
     "dev": "PYTHONPATH=src .venv/bin/python src/server.py",
     "dev:prod": "cross-env PORT=3009 RECOMMENDATION_CONSUMER_ENABLED=false PYTHONPATH=src dotenv -e .env.prod -- .venv/bin/python src/server.py"
   }

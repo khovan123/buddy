@@ -2,7 +2,7 @@ import { CryptoUtil } from '@libs/common';
 import { UserLoggedInEvent, UserRegisteredEvent } from '@libs/contracts';
 import { Inject, UnauthorizedException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 import { User } from '../../../domain/entities/user.entity';
 import type { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
 import {

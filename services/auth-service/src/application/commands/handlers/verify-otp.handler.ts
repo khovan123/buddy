@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, UnauthorizedException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 import type { IOtpRepository } from '../../../domain/repositories/otp.repository.interface';
 import type { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
 import {

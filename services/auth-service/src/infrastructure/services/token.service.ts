@@ -2,7 +2,7 @@ import { CryptoUtil } from '@libs/common';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 import { User } from '../../domain/entities/user.entity';
 import type {
   AccessTokenPayload,

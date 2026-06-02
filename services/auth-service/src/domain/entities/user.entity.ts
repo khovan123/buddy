@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'node:crypto';
 import { UserRegisteredDomainEvent } from '../events/user-registered.domain-event';
 import { DomainException } from '../exceptions/domain.exception';
 import { Email } from '../value-objects/email.vo';
