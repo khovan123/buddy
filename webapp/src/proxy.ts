@@ -5,7 +5,6 @@ import { getToken } from "next-auth/jwt"
 import {
   buildRoleAccessInput,
   isAdminAccess,
-  isCreatorAccess,
 } from "@/lib/auth/role-access"
 
 const PRIVATE_ROUTES = [
@@ -20,12 +19,6 @@ const PRIVATE_ROUTES = [
 ]
 
 const ADMIN_ROUTES = ["/dashboard"]
-
-const CREATOR_ROUTES = [
-  "/home/collections/create",
-  "/home/resources/create",
-  "/home/tutorials/create",
-]
 
 const AUTH_ROUTES = [
   "/login",
@@ -82,13 +75,6 @@ export default async function proxy(req: NextRequest) {
   if (
     ADMIN_ROUTES.some((route) => pathname.startsWith(route)) &&
     !isAdminAccess(roleAccess)
-  ) {
-    return NextResponse.redirect(new URL("/home", req.url))
-  }
-
-  if (
-    CREATOR_ROUTES.some((route) => pathname.startsWith(route)) &&
-    !isCreatorAccess(roleAccess)
   ) {
     return NextResponse.redirect(new URL("/home", req.url))
   }

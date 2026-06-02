@@ -109,7 +109,7 @@ export async function getSubscription(): Promise<Subscription | null> {
       headers,
       false,
       {
-        next: { revalidate: 60, tags: ["subscription"] },
+        cache: "no-store",
       }
     )
 
