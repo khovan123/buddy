@@ -111,8 +111,7 @@ export function PurchaseButton({
   const topUpReturnUrl =
     typeof globalThis.window === "undefined"
       ? undefined
-      : `${globalThis.location.origin}${globalThis.location.pathname}?checkout=resume&itemType=${itemType}&itemId=${itemId}`
-
+      : `${globalThis.location.origin}${globalThis.location.pathname}?checkout=resume&itemType=${encodeURIComponent(itemType)}&itemId=${encodeURIComponent(itemId)}`
   return (
     <>
       <Button
