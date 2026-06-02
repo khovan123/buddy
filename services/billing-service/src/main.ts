@@ -1,6 +1,32 @@
 import { initializeOpenTelemetry } from '@libs/common';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import type { FastifyRequest } from 'fastify';
 import 'reflect-metadata';
+
+type RawBodyFastifyRequest = FastifyRequest & {
+  rawBody?: string;
+};
+
+function registerWebhookBodyParsers(app: NestFastifyApplication): void {
+  const fastify = app.getHttpAdapter().getInstance();
+  const parseRawBody = (
+    req: FastifyRequest,
+    body: string | Buffer,
+    done: (error: Error | null, result?: unknown) => void,
+  ) => {
+    const rawBody = typeof body === 'string' ? body : body.toString('utf8');
+    (req as RawBodyFastifyRequest).rawBody = rawBody;
+    done(null, rawBody);
+  };
+
+  fastify.addContentTypeParser(
+    ['application/x-www-form-urlencoded', 'application/octet-stream'],
+    { parseAs: 'string' },
+    parseRawBody,
+  );
+  fastify.addContentTypeParser(/^multipart\/form-data/i, { parseAs: 'string' }, parseRawBody);
+  fastify.addContentTypeParser('*', { parseAs: 'string' }, parseRawBody);
+}
 
 async function bootstrap() {
   await initializeOpenTelemetry('billing-service');
@@ -19,6 +45,8 @@ async function bootstrap() {
     new FastifyAdapter({ logger: false, trustProxy: true }),
     { bufferLogs: true, rawBody: true },
   );
+
+  registerWebhookBodyParsers(app);
 
   app.useGlobalPipes(
     new ValidationPipe({

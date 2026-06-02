@@ -19,18 +19,14 @@ function createAdapter(secret = 'test-webhook-secret'): SePayAdapter {
   return new SePayAdapter(config);
 }
 
-function sign(secret: string, timestamp: string, payload: unknown): string {
+function sign(secret: string, timestamp: string, rawBody: string): string {
   return (
-    'sha256=' +
-    crypto
-      .createHmac('sha256', secret)
-      .update(`${timestamp}.${JSON.stringify(payload)}`)
-      .digest('hex')
+    'sha256=' + crypto.createHmac('sha256', secret).update(`${timestamp}.${rawBody}`).digest('hex')
   );
 }
 
 describe('SePayAdapter', () => {
-  it('verifies HMAC-SHA256 using timestamp and JSON.stringify(body)', async () => {
+  it('verifies HMAC-SHA256 using timestamp and raw body', async () => {
     const secret = 'hmac-secret';
     const timestamp = '1764663000';
     const payload = {
@@ -46,7 +42,7 @@ describe('SePayAdapter', () => {
     const result = await adapter.verifyWebhook({
       rawBody,
       headers: {
-        'x-sepay-signature': sign(secret, timestamp, payload),
+        'x-sepay-signature': sign(secret, timestamp, rawBody),
         'x-sepay-timestamp': timestamp,
       },
     });

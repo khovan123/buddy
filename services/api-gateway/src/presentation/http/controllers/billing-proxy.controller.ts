@@ -332,7 +332,9 @@ export class BillingWebhookProxyController {
     const rawBody =
       typeof req.rawBody === 'string'
         ? req.rawBody
-        : (req.rawBody?.toString('utf8') ?? JSON.stringify(body ?? {}));
+        : typeof body === 'string'
+          ? body
+          : (req.rawBody?.toString('utf8') ?? JSON.stringify(body ?? {}));
 
     return this.proxy.forward(req, {
       service: 'billing',

@@ -1,7 +1,32 @@
 import { initializeOpenTelemetry } from '@libs/common';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import type { FastifyRequest } from 'fastify';
 import 'reflect-metadata';
 // import { AppModule } from './app.module';
+
+type RawBodyFastifyRequest = FastifyRequest & {
+  rawBody?: string;
+};
+
+function registerWebhookBodyParsers(app: NestFastifyApplication): void {
+  const fastify = app.getHttpAdapter().getInstance();
+  const parseRawBody = (
+    req: FastifyRequest,
+    body: string | Buffer,
+    done: (error: Error | null, result?: unknown) => void,
+  ) => {
+    const rawBody = typeof body === 'string' ? body : body.toString('utf8');
+    (req as RawBodyFastifyRequest).rawBody = rawBody;
+    done(null, rawBody);
+  };
+
+  fastify.addContentTypeParser(
+    ['application/x-www-form-urlencoded', 'application/octet-stream'],
+    { parseAs: 'string' },
+    parseRawBody,
+  );
+}
+
 async function bootstrap() {
   await initializeOpenTelemetry('api-gateway');
 
@@ -25,6 +50,8 @@ async function bootstrap() {
     }),
     { bufferLogs: true, rawBody: true },
   );
+
+  registerWebhookBodyParsers(app);
 
   // ── Security ──────────────────────────────────────────────────────
   await app.register(helmet, {

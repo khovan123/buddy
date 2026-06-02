@@ -268,8 +268,52 @@ export class SePayAdapter implements IPaymentGateway, IPayoutGateway {
 
       return parsed as SePayIpnPayload;
     } catch {
+      const multipartPayload = this.parseMultipartPayload(rawBody);
+      if (multipartPayload) {
+        return multipartPayload as SePayIpnPayload;
+      }
+
+      const formPayload = this.parseFormPayload(rawBody);
+      if (formPayload) {
+        return formPayload as SePayIpnPayload;
+      }
+
       throw new UnauthorizedException('Invalid SEPAY IPN body');
     }
+  }
+
+  private parseFormPayload(rawBody: string): Record<string, unknown> | null {
+    const params = new URLSearchParams(rawBody);
+    const payload: Record<string, unknown> = {};
+
+    for (const [key, value] of params.entries()) {
+      payload[key] = value;
+    }
+
+    return Object.keys(payload).length > 0 ? payload : null;
+  }
+
+  private parseMultipartPayload(rawBody: string): Record<string, unknown> | null {
+    const boundary = rawBody.match(/^--([^\r\n]+)/)?.[1];
+    if (!boundary) {
+      return null;
+    }
+
+    const payload: Record<string, unknown> = {};
+    for (const part of rawBody.split(`--${boundary}`)) {
+      const name = part.match(/name="([^"]+)"/)?.[1];
+      if (!name) {
+        continue;
+      }
+
+      const [, value] = part.split(/\r?\n\r?\n/, 2);
+      const normalizedValue = value?.replace(/\r?\n--$/, '').trim();
+      if (normalizedValue !== undefined) {
+        payload[name] = normalizedValue;
+      }
+    }
+
+    return Object.keys(payload).length > 0 ? payload : null;
   }
 
   private verifyPaymentGatewayIpn(payload: SePayIpnPayload): VerifyWebhookResult {
@@ -358,21 +402,15 @@ export class SePayAdapter implements IPaymentGateway, IPayoutGateway {
       return false;
     }
 
-    const payload = this.stringifyWebhookPayload(rawBody);
-
     const expected = crypto
       .createHmac('sha256', this.webhookSecretKey)
-      .update(`${timestamp}.${payload}`)
+      .update(`${timestamp}.${rawBody}`)
       .digest('hex');
     const incoming = signature.startsWith('sha256=')
       ? signature.slice('sha256='.length)
       : signature;
 
     return this.safeEquals(incoming, expected);
-  }
-
-  private stringifyWebhookPayload(rawBody: string): string {
-    return JSON.stringify(this.parsePayload(rawBody));
   }
 
   private async callSePayUserApi<T>(path: string, token: string): Promise<T> {

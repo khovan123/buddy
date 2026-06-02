@@ -70,6 +70,10 @@ export class WebhookController {
       return req.rawBody;
     }
 
+    if (typeof body === 'string') {
+      return body;
+    }
+
     return req.rawBody?.toString('utf8') ?? JSON.stringify(body ?? {});
   }
 }
