@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { CommandBus, CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { SePayAdapter } from '../../../infrastructure/external/payment/sepay.adapter';
 import { ConfirmSePayWithdrawWebhookCommand } from '../confirm-sepay-withdraw-webhook.command';
@@ -14,6 +14,8 @@ type SePayWithdrawWebhookPayload = {
 
 @CommandHandler(ConfirmSePayWithdrawWebhookCommand)
 export class ConfirmSePayWithdrawWebhookHandler implements ICommandHandler<ConfirmSePayWithdrawWebhookCommand> {
+  private readonly logger = new Logger(ConfirmSePayWithdrawWebhookHandler.name);
+
   constructor(
     private readonly commandBus: CommandBus,
     private readonly sepay: SePayAdapter,
@@ -34,6 +36,11 @@ export class ConfirmSePayWithdrawWebhookHandler implements ICommandHandler<Confi
     }
 
     const transactionId = this.extractWithdrawTransactionId(payload);
+    if (!transactionId) {
+      this.logger.warn('Ignoring SEPAY outbound webhook without Buddy withdraw reference');
+      return { transactionId: '', userId: '' };
+    }
+
     return this.commandBus.execute(
       new ConfirmWithdrawCommand(transactionId, command.correlationId),
     );
@@ -52,7 +59,7 @@ export class ConfirmSePayWithdrawWebhookHandler implements ICommandHandler<Confi
     }
   }
 
-  private extractWithdrawTransactionId(payload: SePayWithdrawWebhookPayload): string {
+  private extractWithdrawTransactionId(payload: SePayWithdrawWebhookPayload): string | null {
     const text = [payload.code, payload.content, payload.description, payload.referenceCode]
       .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
       .join(' ');
@@ -71,6 +78,6 @@ export class ConfirmSePayWithdrawWebhookHandler implements ICommandHandler<Confi
       return uuidMatch[0];
     }
 
-    throw new BadRequestException('SEPAY withdraw webhook: missing withdraw transaction reference');
+    return null;
   }
 }

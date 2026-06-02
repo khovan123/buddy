@@ -87,7 +87,7 @@ export class WalletPrismaRepository implements IWalletRepository {
     correlationId: string;
   }): Promise<{ transactionId: string; userId: string; walletId: string }> {
     const result = await this.prisma.client.$transaction(async (tx) => {
-      const transaction = await tx.walletTransaction.findFirst({
+      let transaction = await tx.walletTransaction.findFirst({
         where: {
           provider: input.provider,
           OR: [
@@ -101,6 +101,30 @@ export class WalletPrismaRepository implements IWalletRepository {
           ],
         },
       });
+
+      if (!transaction) {
+        const recentPendingMatches = await tx.walletTransaction.findMany({
+          where: {
+            type: 'TOP_UP',
+            status: 'PENDING',
+            provider: input.provider,
+            amountInCents: input.amountInCents,
+            createdAt: {
+              gte: new Date(Date.now() - 1000 * 60 * 60 * 24),
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 2,
+        });
+
+        if (recentPendingMatches.length > 1) {
+          throw new BadRequestException('Top-up transaction reference is ambiguous');
+        }
+
+        if (recentPendingMatches.length === 1) {
+          transaction = recentPendingMatches[0];
+        }
+      }
 
       if (!transaction) {
         throw new NotFoundException('Top-up transaction was not found');
