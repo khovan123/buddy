@@ -127,6 +127,10 @@ export function PlanSelectorDialog({
         : "Choose plan")
 
   const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen && requiresPlanSelection) {
+      return
+    }
+
     if (nextOpen) {
       setSelectedAudience(currentAudience)
     }

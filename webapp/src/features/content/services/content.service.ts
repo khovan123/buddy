@@ -55,7 +55,6 @@ const excludePurchasedPage = async <T extends ContentWithId>(
   result: PaginatedResult<T>
 ): Promise<PaginatedResult<T>> => {
   const data = await excludePurchased(result.data)
-  const hiddenCount = result.data.length - data.length
 
   return {
     data,
