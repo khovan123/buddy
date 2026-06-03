@@ -1,5 +1,9 @@
-import type { PlanLimits, SubscriptionPlan as SubscriptionPlanType } from '@libs/contracts';
-import { getPlanLimits } from '@libs/contracts';
+import {
+  PLAN_LIMITS,
+  SubscriptionPlan,
+  type PlanLimits,
+  type SubscriptionPlan as SubscriptionPlanType,
+} from '@libs/contracts';
 import {
   CanActivate,
   ExecutionContext,
@@ -78,13 +82,13 @@ export class PoliciesGuard implements CanActivate {
       throw new ForbiddenException('Authentication required for policy evaluation');
     }
 
-    const plan = user.subscriptionPlan as SubscriptionPlanType;
+    const plan = this.resolveSubscriptionPlan(user.subscriptionPlan, user.roles ?? []);
 
     const policyCtx: PolicyContext = {
       userId: user.sub,
       roles: user.roles ?? [],
       subscriptionPlan: plan,
-      planLimits: getPlanLimits(plan),
+      planLimits: PLAN_LIMITS[plan],
       extras: {
         body: request.body,
         headers: request.headers,
@@ -104,5 +108,21 @@ export class PoliciesGuard implements CanActivate {
     }
 
     return true;
+  }
+
+  private resolveSubscriptionPlan(plan: string | undefined, roles: string[]): SubscriptionPlanType {
+    if (this.isKnownPlan(plan)) {
+      return plan;
+    }
+
+    if (roles.some((role) => role.trim().toUpperCase() === 'CREATOR')) {
+      return SubscriptionPlan.CREATOR_FREE;
+    }
+
+    return SubscriptionPlan.STUDENT_FREE;
+  }
+
+  private isKnownPlan(plan: string | undefined): plan is SubscriptionPlanType {
+    return Boolean(plan && plan in PLAN_LIMITS);
   }
 }
