@@ -196,6 +196,43 @@ function toneClassName(tone: ModerationNotificationTone) {
   }
 }
 
+function getModerationEventMeta(
+  decision?: "APPROVED" | "REJECTED" | "NEEDS_REVIEW" | "ERROR"
+): Pick<ModerationNotification, "statusLabel" | "description" | "tone"> {
+  switch (decision) {
+    case "APPROVED":
+      return {
+        statusLabel: "Approved",
+        description: "This content has been approved and is ready to display.",
+        tone: "success",
+      }
+    case "REJECTED":
+      return {
+        statusLabel: "Rejected",
+        description: "This content did not pass moderation.",
+        tone: "danger",
+      }
+    case "ERROR":
+      return {
+        statusLabel: "Failed",
+        description: "Content processing or moderation failed.",
+        tone: "danger",
+      }
+    case "NEEDS_REVIEW":
+      return {
+        statusLabel: "Needs review",
+        description: "This content needs further admin review.",
+        tone: "warning",
+      }
+    default:
+      return {
+        statusLabel: "Completed",
+        description: "Content moderation has completed.",
+        tone: "info",
+      }
+  }
+}
+
 export function Notifications() {
   const [open, setOpen] = useState(false)
   const dispatch = useDispatch()
@@ -261,6 +298,28 @@ export function Notifications() {
         tone: "success",
         updatedAt: item.createdAt,
       }))
+    const moderationNotifications: ModerationNotification[] = (
+      notificationResponse?.data ?? []
+    )
+      .filter((item) => item.channel === "content-moderation")
+      .map((item) => {
+        const meta = getModerationEventMeta(item.templateData.decision)
+        const contentType =
+          item.templateData.contentType === "TUTORIAL" ? "Tutorial" : "Resource"
+
+        return {
+          id: `moderation-${item._id}`,
+          href:
+            item.templateData.contentType === "TUTORIAL"
+              ? "/dashboard/tutorials"
+              : "/dashboard/resources",
+          title: item.templateData.title ?? item.subject ?? "Content moderated",
+          type: contentType,
+          reason: item.templateData.reasons?.[0],
+          updatedAt: item.templateData.moderatedAt ?? item.createdAt,
+          ...meta,
+        }
+      })
 
     const approvedFallback = [
       ...resources
@@ -280,6 +339,7 @@ export function Notifications() {
     ]
 
     const sorted = [
+      ...moderationNotifications,
       ...purchaseNotifications,
       ...activeNotifications,
       ...approvedFallback,
@@ -291,7 +351,10 @@ export function Notifications() {
       .slice(0, 6)
 
     return {
-      activeCount: activeNotifications.length + purchaseNotifications.length,
+      activeCount:
+        activeNotifications.length +
+        purchaseNotifications.length +
+        moderationNotifications.length,
       notifications: sorted,
     }
   }, [notificationResponse, resourceResponse, tutorialResponse])

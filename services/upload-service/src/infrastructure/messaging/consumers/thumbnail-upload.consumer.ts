@@ -7,10 +7,12 @@ import {
   runWithCorrelationId,
 } from '@libs/common';
 import {
+  extractRmqPayload,
   ThumbnailUploadFailedEvent,
   ThumbnailUploadedEvent,
   UPLOAD_ROUTINGKEYS,
   UploadThumbnailEvent,
+  type RmqMessagePayload,
 } from '@libs/contracts';
 import { Controller } from '@nestjs/common';
 import { RabbitSubscribe, Nack } from '@golevelup/nestjs-rabbitmq';
@@ -41,7 +43,7 @@ export class ThumbnailUploadConsumer {
     },
   })
   async handleThumbnailUpload(
-    messageData: UploadThumbnailEvent,
+    messageData: RmqMessagePayload<UploadThumbnailEvent['payload']>,
     amqpMsg: ConsumeMessage,
   ): Promise<void | Nack> {
     const headers = (amqpMsg.properties.headers || {}) as Record<string, unknown>;
@@ -54,7 +56,7 @@ export class ThumbnailUploadConsumer {
     try {
       await runWithCorrelationId(correlationId, async () => {
         // ── 1. Extract & validate payload ──────────────────────────────
-        const payload = messageData?.payload;
+        const payload = extractRmqPayload(messageData);
 
         this.logger.log(
           `[handleThumbnailUpload] Received event: ` +
@@ -82,7 +84,7 @@ export class ThumbnailUploadConsumer {
           await this.publishFailure(
             correlationId,
             payload.contentId ?? 'unknown',
-            payload.contentType ?? 'resource',
+            this.normalizeContentType(payload.contentType),
             'imageBase64 is required but was not provided',
           );
           return;
@@ -95,7 +97,7 @@ export class ThumbnailUploadConsumer {
           await this.publishFailure(
             correlationId,
             payload.contentId ?? 'unknown',
-            payload.contentType ?? 'resource',
+            this.normalizeContentType(payload.contentType),
             'folder and publicId are required',
           );
           return;
@@ -106,7 +108,7 @@ export class ThumbnailUploadConsumer {
           await this.publishFailure(
             correlationId,
             payload.contentId ?? 'unknown',
-            payload.contentType ?? 'resource',
+            this.normalizeContentType(payload.contentType),
             'contentId and contentType are required',
           );
           return;
@@ -134,7 +136,7 @@ export class ThumbnailUploadConsumer {
           await this.publishFailure(
             correlationId,
             payload.contentId,
-            payload.contentType,
+            this.normalizeContentType(payload.contentType),
             `imageBase64 has unexpected type: ${typeof payload.imageBase64}`,
           );
           return;
@@ -149,7 +151,7 @@ export class ThumbnailUploadConsumer {
           await this.publishFailure(
             correlationId,
             payload.contentId,
-            payload.contentType,
+            this.normalizeContentType(payload.contentType),
             'imageBase64 is empty after sanitization',
           );
           return;
@@ -176,7 +178,7 @@ export class ThumbnailUploadConsumer {
         const completionEvent = new ThumbnailUploadedEvent(
           {
             contentId: payload.contentId,
-            contentType: payload.contentType,
+            contentType: this.normalizeContentType(payload.contentType),
             thumbnailUrl,
           },
           correlationId,
@@ -192,11 +194,11 @@ export class ThumbnailUploadConsumer {
 
       // Attempt to publish failure event
       try {
-        const payload = messageData?.payload;
+        const payload = extractRmqPayload(messageData);
         await this.publishFailure(
           correlationId,
           payload?.contentId ?? 'unknown',
-          payload?.contentType ?? 'resource',
+          this.normalizeContentType(payload?.contentType),
           errMsg,
         );
       } catch (publishErr) {
@@ -224,5 +226,9 @@ export class ThumbnailUploadConsumer {
     this.logger.warn(
       `[handleThumbnailUpload] Published THUMBNAIL_UPLOAD_FAILED: contentId=${contentId}, reason=${reason}`,
     );
+  }
+
+  private normalizeContentType(contentType: unknown): 'resource' | 'collection' {
+    return String(contentType).trim().toLowerCase() === 'collection' ? 'collection' : 'resource';
   }
 }

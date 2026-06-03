@@ -60,4 +60,66 @@ describe('NotificationConsumer purchase notifications', () => {
     ]);
     expect(stream.publish).toHaveBeenCalledTimes(2);
   });
+
+  it('stores and streams an in-app notification when content moderation completes', async () => {
+    const savedNotifications: Array<{
+      userId: string;
+      type: string;
+      channel: string;
+      templateId: string;
+      subject?: string;
+      templateData: Record<string, unknown>;
+    }> = [];
+    const stream = { publish: jest.fn() };
+    const consumer = new NotificationConsumer(
+      { execute: jest.fn() } as never,
+      { republishWithDelay: jest.fn() } as never,
+      stream as never,
+      {
+        save: jest.fn(async (notification: Notification) => {
+          savedNotifications.push({
+            userId: notification.userId,
+            type: notification.type,
+            channel: notification.channel,
+            templateId: notification.templateId,
+            subject: notification.subject,
+            templateData: notification.templateData,
+          });
+          return notification;
+        }),
+      } as never,
+    );
+
+    await consumer.handleContentModerationCompleted({
+      correlationId: 'moderation-correlation',
+      payload: {
+        contentId: 'resource-1',
+        contentType: 'RESOURCE',
+        ownerId: 'creator-1',
+        title: 'Physics Notes',
+        slug: 'physics-notes',
+        decision: 'APPROVED',
+        score: 0.97,
+        reasons: ['Content is safe and educational.'],
+        ruleVersion: 'v1',
+        moderatedAt: new Date().toISOString(),
+      },
+    });
+
+    expect(savedNotifications).toEqual([
+      expect.objectContaining({
+        userId: 'creator-1',
+        type: 'in_app',
+        channel: 'content-moderation',
+        templateId: 'content-moderation-completed',
+        subject: 'Content approved',
+        templateData: expect.objectContaining({
+          contentId: 'resource-1',
+          contentType: 'RESOURCE',
+          decision: 'APPROVED',
+        }),
+      }),
+    ]);
+    expect(stream.publish).toHaveBeenCalledTimes(1);
+  });
 });

@@ -10,6 +10,8 @@ import {
 import {
   AUTH_ROUTINGKEYS,
   BILLING_ROUTINGKEYS,
+  CONTENT_ROUTINGKEYS,
+  ContentModerationCompletedEvent,
   PurchaseCompletedEvent,
   RECOMMENDATION_ROUTINGKEYS,
 } from '@libs/contracts';
@@ -148,6 +150,68 @@ export class NotificationConsumer {
 
     this.notificationStream.publish(buyerNotification);
     this.notificationStream.publish(sellerNotification);
+  }
+
+  // ─── content.moderation.completed ─────────────────────────────────────────
+  @RabbitSubscribe({
+    exchange: EXCHANGES.CONTENT,
+    routingKey: CONTENT_ROUTINGKEYS.MODERATION_COMPLETED,
+    queue: QUEUES.NOTIFICATION_IN_APP,
+    queueOptions: {
+      durable: true,
+      arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
+    },
+  })
+  async handleContentModerationCompleted(
+    data: EventEnvelope<ContentModerationCompletedEvent['payload']>,
+  ): Promise<void | Nack> {
+    const payload = this.getPayload(data);
+
+    if (
+      !payload ||
+      !this.isNonEmptyString(payload.contentId) ||
+      !this.isNonEmptyString(payload.contentType) ||
+      !this.isNonEmptyString(payload.ownerId) ||
+      !this.isNonEmptyString(payload.title) ||
+      !this.isNonEmptyString(payload.decision) ||
+      !(payload.score === null || this.isFiniteNumber(payload.score)) ||
+      !Array.isArray(payload.reasons) ||
+      !this.isNonEmptyString(payload.ruleVersion) ||
+      !this.isValidDateString(payload.moderatedAt)
+    ) {
+      this.logger.warn(`Dropping malformed [${CONTENT_ROUTINGKEYS.MODERATION_COMPLETED}] event`);
+      return new Nack(false);
+    }
+
+    const notification = await this.notificationRepository.save(
+      Notification.create({
+        userId: payload.ownerId,
+        type: 'in_app',
+        channel: 'content-moderation',
+        recipient: payload.ownerId,
+        subject:
+          payload.decision === 'APPROVED'
+            ? 'Content approved'
+            : payload.decision === 'REJECTED'
+              ? 'Content rejected'
+              : 'Content moderation completed',
+        templateId: 'content-moderation-completed',
+        templateData: {
+          contentId: payload.contentId,
+          contentType: payload.contentType,
+          title: payload.title,
+          slug: payload.slug,
+          decision: payload.decision,
+          score: payload.score,
+          reasons: payload.reasons,
+          ruleVersion: payload.ruleVersion,
+          moderatedAt: payload.moderatedAt,
+        },
+        correlationId: data.correlationId ?? payload.contentId,
+      }),
+    );
+
+    this.notificationStream.publish(notification);
   }
 
   private isNumberRecord(value: unknown): value is Record<string, number> {

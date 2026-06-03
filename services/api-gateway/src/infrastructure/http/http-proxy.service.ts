@@ -34,6 +34,9 @@ const DEFAULT_CIRCUIT_BREAKER = {
   resetTimeoutMs: 30_000,
   halfOpenMaxAttempts: 2,
 };
+const CIRCUIT_BREAKER_OVERRIDES: Record<string, Partial<typeof DEFAULT_CIRCUIT_BREAKER>> = {
+  'auth-refresh': { failureThreshold: 15 },
+};
 const DEFAULT_BULKHEAD = { maxConcurrent: 20, maxQueue: 50 };
 
 /** Per-service bulkhead overrides (upload handles large files → lower concurrency) */
@@ -208,15 +211,19 @@ export class HttpProxyService {
     let breaker = this.breakers.get(key);
     if (!breaker) {
       const envKey = key.toUpperCase().replace(/[^A-Z0-9]/g, '_');
+      const overrides = CIRCUIT_BREAKER_OVERRIDES[key];
       breaker = new CircuitBreaker({
         name: `cb-${key}`,
         failureThreshold:
           this.config.get<number>(`CB_FAILURE_THRESHOLD_${envKey}`) ??
+          overrides?.failureThreshold ??
           DEFAULT_CIRCUIT_BREAKER.failureThreshold,
         resetTimeoutMs:
           this.config.get<number>(`CB_RESET_TIMEOUT_${envKey}`) ??
+          overrides?.resetTimeoutMs ??
           DEFAULT_CIRCUIT_BREAKER.resetTimeoutMs,
-        halfOpenMaxAttempts: DEFAULT_CIRCUIT_BREAKER.halfOpenMaxAttempts,
+        halfOpenMaxAttempts:
+          overrides?.halfOpenMaxAttempts ?? DEFAULT_CIRCUIT_BREAKER.halfOpenMaxAttempts,
       });
       this.breakers.set(key, breaker);
     }

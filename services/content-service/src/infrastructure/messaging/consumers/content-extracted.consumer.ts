@@ -1,6 +1,7 @@
 import { Nack, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { AppLogger, EXCHANGES, QUEUES, RETRY_OPTIONS } from '@libs/common';
 import {
+  ContentModerationCompletedEvent,
   ContentExtractedEvent,
   UPLOAD_ROUTINGKEYS,
   extractRmqPayload,
@@ -17,6 +18,7 @@ import { ContentModerationStatus as TutorialModerationStatus } from '../../persi
 import { ContentModerationService } from '../../services/content-moderation.service';
 import { IdempotentConsumerService } from '../../services/idempotent-consumer.service';
 import { ContentRetryPublisher } from '../publishers/content-retry.publisher';
+import { ContentModerationNotificationPublisher } from '../publishers/content-moderation-notification.publisher';
 import { RecommendationSyncPublisher } from '../publishers/recommendation-sync.publisher';
 
 @Controller()
@@ -30,6 +32,7 @@ export class ContentExtractedConsumer {
     private readonly tutorialRepository: ITutorialRepository,
     private readonly contentModeration: ContentModerationService,
     private readonly recommendationSync: RecommendationSyncPublisher,
+    private readonly moderationNotification: ContentModerationNotificationPublisher,
     private readonly idempotentConsumer: IdempotentConsumerService,
     private readonly contentRetry: ContentRetryPublisher,
   ) {}
@@ -48,9 +51,14 @@ export class ContentExtractedConsumer {
     message: ConsumeMessage,
   ): Promise<void | Nack> {
     const payload = extractRmqPayload(messageData);
+    const contentType = this.normalizeContentType(payload.contentType);
     const correlationId = this.idempotentConsumer.resolveCorrelationId(
       message as unknown as Record<string, unknown>,
       payload.contentId,
+    );
+
+    this.logger.log(
+      `Received ${UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED} for ${contentType} ${payload.contentId} with ${payload.files.length} file(s)`,
     );
 
     try {
@@ -58,16 +66,16 @@ export class ContentExtractedConsumer {
         correlationId,
         UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
         async () => {
-          if (payload.contentType === 'RESOURCE') {
-            await this.moderateResource(payload);
+          if (contentType === 'RESOURCE') {
+            await this.moderateResource(payload, correlationId);
           } else {
-            await this.moderateTutorial(payload);
+            await this.moderateTutorial(payload, correlationId);
           }
         },
       );
 
       this.logger.log(
-        `Successfully processed ${UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED} for ${payload.contentType} ${payload.contentId}`,
+        `Successfully processed ${UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED} for ${contentType} ${payload.contentId}`,
       );
     } catch (error) {
       const headers = message.properties?.headers;
@@ -77,7 +85,7 @@ export class ContentExtractedConsumer {
       const willRetry = retryCount < RETRY_OPTIONS.MAX_RETRIES;
 
       this.logger[willRetry ? 'warn' : 'error'](
-        `Failed to moderate extracted ${payload.contentType} content ${payload.contentId}` +
+        `Failed to moderate extracted ${contentType} content ${payload.contentId}` +
           ` (attempt ${retryCount + 1}/${RETRY_OPTIONS.MAX_RETRIES + 1})` +
           (willRetry ? ' — republishing for retry' : ' — sending to DLQ'),
         String(error),
@@ -94,7 +102,7 @@ export class ContentExtractedConsumer {
           return; // ack original; retry is the republished copy
         } catch (publishErr) {
           this.logger.error(
-            `Republish failed for ${payload.contentType} ${payload.contentId}` +
+            `Republish failed for ${contentType} ${payload.contentId}` +
               ` — sending original to DLQ to prevent message loss`,
             String(publishErr),
           );
@@ -106,12 +114,17 @@ export class ContentExtractedConsumer {
     }
   }
 
-  private async moderateResource(payload: ContentExtractedEvent['payload']): Promise<void> {
+  private async moderateResource(
+    payload: ContentExtractedEvent['payload'],
+    correlationId: string,
+  ): Promise<void> {
     const resource = await this.resourceRepository.findByIdWithDetails(payload.contentId);
     if (!resource) {
       this.logger.warn(`Resource ${payload.contentId} not found for extracted moderation`);
       return;
     }
+
+    this.logger.log(`Starting moderation for RESOURCE ${resource.id} (${resource.title})`);
 
     const result = await this.contentModeration.moderate({
       contentId: resource.id,
@@ -129,12 +142,34 @@ export class ContentExtractedConsumer {
       extractionError: this.joinExtractionErrors(payload),
     });
 
+    this.logger.log(
+      `Moderation result for RESOURCE ${resource.id}: decision=${result.decision}, score=${result.score}, ruleVersion=${result.ruleVersion}`,
+    );
+
     await this.resourceRepository.applyModerationResult(resource.id, {
       status: this.toResourceStatus(result.decision),
       score: result.score,
       reasons: result.reasons,
       ruleVersion: result.ruleVersion,
     });
+
+    await this.moderationNotification.send(
+      new ContentModerationCompletedEvent(
+        {
+          contentId: resource.id,
+          contentType: 'RESOURCE',
+          ownerId: resource.userId,
+          title: resource.title,
+          slug: resource.slug,
+          decision: this.toModerationDecision(result.decision),
+          score: result.score,
+          reasons: result.reasons,
+          ruleVersion: result.ruleVersion,
+          moderatedAt: new Date().toISOString(),
+        },
+        correlationId,
+      ),
+    );
 
     if (result.decision === 'APPROVED') {
       await this.recommendationSync.send({
@@ -151,7 +186,10 @@ export class ContentExtractedConsumer {
     }
   }
 
-  private async moderateTutorial(payload: ContentExtractedEvent['payload']): Promise<void> {
+  private async moderateTutorial(
+    payload: ContentExtractedEvent['payload'],
+    correlationId: string,
+  ): Promise<void> {
     const fileId = payload.files[0]?.fileId;
     if (!fileId) {
       this.logger.warn(`No tutorial file found in extraction event ${payload.contentId}`);
@@ -163,6 +201,8 @@ export class ContentExtractedConsumer {
       this.logger.warn(`Tutorial for fileId ${fileId} not found for extracted moderation`);
       return;
     }
+
+    this.logger.log(`Starting moderation for TUTORIAL ${tutorial.id} (${tutorial.title})`);
 
     const result = await this.contentModeration.moderate({
       contentId: tutorial.id,
@@ -178,12 +218,34 @@ export class ContentExtractedConsumer {
       extractionError: this.joinExtractionErrors(payload),
     });
 
+    this.logger.log(
+      `Moderation result for TUTORIAL ${tutorial.id}: decision=${result.decision}, score=${result.score}, ruleVersion=${result.ruleVersion}`,
+    );
+
     await this.tutorialRepository.applyModerationResult(tutorial.id, {
       status: this.toTutorialStatus(result.decision),
       score: result.score,
       reasons: result.reasons,
       ruleVersion: result.ruleVersion,
     });
+
+    await this.moderationNotification.send(
+      new ContentModerationCompletedEvent(
+        {
+          contentId: tutorial.id,
+          contentType: 'TUTORIAL',
+          ownerId: tutorial.userId,
+          title: tutorial.title,
+          slug: tutorial.slug,
+          decision: this.toModerationDecision(result.decision),
+          score: result.score,
+          reasons: result.reasons,
+          ruleVersion: result.ruleVersion,
+          moderatedAt: new Date().toISOString(),
+        },
+        correlationId,
+      ),
+    );
 
     if (result.decision === 'APPROVED') {
       await this.recommendationSync.send({
@@ -236,5 +298,20 @@ export class ContentExtractedConsumer {
     if (decision === 'REJECTED') return TutorialModerationStatus.REJECTED;
     if (decision === 'ERROR') return TutorialModerationStatus.ERROR;
     return TutorialModerationStatus.NEEDS_REVIEW;
+  }
+
+  private toModerationDecision(
+    decision: string,
+  ): ContentModerationCompletedEvent['payload']['decision'] {
+    if (decision === 'APPROVED') return 'APPROVED';
+    if (decision === 'REJECTED') return 'REJECTED';
+    if (decision === 'ERROR') return 'ERROR';
+    return 'NEEDS_REVIEW';
+  }
+
+  private normalizeContentType(
+    contentType: unknown,
+  ): ContentExtractedEvent['payload']['contentType'] {
+    return String(contentType).trim().toUpperCase() === 'TUTORIAL' ? 'TUTORIAL' : 'RESOURCE';
   }
 }

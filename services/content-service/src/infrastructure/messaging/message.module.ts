@@ -7,6 +7,7 @@ import { ThumbnailUploadedConsumer } from './consumers/thumbnail-uploaded.consum
 import { UploadProcessedConsumer } from './consumers/upload-processed.consumer';
 import { UserProfileUpdatedConsumer } from './consumers/user-profile-updated.consumer';
 import { RecommendationSyncPublisher } from './publishers/recommendation-sync.publisher';
+import { ContentModerationNotificationPublisher } from './publishers/content-moderation-notification.publisher';
 import { ContentRetryPublisher } from './publishers/content-retry.publisher';
 import { StorageBrokerPublisher } from './publishers/storage-broker.rpc';
 import { UserServicePublisher } from './publishers/user-service.rpc';
@@ -25,6 +26,7 @@ export const MESSAGE_CONTROLLERS = [
 
 export const MESSAGE_COMPONENTS = [
   RecommendationSyncPublisher,
+  ContentModerationNotificationPublisher,
   ContentRetryPublisher,
   StorageBrokerPublisher,
   UserServicePublisher,

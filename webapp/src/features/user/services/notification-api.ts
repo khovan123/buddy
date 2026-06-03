@@ -12,6 +12,15 @@ export interface UserNotification {
     amount?: string
     itemCount?: number
     purchaseId?: string
+    contentId?: string
+    contentType?: "RESOURCE" | "TUTORIAL"
+    title?: string
+    slug?: string | null
+    decision?: "APPROVED" | "REJECTED" | "NEEDS_REVIEW" | "ERROR"
+    score?: number | null
+    reasons?: string[]
+    ruleVersion?: string
+    moderatedAt?: string
   }
   status: string
   createdAt: string

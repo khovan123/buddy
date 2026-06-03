@@ -206,6 +206,10 @@ describe('ContentExtractedConsumer', () => {
     send: jest.fn(),
   };
 
+  const mockModerationNotification = {
+    send: jest.fn(),
+  };
+
   const mockIdempotentConsumer = {
     resolveCorrelationId: jest.fn().mockReturnValue('corr-test-001'),
     runWithIdempotency: jest.fn(
@@ -235,6 +239,7 @@ describe('ContentExtractedConsumer', () => {
       mockTutorialRepository as any,
       mockContentModeration as any,
       mockRecommendationSync as any,
+      mockModerationNotification as any,
       mockIdempotentConsumer as any,
       mockContentRetry as any,
     );
@@ -272,6 +277,17 @@ describe('ContentExtractedConsumer', () => {
         reasons: ['Content is safe and educational.'],
         ruleVersion: 'v1',
       });
+      expect(mockModerationNotification.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            contentId: 'res-001',
+            contentType: 'RESOURCE',
+            ownerId: 'user-001',
+            title: 'Algorithms 101',
+            decision: 'APPROVED',
+          }),
+        }),
+      );
       expect(mockRecommendationSync.send).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'ITEM_UPSERT',
@@ -296,6 +312,15 @@ describe('ContentExtractedConsumer', () => {
         reasons: ['Spam or low-quality content detected.'],
         ruleVersion: 'v1',
       });
+      expect(mockModerationNotification.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            contentId: 'res-001',
+            contentType: 'RESOURCE',
+            decision: 'REJECTED',
+          }),
+        }),
+      );
       expect(mockRecommendationSync.send).not.toHaveBeenCalled();
     });
 
@@ -341,6 +366,7 @@ describe('ContentExtractedConsumer', () => {
       expect(result).toBeUndefined();
       expect(mockContentModeration.moderate).not.toHaveBeenCalled();
       expect(mockResourceRepository.applyModerationResult).not.toHaveBeenCalled();
+      expect(mockModerationNotification.send).not.toHaveBeenCalled();
       expect(mockRecommendationSync.send).not.toHaveBeenCalled();
     });
   });
@@ -379,6 +405,17 @@ describe('ContentExtractedConsumer', () => {
         reasons: ['Content is safe and educational.'],
         ruleVersion: 'v1',
       });
+      expect(mockModerationNotification.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            contentId: 'tut-001',
+            contentType: 'TUTORIAL',
+            ownerId: 'user-001',
+            title: 'Calculus Tutorial',
+            decision: 'APPROVED',
+          }),
+        }),
+      );
       expect(mockRecommendationSync.send).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'ITEM_UPSERT',
@@ -417,6 +454,7 @@ describe('ContentExtractedConsumer', () => {
       expect(result).toBeUndefined();
       expect(mockTutorialRepository.findByMediaFileIdWithDetails).not.toHaveBeenCalled();
       expect(mockContentModeration.moderate).not.toHaveBeenCalled();
+      expect(mockModerationNotification.send).not.toHaveBeenCalled();
     });
 
     it('should skip moderation if tutorial is not found by fileId', async () => {
@@ -431,6 +469,7 @@ describe('ContentExtractedConsumer', () => {
       expect(result).toBeUndefined();
       expect(mockTutorialRepository.findByMediaFileIdWithDetails).toHaveBeenCalledWith('file-t1');
       expect(mockContentModeration.moderate).not.toHaveBeenCalled();
+      expect(mockModerationNotification.send).not.toHaveBeenCalled();
     });
   });
 

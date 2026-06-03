@@ -128,11 +128,53 @@ export class ThumbnailUploadedConsumer {
     _message: ConsumeMessage,
   ): Promise<void> {
     const payload = extractRmqPayload(messageData);
+    const reason = this.extractFailureReason(payload, messageData);
 
     this.logger.warn(
       `[handleThumbnailUploadFailed] Thumbnail upload failed for ` +
         `contentId=${payload.contentId}, contentType=${payload.contentType}, ` +
-        `reason=${payload.reason}`,
+        `reason=${reason}`,
     );
+  }
+
+  private extractFailureReason(
+    payload: ThumbnailUploadFailedEvent['payload'],
+    messageData: RmqMessagePayload<ThumbnailUploadFailedEvent['payload']>,
+  ): string {
+    const candidate =
+      payload.reason ??
+      this.readStringField(payload, 'error') ??
+      this.readStringField(payload, 'message') ??
+      this.readStringField(payload, 'cause') ??
+      this.readNestedStringField(messageData, 'reason') ??
+      this.readNestedStringField(messageData, 'error') ??
+      this.readNestedStringField(messageData, 'message') ??
+      'Unknown thumbnail upload failure';
+
+    return candidate.trim().length > 0 ? candidate : 'Unknown thumbnail upload failure';
+  }
+
+  private readStringField(source: unknown, key: string): string | undefined {
+    if (!source || typeof source !== 'object' || !(key in source)) {
+      return undefined;
+    }
+
+    const value = (source as Record<string, unknown>)[key];
+    return typeof value === 'string' ? value : undefined;
+  }
+
+  private readNestedStringField(
+    messageData: RmqMessagePayload<ThumbnailUploadFailedEvent['payload']>,
+    key: string,
+  ): string | undefined {
+    if (!messageData || typeof messageData !== 'object') {
+      return undefined;
+    }
+
+    if ('data' in messageData) {
+      return this.readStringField(messageData.data, key);
+    }
+
+    return undefined;
   }
 }

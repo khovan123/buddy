@@ -191,8 +191,10 @@ export class AuthProxyController {
       req,
       {
         service: 'auth',
+        resilienceKey: 'auth-refresh',
         path: '/v1/auth/refresh',
         method: 'GET',
+        skipRetry: true,
       },
       reply,
     );

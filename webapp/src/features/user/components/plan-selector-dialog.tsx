@@ -104,13 +104,14 @@ export function PlanSelectorDialog({
   const [selectedAudience, setSelectedAudience] =
     useState<PlanAudience>("student")
   const [pendingPlan, setPendingPlan] = useState<SubscriptionPlan | null>(null)
-  const { data, isFetching } = useGetSubscriptionQuery()
+  const { data, error: subscriptionError, isFetching } = useGetSubscriptionQuery()
   const { data: plansData, isFetching: isPlansFetching } =
     useGetSubscriptionPlansQuery()
   const [createSubscription, { isLoading }] = useCreateSubscriptionMutation()
 
   const currentPlan = data?.data?.plan
-  const requiresPlanSelection = !isFetching && !currentPlan
+  const requiresPlanSelection =
+    !isFetching && !subscriptionError && !currentPlan
   const currentAudience: PlanAudience = currentPlan?.startsWith("CREATOR")
     ? "creator"
     : "student"
