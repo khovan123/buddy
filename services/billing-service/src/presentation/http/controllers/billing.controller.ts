@@ -619,12 +619,18 @@ export class BillingController {
     const result = await this.prisma.client.subscriptionPlanCatalog.update({
       where: { code: code as PrismaSubscriptionPlan },
       data: {
-        ...(dto.storageBytes === undefined ? {} : { storageBytes: BigInt(dto.storageBytes) }),
+        ...(dto.storageBytes === undefined
+          ? {}
+          : { storageBytes: BigInt(dto.storageBytes) }),
         ...(dto.maxResources === undefined ? {} : { maxResources: dto.maxResources }),
         ...(dto.maxTutorials === undefined ? {} : { maxTutorials: dto.maxTutorials }),
         ...(dto.maxCollections === undefined ? {} : { maxCollections: dto.maxCollections }),
-        ...(dto.canCreateContent === undefined ? {} : { canCreateContent: dto.canCreateContent }),
-        ...(dto.maxSearchResults === undefined ? {} : { maxSearchResults: dto.maxSearchResults }),
+        ...(dto.canCreateContent === undefined
+          ? {}
+          : { canCreateContent: dto.canCreateContent }),
+        ...(dto.maxSearchResults === undefined
+          ? {}
+          : { maxSearchResults: dto.maxSearchResults }),
       },
     });
 
