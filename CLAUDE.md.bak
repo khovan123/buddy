@@ -1,0 +1,43 @@
+
+
+<!-- Source: .ruler/AGENTS.md -->
+
+# AGENTS.md
+
+Centralized AI agent instructions for the Buddy monorepo.
+
+## Runtime user
+
+- All shell commands must run as `minh_dev`, not root.
+- Do not prefix commands with `sudo -u minh_dev bash -c ...`; the shell is already expected to run under the correct user.
+
+## Code intelligence first
+
+- IMPORTANT: This project has a knowledge graph. ALWAYS use code-review-graph MCP tools before Grep/Glob/Read when exploring the codebase.
+- Use `get_minimal_context` first for broad tasks to understand graph stats, risk, communities, and suggested next tools.
+- Use `detect_changes` for code review.
+- Use `get_review_context` when source snippets are needed for a review.
+- Use `get_impact_radius` to understand blast radius.
+- Use `get_affected_flows` to understand impacted execution paths.
+- Use `query_graph` for callers, callees, imports, dependencies, and tests.
+- Use `query_graph` pattern="tests_for" to check coverage.
+- Use `semantic_search_nodes` or `query_graph` instead of Grep for code exploration.
+- Fall back to Grep/Glob/Read only when the graph does not cover what you need.
+
+## Review workflow
+
+- For review-style prompts, prioritize bugs, risks, behavioral regressions, and missing tests.
+- Lead with concrete findings and file references before summaries.
+- If no issues are found, say so clearly and mention remaining test gaps or residual risk.
+
+## Implementation workflow
+
+- Keep changes scoped to the named files, service, or route unless the dependency chain requires broader edits.
+- Prefer existing repo patterns, workspace scripts, and local helper APIs over new abstractions.
+- Verify with the narrowest relevant command first, then broaden if risk or blast radius justifies it.
+
+## Buddy runtime notes
+
+- The repo is a monorepo with services under `services/*`, shared libraries under `libs/*`, and the web app under `webapp/`.
+- Local `dev:prod` uses service-specific ports for local development, while Fly containers bind to `8080`.
+- For uploaded content, moderate the actual uploaded content and its context, not only title or summary metadata.

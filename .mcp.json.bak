@@ -1,0 +1,30 @@
+{
+  "mcpServers": {
+    "code-review-graph": {
+      "command": "/home/minh_dev/.local/share/pipx/venvs/code-review-graph/bin/python",
+      "args": [
+        "-m",
+        "code_review_graph",
+        "serve"
+      ],
+      "type": "stdio"
+    },
+    "mcp-rtk": {
+      "command": "/home/minh_dev/.cargo/bin/mcp-rtk",
+      "args": [
+        "--",
+        "code-review-graph",
+        "serve"
+      ],
+      "type": "stdio"
+    },
+    "agentmemory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@agentmemory/mcp"
+      ],
+      "type": "stdio"
+    }
+  }
+}
