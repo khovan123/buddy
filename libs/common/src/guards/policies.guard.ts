@@ -111,18 +111,30 @@ export class PoliciesGuard implements CanActivate {
   }
 
   private resolveSubscriptionPlan(plan: string | undefined, roles: string[]): SubscriptionPlanType {
-    if (this.isKnownPlan(plan)) {
-      return plan;
+    const normalizedPlan = this.normalizePlan(plan);
+
+    if (
+      roles.some((role) => this.isCreatorRole(role)) &&
+      (!normalizedPlan || !PLAN_LIMITS[normalizedPlan].canCreateContent)
+    ) {
+      return SubscriptionPlan.CREATOR_FREE;
     }
 
-    if (roles.some((role) => role.trim().toUpperCase() === 'CREATOR')) {
-      return SubscriptionPlan.CREATOR_FREE;
+    if (normalizedPlan) {
+      return normalizedPlan;
     }
 
     return SubscriptionPlan.STUDENT_FREE;
   }
 
-  private isKnownPlan(plan: string | undefined): plan is SubscriptionPlanType {
-    return Boolean(plan && plan in PLAN_LIMITS);
+  private normalizePlan(plan: string | undefined): SubscriptionPlanType | undefined {
+    const normalized = plan?.trim().replace(/[\s-]+/g, '_').toUpperCase();
+    if (!normalized) return undefined;
+    return normalized in PLAN_LIMITS ? (normalized as SubscriptionPlanType) : undefined;
+  }
+
+  private isCreatorRole(role: string): boolean {
+    const normalized = role.trim().replace(/[\s-]+/g, '_').toUpperCase();
+    return normalized === 'CREATOR' || normalized.startsWith('CREATOR_');
   }
 }
