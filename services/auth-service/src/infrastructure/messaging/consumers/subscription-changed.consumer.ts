@@ -8,6 +8,7 @@ import { UpdateSubscriptionPlanCommand } from '../../../application/commands/upd
 type SubscriptionChangedPayload = SubscriptionChangedEvent['payload'];
 type SubscriptionChangedMessage =
   | SubscriptionChangedEvent
+  | SubscriptionChangedPayload
   | {
       correlationId?: string;
       payload?: SubscriptionChangedPayload;
@@ -29,20 +30,44 @@ export class SubscriptionChangedConsumer {
     },
   })
   async handleSubscriptionChanged(event: SubscriptionChangedMessage): Promise<void | Nack> {
-    const payload = event.payload;
+    const payload = this.extractPayload(event);
 
     if (!this.isValidPayload(payload)) {
       this.logger.warn(`Dropping malformed [${BILLING_ROUTINGKEYS.SUBSCRIPTION_CHANGED}] event`);
       return new Nack(false);
     }
 
-    const correlationId = event.correlationId ?? payload.userId;
+    const correlationId = this.extractCorrelationId(event) ?? payload.userId;
 
     await this.commandBus.execute(
       new UpdateSubscriptionPlanCommand(payload.userId, payload.plan, correlationId),
     );
 
     this.logger.log(`Synced subscription plan ${payload.plan} for user ${payload.userId}`);
+  }
+
+  private extractPayload(
+    event: SubscriptionChangedMessage,
+  ): SubscriptionChangedPayload | undefined {
+    if (this.isEnvelope(event)) {
+      return event.payload;
+    }
+
+    return this.isRawPayload(event) ? event : undefined;
+  }
+
+  private extractCorrelationId(event: SubscriptionChangedMessage): string | undefined {
+    return 'correlationId' in event ? event.correlationId : undefined;
+  }
+
+  private isEnvelope(
+    event: SubscriptionChangedMessage,
+  ): event is Extract<SubscriptionChangedMessage, { payload?: SubscriptionChangedPayload }> {
+    return 'payload' in event;
+  }
+
+  private isRawPayload(event: SubscriptionChangedMessage): event is SubscriptionChangedPayload {
+    return 'userId' in event && 'plan' in event;
   }
 
   private isValidPayload(

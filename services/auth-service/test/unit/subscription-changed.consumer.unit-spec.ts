@@ -42,12 +42,10 @@ describe('SubscriptionChangedConsumer', () => {
     const consumer = new SubscriptionChangedConsumer(commandBus);
 
     await consumer.handleSubscriptionChanged({
-      payload: {
-        userId: 'user-1',
-        plan: SubscriptionPlan.CREATOR_PRO,
-        previousPlan: SubscriptionPlan.CREATOR_FREE,
-        changedAt: '2026-06-03T01:00:00.000Z',
-      },
+      userId: 'user-1',
+      plan: SubscriptionPlan.CREATOR_PRO,
+      previousPlan: SubscriptionPlan.CREATOR_FREE,
+      changedAt: '2026-06-03T01:00:00.000Z',
     });
 
     expect(commandBus.execute).toHaveBeenCalledWith(
