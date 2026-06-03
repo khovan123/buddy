@@ -8,6 +8,7 @@ import {
   Briefcase,
   ChevronRight,
   GraduationCap,
+  Settings,
   type LucideIcon,
 } from "lucide-react"
 
@@ -75,6 +76,12 @@ export const navMain: NavItem[] = [
       { title: "Resources", url: "/dashboard/resources" },
       { title: "Collections", url: "/dashboard/collections" },
     ],
+  },
+  {
+    title: "Settings",
+    url: "#",
+    icon: Settings,
+    items: [{ title: "Plans", url: "/dashboard/plans" }],
   },
 ]
 

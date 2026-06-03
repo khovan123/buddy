@@ -1,6 +1,8 @@
 import {
-  PLAN_LIMITS,
+  DEFAULT_PLAN_LIMITS,
   SubscriptionPlan,
+  isCreatorSubscriptionPlan,
+  isSubscriptionPlan,
   type PlanLimits,
   type SubscriptionPlan as SubscriptionPlanType,
 } from '@libs/contracts';
@@ -8,7 +10,9 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  Inject,
   Injectable,
+  Optional,
   SetMetadata,
   Type,
 } from '@nestjs/common';
@@ -34,6 +38,15 @@ export interface PolicyContext {
 export interface PolicyHandler {
   handle(context: PolicyContext): boolean | Promise<boolean>;
 }
+
+export interface PlanLimitsResolver {
+  resolvePlanLimits(
+    plan: SubscriptionPlanType,
+    context: Pick<PolicyContext, 'userId' | 'roles' | 'extras'>,
+  ): PlanLimits | Promise<PlanLimits>;
+}
+
+export const PBAC_LIMITS_RESOLVER = Symbol('PBAC_LIMITS_RESOLVER');
 
 // ── Decorator ────────────────────────────────────────────────────────
 
@@ -64,6 +77,9 @@ export class PoliciesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly moduleRef: ModuleRef,
+    @Optional()
+    @Inject(PBAC_LIMITS_RESOLVER)
+    private readonly planLimitsResolver?: PlanLimitsResolver,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -83,18 +99,23 @@ export class PoliciesGuard implements CanActivate {
     }
 
     const plan = this.resolveSubscriptionPlan(user.subscriptionPlan, user.roles ?? []);
+    const extras = {
+      body: request.body,
+      headers: request.headers,
+      params: request.params,
+      query: request.query,
+    };
 
     const policyCtx: PolicyContext = {
       userId: user.sub,
       roles: user.roles ?? [],
       subscriptionPlan: plan,
-      planLimits: PLAN_LIMITS[plan],
-      extras: {
-        body: request.body,
-        headers: request.headers,
-        params: request.params,
-        query: request.query,
-      },
+      planLimits: await this.resolvePlanLimits(plan, {
+        userId: user.sub,
+        roles: user.roles ?? [],
+        extras,
+      }),
+      extras,
     };
 
     for (const HandlerClass of handlerClasses) {
@@ -113,10 +134,7 @@ export class PoliciesGuard implements CanActivate {
   private resolveSubscriptionPlan(plan: string | undefined, roles: string[]): SubscriptionPlanType {
     const normalizedPlan = this.normalizePlan(plan);
 
-    if (
-      roles.some((role) => this.isCreatorRole(role)) &&
-      (!normalizedPlan || !PLAN_LIMITS[normalizedPlan].canCreateContent)
-    ) {
+    if (roles.some((role) => this.isCreatorRole(role)) && !this.isCreatorPlan(normalizedPlan)) {
       return SubscriptionPlan.CREATOR_FREE;
     }
 
@@ -127,13 +145,24 @@ export class PoliciesGuard implements CanActivate {
     return SubscriptionPlan.STUDENT_FREE;
   }
 
+  private async resolvePlanLimits(
+    plan: SubscriptionPlanType,
+    context: Pick<PolicyContext, 'userId' | 'roles' | 'extras'>,
+  ): Promise<PlanLimits> {
+    return (await this.planLimitsResolver?.resolvePlanLimits(plan, context)) ?? DEFAULT_PLAN_LIMITS;
+  }
+
   private normalizePlan(plan: string | undefined): SubscriptionPlanType | undefined {
     const normalized = plan
       ?.trim()
       .replace(/[\s-]+/g, '_')
       .toUpperCase();
     if (!normalized) return undefined;
-    return normalized in PLAN_LIMITS ? (normalized as SubscriptionPlanType) : undefined;
+    return isSubscriptionPlan(normalized) ? normalized : undefined;
+  }
+
+  private isCreatorPlan(plan: SubscriptionPlanType | undefined): boolean {
+    return plan ? isCreatorSubscriptionPlan(plan) : false;
   }
 
   private isCreatorRole(role: string): boolean {

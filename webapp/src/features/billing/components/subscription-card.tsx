@@ -6,11 +6,16 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PlanSelectorDialog } from "@/features/user/components/plan-selector-dialog"
 
-import type { Subscription, SubscriptionStatus } from "../types/billing-types"
-import { PLAN_DISPLAY_NAMES, PLAN_LIMITS } from "../types/billing-types"
+import type {
+  Subscription,
+  SubscriptionPlanCatalogItem,
+  SubscriptionStatus,
+} from "../types/billing-types"
+import { PLAN_DISPLAY_NAMES } from "../types/billing-types"
 
 interface SubscriptionCardProps {
   subscription: Subscription | null
+  planCatalog: SubscriptionPlanCatalogItem[]
 }
 
 const STATUS_STYLES: Record<
@@ -41,10 +46,15 @@ function formatLimit(value: number): string {
   return value === -1 ? "Unlimited" : String(value)
 }
 
-export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
+export function SubscriptionCard({
+  subscription,
+  planCatalog,
+}: SubscriptionCardProps) {
   const isPro = subscription?.plan?.includes("PRO") ?? false
   const statusConfig = subscription ? STATUS_STYLES[subscription.status] : null
-  const limits = subscription ? PLAN_LIMITS[subscription.plan] : null
+  const limits = subscription
+    ? planCatalog.find((plan) => plan.code === subscription.plan)?.limits
+    : null
 
   return (
     <Card>

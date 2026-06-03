@@ -25,50 +25,23 @@ export type PlanLimits = {
   maxSearchResults: number;
 };
 
-const MB = 1024 * 1024;
-const GB = 1024 * MB;
-
 /**
- * Plan limits lookup table. Single source of truth for all services.
- * Values match the pricing page: {@link https://buddy.edu.vn/pricing}
+ * Safe fallback used only when a service cannot resolve catalog-backed limits.
+ * Per-plan values are stored in billing-service SubscriptionPlanCatalog.
  */
-export const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
-  [SubscriptionPlan.CREATOR_FREE]: {
-    storageBytes: 500 * MB,
-    maxResources: 5,
-    maxTutorials: 3,
-    maxCollections: 2,
-    canCreateContent: true,
-    maxSearchResults: 20,
-  },
-  [SubscriptionPlan.CREATOR_PRO]: {
-    storageBytes: 50 * GB,
-    maxResources: -1,
-    maxTutorials: -1,
-    maxCollections: -1,
-    canCreateContent: true,
-    maxSearchResults: -1,
-  },
-  [SubscriptionPlan.STUDENT_FREE]: {
-    storageBytes: 1 * GB,
-    maxResources: 0,
-    maxTutorials: 0,
-    maxCollections: 0,
-    canCreateContent: false,
-    maxSearchResults: 10,
-  },
-  [SubscriptionPlan.STUDENT_PRO]: {
-    storageBytes: 25 * GB,
-    maxResources: 0,
-    maxTutorials: 0,
-    maxCollections: 0,
-    canCreateContent: false,
-    maxSearchResults: -1,
-  },
+export const DEFAULT_PLAN_LIMITS: PlanLimits = {
+  storageBytes: 0,
+  maxResources: 0,
+  maxTutorials: 0,
+  maxCollections: 0,
+  canCreateContent: false,
+  maxSearchResults: 0,
 };
 
-/** Resolve plan limits with a safe fallback for unknown plans. */
-export function getPlanLimits(plan: string | undefined): PlanLimits {
-  const key = plan as SubscriptionPlan;
-  return PLAN_LIMITS[key] ?? PLAN_LIMITS[SubscriptionPlan.STUDENT_FREE];
+export function isSubscriptionPlan(plan: string | undefined): plan is SubscriptionPlan {
+  return Object.values(SubscriptionPlan).includes(plan as SubscriptionPlan);
+}
+
+export function isCreatorSubscriptionPlan(plan: SubscriptionPlan): boolean {
+  return plan === SubscriptionPlan.CREATOR_FREE || plan === SubscriptionPlan.CREATOR_PRO;
 }

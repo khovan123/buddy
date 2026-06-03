@@ -2,8 +2,14 @@
 
 import 'reflect-metadata';
 
-import { PoliciesGuard, type PolicyContext, type PolicyHandler, POLICIES_KEY } from '@libs/common';
-import { SubscriptionPlan } from '@libs/contracts';
+import {
+  PoliciesGuard,
+  type PlanLimitsResolver,
+  type PolicyContext,
+  type PolicyHandler,
+  POLICIES_KEY,
+} from '@libs/common';
+import { DEFAULT_PLAN_LIMITS, SubscriptionPlan } from '@libs/contracts';
 import type { ExecutionContext } from '@nestjs/common';
 import type { ModuleRef, Reflector } from '@nestjs/core';
 
@@ -14,7 +20,7 @@ class CapturePolicy implements PolicyHandler {
 }
 
 describe('PoliciesGuard', () => {
-  const createGuard = (handle: jest.Mock) => {
+  const createGuard = (handle: jest.Mock, resolver?: PlanLimitsResolver) => {
     const reflector = {
       getAllAndOverride: jest.fn((key: string) => (key === POLICIES_KEY ? [CapturePolicy] : [])),
     } as unknown as Reflector;
@@ -22,7 +28,7 @@ describe('PoliciesGuard', () => {
       resolve: jest.fn().mockResolvedValue({ handle }),
     } as unknown as ModuleRef;
 
-    return new PoliciesGuard(reflector, moduleRef);
+    return new PoliciesGuard(reflector, moduleRef, resolver);
   };
 
   const createContext = (user: {
@@ -46,7 +52,11 @@ describe('PoliciesGuard', () => {
 
   it('normalizes creator plan claims before resolving limits', async () => {
     const handle = jest.fn().mockReturnValue(true);
-    const guard = createGuard(handle);
+    const guard = createGuard(handle, {
+      resolvePlanLimits: jest
+        .fn()
+        .mockReturnValue({ ...DEFAULT_PLAN_LIMITS, canCreateContent: true }),
+    });
 
     await guard.canActivate(
       createContext({
@@ -66,7 +76,11 @@ describe('PoliciesGuard', () => {
 
   it('uses creator access when a creator role has a stale student plan claim', async () => {
     const handle = jest.fn().mockReturnValue(true);
-    const guard = createGuard(handle);
+    const guard = createGuard(handle, {
+      resolvePlanLimits: jest
+        .fn()
+        .mockReturnValue({ ...DEFAULT_PLAN_LIMITS, canCreateContent: true }),
+    });
 
     await guard.canActivate(
       createContext({
@@ -86,7 +100,9 @@ describe('PoliciesGuard', () => {
 
   it('keeps student plans student-only when there is no creator role', async () => {
     const handle = jest.fn().mockReturnValue(true);
-    const guard = createGuard(handle);
+    const guard = createGuard(handle, {
+      resolvePlanLimits: jest.fn().mockReturnValue(DEFAULT_PLAN_LIMITS),
+    });
 
     await guard.canActivate(
       createContext({

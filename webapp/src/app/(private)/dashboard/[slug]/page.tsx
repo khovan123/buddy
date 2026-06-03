@@ -3,17 +3,29 @@ import { Metadata } from "next"
 import { notFound } from "next/navigation"
 
 import { ContentDashboardView } from "@/features/dashboard"
+import { PlanLimitsDashboard } from "@/features/dashboard/components/plan-limits-dashboard"
+import { getSubscriptionPlanCatalog } from "@/features/dashboard/services/plan-limits.service"
 import { getSeoContent } from "@/features/seo/services/seo-content"
 
 interface DashboardSlugPageProps {
   params: Promise<{ slug: string }>
 }
 
+const validSlugs = [
+  "majors",
+  "courses",
+  "careers",
+  "skills",
+  "tutorials",
+  "resources",
+  "collections",
+  "plans",
+]
+
 export async function generateMetadata({
   params,
 }: DashboardSlugPageProps): Promise<Metadata> {
   const { slug } = await params
-  const validSlugs = ["majors", "courses", "careers", "skills", "tutorials", "resources", "collections"]
   if (!validSlugs.includes(slug)) {
     return {}
   }
@@ -40,7 +52,6 @@ export default async function DashboardSlugPage({
 }: DashboardSlugPageProps) {
   const { slug } = await params
 
-  const validSlugs = ["majors", "courses", "careers", "skills", "tutorials", "resources", "collections"]
   if (!validSlugs.includes(slug)) {
     notFound()
   }
@@ -70,7 +81,11 @@ export default async function DashboardSlugPage({
         // react-doctor-ignore
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <ContentDashboardView seo={seo} slug={slug} />
+      {slug === "plans" ? (
+        <PlanLimitsDashboard plans={await getSubscriptionPlanCatalog()} />
+      ) : (
+        <ContentDashboardView seo={seo} slug={slug} />
+      )}
     </>
   )
 }

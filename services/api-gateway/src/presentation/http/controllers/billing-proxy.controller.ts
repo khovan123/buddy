@@ -216,6 +216,23 @@ export class BillingProxyController {
     });
   }
 
+  @Put('subscription/plans/:code/limits')
+  @UseGuards(JwtAuthGuard)
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  updateSubscriptionPlanLimits(
+    @Param('code') code: string,
+    @Body() body: unknown,
+    @Req() req: FastifyRequest,
+  ) {
+    return this.proxy.forward(req, {
+      service: 'billing',
+      path: `/v1/billing/subscription/plans/${code}/limits`,
+      method: 'PUT',
+      body,
+    });
+  }
+
   /**
    * Executes the create subscription operation.
    *
