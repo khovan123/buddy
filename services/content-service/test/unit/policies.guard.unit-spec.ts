@@ -2,12 +2,7 @@
 
 import 'reflect-metadata';
 
-import {
-  PoliciesGuard,
-  type PolicyContext,
-  type PolicyHandler,
-  POLICIES_KEY,
-} from '@libs/common';
+import { PoliciesGuard, type PolicyContext, type PolicyHandler, POLICIES_KEY } from '@libs/common';
 import { SubscriptionPlan } from '@libs/contracts';
 import type { ExecutionContext } from '@nestjs/common';
 import type { ModuleRef, Reflector } from '@nestjs/core';
