@@ -3,6 +3,11 @@ import type {
   ContentTutorialItem,
 } from "@/features/dashboard/services/dashboard.service"
 import {
+  CreatorCollectionsPanel,
+  CreatorResourcesPanel,
+  CreatorTutorialsPanel,
+} from "@/features/content"
+import {
   getCareers,
   getContentMeta,
   getMyResources,
@@ -17,9 +22,6 @@ import {
 } from "@/features/dashboard/types"
 import type { SeoContent } from "@/features/seo/services/seo-content"
 
-import { CollectionsDashboard } from "./dashboards/collections-dashboard"
-import { ResourcesDashboard } from "./dashboards/resources-dashboard"
-import { TutorialsDashboard } from "./dashboards/tutorials-dashboard"
 import CareersTable from "./tables/careers-table"
 import CoursesTable from "./tables/courses-table"
 import MajorsTable from "./tables/majors-table"
@@ -83,9 +85,13 @@ export default async function ContentDashboardView({
         )}
         {slug === "careers" && <CareersTable careers={careers} />}
         {slug === "skills" && <SkillsTable skills={skills} careers={careers} />}
-        {slug === "tutorials" && <TutorialsDashboard tutorials={tutorials} />}
-        {slug === "resources" && <ResourcesDashboard resources={resources} />}
-        {slug === "collections" && <CollectionsDashboard />}
+        {slug === "tutorials" && (
+          <CreatorTutorialsPanel tutorials={tutorials} />
+        )}
+        {slug === "resources" && (
+          <CreatorResourcesPanel resources={resources} />
+        )}
+        {slug === "collections" && <CreatorCollectionsPanel />}
       </div>
     </div>
   )

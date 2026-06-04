@@ -4,16 +4,17 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import {
+  CreatorCollectionsPanel,
+  CreatorResourcesPanel,
+  CreatorTutorialsPanel,
+} from "@/features/content"
 import type { CollectionQueryItem } from "@/features/content"
 
 import type {
   ContentResourceItem,
   ContentTutorialItem,
 } from "../services/dashboard.service"
-
-import { CollectionsDashboard } from "./dashboards/collections-dashboard"
-import { ResourcesDashboard } from "./dashboards/resources-dashboard"
-import { TutorialsDashboard } from "./dashboards/tutorials-dashboard"
 
 export function ContentPage({
   tutorials,
@@ -44,16 +45,16 @@ export function ContentPage({
         </TabsList>
 
         <TabsContent value="resources" className="mt-4">
-          <ResourcesDashboard resources={resources} />
+          <CreatorResourcesPanel resources={resources} />
         </TabsContent>
         <TabsContent value="collections" className="mt-4">
-          <CollectionsDashboard
+          <CreatorCollectionsPanel
             resourceCollections={resourceCollections}
             tutorialCollections={tutorialCollections}
           />
         </TabsContent>
         <TabsContent value="tutorials" className="mt-4">
-          <TutorialsDashboard tutorials={tutorials} />
+          <CreatorTutorialsPanel tutorials={tutorials} />
         </TabsContent>
       </Tabs>
     </section>

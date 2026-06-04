@@ -2,13 +2,16 @@ import { Calendar, FolderOpen, Layers } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import type { CollectionQueryItem } from "@/features/content"
+import {
+  DashboardHeader,
+  EmptyPlaceholder,
+} from "@/features/dashboard"
 
-import { DashboardHeader } from "../dashboard-header"
-import { EmptyPlaceholder } from "../empty-placeholder"
+import { ContentItemProgressScene } from "./content-item-progress-scene"
 
 const EMPTY_COLLECTIONS: CollectionQueryItem[] = []
 
-export function CollectionsDashboard({
+export function CreatorCollectionsPanel({
   resourceCollections = EMPTY_COLLECTIONS,
   tutorialCollections = EMPTY_COLLECTIONS,
   actionHref = "/home/collections/create",
@@ -51,7 +54,13 @@ export function CollectionsDashboard({
                     {collection.description || "No description"}
                   </p>
                 </div>
-                <Badge variant="secondary">{collection.type}</Badge>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge variant="secondary">{collection.type}</Badge>
+                  <ContentItemProgressScene
+                    status={collection.status}
+                    verified={collection.status === "AVAILABLE"}
+                  />
+                </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-4 text-xs text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">

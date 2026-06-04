@@ -3,11 +3,11 @@
 import {
   BadgeCheck,
   Calendar,
+  Clock,
   DollarSign,
-  FileText,
   History,
   Loader2,
-  Upload,
+  Video,
 } from "lucide-react"
 
 import {
@@ -16,25 +16,25 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { UploadHistory } from "@/features/content/components/upload-history"
-import { useGetResourceUploadHistoryByIdQuery } from "@/features/content/services/content-api"
+import { useGetTutorialUploadHistoryByIdQuery } from "@/features/content/services/content-api"
 import type {
-  ContentResourceItem,
+  ContentTutorialItem,
   UploadHistoryItem,
-} from "@/features/dashboard/services/dashboard.service"
-import { cn } from "@/lib/utils"
-
-import { DashboardHeader } from "../dashboard-header"
-import { EmptyPlaceholder } from "../empty-placeholder"
+} from "@/features/dashboard"
 import {
+  DashboardHeader,
+  EmptyPlaceholder,
   ModerationReason,
   ModerationStatusBadge,
-} from "../moderation-status-badge"
-import { ServerHistoryFileRow } from "../server-history-file-row"
+  ServerHistoryFileRow,
+} from "@/features/dashboard"
+import { cn } from "@/lib/utils"
 
-function ResourceHistoryList({ resourceId }: { resourceId: string }) {
+import { ContentItemProgressScene } from "./content-item-progress-scene"
+
+function TutorialHistoryList({ tutorialId }: { tutorialId: string }) {
   const { data, isLoading, isError } =
-    useGetResourceUploadHistoryByIdQuery(resourceId)
+    useGetTutorialUploadHistoryByIdQuery(tutorialId)
 
   if (isLoading) {
     return (
@@ -57,7 +57,7 @@ function ResourceHistoryList({ resourceId }: { resourceId: string }) {
   if (files.length === 0) {
     return (
       <div className="p-4 text-center text-sm text-muted-foreground">
-        No upload history for this resource.
+        No upload history for this tutorial.
       </div>
     )
   }
@@ -79,93 +79,109 @@ function ResourceHistoryList({ resourceId }: { resourceId: string }) {
   )
 }
 
-const EMPTY_RESOURCES: ContentResourceItem[] = []
+function formatDuration(seconds?: number | null): string {
+  if (!seconds) {
+    return "—"
+  }
+  const m = Math.floor(seconds / 60)
+  const s = Math.round(seconds % 60)
+  return `${m}m ${s}s`
+}
 
-export function ResourcesDashboard({
-  resources = EMPTY_RESOURCES,
-  actionHref = "/home/resources/create",
+const EMPTY_TUTORIALS: ContentTutorialItem[] = []
+
+export function CreatorTutorialsPanel({
+  tutorials = EMPTY_TUTORIALS,
+  actionHref = "/home/tutorials/create",
 }: {
-  resources?: ContentResourceItem[]
+  tutorials?: ContentTutorialItem[]
   actionHref?: string
 }) {
   return (
     <div className="space-y-6">
       <DashboardHeader
-        title={`Resources (${resources.length})`}
-        description="Manage your document resources and track upload progress."
-        actionLabel="New Resource"
+        title={`Tutorials (${tutorials.length})`}
+        description="Manage your video tutorials and track upload progress."
+        actionLabel="New Tutorial"
         actionHref={actionHref}
-        actionIcon={FileText}
+        actionIcon={Video}
       />
 
       <div className="mt-4 space-y-4">
-        <h3 className="text-lg font-semibold tracking-tight">Your Resources</h3>
+        <h3 className="text-lg font-semibold tracking-tight">Your Tutorials</h3>
 
-        {resources.length === 0 ? (
+        {tutorials.length === 0 ? (
           <EmptyPlaceholder
-            icon={FileText}
-            title="No resources yet"
-            description="Create your first resource to share documents and files with students."
+            icon={Video}
+            title="No tutorials yet"
+            description="Create your first tutorial to share video content with students."
           />
         ) : (
           <Accordion
             type="multiple"
-            className={cn("space-y-3", resources.length > 0 ? "border-0" : "")}
+            className={cn("space-y-3", tutorials.length > 0 ? "border-0" : "")}
           >
-            {resources.map((resource) => (
+            {tutorials.map((tutorial) => (
               <AccordionItem
-                key={resource.id}
-                value={resource.id}
+                key={tutorial.id}
+                value={tutorial.id}
                 className="bg-card text-card-foreground transition-all hover:shadow-md data-[state=open]:border-primary/30"
               >
                 <AccordionTrigger className="flex items-start gap-4 text-left transition-colors hover:bg-muted/30 hover:no-underline [&>svg]:mt-2">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <FileText className="h-6 w-6" />
+                    <Video className="h-6 w-6" />
                   </div>
                   <div className="flex flex-1 flex-col gap-1.5">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-base leading-none font-semibold tracking-tight">
-                        {resource.title}
+                        {tutorial.title}
                       </h3>
                       <BadgeCheck
                         className={cn(
                           "h-4 w-4 shrink-0",
-                          resource.resourceVerified
-                            ? "text-primary"
-                            : "text-gray-500"
+                          tutorial.isVerified ? "text-primary" : "text-gray-500"
                         )}
                       />
                       <ModerationStatusBadge
-                        status={resource.status}
-                        moderationStatus={resource.moderationStatus}
+                        status={tutorial.status}
+                        moderationStatus={tutorial.moderationStatus}
+                      />
+                      <ContentItemProgressScene
+                        status={tutorial.status}
+                        moderationStatus={tutorial.moderationStatus}
+                        verified={tutorial.isVerified}
                       />
                     </div>
                     <p className="mt-1 line-clamp-2 pr-8 text-sm leading-relaxed text-muted-foreground">
-                      {resource.summary}
+                      {tutorial.description}
                     </p>
-                    <ModerationReason reasons={resource.moderationReasons} />
+                    <ModerationReason reasons={tutorial.moderationReasons} />
                     <div className="mt-3 flex flex-wrap items-center gap-5 text-xs font-medium text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <DollarSign className="h-4 w-4 opacity-70" />
                         <span
                           className={
-                            resource.price === 0
+                            tutorial.price === 0
                               ? "font-semibold text-emerald-500"
                               : ""
                           }
                         >
-                          {resource.price === 0
+                          {tutorial.price === 0
                             ? "Free"
                             : new Intl.NumberFormat("vi-VN", {
                                 style: "currency",
                                 currency: "VND",
-                              }).format(resource.price)}
+                              }).format(tutorial.price)}
                         </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-4 w-4 opacity-70" />
+                        <span>{formatDuration(tutorial.media?.duration)}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-4 w-4 opacity-70" />
                         <span>
-                          {new Date(resource.createdAt).toLocaleDateString()}
+                          {new Date(tutorial.createdAt).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
@@ -179,23 +195,15 @@ export function ResourcesDashboard({
                     </h4>
                     <p className="text-xs text-muted-foreground">
                       View all upload attempts and their execution status for
-                      this resource.
+                      this tutorial.
                     </p>
                   </div>
-                  <ResourceHistoryList resourceId={resource.id} />
+                  <TutorialHistoryList tutorialId={tutorial.id} />
                 </AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
         )}
-      </div>
-
-      <div className="mt-8 space-y-4 border-t pt-8">
-        <h3 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
-          <Upload className="size-5" />
-          In-Progress Uploads
-        </h3>
-        <UploadHistory />
       </div>
     </div>
   )
