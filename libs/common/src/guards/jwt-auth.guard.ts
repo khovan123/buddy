@@ -5,6 +5,7 @@ import {
   SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
+import type { SubscriptionPlanDetails } from '@libs/contracts';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { FastifyRequest } from 'fastify';
@@ -18,6 +19,7 @@ export interface JwtPayload {
   email: string;
   roles: string[];
   subscriptionPlan?: string; // SubscriptionPlan enum value
+  subscriptionPlanDetails?: SubscriptionPlanDetails;
   iat?: number;
   exp?: number;
 }

@@ -42,8 +42,15 @@ if (!globalForRefresh.__refreshPromises) {
 }
 const refreshPromises = globalForRefresh.__refreshPromises
 
-async function refreshAccessToken(token: JWT): Promise<JWT> {
+async function refreshAccessToken(
+  token: JWT,
+  options: { force?: boolean } = {}
+): Promise<JWT> {
   const dedupeKey = token.user?.id || token.refreshToken
+  if (options.force) {
+    refreshPromises.delete(dedupeKey)
+  }
+
   if (refreshPromises.has(dedupeKey)) {
     // logger.info(`[REFRESH] Reusing existing promise for user: ${dedupeKey}`)
     return refreshPromises.get(dedupeKey)!
@@ -183,6 +190,8 @@ export const authOptions: AuthOptions = {
             email: data.data.user.email,
             nickname: data.data.user.nickname,
             role: data.data.user.role,
+            roles: data.data.user.roles,
+            subscriptionPlan: data.data.user.subscriptionPlan ?? null,
             accessToken: data.data.accessToken,
             refreshToken: parsedRefreshToken,
           }
@@ -233,6 +242,8 @@ export const authOptions: AuthOptions = {
           email: data.data.user.email,
           nickname: data.data.user.nickname,
           role: data.data.user.role,
+          roles: data.data.user.roles,
+          subscriptionPlan: data.data.user.subscriptionPlan ?? null,
           accessToken: data.data.accessToken,
           refreshToken: parsedRefreshToken,
         }
@@ -245,7 +256,7 @@ export const authOptions: AuthOptions = {
     maxAge: 30 * 24 * 60 * 60,
   },
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       // ── OAuth provider flow (Google, GitHub, Facebook) ──────────
       if (
         account &&
@@ -341,6 +352,10 @@ export const authOptions: AuthOptions = {
 
       if (token.error) {
         return token
+      }
+
+      if (trigger === "update") {
+        return refreshAccessToken(token, { force: true })
       }
 
       // Nếu mất expiresAt hoặc đã quá hạn thì force refresh

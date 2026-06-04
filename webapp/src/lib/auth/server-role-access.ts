@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation"
 
-import { getSubscription } from "@/features/billing/services/billing.service"
 import {
   buildRoleAccessInput,
   isAdminAccess,
@@ -20,19 +19,12 @@ export async function requireAdminAccess() {
 }
 
 export async function requireCreatorAccess() {
-  const [session, accessToken, subscription] = await Promise.all([
+  const [session, accessToken] = await Promise.all([
     getCachedSession(),
     getAccessToken(),
-    getSubscription(),
   ])
 
-  const accessInput = buildRoleAccessInput(session?.user, accessToken)
-  const currentAccessInput = {
-    ...accessInput,
-    subscriptionPlan: subscription?.plan ?? accessInput.subscriptionPlan,
-  }
-
-  if (!isCreatorAccess(currentAccessInput)) {
+  if (!isCreatorAccess(buildRoleAccessInput(session?.user, accessToken))) {
     redirect("/home")
   }
 }

@@ -25,6 +25,13 @@ export type PlanLimits = {
   maxSearchResults: number;
 };
 
+/** Billing-backed plan details that can be embedded in JWT claims. */
+export type SubscriptionPlanDetails = {
+  code: SubscriptionPlan;
+  limits: PlanLimits;
+  pbac?: Record<string, unknown>;
+};
+
 /**
  * Safe fallback used only when a service cannot resolve catalog-backed limits.
  * Per-plan values are stored in billing-service SubscriptionPlanCatalog.

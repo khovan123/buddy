@@ -3,6 +3,10 @@
 import type { ComponentProps } from "react"
 import { useState } from "react"
 
+import { useRouter } from "next/navigation"
+
+import { useSession } from "next-auth/react"
+
 import { Check, Loader2, Palette, Users } from "lucide-react"
 import { toast } from "sonner"
 
@@ -94,12 +98,28 @@ function getPlanCards(
   ]
 }
 
+async function waitForPlanSync(
+  plan: SubscriptionPlan,
+  updateSession: ReturnType<typeof useSession>["update"]
+) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 250))
+    const session = await updateSession()
+
+    if (session?.user?.subscriptionPlan === plan) {
+      return
+    }
+  }
+}
+
 export function PlanSelectorDialog({
   triggerClassName = "hidden min-w-28 font-semibold md:inline-flex",
   triggerSize = "sm",
   triggerText,
   triggerVariant = "secondary",
 }: PlanSelectorDialogProps = {}) {
+  const router = useRouter()
+  const { update: updateSession } = useSession()
   const [open, setOpen] = useState(false)
   const [selectedAudience, setSelectedAudience] =
     useState<PlanAudience>("student")
@@ -147,6 +167,8 @@ export function PlanSelectorDialog({
     try {
       setPendingPlan(plan)
       await createSubscription({ plan }).unwrap()
+      await waitForPlanSync(plan, updateSession)
+      router.refresh()
       toast.success(`${PLAN_DISPLAY_NAMES[plan]} is now active.`)
       setOpen(false)
     } catch (error) {

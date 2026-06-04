@@ -87,7 +87,7 @@ export class OutboxRelayService implements OnModuleInit {
             }
 
             // Publish to RabbitMQ via shared connection
-            this.amqpConnection.publish(event.exchange, event.routingKey, event.payload, {
+            await this.amqpConnection.publish(event.exchange, event.routingKey, event.payload, {
               persistent: true,
               contentType: 'application/json',
               headers: {

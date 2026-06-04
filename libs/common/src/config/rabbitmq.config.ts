@@ -32,6 +32,7 @@ export const QUEUES = {
   VIDEO_PROCESSING_QUEUE: 'upload.video.processing',
   DOCUMENT_PREVIEW_QUEUE: 'upload.document.preview',
   USER_RPC_GET_PROFILES: 'user.rpc.get_profiles',
+  BILLING_RPC_GET_SUBSCRIPTION_PLAN: 'billing.rpc.get_subscription_plan',
   USER_EVENTS: 'user.events',
   CONTENT_USER_EVENTS: 'content.user.events',
   BILLING_COMPENSATION: 'billing.compensation',

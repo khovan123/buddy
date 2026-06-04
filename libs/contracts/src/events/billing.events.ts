@@ -1,4 +1,5 @@
 import { BaseEvent } from './base.event';
+import type { SubscriptionPlanDetails } from '../dtos/subscription.types';
 
 export const BILLING_ROUTINGKEYS = {
   WALLET_TOPPED_UP: 'BILLING_WALLET_TOPPED_UP',
@@ -6,7 +7,15 @@ export const BILLING_ROUTINGKEYS = {
   WITHDRAW_REQUESTED: 'BILLING_WITHDRAW_REQUESTED',
   WITHDRAW_COMPLETED: 'BILLING_WITHDRAW_COMPLETED',
   SUBSCRIPTION_CHANGED: 'BILLING_SUBSCRIPTION_CHANGED',
+  GET_SUBSCRIPTION_PLAN: 'BILLING_GET_SUBSCRIPTION_PLAN',
 } as const;
+
+export type BillingSubscriptionPlanRpcResponse = {
+  subscription: {
+    plan?: string | null;
+  } | null;
+  planDetails: SubscriptionPlanDetails | null;
+};
 
 export type PurchasedItemType =
   | 'RESOURCE'
@@ -120,6 +129,21 @@ export class SubscriptionChangedEvent extends BaseEvent {
       plan: string;
       previousPlan: string | null;
       changedAt: string;
+    },
+    correlationId?: string,
+  ) {
+    super(correlationId);
+  }
+}
+
+export class GetBillingSubscriptionPlanEvent extends BaseEvent {
+  get routingKey(): string {
+    return BILLING_ROUTINGKEYS.GET_SUBSCRIPTION_PLAN;
+  }
+
+  constructor(
+    public readonly payload: {
+      userId: string;
     },
     correlationId?: string,
   ) {
