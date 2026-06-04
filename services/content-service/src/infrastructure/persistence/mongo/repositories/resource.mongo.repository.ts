@@ -1006,7 +1006,9 @@ export class ResourceMongoRepository implements IResourceRepository {
         ? ResourceStatus.AVAILABLE
         : result.status === ContentModerationStatus.REJECTED
           ? ResourceStatus.BANNED
-          : ResourceStatus.PROCESSING;
+          : result.status === ContentModerationStatus.ERROR
+            ? ResourceStatus.FAILED
+            : ResourceStatus.PROCESSING;
 
     const query = this.resourceModel.updateOne(
       { _id: resourceId, deletedAt: null },

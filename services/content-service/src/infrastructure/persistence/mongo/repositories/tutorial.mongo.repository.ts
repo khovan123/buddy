@@ -1224,7 +1224,9 @@ export class TutorialMongoRepository implements ITutorialRepository {
         ? TutorialStatus.AVAILABLE
         : result.status === ContentModerationStatus.REJECTED
           ? TutorialStatus.BANNED
-          : TutorialStatus.PROCESSING;
+          : result.status === ContentModerationStatus.ERROR
+            ? TutorialStatus.FAILED
+            : TutorialStatus.PROCESSING;
 
     const query = this.tutorialModel.updateOne(
       { _id: tutorialId, deletedAt: null },

@@ -5,6 +5,8 @@ import { CreateResourceHanlder } from './handlers/create-resource.handler';
 import { CreateTutorialHanlder } from './handlers/create-tutorial.handler';
 import { DeleteCourseHandler } from './handlers/delete-course.handler';
 import { DeleteMajorHandler } from './handlers/delete-major.handler';
+import { RecheckResourceModerationHandler } from './handlers/recheck-resource-moderation.handler';
+import { RecheckTutorialModerationHandler } from './handlers/recheck-tutorial-moderation.handler';
 import { UpdateCourseHandler } from './handlers/update-course.handler';
 import { UpdateMajorHandler } from './handlers/update-major.handler';
 
@@ -15,6 +17,8 @@ export const COMMAND_HANDLERS = [
   CreateMajorHandler,
   UpdateMajorHandler,
   DeleteMajorHandler,
+  RecheckResourceModerationHandler,
+  RecheckTutorialModerationHandler,
   CreateCourseHandler,
   UpdateCourseHandler,
   DeleteCourseHandler,

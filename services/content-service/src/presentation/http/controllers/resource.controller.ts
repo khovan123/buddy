@@ -24,6 +24,7 @@ import {
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { FastifyRequest } from 'fastify';
 import { CreateResourceCommand } from '../../../application/commands/create-resource.command';
+import { RecheckResourceModerationCommand } from '../../../application/commands/recheck-resource-moderation.command';
 import { GetMyResourcesQuery } from '../../../application/queries/get-my-resources.query';
 import { GetResourceByIdQuery } from '../../../application/queries/get-resource-by-id.query';
 import { GetResourceBySlugQuery } from '../../../application/queries/get-resource-by-slug.query';
@@ -216,6 +217,22 @@ export class ResourceController {
   async getResourceUploadHistory(@Param() params: ResourceIdParamDto) {
     const result = await this.queryBus.execute(new GetResourceUploadHistoryQuery(params.id));
     return successResponse(result, 'Get resource upload history successful', getCorrelationId());
+  }
+
+  @Post(':id/moderation/recheck')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(PoliciesGuard)
+  @RequirePolicy(SubscriptionRequiredPolicy, CreatorOnlyPolicy)
+  async recheckResourceModeration(
+    @Param() params: ResourceIdParamDto,
+    @Req() req: FastifyRequest & { user: { sub: string } },
+  ) {
+    const correlationId = getCorrelationId();
+    const result = await this.commandBus.execute(
+      new RecheckResourceModerationCommand(params.id, req.user.sub, correlationId),
+    );
+    return successResponse(result, 'Resource moderation rechecked', correlationId);
   }
 
   /**

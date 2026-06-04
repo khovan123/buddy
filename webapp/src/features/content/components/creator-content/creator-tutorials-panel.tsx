@@ -25,8 +25,9 @@ import { cn } from "@/lib/utils"
 
 import { ContentItemProgressScene } from "./content-item-progress-scene"
 import {
-  ContentModerationReason,
+  ContentModerationChecklist,
   ContentModerationStatusBadge,
+  ManualModerationCheckButton,
 } from "./content-moderation-status"
 import { CreatorContentHeader } from "./creator-content-header"
 import { CreatorEmptyPlaceholder } from "./creator-empty-placeholder"
@@ -155,8 +156,12 @@ export function CreatorTutorialsPanel({
                     <p className="mt-1 line-clamp-2 pr-8 text-sm leading-relaxed text-muted-foreground">
                       {tutorial.description}
                     </p>
-                    <ContentModerationReason
+                    <ContentModerationChecklist
+                      status={tutorial.status}
+                      moderationStatus={tutorial.moderationStatus}
+                      verified={tutorial.isVerified}
                       reasons={tutorial.moderationReasons}
+                      compact
                     />
                     <div className="mt-3 flex flex-wrap items-center gap-5 text-xs font-medium text-muted-foreground">
                       <div className="flex items-center gap-1.5">
@@ -199,6 +204,12 @@ export function CreatorTutorialsPanel({
                       View all upload attempts and their execution status for
                       this tutorial.
                     </p>
+                  </div>
+                  <div className="mb-4 flex">
+                    <ManualModerationCheckButton
+                      contentId={tutorial.id}
+                      contentType="tutorial"
+                    />
                   </div>
                   <TutorialHistoryList tutorialId={tutorial.id} />
                 </AccordionContent>

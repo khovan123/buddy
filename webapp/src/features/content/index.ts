@@ -4,8 +4,9 @@ export { CreateResourceForm } from "./components/create-resource-form"
 export { CreateTutorialForm } from "./components/create-tutorial-form"
 export { ContentItemProgressScene } from "./components/creator-content/content-item-progress-scene"
 export {
-  ContentModerationReason,
+  ContentModerationChecklist,
   ContentModerationStatusBadge,
+  ManualModerationCheckButton,
 } from "./components/creator-content/content-moderation-status"
 export { CreatorContentHeader } from "./components/creator-content/creator-content-header"
 export { CreatorCollectionsPanel } from "./components/creator-content/creator-collections-panel"

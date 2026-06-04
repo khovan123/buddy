@@ -24,8 +24,9 @@ import { cn } from "@/lib/utils"
 
 import { ContentItemProgressScene } from "./content-item-progress-scene"
 import {
-  ContentModerationReason,
+  ContentModerationChecklist,
   ContentModerationStatusBadge,
+  ManualModerationCheckButton,
 } from "./content-moderation-status"
 import { CreatorContentHeader } from "./creator-content-header"
 import { CreatorEmptyPlaceholder } from "./creator-empty-placeholder"
@@ -147,8 +148,12 @@ export function CreatorResourcesPanel({
                     <p className="mt-1 line-clamp-2 pr-8 text-sm leading-relaxed text-muted-foreground">
                       {resource.summary}
                     </p>
-                    <ContentModerationReason
+                    <ContentModerationChecklist
+                      status={resource.status}
+                      moderationStatus={resource.moderationStatus}
+                      verified={resource.resourceVerified}
                       reasons={resource.moderationReasons}
+                      compact
                     />
                     <div className="mt-3 flex flex-wrap items-center gap-5 text-xs font-medium text-muted-foreground">
                       <div className="flex items-center gap-1.5">
@@ -187,6 +192,12 @@ export function CreatorResourcesPanel({
                       View all upload attempts and their execution status for
                       this resource.
                     </p>
+                  </div>
+                  <div className="mb-4 flex">
+                    <ManualModerationCheckButton
+                      contentId={resource.id}
+                      contentType="resource"
+                    />
                   </div>
                   <ResourceHistoryList resourceId={resource.id} />
                 </AccordionContent>

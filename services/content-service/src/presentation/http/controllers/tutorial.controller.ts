@@ -24,6 +24,7 @@ import {
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { FastifyRequest } from 'fastify';
 import { CreateTutorialCommand } from '../../../application/commands/create-tutorial.command';
+import { RecheckTutorialModerationCommand } from '../../../application/commands/recheck-tutorial-moderation.command';
 import { GetMyTutorialsQuery } from '../../../application/queries/get-my-tutorials.query';
 import { GetTopTutorialsQuery } from '../../../application/queries/get-top-tutorials.query';
 import { GetTutorialByIdQuery } from '../../../application/queries/get-tutorial-by-id.query';
@@ -229,6 +230,22 @@ export class TutorialController {
   async getTutorialUploadHistory(@Param() params: TutorialIdParamDto) {
     const result = await this.queryBus.execute(new GetTutorialUploadHistoryQuery(params.id));
     return successResponse(result, 'Get tutorial upload history successful', getCorrelationId());
+  }
+
+  @Post(':id/moderation/recheck')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(PoliciesGuard)
+  @RequirePolicy(SubscriptionRequiredPolicy, CreatorOnlyPolicy)
+  async recheckTutorialModeration(
+    @Param() params: TutorialIdParamDto,
+    @Req() req: FastifyRequest & { user: { sub: string } },
+  ) {
+    const correlationId = getCorrelationId();
+    const result = await this.commandBus.execute(
+      new RecheckTutorialModerationCommand(params.id, req.user.sub, correlationId),
+    );
+    return successResponse(result, 'Tutorial moderation rechecked', correlationId);
   }
 
   @Get(':idOrSlug')

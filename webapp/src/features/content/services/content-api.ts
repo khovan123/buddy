@@ -225,6 +225,32 @@ export const contentApi = baseApi.injectEndpoints({
       }),
       providesTags: (result, error, arg) => [{ type: "Tutorial", id: arg }],
     }),
+    recheckResourceModeration: builder.mutation<
+      ApiResponse<unknown>,
+      { resourceId: string }
+    >({
+      query: ({ resourceId }) => ({
+        url: `/v1/resources/${resourceId}/moderation/recheck`,
+        method: "POST",
+      }),
+      invalidatesTags: (result, error, arg) => [
+        "Resource",
+        { type: "Resource", id: arg.resourceId },
+      ],
+    }),
+    recheckTutorialModeration: builder.mutation<
+      ApiResponse<unknown>,
+      { tutorialId: string }
+    >({
+      query: ({ tutorialId }) => ({
+        url: `/v1/tutorials/${tutorialId}/moderation/recheck`,
+        method: "POST",
+      }),
+      invalidatesTags: (result, error, arg) => [
+        "Tutorial",
+        { type: "Tutorial", id: arg.tutorialId },
+      ],
+    }),
   }),
 })
 
@@ -246,4 +272,6 @@ export const {
   useDeleteCourseMutation,
   useGetResourceUploadHistoryByIdQuery,
   useGetTutorialUploadHistoryByIdQuery,
+  useRecheckResourceModerationMutation,
+  useRecheckTutorialModerationMutation,
 } = contentApi
