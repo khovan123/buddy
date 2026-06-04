@@ -1,8 +1,4 @@
-import {
-  DEFAULT_PLAN_LIMITS,
-  type PlanLimits,
-  type SubscriptionPlan,
-} from '@libs/contracts';
+import { DEFAULT_PLAN_LIMITS, type PlanLimits, type SubscriptionPlan } from '@libs/contracts';
 import type { PlanLimitsResolver, PolicyContext } from '@libs/common';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

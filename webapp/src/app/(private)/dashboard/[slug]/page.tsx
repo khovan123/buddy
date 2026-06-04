@@ -2,9 +2,11 @@ import { Metadata } from "next"
 
 import { notFound } from "next/navigation"
 
-import { ContentDashboardView } from "@/features/dashboard"
-import { PlanLimitsDashboard } from "@/features/dashboard/components/plan-limits-dashboard"
-import { getSubscriptionPlanCatalog } from "@/features/dashboard/services/plan-limits.service"
+import {
+  ContentDashboardView,
+  PlanLimitsDashboard,
+  getSubscriptionPlanCatalog,
+} from "@/features/dashboard"
 import { getSeoContent } from "@/features/seo/services/seo-content"
 
 interface DashboardSlugPageProps {

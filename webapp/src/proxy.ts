@@ -28,6 +28,15 @@ const AUTH_ROUTES = [
   "/reset-password",
 ]
 
+const INTRO_PUBLIC_ROUTES = [
+  "/",
+  "/about",
+  "/contact",
+  "/faq",
+  "/how-it-works",
+  "/pricing",
+]
+
 export default async function proxy(req: NextRequest) {
   const token =
     (await getToken({
@@ -52,14 +61,21 @@ export default async function proxy(req: NextRequest) {
     pathname.startsWith(route)
   )
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route))
+  const isIntroPublicRoute = INTRO_PUBLIC_ROUTES.some((route) =>
+    route === "/" ? pathname === "/" : pathname.startsWith(route)
+  )
+  const isAdminRoute = ADMIN_ROUTES.some((route) => pathname.startsWith(route))
 
   if (pathname === "/") {
     return NextResponse.next()
   }
 
+  const roleAccess = buildRoleAccessInput(token?.user, token?.accessToken)
+  const isAdmin = isAdminAccess(roleAccess)
+
   // Prevent logged-in users from accessing auth pages (login, register...)
   if (token && isAuthRoute) {
-    return NextResponse.redirect(new URL("/home", req.url))
+    return NextResponse.redirect(new URL(isAdmin ? "/dashboard" : "/home", req.url))
   }
 
   // Block unauthenticated users from accessing private routes
@@ -70,13 +86,12 @@ export default async function proxy(req: NextRequest) {
     )
   }
 
-  const roleAccess = buildRoleAccessInput(token?.user, token?.accessToken)
-
-  if (
-    ADMIN_ROUTES.some((route) => pathname.startsWith(route)) &&
-    !isAdminAccess(roleAccess)
-  ) {
+  if (isAdminRoute && !isAdmin) {
     return NextResponse.redirect(new URL("/home", req.url))
+  }
+
+  if (isAdmin && !isAdminRoute && !isIntroPublicRoute) {
+    return NextResponse.redirect(new URL("/dashboard", req.url))
   }
 
   // Allow all other routes (public or authenticated private routes)

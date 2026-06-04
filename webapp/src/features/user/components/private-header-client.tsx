@@ -76,7 +76,7 @@ export function PrivateHeader({
   const navigationItems = useMemo(
     () =>
       isAdmin
-        ? [...BASE_NAV_ITEMS, { href: "/dashboard", label: "Dashboard" }]
+        ? [{ href: "/dashboard", label: "Dashboard" }]
         : BASE_NAV_ITEMS,
     [isAdmin]
   )
@@ -121,9 +121,9 @@ export function PrivateHeader({
         containerClassName="max-w-7xl"
         rightSlot={
           <>
-            {isCreator ? <CreateContentCTA /> : null}
-            <PlanSelectorDialog />
-            <HeaderWalletPopover />
+            {!isAdmin && isCreator ? <CreateContentCTA /> : null}
+            {!isAdmin ? <PlanSelectorDialog /> : null}
+            {!isAdmin ? <HeaderWalletPopover /> : null}
             <Notifications />
             <UserMenuPopover
               user={menuUser}
