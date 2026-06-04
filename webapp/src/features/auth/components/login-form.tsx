@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input"
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas"
 import { setToken } from "@/features/auth/store/auth-slice"
 import { OtpPurpose } from "@/features/auth/type"
+import { isAdminAccess } from "@/lib/auth/role-access"
 import { useGlobalError } from "@/providers/error-provider"
 
 import { OAuthButtons } from "./oauth-buttons"
@@ -80,7 +81,7 @@ export function LoginForm() {
           dispatch(setToken(session.accessToken))
         }
 
-        router.push("/home")
+        router.push(isAdminAccess(session?.user) ? "/dashboard" : "/home")
         router.refresh()
       }
     } catch (err: unknown) {

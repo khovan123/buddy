@@ -5,6 +5,7 @@ import {
   WalletHeroCard,
   getPayoutAccount,
   getSubscription,
+  getSubscriptionPlanCatalog,
   getTransactions,
   getWalletBalance,
 } from "@/features/billing"
@@ -12,12 +13,13 @@ import {
 
 
 export default async function BillingPage() {
-  const [balance, transactions, payoutAccount, subscription] =
+  const [balance, transactions, payoutAccount, subscription, planCatalog] =
     await Promise.all([
       getWalletBalance(),
       getTransactions(1, 10),
       getPayoutAccount(),
       getSubscription(),
+      getSubscriptionPlanCatalog(),
     ])
 
   return (
@@ -35,7 +37,10 @@ export default async function BillingPage() {
         <TransactionTimeline initialData={transactions} />
 
         <div className="space-y-6">
-          <SubscriptionCard subscription={subscription} />
+          <SubscriptionCard
+            subscription={subscription}
+            planCatalog={planCatalog}
+          />
           <PayoutAccountCard account={payoutAccount} />
         </div>
       </div>

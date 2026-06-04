@@ -2,8 +2,7 @@
 
 import 'reflect-metadata';
 
-import type { PlanLimits } from '@libs/contracts';
-import { SubscriptionPlan, getPlanLimits } from '@libs/contracts';
+import { DEFAULT_PLAN_LIMITS, SubscriptionPlan, type PlanLimits } from '@libs/contracts';
 import { CreatorOnlyPolicy } from '@libs/common';
 
 describe('CreatorOnlyPolicy', () => {
@@ -15,7 +14,7 @@ describe('CreatorOnlyPolicy', () => {
         userId: 'user-1',
         roles: ['user'],
         subscriptionPlan: SubscriptionPlan.CREATOR_FREE,
-        planLimits: getPlanLimits(SubscriptionPlan.CREATOR_FREE),
+        planLimits: { ...DEFAULT_PLAN_LIMITS, canCreateContent: true },
         extras: {},
       }),
     ).toBe(true);
@@ -23,7 +22,7 @@ describe('CreatorOnlyPolicy', () => {
 
   it('allows content creation from the resolved plan limit instead of hard-coded plan names', () => {
     const planLimits: PlanLimits = {
-      ...getPlanLimits(SubscriptionPlan.STUDENT_FREE),
+      ...DEFAULT_PLAN_LIMITS,
       canCreateContent: true,
     };
 
@@ -44,7 +43,7 @@ describe('CreatorOnlyPolicy', () => {
         userId: 'user-1',
         roles: ['user'],
         subscriptionPlan: SubscriptionPlan.STUDENT_FREE,
-        planLimits: getPlanLimits(SubscriptionPlan.STUDENT_FREE),
+        planLimits: DEFAULT_PLAN_LIMITS,
         extras: {},
       }),
     ).toBe(false);

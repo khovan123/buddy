@@ -5,6 +5,7 @@ import {
   Body,
   Controller,
   DefaultValuePipe,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -45,6 +46,7 @@ import type {
 import { CreateSubscriptionDto } from '../dtos/create-subscription.dto';
 import { SavePayoutAccountDto } from '../dtos/save-payout-account.dto';
 import { ProcessPurchaseDto, TopUpWalletDto } from '../dtos/top-up-wallet.dto';
+import { UpdateSubscriptionPlanLimitsDto } from '../dtos/update-subscription-plan-limits.dto';
 import { VerifyBankAccountDto } from '../dtos/verify-bank-account.dto';
 import { WithdrawWalletDto } from '../dtos/withdraw-wallet.dto';
 
@@ -600,6 +602,49 @@ export class BillingController {
     );
   }
 
+  @Put('subscription/plans/:code/limits')
+  @UseGuards(JwtAuthGuard)
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async updateSubscriptionPlanLimits(
+    @Req() req: FastifyRequest & { user: { roles?: string[] } },
+    @Param('code') code: SubscriptionPlan,
+    @Body() dto: UpdateSubscriptionPlanLimitsDto,
+  ) {
+    this.assertAdmin(req.user?.roles ?? []);
+
+    const correlationId = getCorrelationId() || crypto.randomUUID();
+    await this.getOrCreateSubscriptionPlanCatalog();
+
+    const result = await this.prisma.client.subscriptionPlanCatalog.update({
+      where: { code: code as PrismaSubscriptionPlan },
+      data: {
+        ...(dto.storageBytes === undefined ? {} : { storageBytes: BigInt(dto.storageBytes) }),
+        ...(dto.maxResources === undefined ? {} : { maxResources: dto.maxResources }),
+        ...(dto.maxTutorials === undefined ? {} : { maxTutorials: dto.maxTutorials }),
+        ...(dto.maxCollections === undefined ? {} : { maxCollections: dto.maxCollections }),
+        ...(dto.canCreateContent === undefined ? {} : { canCreateContent: dto.canCreateContent }),
+        ...(dto.maxSearchResults === undefined ? {} : { maxSearchResults: dto.maxSearchResults }),
+      },
+    });
+
+    return successResponse(
+      {
+        code: result.code,
+        limits: {
+          storageBytes: Number(result.storageBytes),
+          maxResources: result.maxResources,
+          maxTutorials: result.maxTutorials,
+          maxCollections: result.maxCollections,
+          canCreateContent: result.canCreateContent,
+          maxSearchResults: result.maxSearchResults,
+        },
+      },
+      'Subscription plan limits updated',
+      correlationId,
+    );
+  }
+
   @Post('subscription')
   @Version('1')
   @HttpCode(HttpStatus.OK)
@@ -841,5 +886,12 @@ export class BillingController {
 
   private centsToDollars(cents: number): number {
     return cents / 100;
+  }
+
+  private assertAdmin(roles: string[]) {
+    const hasAdminRole = roles.some((role) => role.trim().toUpperCase() === 'ADMIN');
+    if (!hasAdminRole) {
+      throw new ForbiddenException('Admin role required');
+    }
   }
 }

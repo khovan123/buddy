@@ -136,7 +136,6 @@ export interface SubscriptionPricingData {
   planCatalog?: SubscriptionPlanCatalogItem[]
 }
 
-// ── Plan Limits (mirrored from backend contracts) ────────
 export interface PlanLimits {
   storageBytes: number
   maxResources: number
@@ -144,44 +143,6 @@ export interface PlanLimits {
   maxCollections: number
   canCreateContent: boolean
   maxSearchResults: number
-}
-
-const MB = 1024 * 1024
-const GB = 1024 * MB
-
-export const PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
-  CREATOR_FREE: {
-    storageBytes: 500 * MB,
-    maxResources: 5,
-    maxTutorials: 3,
-    maxCollections: 2,
-    canCreateContent: true,
-    maxSearchResults: 20,
-  },
-  CREATOR_PRO: {
-    storageBytes: 50 * GB,
-    maxResources: -1,
-    maxTutorials: -1,
-    maxCollections: -1,
-    canCreateContent: true,
-    maxSearchResults: -1,
-  },
-  STUDENT_FREE: {
-    storageBytes: 1 * GB,
-    maxResources: 0,
-    maxTutorials: 0,
-    maxCollections: 0,
-    canCreateContent: false,
-    maxSearchResults: 10,
-  },
-  STUDENT_PRO: {
-    storageBytes: 25 * GB,
-    maxResources: 0,
-    maxTutorials: 0,
-    maxCollections: 0,
-    canCreateContent: false,
-    maxSearchResults: -1,
-  },
 }
 
 export const PLAN_DISPLAY_NAMES: Record<SubscriptionPlan, string> = {

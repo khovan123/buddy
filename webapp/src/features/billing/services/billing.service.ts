@@ -6,6 +6,8 @@ import type { ApiResponse } from "@/types/api"
 
 import type {
   PayoutAccount,
+  SubscriptionPlanCatalogItem,
+  SubscriptionPricingData,
   Subscription,
   TransactionPage,
   WalletBalance,
@@ -125,5 +127,33 @@ export async function getSubscription(): Promise<Subscription | null> {
     }
     console.error("Failed to fetch subscription:", error)
     return null
+  }
+}
+
+export async function getSubscriptionPlanCatalog(): Promise<
+  SubscriptionPlanCatalogItem[]
+> {
+  try {
+    const res = await fetchApi(
+      "GET",
+      "/billing/subscription/plans",
+      undefined,
+      undefined,
+      false,
+      { cache: "no-store" }
+    )
+
+    if (!res.ok) {
+      return []
+    }
+
+    const json = (await res.json()) as ApiResponse<SubscriptionPricingData>
+    return json.data?.planCatalog ?? []
+  } catch (error) {
+    if (isDynamicServerError(error)) {
+      throw error
+    }
+    console.error("Failed to fetch subscription plan catalog:", error)
+    return []
   }
 }

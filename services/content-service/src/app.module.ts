@@ -8,6 +8,7 @@ import { TerminusModule } from '@nestjs/terminus';
 
 import {
   CreatorOnlyPolicy,
+  PBAC_LIMITS_RESOLVER,
   getRedisConfig,
   HealthController,
   MessagingModule,
@@ -47,6 +48,7 @@ import {
 } from './domain/policies/content-limit.policies';
 import { ContentCountService } from './infrastructure/services/content-count.service';
 import { ContentModerationService } from './infrastructure/services/content-moderation.service';
+import { BillingPlanLimitsResolver } from './infrastructure/services/billing-plan-limits.resolver';
 
 /** NestJS Module for  app. */
 @Module({
@@ -95,6 +97,8 @@ import { ContentModerationService } from './infrastructure/services/content-mode
     ContentModerationService,
     SubscriptionRequiredPolicy,
     CreatorOnlyPolicy,
+    BillingPlanLimitsResolver,
+    { provide: PBAC_LIMITS_RESOLVER, useExisting: BillingPlanLimitsResolver },
     ResourceLimitPolicy,
     TutorialLimitPolicy,
     CollectionLimitPolicy,
