@@ -19,10 +19,10 @@ export default async function DashboardLayout({
   await requireAdminAccess()
 
   return (
-    <div className="sidebar-contained overflow-hidden rounded-xl border">
+    <div className="min-h-screen w-full overflow-hidden">
       <SidebarProvider defaultOpen>
         <DashboardSidebar />
-        <SidebarInset className="min-h-[60vh]">
+        <SidebarInset className="min-h-screen">
           <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b px-4">
             <div className="flex min-w-0 items-center gap-2">
               <SidebarTrigger className="-ml-1" />
@@ -31,7 +31,7 @@ export default async function DashboardLayout({
             </div>
             <DashboardLogoutButton />
           </header>
-          <div className="p-4">{children}</div>
+          <div className="min-h-[calc(100vh-3rem)] w-full">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </div>

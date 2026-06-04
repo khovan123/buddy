@@ -59,7 +59,13 @@ export default async function PrivateLayout({
         </header>
       ) : null}
 
-      <main className="mx-auto w-full max-w-7xl flex-1 space-y-10 px-4 py-8 sm:px-6 md:py-10">
+      <main
+        className={
+          isAdmin
+            ? "w-full flex-1"
+            : "mx-auto w-full max-w-7xl flex-1 space-y-10 px-4 py-8 sm:px-6 md:py-10"
+        }
+      >
         {children}
       </main>
 
