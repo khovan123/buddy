@@ -1,10 +1,10 @@
-import type { CollectionQueryItem } from "@/features/content"
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+import type { CollectionQueryItem } from "@/features/content"
 
 import type {
   ContentResourceItem,
