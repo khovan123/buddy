@@ -18,9 +18,6 @@ const validSlugs = [
   "courses",
   "careers",
   "skills",
-  "tutorials",
-  "resources",
-  "collections",
   "plans",
 ]
 

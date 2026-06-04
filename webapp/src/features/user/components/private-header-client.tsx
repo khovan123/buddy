@@ -74,11 +74,16 @@ export function PrivateHeader({
       subscriptionData?.data?.plan ?? accountFallback?.subscriptionPlan,
   })
   const navigationItems = useMemo(
-    () =>
-      isAdmin
-        ? [{ href: "/dashboard", label: "Dashboard" }]
-        : BASE_NAV_ITEMS,
-    [isAdmin]
+    () => {
+      if (isAdmin) {
+        return [{ href: "/dashboard", label: "Dashboard" }]
+      }
+
+      return isCreator
+        ? [...BASE_NAV_ITEMS, { href: "/home/content", label: "Content" }]
+        : BASE_NAV_ITEMS
+    },
+    [isAdmin, isCreator]
   )
   const menuUser = useMemo<UserProfile | null>(() => {
     if (user?.email && (user.profile?.nickname || user.nickname)) {

@@ -13,6 +13,7 @@ const PRIVATE_ROUTES = [
   "/settings",
   "/onboarding",
   "/dashboard",
+  "/home/content",
   "/home/collections/create",
   "/home/resources/create",
   "/home/tutorials/create",

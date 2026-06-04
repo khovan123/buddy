@@ -4,7 +4,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 
 import {
-  BookOpen,
   Briefcase,
   ChevronRight,
   GraduationCap,
@@ -65,16 +64,6 @@ export const navMain: NavItem[] = [
     items: [
       { title: "Careers", url: "/dashboard/careers" },
       { title: "Skills", url: "/dashboard/skills" },
-    ],
-  },
-  {
-    title: "Content",
-    url: "#",
-    icon: BookOpen,
-    items: [
-      { title: "Tutorials", url: "/dashboard/tutorials" },
-      { title: "Resources", url: "/dashboard/resources" },
-      { title: "Collections", url: "/dashboard/collections" },
     ],
   },
   {
