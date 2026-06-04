@@ -158,7 +158,7 @@ function buildResourceNotification(
 
   return {
     id: `resource-${resource.id}`,
-    href: "/home/content",
+    href: "/content",
     title: resource.title,
     type: "Resource",
     updatedAt: resource.moderatedAt ?? resource.updatedAt ?? resource.createdAt,
@@ -174,7 +174,7 @@ function buildTutorialNotification(
 
   return {
     id: `tutorial-${tutorial.id}`,
-    href: "/home/content",
+    href: "/content",
     title: tutorial.title,
     type: "Tutorial",
     updatedAt: tutorial.moderatedAt ?? tutorial.updatedAt ?? tutorial.createdAt,
@@ -309,7 +309,7 @@ export function Notifications() {
 
         return {
           id: `moderation-${item._id}`,
-          href: "/home/content",
+          href: "/content",
           title: item.templateData.title ?? item.subject ?? "Content moderated",
           type: contentType,
           reason: item.templateData.reasons?.[0],

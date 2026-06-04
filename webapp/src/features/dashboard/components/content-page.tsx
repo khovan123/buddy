@@ -1,3 +1,9 @@
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
 import type { CollectionQueryItem } from "@/features/content"
 
 import type {
@@ -21,21 +27,35 @@ export function ContentPage({
   tutorialCollections: CollectionQueryItem[]
 }) {
   return (
-    <section className="space-y-10">
+    <section className="w-full space-y-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Content</h1>
         <p className="text-sm text-muted-foreground">
-          Manage tutorials, resources, collections, and upload history from one
+          Manage resources, collections, tutorials, and upload history from one
           creator workspace.
         </p>
       </div>
 
-      <TutorialsDashboard tutorials={tutorials} />
-      <ResourcesDashboard resources={resources} />
-      <CollectionsDashboard
-        resourceCollections={resourceCollections}
-        tutorialCollections={tutorialCollections}
-      />
+      <Tabs defaultValue="resources" className="w-full">
+        <TabsList className="w-full justify-start sm:w-fit">
+          <TabsTrigger value="resources">Resources</TabsTrigger>
+          <TabsTrigger value="collections">Collections</TabsTrigger>
+          <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="resources" className="mt-4">
+          <ResourcesDashboard resources={resources} />
+        </TabsContent>
+        <TabsContent value="collections" className="mt-4">
+          <CollectionsDashboard
+            resourceCollections={resourceCollections}
+            tutorialCollections={tutorialCollections}
+          />
+        </TabsContent>
+        <TabsContent value="tutorials" className="mt-4">
+          <TutorialsDashboard tutorials={tutorials} />
+        </TabsContent>
+      </Tabs>
     </section>
   )
 }

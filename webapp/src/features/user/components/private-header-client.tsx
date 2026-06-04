@@ -80,7 +80,7 @@ export function PrivateHeader({
       }
 
       return isCreator
-        ? [...BASE_NAV_ITEMS, { href: "/home/content", label: "Content" }]
+        ? [...BASE_NAV_ITEMS, { href: "/content", label: "Content" }]
         : BASE_NAV_ITEMS
     },
     [isAdmin, isCreator]

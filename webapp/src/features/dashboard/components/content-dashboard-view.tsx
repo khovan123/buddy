@@ -61,7 +61,7 @@ export default async function ContentDashboardView({
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl">
+    <div className="min-h-[calc(100vh-3rem)] w-full">
       {!isContentPage && (
         <header className="mb-8 space-y-3">
           <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">
