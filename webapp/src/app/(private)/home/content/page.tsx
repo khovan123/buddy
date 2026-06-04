@@ -1,14 +1,14 @@
 import type { Metadata } from "next"
 
 import {
+  getMyResourceCollections,
+  getMyTutorialCollections,
+} from "@/features/content"
+import {
   ContentPage,
   getMyResources,
   getMyTutorials,
 } from "@/features/dashboard"
-import {
-  getMyResourceCollections,
-  getMyTutorialCollections,
-} from "@/features/content"
 import { requireCreatorAccess } from "@/lib/auth/server-role-access"
 
 export const metadata: Metadata = {

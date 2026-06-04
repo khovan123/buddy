@@ -4,6 +4,7 @@ import type {
   ContentResourceItem,
   ContentTutorialItem,
 } from "../services/dashboard.service"
+
 import { CollectionsDashboard } from "./dashboards/collections-dashboard"
 import { ResourcesDashboard } from "./dashboards/resources-dashboard"
 import { TutorialsDashboard } from "./dashboards/tutorials-dashboard"
