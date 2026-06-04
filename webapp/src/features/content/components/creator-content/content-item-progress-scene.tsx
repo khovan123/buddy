@@ -96,7 +96,7 @@ export function ContentItemProgressScene({
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100)
-    camera.position.set(0, 0, 4.1)
+    camera.position.set(0, 0, 5.2)
     camera.lookAt(0, 0, 0)
 
     const group = new THREE.Group()
@@ -108,7 +108,7 @@ export function ContentItemProgressScene({
     scene.add(light)
 
     const track = new THREE.Mesh(
-      new THREE.TorusGeometry(0.82, 0.055, 8, 56),
+      new THREE.TorusGeometry(0.72, 0.045, 8, 48),
       new THREE.MeshStandardMaterial({
         color: 0xd1d5db,
         metalness: 0.08,
@@ -121,10 +121,10 @@ export function ContentItemProgressScene({
 
     const arc = new THREE.Mesh(
       new THREE.TorusGeometry(
-        0.82,
-        0.075,
+        0.72,
+        0.06,
         8,
-        56,
+        48,
         Math.max(progressState.progress, 0.08) * Math.PI * 2
       ),
       new THREE.MeshStandardMaterial({
@@ -137,7 +137,7 @@ export function ContentItemProgressScene({
     group.add(arc)
 
     const core = new THREE.Mesh(
-      new THREE.BoxGeometry(0.42, 0.42, 0.42),
+      new THREE.BoxGeometry(0.32, 0.32, 0.32),
       new THREE.MeshStandardMaterial({
         color: progressState.color,
         metalness: 0.22,
@@ -194,7 +194,7 @@ export function ContentItemProgressScene({
     <div
       ref={mountRef}
       className={cn(
-        "h-10 w-14 shrink-0 overflow-hidden rounded-md border bg-muted/20",
+        "flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded bg-muted/20",
         className
       )}
     />
