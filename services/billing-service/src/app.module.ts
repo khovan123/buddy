@@ -20,10 +20,7 @@ import { QUERY_HANDLERS } from './application/queries/query.module';
 import { PAYMENT_GATEWAYS, PAYOUT_GATEWAY, WALLET_REPOSITORY } from './domain/repositories/tokens';
 import { PaymentGatewayFactory } from './infrastructure/external/payment/payment.factory';
 import { SePayAdapter } from './infrastructure/external/payment/sepay.adapter';
-import {
-  MESSAGE_COMPONENTS,
-  MESSAGE_CONTROLLERS,
-} from './infrastructure/messaging/message.module';
+import { MESSAGE_COMPONENTS, MESSAGE_CONTROLLERS } from './infrastructure/messaging/message.module';
 import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module';
 import { PrismaService } from './infrastructure/persistence/prisma/prisma.service';
 import { WalletPrismaRepository } from './infrastructure/persistence/prisma/repositories/wallet.prisma.repository';
