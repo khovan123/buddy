@@ -1,18 +1,7 @@
-import type {
-  ContentResourceItem,
-  ContentTutorialItem,
-} from "@/features/dashboard/services/dashboard.service"
-import {
-  CreatorCollectionsPanel,
-  CreatorResourcesPanel,
-  CreatorTutorialsPanel,
-} from "@/features/content"
 import {
   getCareers,
   getContentMeta,
-  getMyResources,
-  getMyTutorials,
-  getSkills,
+  getSkills
 } from "@/features/dashboard/services/dashboard.service"
 import {
   CareerItem,
@@ -39,8 +28,8 @@ export default async function ContentDashboardView({
   let courses: Course[] = []
   let careers: CareerItem[] = []
   let skills: SkillItem[] = []
-  let tutorials: ContentTutorialItem[] = []
-  let resources: ContentResourceItem[] = []
+  // let tutorials: ContentTutorialItem[] = []
+  // let resources: ContentResourceItem[] = []
 
   if (!isContentPage) {
     const [metaRes, careersRes, skillsRes] = await Promise.all([
@@ -54,11 +43,11 @@ export default async function ContentDashboardView({
     skills = skillsRes || []
   } else {
     if (slug === "tutorials") {
-      const resp = await getMyTutorials()
-      tutorials = (resp as ContentTutorialItem[]) || []
+      // const resp = await getMyTutorials()
+      // tutorials = (resp as ContentTutorialItem[]) || []
     } else if (slug === "resources") {
-      const resp = await getMyResources()
-      resources = (resp as ContentResourceItem[]) || []
+      // const resp = await getMyResources()
+      // resources = (resp as ContentResourceItem[]) || []
     }
   }
 
@@ -85,13 +74,13 @@ export default async function ContentDashboardView({
         )}
         {slug === "careers" && <CareersTable careers={careers} />}
         {slug === "skills" && <SkillsTable skills={skills} careers={careers} />}
-        {slug === "tutorials" && (
+        {/* {slug === "tutorials" && (
           <CreatorTutorialsPanel tutorials={tutorials} />
         )}
         {slug === "resources" && (
           <CreatorResourcesPanel resources={resources} />
         )}
-        {slug === "collections" && <CreatorCollectionsPanel />}
+        {slug === "collections" && <CreatorCollectionsPanel />} */}
       </div>
     </div>
   )

@@ -2,12 +2,10 @@ import { Calendar, FolderOpen, Layers } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import type { CollectionQueryItem } from "@/features/content"
-import {
-  DashboardHeader,
-  EmptyPlaceholder,
-} from "@/features/dashboard"
 
 import { ContentItemProgressScene } from "./content-item-progress-scene"
+import { CreatorContentHeader } from "./creator-content-header"
+import { CreatorEmptyPlaceholder } from "./creator-empty-placeholder"
 
 const EMPTY_COLLECTIONS: CollectionQueryItem[] = []
 
@@ -24,7 +22,7 @@ export function CreatorCollectionsPanel({
 
   return (
     <div className="space-y-6">
-      <DashboardHeader
+      <CreatorContentHeader
         title={`Collections (${collections.length})`}
         description="Organize your resources into collections for easier discovery."
         actionLabel="New Collection"
@@ -33,7 +31,7 @@ export function CreatorCollectionsPanel({
       />
 
       {collections.length === 0 ? (
-        <EmptyPlaceholder
+        <CreatorEmptyPlaceholder
           icon={FolderOpen}
           title="No collections yet"
           description="Create your first collection to group related resources together."

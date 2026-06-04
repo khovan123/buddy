@@ -1,6 +1,7 @@
 import { CareerItem, SkillItem } from "@/types/shared"
 
 export type { ApiResponse, PaginatedResult, PaginationMeta } from "@/types/api"
+export type * from "./creator-content.types"
 
 // ─────────────────────────────────────────────────────────────
 // Content Service Types — khớp chính xác với Backend Schema

@@ -20,17 +20,17 @@ import { useGetTutorialUploadHistoryByIdQuery } from "@/features/content/service
 import type {
   ContentTutorialItem,
   UploadHistoryItem,
-} from "@/features/dashboard"
-import {
-  DashboardHeader,
-  EmptyPlaceholder,
-  ModerationReason,
-  ModerationStatusBadge,
-  ServerHistoryFileRow,
-} from "@/features/dashboard"
+} from "@/features/content/types"
 import { cn } from "@/lib/utils"
 
 import { ContentItemProgressScene } from "./content-item-progress-scene"
+import {
+  ContentModerationReason,
+  ContentModerationStatusBadge,
+} from "./content-moderation-status"
+import { CreatorContentHeader } from "./creator-content-header"
+import { CreatorEmptyPlaceholder } from "./creator-empty-placeholder"
+import { UploadHistoryFileRow } from "./upload-history-file-row"
 
 function TutorialHistoryList({ tutorialId }: { tutorialId: string }) {
   const { data, isLoading, isError } =
@@ -71,7 +71,7 @@ function TutorialHistoryList({ tutorialId }: { tutorialId: string }) {
       <div className="overflow-hidden rounded-md border border-border/50 bg-card">
         <div className="divide-y divide-border/50">
           {files.map((file) => (
-            <ServerHistoryFileRow key={file.id} file={file} />
+            <UploadHistoryFileRow key={file.id} file={file} />
           ))}
         </div>
       </div>
@@ -99,7 +99,7 @@ export function CreatorTutorialsPanel({
 }) {
   return (
     <div className="space-y-6">
-      <DashboardHeader
+      <CreatorContentHeader
         title={`Tutorials (${tutorials.length})`}
         description="Manage your video tutorials and track upload progress."
         actionLabel="New Tutorial"
@@ -111,7 +111,7 @@ export function CreatorTutorialsPanel({
         <h3 className="text-lg font-semibold tracking-tight">Your Tutorials</h3>
 
         {tutorials.length === 0 ? (
-          <EmptyPlaceholder
+          <CreatorEmptyPlaceholder
             icon={Video}
             title="No tutorials yet"
             description="Create your first tutorial to share video content with students."
@@ -142,7 +142,7 @@ export function CreatorTutorialsPanel({
                           tutorial.isVerified ? "text-primary" : "text-gray-500"
                         )}
                       />
-                      <ModerationStatusBadge
+                      <ContentModerationStatusBadge
                         status={tutorial.status}
                         moderationStatus={tutorial.moderationStatus}
                       />
@@ -155,7 +155,9 @@ export function CreatorTutorialsPanel({
                     <p className="mt-1 line-clamp-2 pr-8 text-sm leading-relaxed text-muted-foreground">
                       {tutorial.description}
                     </p>
-                    <ModerationReason reasons={tutorial.moderationReasons} />
+                    <ContentModerationReason
+                      reasons={tutorial.moderationReasons}
+                    />
                     <div className="mt-3 flex flex-wrap items-center gap-5 text-xs font-medium text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <DollarSign className="h-4 w-4 opacity-70" />

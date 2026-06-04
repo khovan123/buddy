@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card"
 
-export function EmptyPlaceholder({
+export function CreatorEmptyPlaceholder({
   icon: Icon,
   title,
   description,

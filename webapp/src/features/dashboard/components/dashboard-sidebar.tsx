@@ -67,7 +67,7 @@ export const navMain: NavItem[] = [
     ],
   },
   {
-    title: "Settings",
+    title: "Subcription",
     url: "#",
     icon: Settings,
     items: [{ title: "Plans", url: "/dashboard/plans" }],

@@ -2,7 +2,7 @@ import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 
-interface DashboardHeaderProps {
+interface CreatorContentHeaderProps {
   title: React.ReactNode
   description: string
   actionLabel: string
@@ -10,13 +10,13 @@ interface DashboardHeaderProps {
   actionIcon: React.ElementType
 }
 
-export function DashboardHeader({
+export function CreatorContentHeader({
   title,
   description,
   actionLabel,
   actionHref,
   actionIcon: ActionIcon,
-}: DashboardHeaderProps) {
+}: CreatorContentHeaderProps) {
   return (
     <div className="flex items-center justify-between">
       <div>

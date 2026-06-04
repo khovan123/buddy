@@ -1,12 +1,12 @@
 import { FileText } from "lucide-react"
 
-import type { UploadHistoryItem } from "@/features/dashboard/services/dashboard.service"
-import { formatFileSize } from "@/features/dashboard/utils/formatters"
+import type { UploadHistoryItem } from "@/features/content/types"
+import { formatFileSize } from "@/features/content/utils/formatters"
 
 import { RelativeTime } from "./relative-time"
-import { ServerStatusBadge } from "./server-status-badge"
+import { UploadStatusBadge } from "./upload-status-badge"
 
-export function ServerHistoryFileRow({ file }: { file: UploadHistoryItem }) {
+export function UploadHistoryFileRow({ file }: { file: UploadHistoryItem }) {
   return (
     <div className="group flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-muted/50">
       <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
@@ -37,7 +37,7 @@ export function ServerHistoryFileRow({ file }: { file: UploadHistoryItem }) {
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        <ServerStatusBadge status={file.status} />
+        <UploadStatusBadge status={file.status} />
       </div>
     </div>
   )

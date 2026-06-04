@@ -9,12 +9,11 @@ import {
   CreatorResourcesPanel,
   CreatorTutorialsPanel,
 } from "@/features/content"
-import type { CollectionQueryItem } from "@/features/content"
-
 import type {
+  CollectionQueryItem,
   ContentResourceItem,
   ContentTutorialItem,
-} from "../services/dashboard.service"
+} from "@/features/content"
 
 export function ContentPage({
   tutorials,

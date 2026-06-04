@@ -4,15 +4,15 @@ import { AlertTriangle, CheckCircle2, Clock3, ShieldAlert } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 
-interface ModerationStatusBadgeProps {
+interface ContentModerationStatusBadgeProps {
   status: string
   moderationStatus?: string
 }
 
-export function ModerationStatusBadge({
+export function ContentModerationStatusBadge({
   status,
   moderationStatus,
-}: ModerationStatusBadgeProps) {
+}: ContentModerationStatusBadgeProps) {
   if (status === "BANNED" || moderationStatus === "REJECTED") {
     return (
       <Badge variant="destructive" className="uppercase">
@@ -68,7 +68,7 @@ export function ModerationStatusBadge({
   )
 }
 
-export function ModerationReason({ reasons }: { reasons?: string[] }) {
+export function ContentModerationReason({ reasons }: { reasons?: string[] }) {
   if (!reasons?.length) {
     return null
   }

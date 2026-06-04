@@ -1,9 +1,9 @@
 import { AlertCircle, Check, Clock, Loader2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import type { UploadFileStatus as ServerUploadStatus } from "@/features/dashboard/services/dashboard.service"
+import type { UploadFileStatus } from "@/features/content/types"
 
-export function ServerStatusBadge({ status }: { status: ServerUploadStatus }) {
+export function UploadStatusBadge({ status }: { status: UploadFileStatus }) {
   switch (status) {
     case "PENDING":
       return (

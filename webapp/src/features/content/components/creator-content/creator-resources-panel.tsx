@@ -19,17 +19,17 @@ import { useGetResourceUploadHistoryByIdQuery } from "@/features/content/service
 import type {
   ContentResourceItem,
   UploadHistoryItem,
-} from "@/features/dashboard"
-import {
-  DashboardHeader,
-  EmptyPlaceholder,
-  ModerationReason,
-  ModerationStatusBadge,
-  ServerHistoryFileRow,
-} from "@/features/dashboard"
+} from "@/features/content/types"
 import { cn } from "@/lib/utils"
 
 import { ContentItemProgressScene } from "./content-item-progress-scene"
+import {
+  ContentModerationReason,
+  ContentModerationStatusBadge,
+} from "./content-moderation-status"
+import { CreatorContentHeader } from "./creator-content-header"
+import { CreatorEmptyPlaceholder } from "./creator-empty-placeholder"
+import { UploadHistoryFileRow } from "./upload-history-file-row"
 
 function ResourceHistoryList({ resourceId }: { resourceId: string }) {
   const { data, isLoading, isError } =
@@ -70,7 +70,7 @@ function ResourceHistoryList({ resourceId }: { resourceId: string }) {
       <div className="overflow-hidden rounded-md border border-border/50 bg-card">
         <div className="divide-y divide-border/50">
           {files.map((file) => (
-            <ServerHistoryFileRow key={file.id} file={file} />
+            <UploadHistoryFileRow key={file.id} file={file} />
           ))}
         </div>
       </div>
@@ -89,7 +89,7 @@ export function CreatorResourcesPanel({
 }) {
   return (
     <div className="space-y-6">
-      <DashboardHeader
+      <CreatorContentHeader
         title={`Resources (${resources.length})`}
         description="Manage your document resources and track upload progress."
         actionLabel="New Resource"
@@ -101,7 +101,7 @@ export function CreatorResourcesPanel({
         <h3 className="text-lg font-semibold tracking-tight">Your Resources</h3>
 
         {resources.length === 0 ? (
-          <EmptyPlaceholder
+          <CreatorEmptyPlaceholder
             icon={FileText}
             title="No resources yet"
             description="Create your first resource to share documents and files with students."
@@ -134,7 +134,7 @@ export function CreatorResourcesPanel({
                             : "text-gray-500"
                         )}
                       />
-                      <ModerationStatusBadge
+                      <ContentModerationStatusBadge
                         status={resource.status}
                         moderationStatus={resource.moderationStatus}
                       />
@@ -147,7 +147,9 @@ export function CreatorResourcesPanel({
                     <p className="mt-1 line-clamp-2 pr-8 text-sm leading-relaxed text-muted-foreground">
                       {resource.summary}
                     </p>
-                    <ModerationReason reasons={resource.moderationReasons} />
+                    <ContentModerationReason
+                      reasons={resource.moderationReasons}
+                    />
                     <div className="mt-3 flex flex-wrap items-center gap-5 text-xs font-medium text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <DollarSign className="h-4 w-4 opacity-70" />

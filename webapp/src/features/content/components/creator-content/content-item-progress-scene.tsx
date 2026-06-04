@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef } from "react"
+
 import * as THREE from "three"
 
 import { cn } from "@/lib/utils"
@@ -87,7 +88,7 @@ export function ContentItemProgressScene({
       preserveDrawingBuffer: process.env.NODE_ENV === "development",
     })
     renderer.setClearColor(0x000000, 0)
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2))
     renderer.domElement.setAttribute("aria-hidden", "true")
     renderer.domElement.dataset.contentProgressCanvas = "true"
     renderer.domElement.style.pointerEvents = "none"
@@ -164,12 +165,12 @@ export function ContentItemProgressScene({
       core.rotation.x = time * 0.0013
       core.rotation.y = time * 0.001
       renderer.render(scene, camera)
-      frameId = window.requestAnimationFrame(animate)
+      frameId = globalThis.requestAnimationFrame(animate)
     }
-    frameId = window.requestAnimationFrame(animate)
+    frameId = globalThis.requestAnimationFrame(animate)
 
     return () => {
-      window.cancelAnimationFrame(frameId)
+      globalThis.cancelAnimationFrame(frameId)
       resizeObserver.disconnect()
       mount.removeChild(renderer.domElement)
       scene.traverse((object) => {

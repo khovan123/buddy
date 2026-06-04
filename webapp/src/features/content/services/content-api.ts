@@ -1,5 +1,4 @@
 import { revalidateCacheTag } from "@/app/actions/revalidate"
-import type { UploadHistoryItem } from "@/features/dashboard/services/dashboard.service"
 import { baseApi } from "@/lib/redux/base-api"
 
 import type {
@@ -18,6 +17,7 @@ import type {
   TutorialQueryItem,
   UpdateCoursePayload,
   UpdateMajorPayload,
+  UploadHistoryItem,
 } from "../types"
 
 // ─────────────────────────────────────────────────────────────

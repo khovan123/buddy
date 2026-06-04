@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 
-import { formatRelativeTime } from "@/features/dashboard/utils/formatters"
+import { formatRelativeTime } from "@/features/content/utils/formatters"
 
 export function RelativeTime({ date }: { date: string }) {
   // Khởi tạo state ngay lập tức
