@@ -3,9 +3,11 @@
 import type { ComponentProps } from "react"
 import { useState } from "react"
 
-import { Check, Loader2, Palette, Users } from "lucide-react"
-import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+
+import { useSession } from "next-auth/react"
+
+import { Check, Loader2, Palette, Users } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
