@@ -93,8 +93,10 @@ const EMPTY_TUTORIALS: ContentTutorialItem[] = []
 
 export function TutorialsDashboard({
   tutorials = EMPTY_TUTORIALS,
+  actionHref = "/home/tutorials/create",
 }: {
   tutorials?: ContentTutorialItem[]
+  actionHref?: string
 }) {
   return (
     <div className="space-y-6">
@@ -102,7 +104,7 @@ export function TutorialsDashboard({
         title={`Tutorials (${tutorials.length})`}
         description="Manage your video tutorials and track upload progress."
         actionLabel="New Tutorial"
-        actionHref="/dashboard/tutorials/create"
+        actionHref={actionHref}
         actionIcon={Video}
       />
 

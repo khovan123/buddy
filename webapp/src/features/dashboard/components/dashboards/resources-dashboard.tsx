@@ -83,8 +83,10 @@ const EMPTY_RESOURCES: ContentResourceItem[] = []
 
 export function ResourcesDashboard({
   resources = EMPTY_RESOURCES,
+  actionHref = "/home/resources/create",
 }: {
   resources?: ContentResourceItem[]
+  actionHref?: string
 }) {
   return (
     <div className="space-y-6">
@@ -92,7 +94,7 @@ export function ResourcesDashboard({
         title={`Resources (${resources.length})`}
         description="Manage your document resources and track upload progress."
         actionLabel="New Resource"
-        actionHref="/dashboard/resources/create"
+        actionHref={actionHref}
         actionIcon={FileText}
       />
 
