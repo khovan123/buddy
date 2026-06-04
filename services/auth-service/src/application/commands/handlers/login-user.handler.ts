@@ -15,6 +15,7 @@ import type { IUserRepository } from '../../../domain/repositories/user.reposito
 import type { ITokenService } from '../../../domain/services/token.service.interface';
 import { Otp } from '../../../domain/value-objects/otp.vo';
 import { AuthEventPublisher } from '../../../infrastructure/messaging/publishers/auth-event.publisher';
+import { BillingSubscriptionPlanPublisher } from '../../../infrastructure/messaging/publishers/billing-subscription-plan.rpc';
 import { LoginUserCommand } from '../login-user.command';
 
 /** CQRS Handler to execute  login user. */
@@ -30,6 +31,7 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
     @Inject(TOKEN_SERVICE)
     private readonly tokenService: ITokenService,
     private readonly publisher: AuthEventPublisher,
+    private readonly billingSubscriptionPlanPublisher: BillingSubscriptionPlanPublisher,
   ) {}
 
   /**
@@ -82,6 +84,8 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
           email: user.email.value,
           nickname: user.nickname,
           role: user.roles[0] ?? 'user',
+          roles: user.roles,
+          subscriptionPlan: user.subscriptionPlan,
         },
       };
     }
@@ -90,11 +94,19 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
     user.recordLogin();
     await this.userRepository.update(user);
 
-    // 6. Generate tokens
-    const { accessToken, refreshToken, refreshTokenHash, accessExpiresIn } =
-      await this.tokenService.generateTokenPair(user);
+    // 6. Resolve plan details from billing-service via RabbitMQ RPC
+    const subscriptionPlanDetails =
+      await this.billingSubscriptionPlanPublisher.resolveUserPlanDetails(
+        user.id,
+        user.subscriptionPlan,
+      );
+    const subscriptionPlan = subscriptionPlanDetails?.code ?? user.subscriptionPlan;
 
-    // 7. Persist refresh token
+    // 7. Generate tokens
+    const { accessToken, refreshToken, refreshTokenHash, accessExpiresIn } =
+      await this.tokenService.generateTokenPair(user, { subscriptionPlanDetails });
+
+    // 8. Persist refresh token
     await this.refreshTokenRepository.save({
       id: uuidv4(),
       userId: user.id,
@@ -105,7 +117,7 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
       userAgent,
     });
 
-    // 8. Publish event
+    // 9. Publish event
     await this.publisher.publish(
       new UserLoggedInEvent(
         {
@@ -124,6 +136,9 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
         email: user.email.value,
         nickname: user.nickname,
         role: user.roles[0] ?? 'user',
+        roles: user.roles,
+        subscriptionPlan,
+        subscriptionPlanDetails,
       },
       accessToken,
       refreshToken,

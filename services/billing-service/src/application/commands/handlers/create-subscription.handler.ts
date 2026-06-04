@@ -29,7 +29,7 @@ export class CreateSubscriptionHandler implements ICommandHandler<CreateSubscrip
       plan: command.plan,
     });
 
-    // 3. Insert outbox event for SUBSCRIPTION_CHANGED → auth-service invalidates JWT
+    // 3. Insert outbox event for SUBSCRIPTION_CHANGED so auth-service can sync the plan
     const eventPayload = {
       userId: command.userId,
       plan: command.plan,
@@ -47,7 +47,9 @@ export class CreateSubscriptionHandler implements ICommandHandler<CreateSubscrip
       },
     });
 
-    this.eventEmitter.emit(OUTBOX_EVENTS.FLUSHED, { correlationId: command.correlationId });
+    await this.eventEmitter.emitAsync(OUTBOX_EVENTS.FLUSHED, {
+      correlationId: command.correlationId,
+    });
 
     this.logger.log(
       `Subscription ${previousPlan ? 'changed' : 'created'}: ${previousPlan} → ${command.plan} for user ${command.userId}`,

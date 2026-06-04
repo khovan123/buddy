@@ -6,6 +6,7 @@ import { randomUUID as uuidv4 } from 'node:crypto';
 import { User } from '../../domain/entities/user.entity';
 import type {
   AccessTokenPayload,
+  GenerateTokenPairOptions,
   ITokenService,
   TokenPair,
 } from '../../domain/services/token.service.interface';
@@ -24,7 +25,10 @@ export class TokenService implements ITokenService {
    * @param user - The user parameter
    * @returns Result of type Promise<TokenPair & { refreshTokenHash: string }>
    */
-  async generateTokenPair(user: User): Promise<TokenPair & { refreshTokenHash: string }> {
+  async generateTokenPair(
+    user: User,
+    options: GenerateTokenPairOptions = {},
+  ): Promise<TokenPair & { refreshTokenHash: string }> {
     const payload: AccessTokenPayload = {
       sub: user.id,
       email: user.email.value,
@@ -32,7 +36,12 @@ export class TokenService implements ITokenService {
       roles: user.roles,
       type: 'access',
     };
-    if (user.subscriptionPlan) {
+    const planDetails = options.subscriptionPlanDetails;
+
+    if (planDetails) {
+      payload.subscriptionPlan = planDetails.code;
+      payload.subscriptionPlanDetails = planDetails;
+    } else if (user.subscriptionPlan) {
       payload.subscriptionPlan = user.subscriptionPlan;
     }
 

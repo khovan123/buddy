@@ -4,10 +4,7 @@ import { USER_REPOSITORY } from '../../../domain/repositories/tokens';
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { UpdateSubscriptionPlanCommand } from '../update-subscription-plan.command';
 
-/**
- * Updates subscription plan on user record and invalidates all refresh tokens,
- * forcing the user to re-login and get a fresh JWT with the new plan claim.
- */
+/** Updates subscription plan on the auth user record used for JWT plan claims. */
 @CommandHandler(UpdateSubscriptionPlanCommand)
 export class UpdateSubscriptionPlanHandler implements ICommandHandler<UpdateSubscriptionPlanCommand> {
   private readonly logger = new Logger(UpdateSubscriptionPlanHandler.name);
@@ -16,10 +13,7 @@ export class UpdateSubscriptionPlanHandler implements ICommandHandler<UpdateSubs
 
   async execute(command: UpdateSubscriptionPlanCommand) {
     await this.userRepo.updateSubscriptionPlan(command.userId, command.plan);
-    await this.userRepo.invalidateUserTokens(command.userId);
 
-    this.logger.log(
-      `Plan updated to ${command.plan} for user ${command.userId} — tokens invalidated`,
-    );
+    this.logger.log(`Plan updated to ${command.plan} for user ${command.userId}`);
   }
 }

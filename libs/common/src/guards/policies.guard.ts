@@ -4,6 +4,7 @@ import {
   isCreatorSubscriptionPlan,
   isSubscriptionPlan,
   type PlanLimits,
+  type SubscriptionPlanDetails,
   type SubscriptionPlan as SubscriptionPlanType,
 } from '@libs/contracts';
 import {
@@ -47,6 +48,13 @@ export interface PlanLimitsResolver {
 }
 
 export const PBAC_LIMITS_RESOLVER = Symbol('PBAC_LIMITS_RESOLVER');
+
+type PolicyUserClaims = {
+  sub: string;
+  roles?: string[];
+  subscriptionPlan?: string;
+  subscriptionPlanDetails?: SubscriptionPlanDetails;
+};
 
 // ── Decorator ────────────────────────────────────────────────────────
 
@@ -92,7 +100,7 @@ export class PoliciesGuard implements CanActivate {
     if (handlerClasses.length === 0) return true;
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user;
+    const user = request.user as PolicyUserClaims | undefined;
 
     if (!user) {
       throw new ForbiddenException('Authentication required for policy evaluation');
@@ -110,7 +118,7 @@ export class PoliciesGuard implements CanActivate {
       userId: user.sub,
       roles: user.roles ?? [],
       subscriptionPlan: plan,
-      planLimits: await this.resolvePlanLimits(plan, {
+      planLimits: await this.resolvePlanLimits(plan, user, {
         userId: user.sub,
         roles: user.roles ?? [],
         extras,
@@ -147,9 +155,48 @@ export class PoliciesGuard implements CanActivate {
 
   private async resolvePlanLimits(
     plan: SubscriptionPlanType,
+    user: PolicyUserClaims,
     context: Pick<PolicyContext, 'userId' | 'roles' | 'extras'>,
   ): Promise<PlanLimits> {
-    return (await this.planLimitsResolver?.resolvePlanLimits(plan, context)) ?? DEFAULT_PLAN_LIMITS;
+    const claimLimits =
+      user.subscriptionPlanDetails?.code === plan
+        ? this.normalizeClaimLimits(user.subscriptionPlanDetails.limits)
+        : null;
+
+    if (!this.planLimitsResolver) {
+      return claimLimits ?? DEFAULT_PLAN_LIMITS;
+    }
+
+    return (
+      (await this.planLimitsResolver.resolvePlanLimits(plan, context)) ??
+      claimLimits ??
+      DEFAULT_PLAN_LIMITS
+    );
+  }
+
+  private normalizeClaimLimits(limits: unknown): PlanLimits | null {
+    if (!limits || typeof limits !== 'object') return null;
+
+    const candidate = limits as Partial<Record<keyof PlanLimits, unknown>>;
+    if (
+      typeof candidate.storageBytes !== 'number' ||
+      typeof candidate.maxResources !== 'number' ||
+      typeof candidate.maxTutorials !== 'number' ||
+      typeof candidate.maxCollections !== 'number' ||
+      typeof candidate.canCreateContent !== 'boolean' ||
+      typeof candidate.maxSearchResults !== 'number'
+    ) {
+      return null;
+    }
+
+    return {
+      storageBytes: candidate.storageBytes,
+      maxResources: candidate.maxResources,
+      maxTutorials: candidate.maxTutorials,
+      maxCollections: candidate.maxCollections,
+      canCreateContent: candidate.canCreateContent,
+      maxSearchResults: candidate.maxSearchResults,
+    };
   }
 
   private normalizePlan(plan: string | undefined): SubscriptionPlanType | undefined {

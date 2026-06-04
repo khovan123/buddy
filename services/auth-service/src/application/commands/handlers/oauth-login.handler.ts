@@ -116,6 +116,8 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
         email: user.email.value,
         nickname: user.nickname,
         role: user.roles[0] ?? 'user',
+        roles: user.roles,
+        subscriptionPlan: user.subscriptionPlan,
       },
       accessToken,
       refreshToken,
