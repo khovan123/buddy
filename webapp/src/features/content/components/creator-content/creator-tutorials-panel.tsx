@@ -161,6 +161,7 @@ export function CreatorTutorialsPanel({
                       moderationStatus={tutorial.moderationStatus}
                       verified={tutorial.isVerified}
                       reasons={tutorial.moderationReasons}
+                      ruleVersion={tutorial.moderationRuleVersion}
                       compact
                     />
                     <div className="mt-3 flex flex-wrap items-center gap-5 text-xs font-medium text-muted-foreground">

@@ -153,6 +153,7 @@ export function CreatorResourcesPanel({
                       moderationStatus={resource.moderationStatus}
                       verified={resource.resourceVerified}
                       reasons={resource.moderationReasons}
+                      ruleVersion={resource.moderationRuleVersion}
                       compact
                     />
                     <div className="mt-3 flex flex-wrap items-center gap-5 text-xs font-medium text-muted-foreground">

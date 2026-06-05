@@ -33,6 +33,15 @@ export class NotificationProxyController {
     });
   }
 
+  @Patch('read-all')
+  markAllRead(@Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'notification',
+      path: '/v1/notifications/read-all',
+      method: 'PATCH',
+    });
+  }
+
   @Get('stream')
   async streamNotifications(@Req() req: FastifyRequest, @Res() reply: FastifyReply) {
     const upstreamUrl = `${this.registry.getUrl('notification')}/v1/notifications/stream`;

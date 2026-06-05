@@ -6,5 +6,6 @@ export interface INotificationRepository {
   update(notification: Notification): Promise<void>;
   findById(id: string): Promise<Notification | null>;
   findByUserId(userId: string, limit?: number): Promise<Notification[]>;
+  markAllReadByUserId(userId: string, readAt?: Date): Promise<number>;
   findPending(limit?: number): Promise<Notification[]>;
 }

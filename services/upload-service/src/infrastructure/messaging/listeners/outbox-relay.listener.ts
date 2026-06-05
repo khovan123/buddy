@@ -25,7 +25,9 @@ class OutboxRelayEvent extends BaseEvent {
 export class OutboxRelayService implements OnModuleInit {
   private readonly logger = new AppLogger(OutboxRelayService.name);
   private isRunning = false;
+  private retryTimer: NodeJS.Timeout | null = null;
   private static readonly OUTBOX_RELAY_LOCK_KEY = 902001;
+  private static readonly RETRY_DELAY_MS = 5_000;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -44,9 +46,11 @@ export class OutboxRelayService implements OnModuleInit {
   async relayPendingEvents(): Promise<void> {
     if (this.isRunning) {
       this.logger.warn('Skip outbox relay tick: previous run is still in progress');
+      this.scheduleRetry();
       return;
     }
 
+    this.clearScheduledRetry();
     this.isRunning = true;
 
     const [{ locked }] = await this.prisma.client.$queryRaw<Array<{ locked: boolean }>>`
@@ -56,6 +60,7 @@ export class OutboxRelayService implements OnModuleInit {
     if (!locked) {
       this.isRunning = false;
       this.logger.warn('Skip outbox relay tick: advisory lock is held by another worker');
+      this.scheduleRetry();
       return;
     }
 
@@ -78,6 +83,7 @@ export class OutboxRelayService implements OnModuleInit {
 
       const processedIds: string[] = [];
       const failedUpdates: Array<{ id: string; retryCount: number }> = [];
+      let hasRetryableFailures = false;
 
       for (const item of pendingEvents) {
         try {
@@ -111,6 +117,7 @@ export class OutboxRelayService implements OnModuleInit {
       // Handle failures individually (usually few)
       for (const f of failedUpdates) {
         const failed = f.retryCount >= RETRY_OPTIONS.MAX_RETRIES;
+        hasRetryableFailures ||= !failed;
         await this.prisma.client.outbox.update({
           where: { id: f.id },
           data: {
@@ -119,11 +126,35 @@ export class OutboxRelayService implements OnModuleInit {
           },
         });
       }
+
+      if (pendingEvents.length === 50 || hasRetryableFailures) {
+        this.scheduleRetry();
+      }
     } finally {
       await this.prisma.client.$executeRaw`
         SELECT pg_advisory_unlock(${OutboxRelayService.OUTBOX_RELAY_LOCK_KEY})
       `;
       this.isRunning = false;
     }
+  }
+
+  private scheduleRetry(): void {
+    if (this.retryTimer) {
+      return;
+    }
+
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null;
+      void this.relayPendingEvents();
+    }, OutboxRelayService.RETRY_DELAY_MS);
+  }
+
+  private clearScheduledRetry(): void {
+    if (!this.retryTimer) {
+      return;
+    }
+
+    clearTimeout(this.retryTimer);
+    this.retryTimer = null;
   }
 }

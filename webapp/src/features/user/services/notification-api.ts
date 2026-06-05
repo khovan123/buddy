@@ -23,6 +23,7 @@ export interface UserNotification {
     moderatedAt?: string
   }
   status: string
+  readAt?: string | null
   createdAt: string
 }
 
@@ -35,7 +36,18 @@ export const notificationApi = baseApi.injectEndpoints({
       }),
       providesTags: ["Notification"],
     }),
+    markAllNotificationsRead: build.mutation<
+      ApiResponse<{ updatedCount: number }>,
+      void
+    >({
+      query: () => ({
+        url: "/v1/notifications/read-all",
+        method: "PATCH",
+      }),
+      invalidatesTags: ["Notification"],
+    }),
   }),
 })
 
-export const { useGetNotificationsQuery } = notificationApi
+export const { useGetNotificationsQuery, useMarkAllNotificationsReadMutation } =
+  notificationApi

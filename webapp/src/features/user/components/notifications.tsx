@@ -36,7 +36,10 @@ import {
   type ResourceQueryItem,
   type TutorialQueryItem,
 } from "@/features/content/types"
-import { useGetNotificationsQuery } from "@/features/user/services/notification-api"
+import {
+  useGetNotificationsQuery,
+  useMarkAllNotificationsReadMutation,
+} from "@/features/user/services/notification-api"
 import { baseApi } from "@/lib/redux/base-api"
 import { cn } from "@/lib/utils"
 
@@ -67,6 +70,16 @@ const ACTIVE_TUTORIAL_STATUSES = new Set<TutorialStatus>([
   TutorialStatus.FAILED,
   TutorialStatus.BANNED,
 ])
+
+const READ_ALL_STORAGE_KEY = "buddy.notifications.readAllAt"
+
+function isAfterReadAll(updatedAt: string, readAllAt: string | null) {
+  if (!readAllAt) {
+    return true
+  }
+
+  return new Date(updatedAt).getTime() > new Date(readAllAt).getTime()
+}
 
 function getModerationMeta(
   contentStatus: ResourceStatus | TutorialStatus,
@@ -111,7 +124,8 @@ function getModerationMeta(
   ) {
     return {
       statusLabel: "Processing",
-      description: "Extracting content and running moderation in the background.",
+      description:
+        "Extracting content and running moderation in the background.",
       tone: "info",
     }
   }
@@ -235,7 +249,9 @@ function getModerationEventMeta(
 
 export function Notifications() {
   const [open, setOpen] = useState(false)
+  const [readAllAt, setReadAllAt] = useState<string | null>(null)
   const dispatch = useDispatch()
+  const [markAllNotificationsRead] = useMarkAllNotificationsReadMutation()
   const {
     data: resourceResponse,
     isFetching: resourcesFetching,
@@ -274,16 +290,20 @@ export function Notifications() {
   const { activeCount, notifications } = useMemo(() => {
     const resources = resourceResponse?.data?.data ?? []
     const tutorials = tutorialResponse?.data?.data ?? []
-    const activeResources = resources.filter(isActiveResourceNotification)
-    const activeTutorials = tutorials.filter(isActiveTutorialNotification)
+    const activeResources = resources
+      .filter(isActiveResourceNotification)
+      .map(buildResourceNotification)
+    const activeTutorials = tutorials
+      .filter(isActiveTutorialNotification)
+      .map(buildTutorialNotification)
+    const unreadActiveNotifications = [
+      ...activeResources,
+      ...activeTutorials,
+    ].filter((item) => isAfterReadAll(item.updatedAt, readAllAt))
 
-    const activeNotifications = [
-      ...activeResources.map(buildResourceNotification),
-      ...activeTutorials.map(buildTutorialNotification),
-    ]
-    const purchaseNotifications: ModerationNotification[] = (
-      notificationResponse?.data ?? []
-    )
+    const activeNotifications = [...activeResources, ...activeTutorials]
+    const storedNotifications = notificationResponse?.data ?? []
+    const purchaseNotifications: ModerationNotification[] = storedNotifications
       .filter((item) => item.channel === "purchase")
       .map((item) => ({
         id: `purchase-${item._id}`,
@@ -298,25 +318,32 @@ export function Notifications() {
         tone: "success",
         updatedAt: item.createdAt,
       }))
-    const moderationNotifications: ModerationNotification[] = (
-      notificationResponse?.data ?? []
-    )
-      .filter((item) => item.channel === "content-moderation")
-      .map((item) => {
-        const meta = getModerationEventMeta(item.templateData.decision)
-        const contentType =
-          item.templateData.contentType === "TUTORIAL" ? "Tutorial" : "Resource"
+    const moderationNotifications: ModerationNotification[] =
+      storedNotifications
+        .filter((item) => item.channel === "content-moderation")
+        .map((item) => {
+          const meta = getModerationEventMeta(item.templateData.decision)
+          const contentType =
+            item.templateData.contentType === "TUTORIAL"
+              ? "Tutorial"
+              : "Resource"
 
-        return {
-          id: `moderation-${item._id}`,
-          href: "/content",
-          title: item.templateData.title ?? item.subject ?? "Content moderated",
-          type: contentType,
-          reason: item.templateData.reasons?.[0],
-          updatedAt: item.templateData.moderatedAt ?? item.createdAt,
-          ...meta,
-        }
-      })
+          return {
+            id: `moderation-${item._id}`,
+            href: "/content",
+            title:
+              item.templateData.title ?? item.subject ?? "Content moderated",
+            type: contentType,
+            reason: item.templateData.reasons?.[0],
+            updatedAt: item.templateData.moderatedAt ?? item.createdAt,
+            ...meta,
+          }
+        })
+    const unreadStoredCount = storedNotifications.filter(
+      (item) =>
+        !item.readAt &&
+        (item.channel === "purchase" || item.channel === "content-moderation")
+    ).length
 
     const approvedFallback = [
       ...resources
@@ -348,28 +375,31 @@ export function Notifications() {
       .slice(0, 6)
 
     return {
-      activeCount:
-        activeNotifications.length +
-        purchaseNotifications.length +
-        moderationNotifications.length,
+      activeCount: unreadActiveNotifications.length + unreadStoredCount,
       notifications: sorted,
     }
-  }, [notificationResponse, resourceResponse, tutorialResponse])
+  }, [notificationResponse, readAllAt, resourceResponse, tutorialResponse])
 
   const isFetching =
     resourcesFetching || tutorialsFetching || notificationsFetching
   const hasError = resourcesError || tutorialsError || notificationsError
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      const stored = localStorage.getItem(READ_ALL_STORAGE_KEY)
+      if (stored) {
+        setReadAllAt(stored)
+      }
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
     const events = new EventSource("/api/notifications/stream")
 
     const refreshNotifications = () => {
       dispatch(
-        baseApi.util.invalidateTags([
-          "Notification",
-          "Wallet",
-          "Transaction",
-        ])
+        baseApi.util.invalidateTags(["Notification", "Wallet", "Transaction"])
       )
     }
 
@@ -381,8 +411,26 @@ export function Notifications() {
     }
   }, [dispatch])
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen)
+
+    if (!nextOpen || activeCount === 0) {
+      return
+    }
+
+    const nextReadAllAt = new Date().toISOString()
+    setReadAllAt(nextReadAllAt)
+    localStorage.setItem(READ_ALL_STORAGE_KEY, nextReadAllAt)
+
+    markAllNotificationsRead()
+      .unwrap()
+      .catch(() => {
+        dispatch(baseApi.util.invalidateTags(["Notification"]))
+      })
+  }
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"

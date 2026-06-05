@@ -39,7 +39,7 @@ export class ThumbnailUploadedConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.UPLOAD,
     routingKey: UPLOAD_ROUTINGKEYS.THUMBNAIL_UPLOADED,
-    queue: QUEUES.CONTENT_RESOURCE_EVENTS,
+    queue: QUEUES.CONTENT_THUMBNAIL_UPLOADED_EVENTS,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -49,7 +49,19 @@ export class ThumbnailUploadedConsumer {
     messageData: RmqMessagePayload<ThumbnailUploadedEvent['payload']>,
     message: ConsumeMessage,
   ): Promise<void | Nack> {
-    const payload = extractRmqPayload(messageData);
+    const extractedPayload = extractRmqPayload<ThumbnailUploadedEvent['payload']>(messageData, [
+      'contentId',
+      'thumbnailUrl',
+    ]);
+    const payload: ThumbnailUploadedEvent['payload'] = {
+      contentId:
+        extractedPayload.contentId ?? this.readNestedStringField(messageData, 'contentId') ?? '',
+      contentType: this.normalizeContentType(extractedPayload.contentType),
+      thumbnailUrl:
+        extractedPayload.thumbnailUrl ??
+        this.readNestedStringField(messageData, 'thumbnailUrl') ??
+        '',
+    };
     const correlationId = this.idempotentConsumer.resolveCorrelationId(
       message as unknown as Record<string, unknown>,
       payload.contentId,
@@ -57,7 +69,10 @@ export class ThumbnailUploadedConsumer {
 
     try {
       if (!payload.contentId || !payload.thumbnailUrl) {
-        this.logger.error(`[handleThumbnailUploaded] Missing contentId or thumbnailUrl, skipping`);
+        this.logger.error(
+          `[handleThumbnailUploaded] Missing contentId or thumbnailUrl, skipping; ` +
+            `messageKeys=${this.describeObjectKeys(messageData)}, payloadKeys=${this.describeObjectKeys(extractedPayload)}`,
+        );
         return;
       }
 
@@ -67,7 +82,7 @@ export class ThumbnailUploadedConsumer {
       );
 
       // ── Idempotent DB update ─────────────────────────────────────────
-      await this.idempotentConsumer.runWithIdempotency(
+      const processed = await this.idempotentConsumer.runWithIdempotency(
         correlationId,
         UPLOAD_ROUTINGKEYS.THUMBNAIL_UPLOADED,
         async (_session) => {
@@ -99,6 +114,13 @@ export class ThumbnailUploadedConsumer {
         },
       );
 
+      if (processed === false) {
+        this.logger.warn(
+          `Skipped ${UPLOAD_ROUTINGKEYS.THUMBNAIL_UPLOADED} for contentId ${payload.contentId}: already processed for correlationId=${correlationId}`,
+        );
+        return;
+      }
+
       this.logger.log(
         `Successfully processed ${UPLOAD_ROUTINGKEYS.THUMBNAIL_UPLOADED} for contentId ${payload.contentId}`,
       );
@@ -117,7 +139,7 @@ export class ThumbnailUploadedConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.UPLOAD,
     routingKey: UPLOAD_ROUTINGKEYS.THUMBNAIL_UPLOAD_FAILED,
-    queue: QUEUES.CONTENT_RESOURCE_EVENTS,
+    queue: QUEUES.CONTENT_THUMBNAIL_UPLOAD_FAILED_EVENTS,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -127,7 +149,10 @@ export class ThumbnailUploadedConsumer {
     messageData: RmqMessagePayload<ThumbnailUploadFailedEvent['payload']>,
     _message: ConsumeMessage,
   ): Promise<void> {
-    const payload = extractRmqPayload(messageData);
+    const payload = extractRmqPayload<ThumbnailUploadFailedEvent['payload']>(messageData, [
+      'contentId',
+      'reason',
+    ]);
     const reason = this.extractFailureReason(payload, messageData);
 
     this.logger.warn(
@@ -163,18 +188,39 @@ export class ThumbnailUploadedConsumer {
     return typeof value === 'string' ? value : undefined;
   }
 
-  private readNestedStringField(
-    messageData: RmqMessagePayload<ThumbnailUploadFailedEvent['payload']>,
-    key: string,
-  ): string | undefined {
+  private readNestedStringField(messageData: unknown, key: string): string | undefined {
     if (!messageData || typeof messageData !== 'object') {
       return undefined;
     }
 
+    const direct = this.readStringField(messageData, key);
+    if (direct) {
+      return direct;
+    }
+
     if ('data' in messageData) {
-      return this.readStringField(messageData.data, key);
+      const fromData = this.readNestedStringField(messageData.data, key);
+      if (fromData) {
+        return fromData;
+      }
+    }
+
+    if ('payload' in messageData) {
+      return this.readNestedStringField(messageData.payload, key);
     }
 
     return undefined;
+  }
+
+  private normalizeContentType(contentType: unknown): 'resource' | 'collection' {
+    return String(contentType).trim().toLowerCase() === 'collection' ? 'collection' : 'resource';
+  }
+
+  private describeObjectKeys(source: unknown): string {
+    if (!source || typeof source !== 'object') {
+      return typeof source;
+    }
+
+    return Object.keys(source).join(',') || 'none';
   }
 }

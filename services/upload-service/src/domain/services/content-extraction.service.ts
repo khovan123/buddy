@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import mammoth from 'mammoth';
 
 export type ContentExtractionStatus = 'AVAILABLE' | 'UNSUPPORTED' | 'FAILED';
 
@@ -10,6 +11,23 @@ export interface ContentExtractionResult {
 }
 
 const DEFAULT_MAX_CHARS = 20_000;
+const TEXT_FILE_EXTENSIONS = new Set([
+  '.csv',
+  '.dart',
+  '.html',
+  '.js',
+  '.json',
+  '.jsx',
+  '.md',
+  '.py',
+  '.sql',
+  '.ts',
+  '.tsx',
+  '.txt',
+  '.xml',
+  '.yaml',
+  '.yml',
+]);
 
 @Injectable()
 export class ContentExtractionService {
@@ -27,12 +45,20 @@ export class ContentExtractionService {
         return this.available(this.truncate(buffer.toString('utf-8')));
       }
 
-      if (normalizedName.endsWith('.md') || normalizedName.endsWith('.txt')) {
+      if (this.hasTextFileExtension(normalizedName)) {
         return this.available(this.truncate(buffer.toString('utf-8')));
       }
 
       if (normalizedMime === 'application/pdf' || normalizedName.endsWith('.pdf')) {
         return this.available(this.truncate(this.extractPdfTextBestEffort(buffer)));
+      }
+
+      if (
+        normalizedMime ===
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        normalizedName.endsWith('.docx')
+      ) {
+        return this.available(this.truncate(await this.extractDocxText(buffer)));
       }
 
       if (normalizedMime.startsWith('video/')) {
@@ -72,6 +98,15 @@ export class ContentExtractionService {
     );
     const safeMaxChars = Number.isFinite(maxChars) && maxChars > 0 ? maxChars : DEFAULT_MAX_CHARS;
     return text.length > safeMaxChars ? text.slice(0, safeMaxChars) : text;
+  }
+
+  private hasTextFileExtension(fileName: string): boolean {
+    return [...TEXT_FILE_EXTENSIONS].some((extension) => fileName.endsWith(extension));
+  }
+
+  private async extractDocxText(buffer: Buffer): Promise<string> {
+    const result = await mammoth.extractRawText({ buffer });
+    return result.value.replace(/\s+/g, ' ').trim();
   }
 
   private extractPdfTextBestEffort(buffer: Buffer): string {

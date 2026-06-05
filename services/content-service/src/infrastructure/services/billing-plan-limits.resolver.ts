@@ -1,4 +1,4 @@
-import { DEFAULT_PLAN_LIMITS, type PlanLimits, type SubscriptionPlan } from '@libs/contracts';
+import { type PlanLimits, type SubscriptionPlan } from '@libs/contracts';
 import type { PlanLimitsResolver, PolicyContext } from '@libs/common';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -26,9 +26,9 @@ export class BillingPlanLimitsResolver implements PlanLimitsResolver {
   async resolvePlanLimits(
     plan: SubscriptionPlan,
     _context: Pick<PolicyContext, 'userId' | 'roles' | 'extras'>,
-  ): Promise<PlanLimits> {
+  ): Promise<PlanLimits | null> {
     await this.refreshIfNeeded();
-    return this.cache.get(plan) ?? DEFAULT_PLAN_LIMITS;
+    return this.cache.get(plan) ?? null;
   }
 
   private async refreshIfNeeded() {

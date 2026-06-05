@@ -6,7 +6,6 @@ import { Geist, Geist_Mono } from "next/font/google"
 
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { UploadProgressPanel } from "@/features/content"
 import "../bones/registry"
 import "./globals.css"
 
@@ -158,7 +157,6 @@ export default function RootLayout({
                     <SessionLoginDialogProvider>
                       <div className="relative flex min-h-screen flex-col">
                         <Toaster />
-                        <UploadProgressPanel />
                         {children}
                       </div>
                     </SessionLoginDialogProvider>

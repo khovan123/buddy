@@ -33,7 +33,7 @@ export class ResourceUploadedConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.UPLOAD,
     routingKey: UPLOAD_ROUTINGKEYS.RESOURCE_UPLOAD_COMPLETED,
-    queue: QUEUES.CONTENT_RESOURCE_EVENTS,
+    queue: QUEUES.CONTENT_RESOURCE_UPLOAD_COMPLETED_EVENTS,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -43,14 +43,24 @@ export class ResourceUploadedConsumer {
     messageData: RmqMessagePayload<ResourceUploadCompletedEvent['payload']>,
     message: ConsumeMessage,
   ): Promise<void | Nack> {
-    const payload = extractRmqPayload(messageData);
+    const payload = extractRmqPayload<ResourceUploadCompletedEvent['payload']>(messageData, [
+      'resourceId',
+      'meta',
+    ]);
     const correlationId = this.idempotentConsumer.resolveCorrelationId(
       message as unknown as Record<string, unknown>,
       payload.resourceId,
     );
 
     try {
-      await this.idempotentConsumer.runWithIdempotency(
+      if (!payload.resourceId || !Array.isArray(payload.meta)) {
+        this.logger.error(
+          `Missing resourceId or meta for ${UPLOAD_ROUTINGKEYS.RESOURCE_UPLOAD_COMPLETED}; skipping`,
+        );
+        return;
+      }
+
+      const processed = await this.idempotentConsumer.runWithIdempotency(
         correlationId,
         UPLOAD_ROUTINGKEYS.RESOURCE_UPLOAD_COMPLETED,
         async (session) => {
@@ -67,6 +77,13 @@ export class ResourceUploadedConsumer {
           );
         },
       );
+
+      if (processed === false) {
+        this.logger.warn(
+          `Skipped ${UPLOAD_ROUTINGKEYS.RESOURCE_UPLOAD_COMPLETED} for resourceId ${payload.resourceId}: already processed for correlationId=${correlationId}`,
+        );
+        return;
+      }
 
       this.logger.log(
         `Successfully processed ${UPLOAD_ROUTINGKEYS.RESOURCE_UPLOAD_COMPLETED} for resourceId ${payload.resourceId}`,

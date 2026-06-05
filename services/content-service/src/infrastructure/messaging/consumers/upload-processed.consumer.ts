@@ -46,7 +46,7 @@ export class UploadProcessedConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.UPLOAD,
     routingKey: UPLOAD_ROUTINGKEYS.FILE_PROCESSED,
-    queue: QUEUES.CONTENT_VIDEO_EVENTS,
+    queue: QUEUES.CONTENT_FILE_PROCESSED_EVENTS,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -104,7 +104,7 @@ export class UploadProcessedConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.UPLOAD,
     routingKey: UPLOAD_ROUTINGKEYS.FILE_PROCESSING_FAILED,
-    queue: QUEUES.CONTENT_VIDEO_EVENTS,
+    queue: QUEUES.CONTENT_FILE_PROCESSING_FAILED_EVENTS,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },

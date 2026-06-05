@@ -26,6 +26,7 @@ export interface NotificationProps {
   maxAttempts: number;
   lastAttemptAt?: Date;
   sentAt?: Date;
+  readAt?: Date | null;
   errorMessage?: string;
   correlationId?: string;
   createdAt: Date;
@@ -98,6 +99,11 @@ export class Notification {
     this.props.updatedAt = new Date();
   }
 
+  markRead(): void {
+    this.props.readAt = new Date();
+    this.props.updatedAt = new Date();
+  }
+
   /**
    * Executes the can retry operation.
    *
@@ -139,6 +145,9 @@ export class Notification {
   }
   get errorMessage(): string | undefined {
     return this.props.errorMessage;
+  }
+  get readAt(): Date | null | undefined {
+    return this.props.readAt;
   }
   get correlationId(): string | undefined {
     return this.props.correlationId;

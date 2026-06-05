@@ -46,6 +46,9 @@ export class Notification {
   @Prop({ type: Date })
   sentAt?: Date;
 
+  @Prop({ type: Date, default: null })
+  readAt?: Date | null;
+
   @Prop({ type: String })
   errorMessage?: string;
 
@@ -57,6 +60,7 @@ export type NotificationDocument = HydratedDocument<Notification>;
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
 
 NotificationSchema.index({ userId: 1, createdAt: -1 });
+NotificationSchema.index({ userId: 1, readAt: 1 });
 NotificationSchema.index({ status: 1, attempts: 1 });
 
 NotificationSchema.set('toJSON', { virtuals: true });

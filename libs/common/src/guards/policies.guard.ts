@@ -44,7 +44,7 @@ export interface PlanLimitsResolver {
   resolvePlanLimits(
     plan: SubscriptionPlanType,
     context: Pick<PolicyContext, 'userId' | 'roles' | 'extras'>,
-  ): PlanLimits | Promise<PlanLimits>;
+  ): PlanLimits | null | Promise<PlanLimits | null>;
 }
 
 export const PBAC_LIMITS_RESOLVER = Symbol('PBAC_LIMITS_RESOLVER');

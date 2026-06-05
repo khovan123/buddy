@@ -4,7 +4,9 @@ import {
   Controller,
   DefaultValuePipe,
   Get,
+  Inject,
   ParseIntPipe,
+  Patch,
   Query,
   Req,
   Sse,
@@ -16,6 +18,8 @@ import type { FastifyRequest } from 'fastify';
 import { Observable } from 'rxjs';
 import { NotificationStreamService } from '../../../application/notifications/notification-stream.service';
 import { GetNotificationsQuery } from '../../../application/queries/get-notifications.query';
+import { NOTIFICATION_REPOSITORY } from '../../../domain/repositories/tokens';
+import type { INotificationRepository } from '../../../domain/repositories/notification.repository.interface';
 
 type AuthenticatedRequest = FastifyRequest & { user: { sub: string } };
 
@@ -26,6 +30,8 @@ export class NotificationController {
   constructor(
     private readonly queryBus: QueryBus,
     private readonly notificationStream: NotificationStreamService,
+    @Inject(NOTIFICATION_REPOSITORY)
+    private readonly notificationRepository: INotificationRepository,
   ) {}
 
   @Get()
@@ -38,6 +44,12 @@ export class NotificationController {
     );
 
     return successResponse(notifications);
+  }
+
+  @Patch('read-all')
+  async markAllRead(@Req() req: AuthenticatedRequest) {
+    const updatedCount = await this.notificationRepository.markAllReadByUserId(req.user.sub);
+    return successResponse({ updatedCount });
   }
 
   @Sse('stream')

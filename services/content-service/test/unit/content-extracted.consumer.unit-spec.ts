@@ -354,6 +354,151 @@ describe('ContentExtractedConsumer', () => {
       expect(mockRecommendationSync.send).not.toHaveBeenCalled();
     });
 
+    it('should normalize missing files payload instead of throwing before moderation', async () => {
+      const payload = makeResourcePayload({ files: undefined as any });
+      const resource = makeResourceQueryItem();
+      mockResourceRepository.findByIdWithDetails.mockResolvedValue(resource);
+      mockContentModeration.moderate.mockResolvedValue(approvedResult());
+
+      const result = await consumer.handleContentExtracted(
+        { payload },
+        makeConsumeMessage() as any,
+      );
+
+      expect(result).toBeUndefined();
+      expect(mockContentModeration.moderate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contentId: 'res-001',
+          contentType: 'RESOURCE',
+          extractedText: '',
+          mediaUrls: [],
+          extractionStatus: 'PARTIAL',
+          extractionError: null,
+        }),
+      );
+    });
+
+    it('should unwrap nested outbox relay envelopes before moderation', async () => {
+      const payload = makeResourcePayload();
+      const resource = makeResourceQueryItem();
+      mockResourceRepository.findByIdWithDetails.mockResolvedValue(resource);
+      mockContentModeration.moderate.mockResolvedValue(approvedResult());
+
+      const result = await consumer.handleContentExtracted(
+        {
+          pattern: UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+          data: {
+            eventId: 'event-001',
+            routingKey: UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+            payload: { payload },
+          },
+        } as any,
+        makeConsumeMessage() as any,
+      );
+
+      expect(result).toBeUndefined();
+      expect(mockResourceRepository.findByIdWithDetails).toHaveBeenCalledWith('res-001');
+      expect(mockContentModeration.moderate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contentId: 'res-001',
+          contentType: 'RESOURCE',
+          extractedText: 'Educational content about algorithms',
+        }),
+      );
+    });
+
+    it('should unwrap broker data envelopes before moderation', async () => {
+      const payload = makeResourcePayload();
+      const resource = makeResourceQueryItem();
+      mockResourceRepository.findByIdWithDetails.mockResolvedValue(resource);
+      mockContentModeration.moderate.mockResolvedValue(approvedResult());
+
+      const result = await consumer.handleContentExtracted(
+        {
+          pattern: UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+          data: {
+            data: payload,
+          },
+        } as any,
+        makeConsumeMessage() as any,
+      );
+
+      expect(result).toBeUndefined();
+      expect(mockResourceRepository.findByIdWithDetails).toHaveBeenCalledWith('res-001');
+      expect(mockContentModeration.moderate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contentId: 'res-001',
+          contentType: 'RESOURCE',
+          extractedText: 'Educational content about algorithms',
+        }),
+      );
+    });
+
+    it('should parse serialized broker payloads before moderation', async () => {
+      const payload = makeResourcePayload();
+      const resource = makeResourceQueryItem();
+      mockResourceRepository.findByIdWithDetails.mockResolvedValue(resource);
+      mockContentModeration.moderate.mockResolvedValue(approvedResult());
+
+      const result = await consumer.handleContentExtracted(
+        JSON.stringify({
+          pattern: UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+          data: {
+            eventId: 'event-serialized',
+            routingKey: UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+            payload,
+          },
+        }) as any,
+        makeConsumeMessage() as any,
+      );
+
+      expect(result).toBeUndefined();
+      expect(mockResourceRepository.findByIdWithDetails).toHaveBeenCalledWith('res-001');
+      expect(mockContentModeration.moderate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contentId: 'res-001',
+          contentType: 'RESOURCE',
+          extractedText: 'Educational content about algorithms',
+        }),
+      );
+    });
+
+    it('should parse serialized buffer broker payloads before moderation', async () => {
+      const payload = makeResourcePayload();
+      const resource = makeResourceQueryItem();
+      mockResourceRepository.findByIdWithDetails.mockResolvedValue(resource);
+      mockContentModeration.moderate.mockResolvedValue(approvedResult());
+
+      const result = await consumer.handleContentExtracted(
+        {
+          type: 'Buffer',
+          data: Array.from(
+            Buffer.from(
+              JSON.stringify({
+                pattern: UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+                data: {
+                  eventId: 'event-buffer',
+                  routingKey: UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
+                  payload,
+                },
+              }),
+            ),
+          ),
+        } as any,
+        makeConsumeMessage() as any,
+      );
+
+      expect(result).toBeUndefined();
+      expect(mockResourceRepository.findByIdWithDetails).toHaveBeenCalledWith('res-001');
+      expect(mockContentModeration.moderate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          contentId: 'res-001',
+          contentType: 'RESOURCE',
+          extractedText: 'Educational content about algorithms',
+        }),
+      );
+    });
+
     it('should skip moderation if resource is not found', async () => {
       const payload = makeResourcePayload();
       mockResourceRepository.findByIdWithDetails.mockResolvedValue(null);

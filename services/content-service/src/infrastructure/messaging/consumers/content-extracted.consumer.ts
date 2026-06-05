@@ -40,7 +40,7 @@ export class ContentExtractedConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.UPLOAD,
     routingKey: UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
-    queue: QUEUES.CONTENT_RESOURCE_EVENTS,
+    queue: QUEUES.CONTENT_EXTRACTED_EVENTS,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -50,19 +50,33 @@ export class ContentExtractedConsumer {
     messageData: RmqMessagePayload<ContentExtractedEvent['payload']>,
     message: ConsumeMessage,
   ): Promise<void | Nack> {
-    const payload = extractRmqPayload(messageData);
+    const rawPayload = extractRmqPayload<ContentExtractedEvent['payload']>(messageData, [
+      'contentId',
+      'contentType',
+      'files',
+    ]);
+    const payload: ContentExtractedEvent['payload'] = {
+      ...rawPayload,
+      files: this.normalizeFiles(rawPayload.files),
+    };
     const contentType = this.normalizeContentType(payload.contentType);
     const correlationId = this.idempotentConsumer.resolveCorrelationId(
       message as unknown as Record<string, unknown>,
       payload.contentId,
     );
 
+    if (!Array.isArray(rawPayload.files)) {
+      this.logger.warn(
+        `Received ${UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED} for ${contentType} ${payload.contentId} with missing or invalid files payload; continuing with 0 file(s)`,
+      );
+    }
+
     this.logger.log(
       `Received ${UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED} for ${contentType} ${payload.contentId} with ${payload.files.length} file(s)`,
     );
 
     try {
-      await this.idempotentConsumer.runWithIdempotency(
+      const processed = await this.idempotentConsumer.runWithIdempotency(
         correlationId,
         UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED,
         async () => {
@@ -73,6 +87,13 @@ export class ContentExtractedConsumer {
           }
         },
       );
+
+      if (processed === false) {
+        this.logger.warn(
+          `Skipped ${UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED} for ${contentType} ${payload.contentId}: already processed for correlationId=${correlationId}`,
+        );
+        return;
+      }
 
       this.logger.log(
         `Successfully processed ${UPLOAD_ROUTINGKEYS.CONTENT_EXTRACTED} for ${contentType} ${payload.contentId}`,
@@ -124,7 +145,9 @@ export class ContentExtractedConsumer {
       return;
     }
 
-    this.logger.log(`Starting moderation for RESOURCE ${resource.id} (${resource.title})`);
+    this.logger.log(
+      `[handleContentExtracted] Starting moderation for RESOURCE ${resource.id} (${resource.title}); files=${payload.files.length}, extractionStatus=${this.resolveExtractionStatus(payload)}`,
+    );
 
     const result = await this.contentModeration.moderate({
       contentId: resource.id,
@@ -143,7 +166,7 @@ export class ContentExtractedConsumer {
     });
 
     this.logger.log(
-      `Moderation result for RESOURCE ${resource.id}: decision=${result.decision}, score=${result.score}, ruleVersion=${result.ruleVersion}`,
+      `[handleContentExtracted] Moderation result for RESOURCE ${resource.id}: decision=${result.decision}, score=${result.score}, ruleVersion=${result.ruleVersion}, reasons=${result.reasons.length}`,
     );
 
     await this.resourceRepository.applyModerationResult(resource.id, {
@@ -172,6 +195,9 @@ export class ContentExtractedConsumer {
     );
 
     if (result.decision === 'APPROVED') {
+      this.logger.log(
+        `[handleContentExtracted] RESOURCE ${resource.id} approved; publishing recommendation sync`,
+      );
       await this.recommendationSync.send({
         type: 'ITEM_UPSERT',
         itemId: resource.id,
@@ -202,7 +228,9 @@ export class ContentExtractedConsumer {
       return;
     }
 
-    this.logger.log(`Starting moderation for TUTORIAL ${tutorial.id} (${tutorial.title})`);
+    this.logger.log(
+      `[handleContentExtracted] Starting moderation for TUTORIAL ${tutorial.id} (${tutorial.title}); files=${payload.files.length}, extractionStatus=${this.resolveExtractionStatus(payload)}`,
+    );
 
     const result = await this.contentModeration.moderate({
       contentId: tutorial.id,
@@ -219,7 +247,7 @@ export class ContentExtractedConsumer {
     });
 
     this.logger.log(
-      `Moderation result for TUTORIAL ${tutorial.id}: decision=${result.decision}, score=${result.score}, ruleVersion=${result.ruleVersion}`,
+      `[handleContentExtracted] Moderation result for TUTORIAL ${tutorial.id}: decision=${result.decision}, score=${result.score}, ruleVersion=${result.ruleVersion}, reasons=${result.reasons.length}`,
     );
 
     await this.tutorialRepository.applyModerationResult(tutorial.id, {
@@ -248,6 +276,9 @@ export class ContentExtractedConsumer {
     );
 
     if (result.decision === 'APPROVED') {
+      this.logger.log(
+        `[handleContentExtracted] TUTORIAL ${tutorial.id} approved; publishing recommendation sync`,
+      );
       await this.recommendationSync.send({
         type: 'ITEM_UPSERT',
         itemId: tutorial.id,
@@ -313,5 +344,9 @@ export class ContentExtractedConsumer {
     contentType: unknown,
   ): ContentExtractedEvent['payload']['contentType'] {
     return String(contentType).trim().toUpperCase() === 'TUTORIAL' ? 'TUTORIAL' : 'RESOURCE';
+  }
+
+  private normalizeFiles(files: unknown): ContentExtractedEvent['payload']['files'] {
+    return Array.isArray(files) ? files : [];
   }
 }

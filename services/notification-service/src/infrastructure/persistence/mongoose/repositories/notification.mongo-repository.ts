@@ -60,6 +60,13 @@ export class NotificationMongoRepository implements INotificationRepository {
     return docs.map((d) => this.toDomain(d));
   }
 
+  async markAllReadByUserId(userId: string, readAt = new Date()): Promise<number> {
+    const result = await this.model
+      .updateMany({ userId, readAt: null }, { $set: { readAt } })
+      .exec();
+    return result.modifiedCount;
+  }
+
   /**
    * Executes the find pending operation.
    *
@@ -96,6 +103,7 @@ export class NotificationMongoRepository implements INotificationRepository {
       maxAttempts: doc.maxAttempts,
       lastAttemptAt: doc.lastAttemptAt,
       sentAt: doc.sentAt,
+      readAt: doc.readAt,
       errorMessage: doc.errorMessage,
       correlationId: doc.correlationId,
       createdAt: doc.createdAt,
@@ -120,6 +128,7 @@ export class NotificationMongoRepository implements INotificationRepository {
       templateData: n.templateData,
       status: n.status,
       attempts: n.attempts,
+      readAt: n.readAt,
       errorMessage: n.errorMessage,
       correlationId: n.correlationId,
     };

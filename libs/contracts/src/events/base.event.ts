@@ -25,26 +25,93 @@ export abstract class BaseEvent {
 export type RmqMessagePayload<T = unknown> =
   | T
   | { payload: T }
+  | { data: T }
   | { data: { payload: T } }
   | Record<string, unknown>;
 
 /**
  * Helper function to safely extract the payload from a generic RabbitMQ message.
- * Supports unwrapping NestJS Microservices format ({ data: { payload } }) and direct { payload } format.
+ * Supports unwrapping NestJS Microservices format ({ data: ... }), event envelopes
+ * ({ data: { payload } }), and direct { payload } format.
  */
-export function extractRmqPayload<T>(message: RmqMessagePayload<T>): T {
-  if (message && typeof message === 'object') {
-    if (
-      'data' in message &&
-      message.data &&
-      typeof message.data === 'object' &&
-      'payload' in message.data
-    ) {
-      return (message as { data: { payload: T } }).data.payload;
+export function extractRmqPayload<T>(
+  message: RmqMessagePayload<T>,
+  payloadKeys: readonly string[] = [],
+): T {
+  let current: unknown = message;
+
+  for (let depth = 0; depth < 5; depth += 1) {
+    const decoded = decodeSerializedPayload(current);
+    if (decoded !== current) {
+      current = decoded;
+      continue;
     }
-    if ('payload' in message) {
-      return (message as { payload: T }).payload;
+
+    if (!current || typeof current !== 'object') {
+      break;
+    }
+
+    if (hasAnyKey(current, payloadKeys)) {
+      break;
+    }
+
+    if ('data' in current) {
+      const data = (current as { data: unknown }).data;
+      if (data && typeof data === 'object' && 'payload' in data) {
+        current = (data as { payload: unknown }).payload;
+        continue;
+      }
+
+      current = data;
+      continue;
+    }
+
+    if ('payload' in current) {
+      current = (current as { payload: unknown }).payload;
+      continue;
+    }
+
+    break;
+  }
+
+  return current as T;
+}
+
+function decodeSerializedPayload(source: unknown): unknown {
+  if (typeof source === 'string') {
+    const trimmed = source.trim();
+    if (!trimmed || !['{', '['].includes(trimmed[0])) {
+      return source;
+    }
+
+    try {
+      return JSON.parse(trimmed) as unknown;
+    } catch {
+      return source;
     }
   }
-  return message as T;
+
+  if (isSerializedBuffer(source)) {
+    try {
+      const text = Buffer.from(source.data).toString('utf8').trim();
+      return text ? JSON.parse(text) : source;
+    } catch {
+      return source;
+    }
+  }
+
+  return source;
+}
+
+function isSerializedBuffer(source: unknown): source is { type: 'Buffer'; data: number[] } {
+  return (
+    Boolean(source) &&
+    typeof source === 'object' &&
+    (source as { type?: unknown }).type === 'Buffer' &&
+    Array.isArray((source as { data?: unknown }).data)
+  );
+}
+
+function hasAnyKey(source: object, keys: readonly string[]): boolean {
+  return keys.length > 0 && keys.some((key) => key in source);
 }

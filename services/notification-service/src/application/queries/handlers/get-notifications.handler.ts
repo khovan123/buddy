@@ -29,6 +29,7 @@ export class GetNotificationsHandler implements IQueryHandler<GetNotificationsQu
       status: n.status,
       attempts: n.attempts,
       sentAt: n.createdAt,
+      readAt: n.readAt ?? null,
       createdAt: n.createdAt,
     }));
   }

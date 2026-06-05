@@ -89,6 +89,7 @@ interface ContentModerationChecklistProps {
   moderationStatus?: string | null
   verified?: boolean
   reasons?: string[]
+  ruleVersion?: string | null
   compact?: boolean
 }
 
@@ -171,9 +172,12 @@ export function ContentModerationChecklist({
   moderationStatus,
   verified,
   reasons,
+  ruleVersion,
   compact = false,
 }: ContentModerationChecklistProps) {
   const items = getChecklistState({ status, moderationStatus, verified })
+  const violationReasons = reasons ?? []
+  const hasReasons = violationReasons.length > 0
 
   return (
     <div
@@ -198,15 +202,25 @@ export function ContentModerationChecklist({
           </div>
         ))}
       </div>
-      {reasons?.length ? (
-        <ul className="mt-2 space-y-1 border-t border-border/60 pt-2 text-xs text-destructive">
-          {reasons.slice(0, 3).map((reason) => (
+      {hasReasons ? (
+        <div className="mt-2 border-t border-border/60 pt-2">
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-destructive">
+            <span>Violation rules</span>
+            {ruleVersion ? (
+              <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px]">
+                {ruleVersion}
+              </span>
+            ) : null}
+          </div>
+          <ul className="space-y-1 text-xs text-destructive">
+          {violationReasons.slice(0, 3).map((reason) => (
             <li key={reason} className="flex gap-2">
               <AlertTriangle className="mt-0.5 size-3 shrink-0" />
               <span className="line-clamp-2">{reason}</span>
             </li>
           ))}
-        </ul>
+          </ul>
+        </div>
       ) : null}
     </div>
   )

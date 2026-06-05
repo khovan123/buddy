@@ -52,8 +52,8 @@ export class IdempotentConsumerService {
     const existing = await this.processedMessageModel
       .findOne({
         correlationId,
-        routingKey,
         serviceName: this.serviceName,
+        $or: [{ routingKey }, { eventName: routingKey }],
         status: ProcessedMessageStatus.PROCESSED,
       })
       .lean()
@@ -75,23 +75,21 @@ export class IdempotentConsumerService {
     correlationId: string,
     routingKey: string,
     action: (session?: ClientSession) => Promise<void>,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const connection = this.mongoService.getConnection();
     const session = await connection.startSession();
+    let processed = false;
 
     try {
       await session.withTransaction(async () => {
         const upsertResult = await this.processedMessageModel
           .updateOne(
-            {
-              correlationId,
-              routingKey,
-              serviceName: this.serviceName,
-            },
+            this.getIdempotencyKey(correlationId, routingKey),
             {
               $setOnInsert: {
                 correlationId,
                 routingKey,
+                eventName: routingKey,
                 serviceName: this.serviceName,
                 status: ProcessedMessageStatus.PROCESSING,
               },
@@ -102,15 +100,7 @@ export class IdempotentConsumerService {
 
         if (upsertResult.upsertedCount === 0) {
           const existing = await this.processedMessageModel
-            .findOne(
-              {
-                correlationId,
-                routingKey,
-                serviceName: this.serviceName,
-              },
-              { status: 1 },
-              { session },
-            )
+            .findOne(this.getIdempotencyKey(correlationId, routingKey), { status: 1 }, { session })
             .lean()
             .exec();
 
@@ -120,14 +110,11 @@ export class IdempotentConsumerService {
         }
 
         await action(session);
+        processed = true;
 
         await this.processedMessageModel
           .updateOne(
-            {
-              correlationId,
-              routingKey,
-              serviceName: this.serviceName,
-            },
+            this.getIdempotencyKey(correlationId, routingKey),
             {
               $set: {
                 status: ProcessedMessageStatus.PROCESSED,
@@ -147,28 +134,27 @@ export class IdempotentConsumerService {
       this.logger.warn(
         'Mongo transaction is unavailable. Falling back to non-transactional idempotency path.',
       );
-      await this.runWithoutTransaction(correlationId, routingKey, action);
+      return this.runWithoutTransaction(correlationId, routingKey, action);
     } finally {
       await session.endSession();
     }
+
+    return processed;
   }
 
   private async runWithoutTransaction(
     correlationId: string,
     routingKey: string,
     action: (session?: ClientSession) => Promise<void>,
-  ): Promise<void> {
-    await this.processedMessageModel
+  ): Promise<boolean> {
+    const upsertResult = await this.processedMessageModel
       .updateOne(
-        {
-          correlationId,
-          routingKey,
-          serviceName: this.serviceName,
-        },
+        this.getIdempotencyKey(correlationId, routingKey),
         {
           $setOnInsert: {
             correlationId,
             routingKey,
+            eventName: routingKey,
             serviceName: this.serviceName,
             status: ProcessedMessageStatus.PROCESSING,
           },
@@ -177,24 +163,38 @@ export class IdempotentConsumerService {
       )
       .exec();
 
+    if (upsertResult.upsertedCount === 0) {
+      const existing = await this.processedMessageModel
+        .findOne(this.getIdempotencyKey(correlationId, routingKey), { status: 1 })
+        .lean()
+        .exec();
+
+      if (existing?.status === ProcessedMessageStatus.PROCESSED) {
+        return false;
+      }
+    }
+
     await action(undefined);
 
     await this.processedMessageModel
-      .updateOne(
-        {
-          correlationId,
-          routingKey,
-          serviceName: this.serviceName,
+      .updateOne(this.getIdempotencyKey(correlationId, routingKey), {
+        $set: {
+          status: ProcessedMessageStatus.PROCESSED,
+          processedAt: new Date(),
+          expiresAt: new Date(),
         },
-        {
-          $set: {
-            status: ProcessedMessageStatus.PROCESSED,
-            processedAt: new Date(),
-            expiresAt: new Date(),
-          },
-        },
-      )
+      })
       .exec();
+
+    return true;
+  }
+
+  private getIdempotencyKey(correlationId: string, routingKey: string): Record<string, string> {
+    return {
+      correlationId,
+      eventName: routingKey,
+      serviceName: this.serviceName,
+    };
   }
 
   private isTransactionUnsupportedError(error: unknown): boolean {

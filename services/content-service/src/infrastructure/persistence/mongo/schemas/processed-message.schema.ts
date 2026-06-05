@@ -16,6 +16,9 @@ export class ProcessedMessage {
   routingKey!: string;
 
   @Prop({ type: String, required: true })
+  eventName!: string;
+
+  @Prop({ type: String, required: true })
   serviceName!: string;
 
   @Prop({ type: String, enum: ProcessedMessageStatus, default: ProcessedMessageStatus.PROCESSING })
@@ -32,8 +35,13 @@ export type ProcessedMessageDocument = HydratedDocument<ProcessedMessage>;
 export const ProcessedMessageSchema = SchemaFactory.createForClass(ProcessedMessage);
 
 ProcessedMessageSchema.index(
-  { correlationId: 1, routingKey: 1, serviceName: 1 },
+  { correlationId: 1, eventName: 1, serviceName: 1 },
   { unique: true, name: 'uq_processed_message_correlation_event_service' },
+);
+
+ProcessedMessageSchema.index(
+  { correlationId: 1, routingKey: 1, serviceName: 1 },
+  { name: 'idx_processed_message_correlation_routing_service' },
 );
 
 const cleanupTtlDays = process.env.CLEANUP_TTL_DAYS;

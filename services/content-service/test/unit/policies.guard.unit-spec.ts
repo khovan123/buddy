@@ -9,7 +9,11 @@ import {
   type PolicyHandler,
   POLICIES_KEY,
 } from '@libs/common';
-import { DEFAULT_PLAN_LIMITS, SubscriptionPlan } from '@libs/contracts';
+import {
+  DEFAULT_PLAN_LIMITS,
+  SubscriptionPlan,
+  type SubscriptionPlanDetails,
+} from '@libs/contracts';
 import type { ExecutionContext } from '@nestjs/common';
 import type { ModuleRef, Reflector } from '@nestjs/core';
 
@@ -35,6 +39,7 @@ describe('PoliciesGuard', () => {
     sub: string;
     roles?: string[];
     subscriptionPlan?: string;
+    subscriptionPlanDetails?: SubscriptionPlanDetails;
   }): ExecutionContext =>
     ({
       getHandler: jest.fn(),
@@ -87,6 +92,33 @@ describe('PoliciesGuard', () => {
         sub: 'user-1',
         roles: ['creator'],
         subscriptionPlan: SubscriptionPlan.STUDENT_FREE,
+      }),
+    );
+
+    expect(handle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subscriptionPlan: SubscriptionPlan.CREATOR_FREE,
+        planLimits: expect.objectContaining({ canCreateContent: true }),
+      }),
+    );
+  });
+
+  it('falls back to creator claim limits when the external limits resolver misses', async () => {
+    const handle = jest.fn().mockReturnValue(true);
+    const guard = createGuard(handle, {
+      resolvePlanLimits: jest.fn().mockResolvedValue(null),
+    });
+
+    await guard.canActivate(
+      createContext({
+        sub: 'user-1',
+        roles: ['user'],
+        subscriptionPlan: SubscriptionPlan.CREATOR_FREE,
+        subscriptionPlanDetails: {
+          code: SubscriptionPlan.CREATOR_FREE,
+          limits: { ...DEFAULT_PLAN_LIMITS, canCreateContent: true },
+          pbac: { 'content:create': true },
+        },
       }),
     );
 
