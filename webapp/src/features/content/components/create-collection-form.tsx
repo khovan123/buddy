@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 
+import { useRouter, useSearchParams } from "next/navigation"
+
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   ListOrderedIcon,
@@ -38,8 +40,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { useCollectionBuilder } from "@/features/content/hooks/useCollectionBuilder"
 import {
   useCreateCollectionMutation,
+  useGetCollectionByIdQuery,
   useGetContentMetaQuery,
   useGetCoursesByMajorQuery,
+  useUpdateCollectionMutation,
 } from "@/features/content/services/content-api"
 import {
   fetchResourcesByCourse,
@@ -80,7 +84,13 @@ const FIELD_TAB_MAP: Record<string, string> = {
 
 // ── Main Form ────────────────────────────────────────────────────
 export function CreateCollectionForm() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get("edit") || undefined
+  const isEditMode = Boolean(editId)
   const [createCollection, { isLoading }] = useCreateCollectionMutation()
+  const [updateCollection, { isLoading: isUpdating }] =
+    useUpdateCollectionMutation()
 
   // ── Mode & Tab state ──────────────────────────────────────
   const [mode, setMode] = useState<"minimal" | "advanced">("minimal")
@@ -148,6 +158,53 @@ export function CreateCollectionForm() {
   const { data: coursesData, isLoading: isLoadingCourses } =
     useGetCoursesByMajorQuery(selectedMajorId, { skip: !selectedMajorId })
   const courses = coursesData?.data ?? []
+  const { data: editingCollectionResponse } = useGetCollectionByIdQuery(
+    editId!,
+    { skip: !editId }
+  )
+
+  useEffect(() => {
+    const collection = editingCollectionResponse?.data
+    if (!collection) {
+      return
+    }
+
+    const phases =
+      collection.phases?.map((phase) => ({
+        id: `phase-${crypto.randomUUID()}`,
+        phaseTitle: phase.phaseTitle,
+        learningGoal: phase.learningGoal,
+        items: phase.items.map((item) => ({
+          id: `pi-${crypto.randomUUID()}-${item.itemId}`,
+          itemId: item.itemId,
+          itemType: item.itemType as "RESOURCE" | "TUTORIAL",
+        })),
+      })) ?? []
+
+    form.reset({
+      title: collection.title,
+      description: collection.description,
+      hightlights: collection.hightlights.map((value) => ({ value })),
+      majorId: collection.majorId,
+      courseId: collection.courseId,
+      type: collection.type,
+      discount: collection.discount,
+      resourceIds: [],
+      tutorialIds: [],
+      thumbnailBase64: "",
+      phases: phases.map((phase) => ({
+        id: phase.id,
+        phaseTitle: phase.phaseTitle,
+        learningGoal: phase.learningGoal,
+        items: phase.items.map((item) => ({
+          id: item.id,
+          itemId: item.itemId,
+          itemType: item.itemType as "RESOURCE" | "TUTORIAL",
+        })),
+      })),
+    })
+    queueMicrotask(() => setRoadmapPhases(phases))
+  }, [editingCollectionResponse, form])
 
   // ── Collection Builder hook (for Explorer filtering) ──────────
   const currentAvailable = useMemo(
@@ -276,14 +333,20 @@ export function CreateCollectionForm() {
           : undefined,
       }
 
-      await createCollection(payload).unwrap()
-      toast.success("Collection created successfully!")
-      form.reset()
-      setRoadmapPhases([])
+      if (isEditMode && editId) {
+        await updateCollection({ id: editId, body: payload }).unwrap()
+        toast.success("Collection updated successfully!")
+        router.refresh()
+      } else {
+        await createCollection(payload).unwrap()
+        toast.success("Collection created successfully!")
+        form.reset()
+        setRoadmapPhases([])
+      }
     } catch (error: unknown) {
       toast.error(
         extractApiError(error) ||
-          "Failed to create collection. Please fix the validation errors."
+          `Failed to ${isEditMode ? "update" : "create"} collection. Please fix the validation errors.`
       )
       console.error(error)
     }
@@ -620,11 +683,15 @@ export function CreateCollectionForm() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Create New Collection</CardTitle>
+            <CardTitle>
+              {isEditMode ? "Update Collection" : "Create New Collection"}
+            </CardTitle>
             <CardDescription>
-              {selectedType === CollectionType.RESOURCE
-                ? "Bundle resources into a collection that can be attached to tutorials."
-                : "Organize tutorials into a structured learning roadmap with phases."}
+              {isEditMode
+                ? "Update collection metadata, thumbnail, taxonomy, and roadmap items."
+                : selectedType === CollectionType.RESOURCE
+                  ? "Bundle resources into a collection that can be attached to tutorials."
+                  : "Organize tutorials into a structured learning roadmap with phases."}
             </CardDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -717,11 +784,19 @@ export function CreateCollectionForm() {
 
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isUpdating}
             className="h-12 w-full rounded-xl bg-linear-to-r from-primary to-accent font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl"
           >
-            {isLoading && <Loader2 className="mr-2 size-5 animate-spin" />}
-            {isLoading ? "Creating Collection..." : "Create Collection"}
+            {(isLoading || isUpdating) && (
+              <Loader2 className="mr-2 size-5 animate-spin" />
+            )}
+            {isEditMode
+              ? isUpdating
+                ? "Updating Collection..."
+                : "Update Collection"
+              : isLoading
+                ? "Creating Collection..."
+                : "Create Collection"}
           </Button>
         </form>
       </CardContent>

@@ -1,5 +1,7 @@
 "use client"
 
+import Link from "next/link"
+
 import {
   BadgeCheck,
   Calendar,
@@ -7,6 +9,7 @@ import {
   DollarSign,
   History,
   Loader2,
+  Pencil,
   Video,
 } from "lucide-react"
 
@@ -16,6 +19,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { Button } from "@/components/ui/button"
 import { useGetTutorialUploadHistoryByIdQuery } from "@/features/content/services/content-api"
 import type {
   ContentTutorialItem,
@@ -27,6 +31,7 @@ import { ContentItemProgressScene } from "./content-item-progress-scene"
 import {
   ContentModerationChecklist,
   ContentModerationStatusBadge,
+  DeleteContentButton,
   ManualModerationCheckButton,
 } from "./content-moderation-status"
 import { CreatorContentHeader } from "./creator-content-header"
@@ -90,6 +95,17 @@ function formatDuration(seconds?: number | null): string {
 }
 
 const EMPTY_TUTORIALS: ContentTutorialItem[] = []
+
+function canEditContent(status: string, moderationStatus?: string | null) {
+  const normalizedStatus = status.toUpperCase()
+  const normalizedModeration = moderationStatus?.toUpperCase() ?? ""
+  return (
+    normalizedStatus === "PROCESSING" ||
+    normalizedModeration === "PENDING" ||
+    normalizedStatus === "BANNED" ||
+    normalizedModeration === "REJECTED"
+  )
+}
 
 export function CreatorTutorialsPanel({
   tutorials = EMPTY_TUTORIALS,
@@ -206,8 +222,23 @@ export function CreatorTutorialsPanel({
                       this tutorial.
                     </p>
                   </div>
-                  <div className="mb-4 flex">
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {canEditContent(
+                      tutorial.status,
+                      tutorial.moderationStatus
+                    ) ? (
+                      <Button asChild type="button" variant="outline" size="sm">
+                        <Link href={`/home/tutorials/create?edit=${tutorial.id}`}>
+                          <Pencil className="size-4" />
+                          Edit
+                        </Link>
+                      </Button>
+                    ) : null}
                     <ManualModerationCheckButton
+                      contentId={tutorial.id}
+                      contentType="tutorial"
+                    />
+                    <DeleteContentButton
                       contentId={tutorial.id}
                       contentType="tutorial"
                     />

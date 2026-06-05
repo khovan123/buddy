@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
+import { useRouter, useSearchParams } from "next/navigation"
+
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   FileUp,
@@ -42,6 +44,8 @@ import {
   useCreateTutorialMutation,
   useGetContentMetaQuery,
   useGetCoursesByMajorQuery,
+  useGetTutorialByIdQuery,
+  useUpdateTutorialMutation,
 } from "@/features/content/services/content-api"
 import {
   fetchResourceCollectionsByCourse,
@@ -121,7 +125,13 @@ const FIELD_TAB_MAP: Record<string, string> = {
 }
 
 export function CreateTutorialForm() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get("edit") || undefined
+  const isEditMode = Boolean(editId)
   const [createTutorial, { isLoading }] = useCreateTutorialMutation()
+  const [updateTutorial, { isLoading: isUpdating }] =
+    useUpdateTutorialMutation()
   const [confirmTutorialUpload] = useConfirmTutorialUploadMutation()
 
   // ── Mode & Tab state ──────────────────────────────────────
@@ -207,6 +217,41 @@ export function CreateTutorialForm() {
       skip: !selectedMajorId,
     })
   const courses = coursesData?.data ?? []
+  const { data: editingTutorialResponse } = useGetTutorialByIdQuery(editId!, {
+    skip: !editId,
+  })
+
+  useEffect(() => {
+    const tutorial = editingTutorialResponse?.data
+    if (!tutorial) {
+      return
+    }
+
+    form.reset({
+      title: tutorial.title,
+      description: tutorial.description,
+      hightlights: tutorial.hightlights.map((value) => ({ value })),
+      majorId: tutorial.majorId,
+      courseId: tutorial.courseId,
+      price: tutorial.price,
+      discountBundle: tutorial.discountBundle,
+      fileName: "Existing uploaded video",
+      fileSizeBytes: 1,
+      videoDurationSeconds: 1,
+      resourceAttachmentMode: tutorial.collectionId ? "collection" : "manual",
+      collectionId: tutorial.collectionId ?? undefined,
+      steps:
+        tutorial.steps?.map((step) => ({
+          id: `step-${crypto.randomUUID()}`,
+          title: step.title,
+          resources: step.resources.map((resource) => ({
+            id: `res-${crypto.randomUUID()}-${resource.resourceId}`,
+            resourceId: resource.resourceId,
+            instructionNote: resource.instructionNote,
+          })),
+        })) ?? [],
+    })
+  }, [editingTutorialResponse, form])
 
   // ── Fetch resources when course changes ───────────────────────
   const prevCourseRef = useRef<string>("")
@@ -240,8 +285,6 @@ export function CreateTutorialForm() {
       .catch(() => toast.error("Failed to fetch resource collections."))
       .finally(() => queueMicrotask(() => setIsLoadingCollections(false)))
   }, [
-    fetchResourceCollectionsByCourse,
-    fetchResourcesByCourse,
     form,
     selectedCourseId,
     setIsLoadingCollections,
@@ -304,105 +347,154 @@ export function CreateTutorialForm() {
 
   // ── Form Submission ───────────────────────────────────────────
 
-  const onSubmit = async (data: TutorialFormValues) => {
-    // Validate that a video file has been selected
-    if (!selectedFileRef.current) {
-      toast.error("Please select a video file to upload.")
-      return
-    }
+  const onSubmit = useCallback(
+    async (data: TutorialFormValues) => {
+      if (isEditMode && editId) {
+        try {
+          const {
+            resourceAttachmentMode,
+            hightlights,
+            steps,
+            fileName: _,
+            fileSizeBytes: __,
+            videoDurationSeconds: ___,
+            ...restData
+          } = data
+          const stepsPayload =
+            resourceAttachmentMode === "manual"
+              ? steps?.map((step) => ({
+                  title: step.title,
+                  resources: step.resources.map((res) => ({
+                    resourceId: res.resourceId,
+                    instructionNote: res.instructionNote,
+                  })),
+                }))
+              : undefined
 
-    try {
-      const { resourceAttachmentMode, hightlights, steps, ...restData } = data
-      // Build payload — send either collectionId or steps based on mode
-      const stepsPayload =
-        resourceAttachmentMode === "manual"
-          ? steps?.map((step) => ({
-            title: step.title,
-            resources: step.resources.map((res) => ({
-              resourceId: res.resourceId,
-              instructionNote: res.instructionNote,
-            })),
-          }))
-          : undefined
-
-      const payload = {
-        ...restData,
-        hightlights: hightlights.map((h) => h.value),
-        // Collection mode: send collectionId, clear steps
-        collectionId:
-          data.resourceAttachmentMode === "collection"
-            ? data.collectionId
-            : undefined,
-        // Manual mode: send steps, clear collectionId
-        steps: stepsPayload,
+          await updateTutorial({
+            id: editId,
+            body: {
+              ...restData,
+              hightlights: hightlights.map((h) => h.value),
+              collectionId:
+                resourceAttachmentMode === "collection"
+                  ? data.collectionId
+                  : undefined,
+              steps: stepsPayload,
+            },
+          }).unwrap()
+          toast.success("Tutorial updated successfully.")
+          router.refresh()
+        } catch (error: unknown) {
+          toast.error(
+            extractApiError(error) ||
+              "Failed to update tutorial. Please fix the validation errors."
+          )
+        }
+        return
       }
 
-      const result = await createTutorial(payload).unwrap()
-      const response = result.data
-
-      // Build the upload batch — tutorial is a single video file
-      const batch: UploadBatch = {
-        resourceId: response.id,
-        resourceTitle: data.title,
-        files: [
-          {
-            id: response.fileId,
-            fileName: response.fileName,
-            fileSizeBytes: response.fileSizeBytes,
-            uploadUrl: response.uploadUrl,
-            file: selectedFileRef.current,
-            mimeType: selectedFileRef.current.type,
-            progress: 0,
-            status: "pending" as const,
-            resourceTitle: data.title,
-          },
-        ],
-        // react-doctor-ignore
-         
-        createdAt: performance.now(),
+      if (!selectedFileRef.current) {
+        toast.error("Please select a video file to upload.")
+        return
       }
 
-      // Add to global upload store and start background upload
-      addBatch(batch)
+      try {
+        const { resourceAttachmentMode, hightlights, steps, ...restData } = data
+        const stepsPayload =
+          resourceAttachmentMode === "manual"
+            ? steps?.map((step) => ({
+                title: step.title,
+                resources: step.resources.map((res) => ({
+                  resourceId: res.resourceId,
+                  instructionNote: res.instructionNote,
+                })),
+              }))
+            : undefined
 
-      startBatchUpload(batch).then(async () => {
-        const currentBatch = useUploadStore
-          .getState()
-          .batches.find((b) => b.resourceId === response.id)
-        if (!currentBatch) {
-          return
+        const payload = {
+          ...restData,
+          hightlights: hightlights.map((h) => h.value),
+          collectionId:
+            data.resourceAttachmentMode === "collection"
+              ? data.collectionId
+              : undefined,
+          steps: stepsPayload,
         }
 
-        const fileUpload = currentBatch.files[0]
-        if (fileUpload?.status === "completed") {
-          try {
-            await confirmTutorialUpload({
-              fileId: response.fileId,
-              s3Key: response.s3Key,
-            }).unwrap()
-            toast.success(
-              "Video uploaded. Transcript and moderation will continue in the background."
-            )
-          } catch (error) {
-            console.error("Failed to confirm tutorial:", error)
-            toast.error(
-              "Video uploaded, but failed to alert the processing server."
-            )
+        const result = await createTutorial(payload).unwrap()
+        const response = result.data
+
+        const selectedFile = selectedFileRef.current
+        const batch: UploadBatch = {
+          resourceId: response.id,
+          resourceTitle: data.title,
+          files: [
+            {
+              id: response.fileId,
+              fileName: response.fileName,
+              fileSizeBytes: response.fileSizeBytes,
+              uploadUrl: response.uploadUrl,
+              file: selectedFile,
+              mimeType: selectedFile.type,
+              progress: 0,
+              status: "pending" as const,
+              resourceTitle: data.title,
+            },
+          ],
+          createdAt: performance.now(),
+        }
+
+        addBatch(batch)
+
+        startBatchUpload(batch).then(async () => {
+          const currentBatch = useUploadStore
+            .getState()
+            .batches.find((b) => b.resourceId === response.id)
+          if (!currentBatch) {
+            return
           }
-        }
-      })
 
-      // Reset form & selected file
-      selectedFileRef.current = null
-      form.reset()
-    } catch (error: unknown) {
-      toast.error(
-        extractApiError(error) ||
-        "Failed to create tutorial. Please fix the validation errors."
-      )
-      console.error(error)
-    }
-  }
+          const fileUpload = currentBatch.files[0]
+          if (fileUpload?.status === "completed") {
+            try {
+              await confirmTutorialUpload({
+                fileId: response.fileId,
+                s3Key: response.s3Key,
+              }).unwrap()
+              toast.success(
+                "Video uploaded. Transcript and moderation will continue in the background."
+              )
+            } catch (error) {
+              console.error("Failed to confirm tutorial:", error)
+              toast.error(
+                "Video uploaded, but failed to alert the processing server."
+              )
+            }
+          }
+        })
+
+        selectedFileRef.current = null
+        form.reset()
+      } catch (error: unknown) {
+        toast.error(
+          extractApiError(error) ||
+            "Failed to create tutorial. Please fix the validation errors."
+        )
+        console.error(error)
+      }
+    },
+    [
+      addBatch,
+      confirmTutorialUpload,
+      createTutorial,
+      editId,
+      form,
+      isEditMode,
+      router,
+      updateTutorial,
+    ]
+  )
 
   const handleFormSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -581,8 +673,9 @@ export function CreateTutorialForm() {
   const mediaSection = (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Select a video file. Duration, file name, and size will be
-        auto-detected.
+        {isEditMode
+          ? "Uploaded video stays unchanged when editing tutorial metadata."
+          : "Select a video file. Duration, file name, and size will be auto-detected."}
       </p>
 
       <div className="rounded-2xl border bg-muted/20 p-6">
@@ -630,7 +723,7 @@ export function CreateTutorialForm() {
           </Field>
         </div>
 
-        {/* Video Picker */}
+        {!isEditMode ? (
         <div>
           <Input
             ref={fileInputRef}
@@ -640,23 +733,24 @@ export function CreateTutorialForm() {
             className="hidden"
             onChange={handleVideoSelect}
           />
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-8 text-center transition-colors hover:border-primary"
-          >
-            <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+            >
               <FileUp className="size-6" />
-            </div>
-            <p className="font-semibold text-primary">
               {watchFileName ? "Change Video File" : "Choose Video File"}
-            </p>
+            </Button>
             {watchFileName && (
-              <p className="mt-2 text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {watchFileName} · {formatFileSize(watchFileSizeBytes)}
-              </p>
+              </span>
             )}
           </div>
         </div>
+        ) : null}
       </div>
     </div>
   )
@@ -832,10 +926,13 @@ export function CreateTutorialForm() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Create New Tutorial</CardTitle>
+            <CardTitle>
+              {isEditMode ? "Update Tutorial" : "Create New Tutorial"}
+            </CardTitle>
             <CardDescription>
-              Upload your video course. Note: Resources attached must belong to
-              the exact same Major and Course.
+              {isEditMode
+                ? "Update tutorial metadata, pricing, taxonomy, and attached resources."
+                : "Upload your video course. Note: Resources attached must belong to the exact same Major and Course."}
             </CardDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -928,13 +1025,19 @@ export function CreateTutorialForm() {
 
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isUpdating}
             className="h-12 w-full rounded-xl bg-linear-to-r from-primary to-accent font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl"
           >
-            {isLoading && <Loader2 className="mr-2 size-5 animate-spin" />}
-            {isLoading
-              ? "Creating Metadata & Getting Upload Links..."
-              : "Create Tutorial & Start Upload"}
+            {(isLoading || isUpdating) && (
+              <Loader2 className="mr-2 size-5 animate-spin" />
+            )}
+            {isEditMode
+              ? isUpdating
+                ? "Updating Tutorial..."
+                : "Update Tutorial"
+              : isLoading
+                ? "Creating Metadata & Getting Upload Links..."
+                : "Create Tutorial & Start Upload"}
           </Button>
         </form>
       </CardContent>

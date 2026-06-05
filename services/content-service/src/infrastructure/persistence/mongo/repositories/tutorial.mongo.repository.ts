@@ -11,6 +11,7 @@ import {
   TutorialQueryItem,
   TutorialQueryResult,
   TutorialResourceDetails,
+  TutorialUpdateDetails,
 } from '../../../../domain/repositories/tutorial.repository.interface';
 import { CourseSchema } from '../schemas/course.schema';
 import { MajorSchema } from '../schemas/major.schema';
@@ -291,7 +292,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
    */
   async findByIdWithDetails(id: string): Promise<TutorialQueryItem | null> {
     const row = await this.tutorialModel
-      .findById(id)
+      .findOne({ _id: id, deletedAt: null })
       .populate<Pick<TutorialQueryWithPopulate, 'collectionId'>>('collectionId')
       .populate<Pick<TutorialQueryWithPopulate, 'resourceIds'>>('resourceIds')
       .populate('steps.resources.resource')
@@ -312,7 +313,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
   async findByIdsWithDetails(ids: string[]): Promise<TutorialQueryItem[]> {
     if (!ids || ids.length === 0) return [];
     const rows = await this.tutorialModel
-      .find({ _id: { $in: ids } })
+      .find({ _id: { $in: ids }, deletedAt: null })
       .populate<Pick<TutorialQueryWithPopulate, 'collectionId'>>('collectionId')
       .populate<Pick<TutorialQueryWithPopulate, 'resourceIds'>>('resourceIds')
       .populate('steps.resources.resource')
@@ -332,7 +333,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
    */
   async findBySlugWithDetails(slug: string): Promise<TutorialQueryItem | null> {
     const row = await this.tutorialModel
-      .findOne({ slug })
+      .findOne({ slug, deletedAt: null })
       .populate<Pick<TutorialQueryWithPopulate, 'collectionId'>>('collectionId')
       .populate<Pick<TutorialQueryWithPopulate, 'resourceIds'>>('resourceIds')
       .populate('steps.resources.resource')
@@ -346,7 +347,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
 
   async findByMediaFileIdWithDetails(fileId: string): Promise<TutorialQueryItem | null> {
     const row = await this.tutorialModel
-      .findOne({ 'media.fileId': fileId })
+      .findOne({ 'media.fileId': fileId, deletedAt: null })
       .populate<Pick<TutorialQueryWithPopulate, 'collectionId'>>('collectionId')
       .populate<Pick<TutorialQueryWithPopulate, 'resourceIds'>>('resourceIds')
       .populate('major')
@@ -406,6 +407,28 @@ export class TutorialMongoRepository implements ITutorialRepository {
     await this.tutorialModel.updateOne({ _id: tutorial.id }, data).exec();
   }
 
+  async updateDetails(tutorialId: string, details: TutorialUpdateDetails): Promise<void> {
+    await this.tutorialModel
+      .updateOne(
+        { _id: tutorialId, deletedAt: null },
+        {
+          $set: {
+            title: details.title,
+            description: details.description,
+            hightlights: details.hightlights,
+            majorId: details.majorId,
+            courseId: details.courseId,
+            price: details.price,
+            discountBundle: details.discountBundle,
+            collectionId: details.collectionId || null,
+            steps: details.steps ?? [],
+            updatedAt: new Date(),
+          },
+        },
+      )
+      .exec();
+  }
+
   /**
    * Executes the update media operation.
    *
@@ -447,6 +470,12 @@ export class TutorialMongoRepository implements ITutorialRepository {
    */
   async delete(id: string): Promise<void> {
     await this.tutorialModel.deleteOne({ _id: id }).exec();
+  }
+
+  async softDelete(id: string): Promise<void> {
+    await this.tutorialModel
+      .updateOne({ _id: id, deletedAt: null }, { $set: { deletedAt: new Date() } })
+      .exec();
   }
 
   /**
@@ -1233,6 +1262,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
       {
         $set: {
           status,
+          isVerified: result.status === ContentModerationStatus.APPROVED,
           moderationStatus: result.status,
           moderationScore: result.score ?? null,
           moderationReasons: result.reasons,

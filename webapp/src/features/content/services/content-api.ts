@@ -3,6 +3,7 @@ import { baseApi } from "@/lib/redux/base-api"
 
 import type {
   ApiResponse,
+  CollectionQueryItem,
   Course,
   CreateCollectionPayload,
   CreateCoursePayload,
@@ -16,7 +17,10 @@ import type {
   ResourceQueryItem,
   TutorialQueryItem,
   UpdateCoursePayload,
+  UpdateCollectionPayload,
   UpdateMajorPayload,
+  UpdateResourcePayload,
+  UpdateTutorialPayload,
   UploadHistoryItem,
 } from "../types"
 
@@ -54,6 +58,27 @@ export const contentApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ["Collection"],
     }),
+    getCollectionById: builder.query<ApiResponse<CollectionQueryItem>, string>({
+      query: (collectionId) => ({
+        url: `/v1/collections/${collectionId}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, arg) => [{ type: "Collection", id: arg }],
+    }),
+    updateCollection: builder.mutation<
+      ApiResponse<{ success: boolean }>,
+      { id: string; body: UpdateCollectionPayload }
+    >({
+      query: ({ id, body }) => ({
+        url: `/v1/collections/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (result, error, arg) => [
+        "Collection",
+        { type: "Collection", id: arg.id },
+      ],
+    }),
     createResource: builder.mutation<
       ApiResponse<CreateResourceResponse>,
       CreateResourcePayload
@@ -64,6 +89,27 @@ export const contentApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: ["Resource"],
+    }),
+    getResourceById: builder.query<ApiResponse<ResourceQueryItem>, string>({
+      query: (resourceId) => ({
+        url: `/v1/resources/${resourceId}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, arg) => [{ type: "Resource", id: arg }],
+    }),
+    updateResource: builder.mutation<
+      ApiResponse<{ success: boolean }>,
+      { id: string; body: UpdateResourcePayload }
+    >({
+      query: ({ id, body }) => ({
+        url: `/v1/resources/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (result, error, arg) => [
+        "Resource",
+        { type: "Resource", id: arg.id },
+      ],
     }),
     confirmResourceUpload: builder.mutation<
       ApiResponse<{ message: string; resourceId: string; fileCount: number }>,
@@ -115,6 +161,27 @@ export const contentApi = baseApi.injectEndpoints({
         method: "GET",
       }),
       providesTags: ["Tutorial"],
+    }),
+    getTutorialById: builder.query<ApiResponse<TutorialQueryItem>, string>({
+      query: (tutorialId) => ({
+        url: `/v1/tutorials/${tutorialId}`,
+        method: "GET",
+      }),
+      providesTags: (result, error, arg) => [{ type: "Tutorial", id: arg }],
+    }),
+    updateTutorial: builder.mutation<
+      ApiResponse<{ success: boolean }>,
+      { id: string; body: UpdateTutorialPayload }
+    >({
+      query: ({ id, body }) => ({
+        url: `/v1/tutorials/${id}`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: (result, error, arg) => [
+        "Tutorial",
+        { type: "Tutorial", id: arg.id },
+      ],
     }),
     getCoursesByMajor: builder.query<ApiResponse<Course[]>, string>({
       query: (majorId) => ({
@@ -238,6 +305,13 @@ export const contentApi = baseApi.injectEndpoints({
         { type: "Resource", id: arg.resourceId },
       ],
     }),
+    deleteResource: builder.mutation<ApiResponse<{ success: boolean }>, string>({
+      query: (resourceId) => ({
+        url: `/v1/resources/${resourceId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Resource"],
+    }),
     recheckTutorialModeration: builder.mutation<
       ApiResponse<unknown>,
       { tutorialId: string }
@@ -251,18 +325,31 @@ export const contentApi = baseApi.injectEndpoints({
         { type: "Tutorial", id: arg.tutorialId },
       ],
     }),
+    deleteTutorial: builder.mutation<ApiResponse<{ success: boolean }>, string>({
+      query: (tutorialId) => ({
+        url: `/v1/tutorials/${tutorialId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Tutorial"],
+    }),
   }),
 })
 
 export const {
   useCreateTutorialMutation,
   useCreateCollectionMutation,
+  useGetCollectionByIdQuery,
+  useUpdateCollectionMutation,
   useCreateResourceMutation,
+  useGetResourceByIdQuery,
+  useUpdateResourceMutation,
   useConfirmResourceUploadMutation,
   useConfirmTutorialUploadMutation,
   useGetContentMetaQuery,
   useGetMyResourcesQuery,
   useGetMyTutorialsQuery,
+  useGetTutorialByIdQuery,
+  useUpdateTutorialMutation,
   useGetCoursesByMajorQuery,
   useCreateMajorMutation,
   useUpdateMajorMutation,
@@ -274,4 +361,6 @@ export const {
   useGetTutorialUploadHistoryByIdQuery,
   useRecheckResourceModerationMutation,
   useRecheckTutorialModerationMutation,
+  useDeleteResourceMutation,
+  useDeleteTutorialMutation,
 } = contentApi

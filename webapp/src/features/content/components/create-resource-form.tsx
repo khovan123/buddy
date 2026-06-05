@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import { useRouter, useSearchParams } from "next/navigation"
+
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   Check,
@@ -42,6 +44,8 @@ import {
   useCreateResourceMutation,
   useGetContentMetaQuery,
   useGetCoursesByMajorQuery,
+  useGetResourceByIdQuery,
+  useUpdateResourceMutation,
 } from "@/features/content/services/content-api"
 import { extractApiError } from "@/types/api"
 
@@ -88,7 +92,13 @@ const FIELD_TAB_MAP: Record<string, string> = {
 }
 
 export function CreateResourceForm() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get("edit") || undefined
+  const isEditMode = Boolean(editId)
   const [createResource, { isLoading }] = useCreateResourceMutation()
+  const [updateResource, { isLoading: isUpdating }] =
+    useUpdateResourceMutation()
   const [confirmResourceUpload] = useConfirmResourceUploadMutation()
 
   // ── Mode & Tab state ──────────────────────────────────────
@@ -177,8 +187,45 @@ export function CreateResourceForm() {
     })
   const courses = coursesData?.data ?? []
 
+  const { data: editingResourceResponse } = useGetResourceByIdQuery(editId!, {
+    skip: !editId,
+  })
+
   useEffect(() => {
-    setValue("collectionId", "", { shouldValidate: true })
+    const resource = editingResourceResponse?.data
+    if (!resource) {
+      return
+    }
+
+    form.reset({
+      title: resource.title,
+      summary: resource.summary,
+      hightlights: resource.hightlights.map((value) => ({ value })),
+      majorId: resource.majorId,
+      courseId: resource.courseId,
+      price: resource.price,
+      collectionId: resource.collectionId ?? "",
+      thumbnailBase64: "",
+      files: [
+        {
+          fileName: "Existing uploaded file",
+          fileSizeBytes: 1,
+          mimeType: "",
+        },
+      ],
+    })
+  }, [editingResourceResponse, form])
+
+  useEffect(() => {
+    const editingResource = editingResourceResponse?.data
+    const isInitialEditTaxonomy =
+      isEditMode &&
+      editingResource?.majorId === selectedMajorId &&
+      editingResource?.courseId === selectedCourseId
+
+    if (!isInitialEditTaxonomy) {
+      setValue("collectionId", "", { shouldValidate: true })
+    }
 
     if (!selectedMajorId || !selectedCourseId) {
       queueMicrotask(() => setResourceCollections([]))
@@ -203,7 +250,7 @@ export function CreateResourceForm() {
     return () => {
       ignore = true
     }
-  }, [selectedCourseId, selectedMajorId, setValue])
+  }, [editingResourceResponse, isEditMode, selectedCourseId, selectedMajorId, setValue])
 
   // ── Error-to-tab auto-navigation (called on validation failure) ──
   const onInvalid = useCallback(
@@ -248,6 +295,28 @@ export function CreateResourceForm() {
   // ── Form Submission ────────────────────────────────────────
 
   const onSubmit = async (data: ResourceFormValues) => {
+    if (isEditMode && editId) {
+      try {
+        const { thumbnailFile: _, files: __, ...restData } = data
+        await updateResource({
+          id: editId,
+          body: {
+            ...restData,
+            hightlights: restData.hightlights.map((h) => h.value),
+            collectionId: restData.collectionId || undefined,
+          },
+        }).unwrap()
+        toast.success("Resource updated successfully.")
+        router.refresh()
+      } catch (error: unknown) {
+        toast.error(
+          extractApiError(error) ||
+            "Failed to update resource. Please fix the validation errors."
+        )
+      }
+      return
+    }
+
     // Validate that all files have been selected
     const missingFiles: number[] = []
     data.files.forEach((_, idx) => {
@@ -543,10 +612,12 @@ export function CreateResourceForm() {
   const mediaSection = (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Add at least one file. Upload URLs will be generated after submission.
+        {isEditMode
+          ? "Uploaded files stay unchanged when editing resource metadata."
+          : "Add at least one file. Upload URLs will be generated after submission."}
       </p>
 
-      {fileFields.map((field, index) => (
+      {!isEditMode && fileFields.map((field, index) => (
         <div
           key={field.id}
           className="flex items-start gap-3 rounded-xl border bg-muted/20 p-4"
@@ -607,23 +678,23 @@ export function CreateResourceForm() {
                 className="hidden"
                 onChange={(e) => handleFileSelect(index, e)}
               />
-              <div
-                onClick={() => fileInputRefs.current[index]?.click()}
-                className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-6 text-center transition-colors hover:border-primary"
-              >
-                <div className="mb-3 flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRefs.current[index]?.click()}
+                >
                   <FileUp className="size-5" />
-                </div>
-                <p className="text-sm font-semibold text-primary">
                   {watchedFiles[index]?.fileName
                     ? "Change File"
                     : "Choose File"}
-                </p>
+                </Button>
                 {watchedFiles[index]?.fileName && (
-                  <p className="mt-1.5 text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {watchedFiles[index]?.fileName} ·{" "}
                     {formatFileSize(watchedFiles[index]?.fileSizeBytes || 0)}
-                  </p>
+                  </span>
                 )}
               </div>
             </div>
@@ -651,10 +722,11 @@ export function CreateResourceForm() {
         type="button"
         variant="outline"
         size="sm"
+        disabled={isEditMode}
         onClick={() =>
           appendFile({ fileName: "", fileSizeBytes: 0, mimeType: "" })
         }
-        className="rounded-xl border-dashed"
+        className={isEditMode ? "hidden" : "rounded-xl border-dashed"}
       >
         <Plus className="mr-2 size-4" /> Add File
       </Button>
@@ -797,10 +869,13 @@ export function CreateResourceForm() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Create New Resource</CardTitle>
+            <CardTitle>
+              {isEditMode ? "Update Resource" : "Create New Resource"}
+            </CardTitle>
             <CardDescription>
-              Upload study materials (PDFs, documents, etc.). Files will be
-              uploaded to cloud storage after metadata creation.
+              {isEditMode
+                ? "Update resource metadata, pricing, taxonomy, and thumbnail."
+                : "Upload study materials (PDFs, documents, etc.). Files will be uploaded to cloud storage after metadata creation."}
             </CardDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -890,13 +965,19 @@ export function CreateResourceForm() {
 
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || isUpdating}
             className="h-12 w-full rounded-xl bg-linear-to-r from-primary to-accent font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl"
           >
-            {isLoading && <Loader2 className="mr-2 size-5 animate-spin" />}
-            {isLoading
-              ? "Creating Resource & Getting Upload..."
-              : "Create Resource Now"}
+            {(isLoading || isUpdating) && (
+              <Loader2 className="mr-2 size-5 animate-spin" />
+            )}
+            {isEditMode
+              ? isUpdating
+                ? "Updating Resource..."
+                : "Update Resource"
+              : isLoading
+                ? "Creating Resource & Getting Upload..."
+                : "Create Resource Now"}
           </Button>
         </form>
       </CardContent>

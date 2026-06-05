@@ -449,7 +449,16 @@ export interface CreateTutorialPayload {
   resourceIds?: string[]
   collectionId?: string
   collectionIds?: string[]
+  steps?: Array<{
+    title: string
+    resources: Array<{ resourceId: string; instructionNote: string }>
+  }>
 }
+
+export type UpdateTutorialPayload = Omit<
+  CreateTutorialPayload,
+  "fileName" | "fileSizeBytes" | "videoDurationSeconds" | "resourceIds" | "collectionIds"
+>
 
 /** create-resource.dto.ts → CreateResourceFileDto */
 export interface CreateResourceFilePayload {
@@ -468,7 +477,10 @@ export interface CreateResourcePayload {
   price: number
   files: CreateResourceFilePayload[]
   collectionId?: string
+  thumbnailBase64?: string
 }
+
+export type UpdateResourcePayload = Omit<CreateResourcePayload, "files">
 
 export interface CreateCollectionPayload {
   title: string
@@ -480,7 +492,15 @@ export interface CreateCollectionPayload {
   tutorialIds?: string[]
   type: CollectionType
   discount: number
+  thumbnailBase64?: string
+  phases?: Array<{
+    phaseTitle: string
+    learningGoal: string
+    items: Array<{ itemId: string; itemType: "RESOURCE" | "TUTORIAL" }>
+  }>
 }
+
+export type UpdateCollectionPayload = CreateCollectionPayload
 
 // ── Major & Course Admin Payloads ───────────────────────────
 

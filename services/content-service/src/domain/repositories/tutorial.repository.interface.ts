@@ -142,6 +142,21 @@ export interface ContentModerationPersistenceResult {
   ruleVersion?: string | null;
 }
 
+export interface TutorialUpdateDetails {
+  title: string;
+  description: string;
+  hightlights: string[];
+  majorId: string;
+  courseId: string;
+  price: number;
+  discountBundle: number;
+  collectionId?: string;
+  steps?: Array<{
+    title: string;
+    resources: Array<{ resourceId: string; instructionNote: string }>;
+  }>;
+}
+
 /** Interface representing data constraints for  i tutorial repository. */
 export interface ITutorialRepository {
   save(tutorial: Tutorial): Promise<void>;
@@ -162,6 +177,7 @@ export interface ITutorialRepository {
   findMyTutorials(params: TutorialListQueryParams): Promise<TutorialQueryResult>;
   findAvailableTutorialCollections(params: TutorialListQueryParams): Promise<TutorialQueryResult>;
   update(tutorial: Tutorial): Promise<void>;
+  updateDetails(tutorialId: string, details: TutorialUpdateDetails): Promise<void>;
   updateMedia(tutorialId: string, media: TutorialMedia): Promise<void>;
   /**
    * Tìm tutorial dựa trên media.fileId (S3 key) và cập nhật streamingUrl, trailerUrl
@@ -193,4 +209,5 @@ export interface ITutorialRepository {
   ): Promise<TutorialQueryItem[]>;
   deletePendingOlderThan(cutoff: Date): Promise<number>;
   delete(id: string): Promise<void>;
+  softDelete(id: string): Promise<void>;
 }

@@ -9,12 +9,15 @@ import {
   Loader2,
   RefreshCw,
   ShieldAlert,
+  Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  useDeleteResourceMutation,
+  useDeleteTutorialMutation,
   useRecheckResourceModerationMutation,
   useRecheckTutorialModerationMutation,
 } from "@/features/content/services/content-api"
@@ -97,6 +100,14 @@ function normalizeStatus(value?: string | null) {
   return value?.trim().toUpperCase() ?? ""
 }
 
+function isPlaceholderModerationReason(reason: string) {
+  const normalized = reason.trim().toLowerCase()
+  return (
+    normalized === "no moderation reason returned" ||
+    normalized === "violation rules"
+  )
+}
+
 function getChecklistState({
   status,
   moderationStatus,
@@ -176,7 +187,9 @@ export function ContentModerationChecklist({
   compact = false,
 }: ContentModerationChecklistProps) {
   const items = getChecklistState({ status, moderationStatus, verified })
-  const violationReasons = reasons ?? []
+  const violationReasons = (reasons ?? []).filter(
+    (reason) => reason.trim() && !isPlaceholderModerationReason(reason)
+  )
   const hasReasons = violationReasons.length > 0
 
   return (
@@ -269,6 +282,66 @@ export function ManualModerationCheckButton({
         <RefreshCw className="size-4" />
       )}
       Check moderation
+    </Button>
+  )
+}
+
+interface DeleteContentButtonProps {
+  contentId: string
+  contentType: "resource" | "tutorial"
+}
+
+export function DeleteContentButton({
+  contentId,
+  contentType,
+}: DeleteContentButtonProps) {
+  const router = useRouter()
+  const [deleteResource, resourceState] = useDeleteResourceMutation()
+  const [deleteTutorial, tutorialState] = useDeleteTutorialMutation()
+  const isLoading = resourceState.isLoading || tutorialState.isLoading
+
+  async function handleDelete() {
+    const confirmed = globalThis.confirm(
+      `Delete this ${contentType}? It will be removed from your content list.`
+    )
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      if (contentType === "resource") {
+        await deleteResource(contentId).unwrap()
+      } else {
+        await deleteTutorial(contentId).unwrap()
+      }
+      toast.success(
+        contentType === "resource" ? "Resource deleted" : "Tutorial deleted"
+      )
+      router.refresh()
+    } catch {
+      toast.error(
+        contentType === "resource"
+          ? "Failed to delete resource"
+          : "Failed to delete tutorial"
+      )
+    }
+  }
+
+  return (
+    <Button
+      type="button"
+      variant="destructive"
+      size="sm"
+      className="w-fit"
+      disabled={isLoading}
+      onClick={handleDelete}
+    >
+      {isLoading ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : (
+        <Trash2 className="size-4" />
+      )}
+      Delete
     </Button>
   )
 }

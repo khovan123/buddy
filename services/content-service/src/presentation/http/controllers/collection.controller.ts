@@ -16,6 +16,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -24,6 +25,7 @@ import {
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { FastifyRequest } from 'fastify';
 import { CreateCollectionCommand } from '../../../application/commands/create-collection.command';
+import { UpdateCollectionCommand } from '../../../application/commands/update-collection.command';
 import { GetCollectionByIdQuery } from '../../../application/queries/get-collection-by-id.query';
 import { GetCollectionsByIdsQuery } from '../../../application/queries/get-collections-by-ids.query';
 import { GetMyResourceCollectionsQuery } from '../../../application/queries/get-my-resource-collections.query';
@@ -41,6 +43,7 @@ import { CreateCollectionDto } from '../dtos/create-collection.dto';
 import { GetCollectionsByIdsDto } from '../dtos/get-collections-by-ids.dto';
 import { GetTopCollectionsQueryDto } from '../dtos/get-top-collections-query.dto';
 import { QueryDto } from '../dtos/query';
+import { UpdateCollectionDto } from '../dtos/update-collection.dto';
 
 /**
  * CollectionController - HTTP endpoints cho Collection (bộ sưu tập Resource/Tutorial).
@@ -223,6 +226,41 @@ export class CollectionController {
   async getCollectionsByIds(@Query() dto: GetCollectionsByIdsDto) {
     const result = await this.queryBus.execute(new GetCollectionsByIdsQuery(dto.ids));
     return successResponse(result, 'Get collections by ids successful', getCorrelationId());
+  }
+
+  @Put(':id')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async updateCollection(
+    @Param() params: CollectionIdParamDto,
+    @Body() dto: UpdateCollectionDto,
+    @Req() req: FastifyRequest & { user: { sub: string } },
+  ) {
+    const correlationId = getCorrelationId();
+    const result = await this.commandBus.execute(
+      new UpdateCollectionCommand(
+        params.id,
+        req.user.sub,
+        dto.title,
+        dto.description,
+        dto.hightlights,
+        dto.majorId,
+        dto.courseId,
+        dto.type,
+        dto.discount,
+        dto.phases?.map((p) => ({
+          phaseTitle: p.phaseTitle,
+          learningGoal: p.learningGoal ?? '',
+          items: p.items.map((item) => ({
+            itemId: item.itemId,
+            itemType: item.itemType,
+          })),
+        })),
+        dto.thumbnailBase64,
+        correlationId,
+      ),
+    );
+    return successResponse(result, 'Collection updated successfully', correlationId);
   }
 
   /**

@@ -11,11 +11,13 @@ import { successResponse } from '@libs/contracts';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -24,7 +26,9 @@ import {
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { FastifyRequest } from 'fastify';
 import { CreateResourceCommand } from '../../../application/commands/create-resource.command';
+import { DeleteResourceCommand } from '../../../application/commands/delete-resource.command';
 import { RecheckResourceModerationCommand } from '../../../application/commands/recheck-resource-moderation.command';
+import { UpdateResourceCommand } from '../../../application/commands/update-resource.command';
 import { GetMyResourcesQuery } from '../../../application/queries/get-my-resources.query';
 import { GetResourceByIdQuery } from '../../../application/queries/get-resource-by-id.query';
 import { GetResourceBySlugQuery } from '../../../application/queries/get-resource-by-slug.query';
@@ -43,6 +47,7 @@ import { GetUncollectedResourcesQueryDto } from '../dtos/get-uncollected-resourc
 import { QueryDto } from '../dtos/query';
 import { ResourceIdParamDto } from '../dtos/resource-id-param.dto';
 import { ResourceSlugParamDto } from '../dtos/resource-slug-param.dto';
+import { UpdateResourceDto } from '../dtos/update-resource.dto';
 import { UserIdParamDto } from '../dtos/user-id-param.dto';
 
 /**
@@ -233,6 +238,47 @@ export class ResourceController {
       new RecheckResourceModerationCommand(params.id, req.user.sub, correlationId),
     );
     return successResponse(result, 'Resource moderation rechecked', correlationId);
+  }
+
+  @Put(':id')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async updateResource(
+    @Param() params: ResourceIdParamDto,
+    @Body() dto: UpdateResourceDto,
+    @Req() req: FastifyRequest & { user: { sub: string } },
+  ) {
+    const correlationId = getCorrelationId();
+    const result = await this.commandBus.execute(
+      new UpdateResourceCommand(
+        params.id,
+        req.user.sub,
+        dto.title,
+        dto.summary,
+        dto.hightlights,
+        dto.majorId,
+        dto.courseId,
+        dto.price,
+        dto.collectionId,
+        dto.thumbnailBase64,
+        correlationId,
+      ),
+    );
+    return successResponse(result, 'Resource updated successfully', correlationId);
+  }
+
+  @Delete(':id')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async deleteResource(
+    @Param() params: ResourceIdParamDto,
+    @Req() req: FastifyRequest & { user: { sub: string } },
+  ) {
+    const correlationId = getCorrelationId();
+    const result = await this.commandBus.execute(
+      new DeleteResourceCommand(params.id, req.user.sub),
+    );
+    return successResponse(result, 'Resource deleted successfully', correlationId);
   }
 
   /**

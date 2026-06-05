@@ -11,11 +11,13 @@ import { successResponse } from '@libs/contracts';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -24,7 +26,9 @@ import {
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { FastifyRequest } from 'fastify';
 import { CreateTutorialCommand } from '../../../application/commands/create-tutorial.command';
+import { DeleteTutorialCommand } from '../../../application/commands/delete-tutorial.command';
 import { RecheckTutorialModerationCommand } from '../../../application/commands/recheck-tutorial-moderation.command';
+import { UpdateTutorialCommand } from '../../../application/commands/update-tutorial.command';
 import { GetMyTutorialsQuery } from '../../../application/queries/get-my-tutorials.query';
 import { GetTopTutorialsQuery } from '../../../application/queries/get-top-tutorials.query';
 import { GetTutorialByIdQuery } from '../../../application/queries/get-tutorial-by-id.query';
@@ -41,6 +45,7 @@ import { GetTutorialsByIdsDto } from '../dtos/get-tutorials-by-ids.dto';
 import { GetUncollectedTutorialsQueryDto } from '../dtos/get-uncollected-tutorials-query.dto';
 import { QueryDto } from '../dtos/query';
 import { TutorialIdParamDto } from '../dtos/tutorial-id-param.dto';
+import { UpdateTutorialDto } from '../dtos/update-tutorial.dto';
 import { UserIdParamDto } from '../dtos/user-id-param.dto';
 
 /**
@@ -246,6 +251,54 @@ export class TutorialController {
       new RecheckTutorialModerationCommand(params.id, req.user.sub, correlationId),
     );
     return successResponse(result, 'Tutorial moderation rechecked', correlationId);
+  }
+
+  @Put(':id')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async updateTutorial(
+    @Param() params: TutorialIdParamDto,
+    @Body() dto: UpdateTutorialDto,
+    @Req() req: FastifyRequest & { user: { sub: string } },
+  ) {
+    const correlationId = getCorrelationId();
+    const result = await this.commandBus.execute(
+      new UpdateTutorialCommand(
+        params.id,
+        req.user.sub,
+        dto.title,
+        dto.description,
+        dto.hightlights,
+        dto.majorId,
+        dto.courseId,
+        dto.price,
+        dto.discountBundle,
+        dto.collectionId,
+        dto.steps?.map((s) => ({
+          title: s.title,
+          resources: s.resources.map((r) => ({
+            resourceId: r.resourceId,
+            instructionNote: r.instructionNote ?? '',
+          })),
+        })),
+        correlationId,
+      ),
+    );
+    return successResponse(result, 'Tutorial updated successfully', correlationId);
+  }
+
+  @Delete(':id')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async deleteTutorial(
+    @Param() params: TutorialIdParamDto,
+    @Req() req: FastifyRequest & { user: { sub: string } },
+  ) {
+    const correlationId = getCorrelationId();
+    const result = await this.commandBus.execute(
+      new DeleteTutorialCommand(params.id, req.user.sub),
+    );
+    return successResponse(result, 'Tutorial deleted successfully', correlationId);
   }
 
   @Get(':idOrSlug')

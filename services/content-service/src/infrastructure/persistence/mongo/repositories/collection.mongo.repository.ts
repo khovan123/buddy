@@ -7,6 +7,7 @@ import {
   CollectionListQueryParams,
   CollectionQueryItem,
   CollectionQueryResult,
+  CollectionUpdateDetails,
   ICollectionRepository,
 } from '../../../../domain/repositories/collection.repository.interface';
 import {
@@ -190,7 +191,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
    */
   async findByIdWithDetails(id: string): Promise<CollectionQueryItem | null> {
     const row = await this.collectionModel
-      .findById(id)
+      .findOne({ _id: id, deletedAt: null })
       .populate('major')
       .populate('course')
       .populate('tutorials', '_id')
@@ -210,7 +211,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
   async findByIdsWithDetails(ids: string[]): Promise<CollectionQueryItem[]> {
     if (!ids || ids.length === 0) return [];
     const rows = await this.collectionModel
-      .find({ _id: { $in: ids } })
+      .find({ _id: { $in: ids }, deletedAt: null })
       .populate('major')
       .populate('course')
       .populate('tutorials', '_id')
@@ -229,7 +230,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
    */
   async findBySlugWithDetails(slug: string): Promise<CollectionQueryItem | null> {
     const row = await this.collectionModel
-      .findOne({ slug })
+      .findOne({ slug, deletedAt: null })
       .populate('major')
       .populate('course')
       .populate('tutorials', '_id')
@@ -371,6 +372,27 @@ export class CollectionMongoRepository implements ICollectionRepository {
     const data: Partial<CollectionWritePayload> = { ...persistence };
     delete data._id;
     await this.collectionModel.updateOne({ _id: collection.id }, data).exec();
+  }
+
+  async updateDetails(collectionId: string, details: CollectionUpdateDetails): Promise<void> {
+    await this.collectionModel
+      .updateOne(
+        { _id: collectionId, deletedAt: null },
+        {
+          $set: {
+            title: details.title,
+            description: details.description,
+            hightlights: details.hightlights,
+            majorId: details.majorId,
+            courseId: details.courseId,
+            type: details.type,
+            discount: details.discount,
+            phases: details.phases ?? [],
+            updatedAt: new Date(),
+          },
+        },
+      )
+      .exec();
   }
 
   /**

@@ -1,4 +1,5 @@
 import {
+  CollectionPhaseItemType,
   CollectionStatus,
   CollectionType,
 } from '../../infrastructure/persistence/mongo/schemas/collection.schema';
@@ -93,6 +94,21 @@ export interface CollectionQueryResult {
   meta: CollectionQueryMeta;
 }
 
+export interface CollectionUpdateDetails {
+  title: string;
+  description: string;
+  hightlights: string[];
+  majorId: string;
+  courseId: string;
+  type: CollectionType;
+  discount: number;
+  phases?: Array<{
+    phaseTitle: string;
+    learningGoal: string;
+    items: Array<{ itemId: string; itemType: CollectionPhaseItemType }>;
+  }>;
+}
+
 /** Interface representing data constraints for  i collection repository. */
 export interface ICollectionRepository {
   save(collection: Collection): Promise<void>;
@@ -114,5 +130,6 @@ export interface ICollectionRepository {
     majorId?: string,
   ): Promise<CollectionQueryItem[]>;
   update(collection: Collection): Promise<void>;
+  updateDetails(collectionId: string, details: CollectionUpdateDetails): Promise<void>;
   delete(id: string): Promise<void>;
 }

@@ -110,6 +110,16 @@ export interface ContentModerationPersistenceResult {
   ruleVersion?: string | null;
 }
 
+export interface ResourceUpdateDetails {
+  title: string;
+  summary: string;
+  hightlights: string[];
+  majorId: string;
+  courseId: string;
+  price: number;
+  collectionId?: string;
+}
+
 /** Interface representing data constraints for  i resource repository. */
 export interface IResourceRepository {
   save(resource: Resource): Promise<void>;
@@ -128,6 +138,7 @@ export interface IResourceRepository {
   findMyResources(params: ResourceListQueryParams): Promise<ResourceQueryResult>;
   findAvailableResourceCollections(params: ResourceListQueryParams): Promise<ResourceQueryResult>;
   update(resource: Resource): Promise<void>;
+  updateDetails(resourceId: string, details: ResourceUpdateDetails): Promise<void>;
   updateMeta(resourceId: string, fileId: string, resourceMeta: ResourceMeta): Promise<void>;
   completeUpload(
     resourceId: string,
@@ -159,5 +170,6 @@ export interface IResourceRepository {
   ): Promise<ResourceQueryItem[]>;
   deletePendingOlderThan(cutoff: Date): Promise<number>;
   delete(id: string): Promise<void>;
+  softDelete(id: string): Promise<void>;
   deleteMeta(id: string): Promise<void>;
 }

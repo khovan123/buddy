@@ -10,6 +10,7 @@ import {
   ResourceListQueryParams,
   ResourceQueryItem,
   ResourceQueryResult,
+  ResourceUpdateDetails,
 } from '../../../../domain/repositories/resource.repository.interface';
 import { CourseSchema } from '../schemas/course.schema';
 import { MajorSchema } from '../schemas/major.schema';
@@ -247,7 +248,7 @@ export class ResourceMongoRepository implements IResourceRepository {
    */
   async findByIdWithDetails(id: string): Promise<ResourceQueryItem | null> {
     const row = await this.resourceModel
-      .findById(id)
+      .findOne({ _id: id, deletedAt: null })
       .populate<Pick<ResourceQueryWithPopulate, 'collectionId'>>('collectionId')
       .populate('major')
       .populate('course')
@@ -266,7 +267,7 @@ export class ResourceMongoRepository implements IResourceRepository {
   async findByIdsWithDetails(ids: string[]): Promise<ResourceQueryItem[]> {
     if (!ids || ids.length === 0) return [];
     const rows = await this.resourceModel
-      .find({ _id: { $in: ids } })
+      .find({ _id: { $in: ids }, deletedAt: null })
       .populate<Pick<ResourceQueryWithPopulate, 'collectionId'>>('collectionId')
       .populate('major')
       .populate('course')
@@ -284,7 +285,7 @@ export class ResourceMongoRepository implements IResourceRepository {
    */
   async findBySlugWithDetails(slug: string): Promise<ResourceQueryItem | null> {
     const row = await this.resourceModel
-      .findOne({ slug })
+      .findOne({ slug, deletedAt: null })
       .populate<Pick<ResourceQueryWithPopulate, 'collectionId'>>('collectionId')
       .populate('major')
       .populate('course')
@@ -343,6 +344,26 @@ export class ResourceMongoRepository implements IResourceRepository {
     const data: Partial<ResourceWritePayload> = { ...persistence };
     delete data._id;
     await this.resourceModel.updateOne({ _id: resource.id }, data).exec();
+  }
+
+  async updateDetails(resourceId: string, details: ResourceUpdateDetails): Promise<void> {
+    await this.resourceModel
+      .updateOne(
+        { _id: resourceId, deletedAt: null },
+        {
+          $set: {
+            title: details.title,
+            summary: details.summary,
+            hightlights: details.hightlights,
+            majorId: details.majorId,
+            courseId: details.courseId,
+            price: details.price,
+            collectionId: details.collectionId || null,
+            updatedAt: new Date(),
+          },
+        },
+      )
+      .exec();
   }
 
   /**
@@ -415,6 +436,12 @@ export class ResourceMongoRepository implements IResourceRepository {
    */
   async delete(id: string): Promise<void> {
     await this.resourceModel.deleteOne({ _id: id }).exec();
+  }
+
+  async softDelete(id: string): Promise<void> {
+    await this.resourceModel
+      .updateOne({ _id: id, deletedAt: null }, { $set: { deletedAt: new Date() } })
+      .exec();
   }
 
   /**
@@ -1015,6 +1042,7 @@ export class ResourceMongoRepository implements IResourceRepository {
       {
         $set: {
           status,
+          isVerified: result.status === ContentModerationStatus.APPROVED,
           moderationStatus: result.status,
           moderationScore: result.score ?? null,
           moderationReasons: result.reasons,
