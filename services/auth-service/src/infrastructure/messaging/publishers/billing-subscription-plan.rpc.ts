@@ -26,17 +26,55 @@ export class BillingSubscriptionPlanPublisher {
     fallbackPlan?: string | null,
   ): Promise<SubscriptionPlanDetails | null> {
     const event = new GetBillingSubscriptionPlanEvent({ userId });
+    const correlationId = ensureCorrelationId(
+      event.correlationId,
+      getCorrelationId(),
+      event.eventId,
+    );
+
+    this.logger.log('Resolving billing subscription plan via RPC', {
+      userId,
+      fallbackPlan,
+      routingKey: event.routingKey,
+      correlationId,
+      eventId: event.eventId,
+    });
 
     try {
       const response = await this.fetchViaRpc(event);
-      return response.planDetails ?? this.fallbackDetails(fallbackPlan);
+      const fallbackDetails = response.planDetails ? null : this.fallbackDetails(fallbackPlan);
+      const planDetails = response.planDetails ?? fallbackDetails;
+
+      this.logger.log('Resolved billing subscription plan via RPC', {
+        userId,
+        routingKey: event.routingKey,
+        correlationId,
+        eventId: event.eventId,
+        hasPlanDetails: Boolean(response.planDetails),
+        usedFallback: Boolean(fallbackDetails),
+        planCode: planDetails?.code ?? null,
+      });
+
+      return planDetails;
     } catch (error) {
+      const fallbackDetails = this.fallbackDetails(fallbackPlan);
+
       this.logger.warn(
         `Failed to resolve billing subscription plan via RPC: ${
           error instanceof Error ? error.message : String(error)
         }`,
+        {
+          userId,
+          fallbackPlan,
+          routingKey: event.routingKey,
+          correlationId,
+          eventId: event.eventId,
+          usedFallback: Boolean(fallbackDetails),
+          fallbackCode: fallbackDetails?.code ?? null,
+        },
       );
-      return this.fallbackDetails(fallbackPlan);
+
+      return fallbackDetails;
     }
   }
 
@@ -45,13 +83,36 @@ export class BillingSubscriptionPlanPublisher {
   ): Promise<BillingSubscriptionPlanRpcResponse> {
     const routingKey = event.routingKey;
     const messageData = this.toMessageData(event);
+    const correlationId =
+      typeof messageData.correlationId === 'string' ? messageData.correlationId : event.eventId;
 
-    return this.amqpConnection.request<BillingSubscriptionPlanRpcResponse>({
+    this.logger.log('Publishing billing subscription plan RPC request', {
+      userId: event.payload.userId,
+      routingKey,
+      exchange: EXCHANGES.BILLING,
+      correlationId,
+      eventId: event.eventId,
+      timeoutMs: 10_000,
+    });
+
+    const response = await this.amqpConnection.request<BillingSubscriptionPlanRpcResponse>({
       exchange: EXCHANGES.BILLING,
       routingKey,
       payload: messageData,
       timeout: 10_000,
     });
+
+    this.logger.log('Received billing subscription plan RPC response', {
+      userId: event.payload.userId,
+      routingKey,
+      exchange: EXCHANGES.BILLING,
+      correlationId,
+      eventId: event.eventId,
+      hasPlanDetails: Boolean(response.planDetails),
+      planCode: response.planDetails?.code ?? null,
+    });
+
+    return response;
   }
 
   private toMessageData(event: GetBillingSubscriptionPlanEvent) {
