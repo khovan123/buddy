@@ -3,7 +3,11 @@ import { getAuthHeaders } from "@/lib/server-session"
 
 export const dynamic = "force-dynamic"
 
-export async function POST(request: Request) {
+type RouteContext = {
+  params: Promise<{ topicId: string }>
+}
+
+export async function POST(request: Request, context: RouteContext) {
   const headers = await getAuthHeaders()
 
   if (!headers.Authorization) {
@@ -11,30 +15,22 @@ export async function POST(request: Request) {
   }
 
   const body = (await request.json()) as {
-    title?: string
-    excerpt?: string
-    majorId?: string
-    tag?: string
+    reaction?: "like" | "tym" | "haha"
   }
 
-  const title = body.title?.trim()
-  const excerpt = body.excerpt?.trim()
-  const majorId = body.majorId?.trim()
-  const tag = body.tag?.trim()
-
-  if (!title || !excerpt || !majorId || !tag) {
-    return new Response("Invalid topic", { status: 400 })
+  if (
+    body.reaction !== "like" &&
+    body.reaction !== "tym" &&
+    body.reaction !== "haha"
+  ) {
+    return new Response("Invalid reaction", { status: 400 })
   }
 
+  const { topicId } = await context.params
   const upstream = await fetchApi(
     "POST",
-    "/forum/topics",
-    {
-      title,
-      excerpt,
-      majorId,
-      tag,
-    },
+    `/forum/topics/${topicId}/reactions`,
+    { reaction: body.reaction },
     headers
   )
 

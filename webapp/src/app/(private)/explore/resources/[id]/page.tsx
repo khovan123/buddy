@@ -20,12 +20,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { PurchaseButton } from "@/features/billing"
-import { ResourceDocumentPreview } from "@/features/content"
 import {
   getResourceBySlug,
   getResourcePreview,
+  ResourceDocumentPreview,
 } from "@/features/content"
-import { ItemInteractionControls, TrackContentView } from "@/features/interaction"
+import {
+  ItemInteractionControls,
+  TrackContentView,
+} from "@/features/interaction"
 
 type PageParams = Promise<{ id: string }>
 
@@ -359,6 +362,7 @@ export default async function ExploreResourceDetailPage({
                 itemId={resource.id}
                 itemType="RESOURCE"
                 className="mb-4 w-full text-base font-bold"
+                price={resource.price || 0}
               />
               <div className="flex justify-center">
                 <Item

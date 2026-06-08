@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   FileText,
   Loader2,
+  MessageCircle,
   ShoppingBag,
   Video,
 } from "lucide-react"
@@ -49,7 +50,7 @@ interface ModerationNotification {
   id: string
   href: string
   title: string
-  type: "Resource" | "Tutorial" | "Purchase"
+  type: "Resource" | "Tutorial" | "Purchase" | "Forum"
   statusLabel: string
   description: string
   reason?: string
@@ -339,10 +340,27 @@ export function Notifications() {
             ...meta,
           }
         })
+    const forumMentionNotifications: ModerationNotification[] =
+      storedNotifications
+        .filter((item) => item.channel === "forum-mention")
+        .map((item) => ({
+          id: `forum-mention-${item._id}`,
+          href: item.templateData.href ?? "/forum",
+          title: item.subject ?? "You were mentioned",
+          type: "Forum",
+          statusLabel: "Mention",
+          description:
+            item.templateData.excerpt ??
+            `${item.templateData.actorName ?? "Someone"} mentioned you in ${item.templateData.topicTitle ?? "a topic"}.`,
+          tone: "info",
+          updatedAt: item.templateData.createdAt ?? item.createdAt,
+        }))
     const unreadStoredCount = storedNotifications.filter(
       (item) =>
         !item.readAt &&
-        (item.channel === "purchase" || item.channel === "content-moderation")
+        (item.channel === "purchase" ||
+          item.channel === "content-moderation" ||
+          item.channel === "forum-mention")
     ).length
 
     const approvedFallback = [
@@ -364,6 +382,7 @@ export function Notifications() {
 
     const sorted = [
       ...moderationNotifications,
+      ...forumMentionNotifications,
       ...purchaseNotifications,
       ...activeNotifications,
       ...approvedFallback,
@@ -480,7 +499,9 @@ export function Notifications() {
                   ? Video
                   : item.type === "Purchase"
                     ? ShoppingBag
-                    : FileText
+                    : item.type === "Forum"
+                      ? MessageCircle
+                      : FileText
               const StatusIcon =
                 item.tone === "success" ? CheckCircle2 : AlertTriangle
 

@@ -33,6 +33,7 @@ export const INTERACTION_WEIGHTS: Record<InteractionAction, number> = {
 
 export const INTERACTION_ROUTINGKEYS = {
   TRACKED: 'INTERACTION_TRACKED',
+  FORUM_MENTION_CREATED: 'forum.mention.created',
 } as const;
 
 // ─── Event Payload ─────────────────────────────────────────────────────────────
@@ -63,6 +64,19 @@ export interface InteractionStatsPayload {
   ratingCount: number;
   ratingAverage: number;
   likedByCurrentUser?: boolean;
+}
+
+export interface ForumMentionCreatedPayload {
+  mentionedUserId: string;
+  mentionedUserName: string;
+  actorId?: string;
+  actorName: string;
+  topicId?: string;
+  topicTitle: string;
+  messageId: string;
+  excerpt: string;
+  href: string;
+  createdAt: string;
 }
 
 // ─── Domain Event ──────────────────────────────────────────────────────────────

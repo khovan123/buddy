@@ -23,11 +23,23 @@ export class ForumTopic {
   @Prop({ type: String, default: 'New', trim: true, maxlength: 48 })
   tag!: string;
 
+  @Prop({ type: String, trim: true, maxlength: 80 })
+  majorId?: string;
+
   @Prop({ type: Number, default: 0, min: 0 })
   replyCount!: number;
 
   @Prop({ type: Number, default: 0, min: 0 })
   viewCount!: number;
+
+  @Prop({ type: [String], default: [] })
+  likeUserIds!: string[];
+
+  @Prop({ type: [String], default: [] })
+  tymUserIds!: string[];
+
+  @Prop({ type: [String], default: [] })
+  hahaUserIds!: string[];
 
   @Prop({ type: Boolean, default: false, index: true })
   trending!: boolean;
@@ -41,3 +53,4 @@ export const ForumTopicSchema = SchemaFactory.createForClass(ForumTopic);
 ForumTopicSchema.index({ createdAt: -1 });
 ForumTopicSchema.index({ lastActivityAt: -1 });
 ForumTopicSchema.index({ trending: 1, lastActivityAt: -1 });
+ForumTopicSchema.index({ majorId: 1, lastActivityAt: -1 });

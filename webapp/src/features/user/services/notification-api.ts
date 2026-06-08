@@ -21,6 +21,14 @@ export interface UserNotification {
     reasons?: string[]
     ruleVersion?: string
     moderatedAt?: string
+    actorId?: string
+    actorName?: string
+    topicId?: string
+    topicTitle?: string
+    messageId?: string
+    excerpt?: string
+    href?: string
+    createdAt?: string
   }
   status: string
   readAt?: string | null

@@ -4,7 +4,18 @@ import {
   RequirePolicy,
   SubscriptionRequiredPolicy,
 } from '@libs/common';
-import { Body, Controller, Get, HttpException, Post, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  Param,
+  Patch,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { ServiceRegistryService } from '../../../infrastructure/config/service-registry.service';
@@ -34,6 +45,7 @@ export class ForumProxyController {
       service: 'interaction',
       path: '/v1/forum',
       method: 'GET',
+      query: req.user?.sub ? { viewerId: req.user.sub } : undefined,
     });
   }
 
@@ -56,6 +68,62 @@ export class ForumProxyController {
     return this.proxy.forward(req, {
       service: 'interaction',
       path: '/v1/forum/messages',
+      method: 'POST',
+      body: {
+        ...body,
+        userId: req.user?.sub,
+        authorName: this.resolveAuthorName(req.user),
+      },
+    });
+  }
+
+  @Patch('topics/:topicId/view')
+  viewTopic(@Param('topicId') topicId: string, @Req() req: AuthenticatedRequest) {
+    return this.proxy.forward(req, {
+      service: 'interaction',
+      path: `/v1/forum/topics/${topicId}/view`,
+      method: 'PATCH',
+      body: {
+        userId: req.user?.sub,
+      },
+    });
+  }
+
+  @Post('topics/:topicId/reactions')
+  reactToTopic(
+    @Param('topicId') topicId: string,
+    @Req() req: AuthenticatedRequest,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.proxy.forward(req, {
+      service: 'interaction',
+      path: `/v1/forum/topics/${topicId}/reactions`,
+      method: 'POST',
+      body: {
+        ...body,
+        userId: req.user?.sub,
+      },
+    });
+  }
+
+  @Get('topics/:topicId/messages')
+  getTopicMessages(@Param('topicId') topicId: string, @Req() req: AuthenticatedRequest) {
+    return this.proxy.forward(req, {
+      service: 'interaction',
+      path: `/v1/forum/topics/${topicId}/messages`,
+      method: 'GET',
+    });
+  }
+
+  @Post('topics/:topicId/messages')
+  createReply(
+    @Param('topicId') topicId: string,
+    @Req() req: AuthenticatedRequest,
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.proxy.forward(req, {
+      service: 'interaction',
+      path: `/v1/forum/topics/${topicId}/messages`,
       method: 'POST',
       body: {
         ...body,

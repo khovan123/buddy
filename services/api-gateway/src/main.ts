@@ -74,6 +74,7 @@ async function bootstrap() {
   const { AppLogger, CorrelationIdInterceptor, GlobalExceptionFilter } =
     await import('@libs/common');
   const { AppModule } = await import('./app.module.js');
+  const { registerForumWebSocket } = await import('./presentation/ws/forum-websocket.js');
 
   const logger = new AppLogger('Bootstrap');
 
@@ -141,6 +142,7 @@ async function bootstrap() {
 
   // ── Versioning ────────────────────────────────────────────────────
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+  registerForumWebSocket(app, logger);
 
   // ── Swagger & Scalar API Docs ─────────────────────────────────────
   const { DocumentBuilder, SwaggerModule } = await import('@nestjs/swagger');

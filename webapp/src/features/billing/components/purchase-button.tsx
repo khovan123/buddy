@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 import { Loader2, Wallet } from "lucide-react"
 import { toast } from "sonner"
@@ -31,6 +31,7 @@ interface PurchaseButtonProps {
   itemType: PurchasableContentType
   label?: string
   className?: string
+  price?: number
 }
 
 export function PurchaseButton({
@@ -38,9 +39,9 @@ export function PurchaseButton({
   itemType,
   label = "Buy Now",
   className,
+  price,
 }: PurchaseButtonProps) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const hasResumed = useRef(false)
   const [quoteAmount, setQuoteAmount] = useState<string | null>(null)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
@@ -59,9 +60,7 @@ export function PurchaseButton({
       const payableAmount = quoteResponse.data.payableAmountInCents
 
       setQuoteAmount(payableAmount)
-      if (
-        BigInt(balanceResponse.data.balanceInCents) < BigInt(payableAmount)
-      ) {
+      if (BigInt(balanceResponse.data.balanceInCents) < BigInt(payableAmount)) {
         setInsufficientOpen(true)
         return
       }
@@ -73,6 +72,8 @@ export function PurchaseButton({
   }, [getQuote, itemId, itemType, refetchBalance])
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(globalThis.location.search)
+
     if (
       searchParams.get("checkout") !== "resume" ||
       searchParams.get("itemId") !== itemId ||
@@ -84,7 +85,7 @@ export function PurchaseButton({
 
     hasResumed.current = true
     void prepareCheckout()
-  }, [itemId, itemType, prepareCheckout, searchParams])
+  }, [itemId, itemType, prepareCheckout])
 
   const handlePurchase = async () => {
     try {
@@ -121,7 +122,7 @@ export function PurchaseButton({
         disabled={isQuoting}
       >
         {isQuoting ? <Loader2 className="size-4 animate-spin" /> : null}
-        {label}
+        {price && price > 0 ? label : "Learn now"}
       </Button>
 
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
@@ -134,7 +135,7 @@ export function PurchaseButton({
             </DialogDescription>
           </DialogHeader>
           <div className="rounded-xl bg-muted/50 px-4 py-3">
-            <p className="text-xs font-medium uppercase text-muted-foreground">
+            <p className="text-xs font-medium text-muted-foreground uppercase">
               Total
             </p>
             <p className="mt-1 text-2xl font-bold">
@@ -145,8 +146,13 @@ export function PurchaseButton({
             <Button variant="ghost" onClick={() => setCheckoutOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => void handlePurchase()} disabled={isPurchasing}>
-              {isPurchasing ? <Loader2 className="size-4 animate-spin" /> : null}
+            <Button
+              onClick={() => void handlePurchase()}
+              disabled={isPurchasing}
+            >
+              {isPurchasing ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : null}
               Pay with wallet
             </Button>
           </DialogFooter>

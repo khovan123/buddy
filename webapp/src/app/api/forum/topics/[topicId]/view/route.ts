@@ -3,31 +3,22 @@ import { getAuthHeaders } from "@/lib/server-session"
 
 export const dynamic = "force-dynamic"
 
-export async function POST(request: Request) {
+type RouteContext = {
+  params: Promise<{ topicId: string }>
+}
+
+export async function PATCH(_request: Request, context: RouteContext) {
   const headers = await getAuthHeaders()
 
   if (!headers.Authorization) {
     return new Response("Unauthorized", { status: 401 })
   }
 
-  const body = (await request.json()) as {
-    message?: string
-    mentions?: Array<{ userId: string; name: string; avatarUrl?: string }>
-  }
-
-  const text = body.message?.trim()
-
-  if (!text) {
-    return new Response("Invalid message", { status: 400 })
-  }
-
+  const { topicId } = await context.params
   const upstream = await fetchApi(
-    "POST",
-    "/forum/messages",
-    {
-      message: text,
-      mentions: Array.isArray(body.mentions) ? body.mentions : [],
-    },
+    "PATCH",
+    `/forum/topics/${topicId}/view`,
+    undefined,
     headers
   )
 

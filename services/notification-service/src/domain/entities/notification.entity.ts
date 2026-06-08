@@ -9,6 +9,7 @@ export type NotificationChannel =
   | 'alert'
   | 'purchase'
   | 'content-moderation'
+  | 'forum-mention'
   | 'model-trained';
 
 /** Interface representing data constraints for  notification props. */

@@ -12,6 +12,8 @@ import {
   BILLING_ROUTINGKEYS,
   CONTENT_ROUTINGKEYS,
   ContentModerationCompletedEvent,
+  ForumMentionCreatedPayload,
+  INTERACTION_ROUTINGKEYS,
   PurchaseCompletedEvent,
   RECOMMENDATION_ROUTINGKEYS,
 } from '@libs/contracts';
@@ -208,6 +210,59 @@ export class NotificationConsumer {
           moderatedAt: payload.moderatedAt,
         },
         correlationId: data.correlationId ?? payload.contentId,
+      }),
+    );
+
+    this.notificationStream.publish(notification);
+  }
+
+  @RabbitSubscribe({
+    exchange: EXCHANGES.INTERACTION,
+    routingKey: INTERACTION_ROUTINGKEYS.FORUM_MENTION_CREATED,
+    queue: QUEUES.NOTIFICATION_IN_APP,
+    queueOptions: {
+      durable: true,
+      arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
+    },
+  })
+  async handleForumMentionCreated(
+    data: EventEnvelope<ForumMentionCreatedPayload>,
+  ): Promise<void | Nack> {
+    const payload = this.getPayload(data);
+
+    if (
+      !payload ||
+      !this.isNonEmptyString(payload.mentionedUserId) ||
+      !this.isNonEmptyString(payload.actorName) ||
+      !this.isNonEmptyString(payload.topicTitle) ||
+      !this.isNonEmptyString(payload.messageId) ||
+      !this.isNonEmptyString(payload.href)
+    ) {
+      this.logger.warn(
+        `Dropping malformed [${INTERACTION_ROUTINGKEYS.FORUM_MENTION_CREATED}] event`,
+      );
+      return new Nack(false);
+    }
+
+    const notification = await this.notificationRepository.save(
+      Notification.create({
+        userId: payload.mentionedUserId,
+        type: 'in_app',
+        channel: 'forum-mention',
+        recipient: payload.mentionedUserId,
+        subject: `${payload.actorName} mentioned you`,
+        templateId: 'forum-mention',
+        templateData: {
+          actorId: payload.actorId,
+          actorName: payload.actorName,
+          topicId: payload.topicId,
+          topicTitle: payload.topicTitle,
+          messageId: payload.messageId,
+          excerpt: payload.excerpt,
+          href: payload.href,
+          createdAt: payload.createdAt,
+        },
+        correlationId: data.correlationId ?? payload.messageId,
       }),
     );
 
