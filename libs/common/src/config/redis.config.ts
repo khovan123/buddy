@@ -4,7 +4,8 @@ import type { Cluster, Redis, RedisOptions } from 'ioredis';
 const REDIS_ERROR_LOG_INTERVAL_MS = 30_000;
 const redisErrorLogTimes = new Map<string, number>();
 
-const getServiceName = () => process.env.SERVICE_NAME || process.env.npm_package_name || 'unknown-service';
+const getServiceName = () =>
+  process.env.SERVICE_NAME || process.env.npm_package_name || 'unknown-service';
 
 const shouldLogRedisError = (key: string): boolean => {
   const now = Date.now();
