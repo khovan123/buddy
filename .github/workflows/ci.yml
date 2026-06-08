@@ -311,8 +311,27 @@ jobs:
 
       - name: Install Koyeb CLI
         run: |
-          curl -fsSL https://raw.githubusercontent.com/koyeb/koyeb-cli/master/install.sh | sh
-          echo "$HOME/.koyeb/bin" >> "$GITHUB_PATH"
+          set -euo pipefail
+
+          docker pull koyeb/koyeb-cli:latest
+
+          KOYEB_BIN="/tmp/koyeb-bin"
+          mkdir -p "$KOYEB_BIN"
+          cat > "$KOYEB_BIN/koyeb" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+
+          docker run --rm \
+            -e KOYEB_TOKEN \
+            -v "$PWD:$PWD" \
+            -v /tmp:/tmp \
+            -w "$PWD" \
+            koyeb/koyeb-cli:latest "$@"
+          EOF
+          chmod +x "$KOYEB_BIN/koyeb"
+
+          echo "$KOYEB_BIN" >> "$GITHUB_PATH"
+          "$KOYEB_BIN/koyeb" version
 
       - name: Deploy to Koyeb
         env:

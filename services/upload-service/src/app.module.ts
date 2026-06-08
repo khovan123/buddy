@@ -9,6 +9,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TerminusModule } from '@nestjs/terminus';
 
 import {
+  getRedisConnectionOptions,
   getRedisConfig,
   HealthController,
   MessagingModule,
@@ -54,11 +55,11 @@ const uploadQueueImports = uploadWorkersEnabled
   ? [
       BullModule.forRootAsync({
         inject: [ConfigService],
-        useFactory: (config: ConfigService) => ({
+        useFactory: () => ({
           connection: {
-            host: config.get<string>('REDIS_HOST', 'localhost'),
-            port: parseInt(config.get<string>('REDIS_PORT', '6379'), 10),
-            password: config.get<string>('REDIS_PASSWORD'),
+            ...getRedisConnectionOptions('upload-bullmq', {
+              maxRetriesPerRequest: null,
+            }),
           },
         }),
       }),
