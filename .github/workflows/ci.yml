@@ -370,6 +370,7 @@ jobs:
             --instance-type "$INSTANCE_TYPE"
             --min-scale 1
             --max-scale 1
+            --deployment-strategy immediate
             --env PORT=8080
             --env HOST=0.0.0.0
             --env NODE_ENV=production
