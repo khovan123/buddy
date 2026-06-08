@@ -394,6 +394,7 @@ jobs:
             --env HOST=0.0.0.0
             --env NODE_ENV=production
             --env SERVICE_NAME="$SERVICE"
+            --env LOG_LEVEL=info
             --env 'ALLOWED_ORIGINS=*'
             --env OTEL_SDK_DISABLED=true
             --wait
