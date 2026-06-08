@@ -1,11 +1,20 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 
+import { Skeleton } from "boneyard-js/react"
 import { FileText, ShieldCheck, Star } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { WithSkeletonLink } from "@/hoc/with-skeleton-link"
+import type { PurchasableContentType } from "@/features/billing/services/billing-api"
+import { ItemInteractionControls } from "@/features/interaction"
+import type {
+  InteractionContentType,
+  InteractionStats,
+} from "@/features/interaction"
+import type { WithSkeletonLinkProps } from "@/hoc/with-skeleton-link"
+import { cn } from "@/lib/utils"
 
 import { LearningCardShell, LearningOrbit } from "./learning-card-shell"
 
@@ -16,7 +25,11 @@ export type ResourceCardData = {
   rating: string
   reviews: string
   price: string
+  views?: string
   href: string
+  interactionType?: InteractionContentType
+  initialStats?: Partial<InteractionStats>
+  purchaseType?: PurchasableContentType
   thumbnailUrl?: string
   owned?: boolean
   bestseller?: boolean
@@ -31,14 +44,34 @@ type ResourceCardInnerProps = {
   imageSizes?: string
 }
 
+function buildCheckoutHref(
+  href: string,
+  itemId: string,
+  itemType: PurchasableContentType
+) {
+  const separator = href.includes("?") ? "&" : "?"
+  return `${href}${separator}checkout=resume&itemType=${encodeURIComponent(itemType)}&itemId=${encodeURIComponent(itemId)}`
+}
+
 function ResourceCardInner({
   resource,
   imageSizes = "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw",
 }: ResourceCardInnerProps) {
   const ratingNum = Number(resource?.rating || 0)
+  const checkoutHref =
+    resource?.href && resource.purchaseType
+      ? buildCheckoutHref(resource.href, resource.id, resource.purchaseType)
+      : undefined
 
   return (
     <LearningCardShell className="group/resource p-2">
+      {resource?.href ? (
+        <Link
+          href={resource.href}
+          className="absolute inset-0 z-20 rounded-[1.35rem] outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          aria-label={`View ${resource.title}`}
+        />
+      ) : null}
       <div
         className="relative z-10 w-full overflow-hidden rounded-[1rem] border border-white/10 bg-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
         style={{ aspectRatio: "304/171" }}
@@ -111,10 +144,21 @@ function ResourceCardInner({
           </span>
         </div>
 
-        <div className="mt-auto pt-3">
-          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-            <div className="h-full w-[58%] animate-[pulse_3s_ease-in-out_infinite] rounded-full bg-primary/65" />
-          </div>
+        <div className="pointer-events-auto relative z-30 mt-auto pt-3">
+          {resource?.interactionType ? (
+            <ItemInteractionControls
+              itemId={resource.id}
+              itemType={resource.interactionType}
+              initialStats={resource.initialStats}
+              buyHref={!resource.owned ? checkoutHref : undefined}
+              buyLabel={`Buy ${resource.title}`}
+              compact
+            />
+          ) : (
+            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+              <div className="h-full w-[58%] animate-[pulse_3s_ease-in-out_infinite] rounded-full bg-primary/65" />
+            </div>
+          )}
         </div>
       </div>
       <LearningOrbit active className="size-24 opacity-35" />
@@ -122,8 +166,27 @@ function ResourceCardInner({
   )
 }
 
-export const ResourceCard = WithSkeletonLink(
-  ResourceCardInner,
-  "resource-card",
-  (props) => props.resource?.href
-)
+export function ResourceCard({
+  isLoading = false,
+  onClick,
+  className,
+  ...rest
+}: ResourceCardInnerProps & WithSkeletonLinkProps) {
+  return (
+    <Skeleton
+      name="resource-card"
+      loading={isLoading}
+      className="flex h-full flex-col items-stretch rounded-3xl *:data-boneyard-content:flex *:data-boneyard-content:h-full *:data-boneyard-content:min-h-0 *:data-boneyard-content:flex-1 *:data-boneyard-content:items-stretch [&>[data-boneyard-content]>*]:flex-1"
+    >
+      <div
+        onClick={onClick}
+        className={cn(
+          "group flex h-full min-h-0 w-full flex-1 flex-col self-stretch overflow-hidden",
+          className
+        )}
+      >
+        <ResourceCardInner {...rest} />
+      </div>
+    </Skeleton>
+  )
+}

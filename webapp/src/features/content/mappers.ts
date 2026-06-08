@@ -18,6 +18,33 @@ const vndFormat = new Intl.NumberFormat("vi-VN", {
   currency: "VND",
 })
 
+const compactFormat = new Intl.NumberFormat("en", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+})
+
+type ViewCountSource = {
+  totalViews?: number
+  viewCount?: number
+  views?: number
+}
+
+function formatViews(item: ViewCountSource) {
+  return compactFormat.format(item.totalViews ?? item.viewCount ?? item.views ?? 0)
+}
+
+function initialStats(
+  item: ViewCountSource,
+  purchaseCount = 0,
+  likeCount = 0
+) {
+  return {
+    viewCount: item.totalViews ?? item.viewCount ?? item.views ?? 0,
+    likeCount,
+    purchaseCount,
+  }
+}
+
 export function mapResourceToCard(
   item: ResourceQueryItem
 ): ResourceCardData {
@@ -28,7 +55,11 @@ export function mapResourceToCard(
     rating: "—",
     reviews: String(item._count?.resourceOrders ?? 0),
     price: vndFormat.format(item.price),
+    views: formatViews(item),
     href: `/explore/resources/${item.slug}`,
+    interactionType: "RESOURCE",
+    initialStats: initialStats(item, item._count?.resourceOrders ?? 0),
+    purchaseType: "RESOURCE",
     thumbnailUrl: item.thumbnailUrl,
     bestseller: (item._count?.resourceOrders ?? 0) > 100,
     author: item.uploader
@@ -50,10 +81,14 @@ export function mapTutorialToCard(
     rating: "—",
     reviews: String(item._count?.tutorialOrders ?? 0),
     price: vndFormat.format(item.price),
+    views: formatViews(item),
     discount: item.discountBundle
       ? `${item.discountBundle}% OFF`
       : undefined,
     href: `/explore/tutorials/${item.slug}`,
+    interactionType: "TUTORIAL",
+    initialStats: initialStats(item, item._count?.tutorialOrders ?? 0),
+    purchaseType: "TUTORIAL_BUNDLE",
     thumbnailUrl: item.thumbnailUrl,
     author: item.uploader
       ? { name: item.uploader.nickname, avatar: item.uploader.avatarUrl }
@@ -76,10 +111,16 @@ export function mapCollectionToCard(
     rating: "—",
     reviews: "—",
     price: "—",
+    views: formatViews(item),
     discount: item.discount ? `${item.discount}% OFF` : undefined,
     href: isResource
       ? `/explore/resources/collections/${item.slug}`
       : `/explore/tutorials/collections/${item.slug}`,
+    interactionType: isResource ? "RESOURCE_COLLECTION" : "TUTORIAL_COLLECTION",
+    initialStats: initialStats(item),
+    purchaseType: isResource
+      ? "RESOURCE_COLLECTION"
+      : "TUTORIAL_BUNDLE_COLLECTION",
     thumbnailUrl: item.thumbnailUrl,
     author: item.uploader
       ? { name: item.uploader.nickname, avatar: item.uploader.avatarUrl }
@@ -213,4 +254,3 @@ export function mapCollectionToLibraryCard(
       : undefined,
   }
 }
-

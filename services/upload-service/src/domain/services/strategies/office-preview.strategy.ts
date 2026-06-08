@@ -17,6 +17,10 @@ export class OfficePreviewStrategy implements IPreviewProcessor {
     ];
   }
 
+  previewMimeType(): string {
+    return 'text/plain; charset=utf-8';
+  }
+
   async process(_buffer: Buffer, _percentage: number): Promise<Buffer> {
     const placeholderText = [
       '# Document Preview',

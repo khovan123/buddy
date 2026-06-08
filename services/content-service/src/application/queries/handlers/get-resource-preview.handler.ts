@@ -117,13 +117,29 @@ export class GetResourcePreviewHandler implements IQueryHandler<GetResourcePrevi
    * Reads `meta[0].extension` from the lean MongoDB document.
    * Falls back to 'PDF' as the default.
    */
-  private resolveFormat(resource: Record<string, any>): string {
-    const meta = resource.meta ?? resource._doc?.meta;
-    const ext: string | undefined = Array.isArray(meta) ? meta[0]?.extension : undefined;
+  private resolveFormat(resource: {
+    primaryFileExtension?: string | null;
+    primaryS3Key?: string | null;
+  }): string {
+    const ext =
+      resource.primaryFileExtension ?? this.resolveExtensionFromS3Key(resource.primaryS3Key);
 
     if (!ext) return 'PDF';
 
     const normalized = ext.startsWith('.') ? ext.toLowerCase() : `.${ext.toLowerCase()}`;
     return GetResourcePreviewHandler.FORMAT_MAP[normalized] ?? ext.replace('.', '').toUpperCase();
+  }
+
+  private resolveExtensionFromS3Key(s3Key?: string | null): string | null {
+    if (!s3Key) return null;
+
+    const filename = s3Key.split('/').at(-1);
+    const dotIndex = filename?.lastIndexOf('.') ?? -1;
+
+    if (!filename || dotIndex === -1) {
+      return null;
+    }
+
+    return filename.slice(dotIndex);
   }
 }

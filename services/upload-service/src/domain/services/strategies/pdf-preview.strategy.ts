@@ -16,6 +16,10 @@ export class PdfPreviewStrategy implements IPreviewProcessor {
     return ['application/pdf'];
   }
 
+  previewMimeType(): string {
+    return 'application/pdf';
+  }
+
   async process(buffer: Buffer, percentage: number): Promise<Buffer> {
     const originalPdf = await PDFDocument.load(buffer);
     const totalPages = originalPdf.getPageCount();

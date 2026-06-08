@@ -1,11 +1,20 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 
+import { Skeleton } from "boneyard-js/react"
 import { FileText, Layers3, Star } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { WithSkeletonLink } from "@/hoc/with-skeleton-link"
+import type { PurchasableContentType } from "@/features/billing/services/billing-api"
+import { ItemInteractionControls } from "@/features/interaction"
+import type {
+  InteractionContentType,
+  InteractionStats,
+} from "@/features/interaction"
+import type { WithSkeletonLinkProps } from "@/hoc/with-skeleton-link"
+import { cn } from "@/lib/utils"
 
 import { LearningCardShell, LearningOrbit } from "./learning-card-shell"
 
@@ -17,8 +26,12 @@ export type CollectionCardData = {
   rating: string
   reviews: string
   price: string
+  views?: string
   discount?: string
   href: string
+  interactionType?: InteractionContentType
+  initialStats?: Partial<InteractionStats>
+  purchaseType?: PurchasableContentType
   thumbnailUrl?: string
   author?: {
     name: string
@@ -31,14 +44,38 @@ type CollectionCardInnerProps = {
   imageSizes?: string
 }
 
+function buildCheckoutHref(
+  href: string,
+  itemId: string,
+  itemType: PurchasableContentType
+) {
+  const separator = href.includes("?") ? "&" : "?"
+  return `${href}${separator}checkout=resume&itemType=${encodeURIComponent(itemType)}&itemId=${encodeURIComponent(itemId)}`
+}
+
 function CollectionCardInner({
   collection,
   imageSizes = "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw",
 }: CollectionCardInnerProps) {
   const ratingNum = Number(collection?.rating || 0)
+  const checkoutHref =
+    collection?.href && collection.purchaseType
+      ? buildCheckoutHref(
+          collection.href,
+          collection.id,
+          collection.purchaseType
+        )
+      : undefined
 
   return (
     <LearningCardShell className="group/collection p-2">
+      {collection?.href ? (
+        <Link
+          href={collection.href}
+          className="absolute inset-0 z-20 rounded-[1.35rem] outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          aria-label={`View ${collection.title}`}
+        />
+      ) : null}
       <div
         className="relative z-10 w-full overflow-hidden rounded-[1rem] border border-white/10 bg-muted shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]"
         style={{ aspectRatio: "304/171" }}
@@ -100,7 +137,7 @@ function CollectionCardInner({
           </span>
         </div>
 
-        <div className="mt-auto flex items-end justify-between gap-3 pt-3">
+        <div className="relative z-30 mt-auto flex flex-col gap-2 pt-3">
           <div className="min-w-0">
             {collection?.discount ? (
               <span className="text-caption text-muted-foreground line-through">
@@ -116,6 +153,16 @@ function CollectionCardInner({
               Bundle value
             </Badge>
           ) : null}
+          {collection?.interactionType ? (
+            <ItemInteractionControls
+              itemId={collection.id}
+              itemType={collection.interactionType}
+              initialStats={collection.initialStats}
+              buyHref={checkoutHref}
+              buyLabel={`Buy ${collection.title}`}
+              compact
+            />
+          ) : null}
         </div>
       </div>
       <LearningOrbit active className="size-24 opacity-35" />
@@ -123,8 +170,27 @@ function CollectionCardInner({
   )
 }
 
-export const CollectionCard = WithSkeletonLink(
-  CollectionCardInner,
-  "collection-card",
-  (props) => props.collection?.href
-)
+export function CollectionCard({
+  isLoading = false,
+  onClick,
+  className,
+  ...rest
+}: CollectionCardInnerProps & WithSkeletonLinkProps) {
+  return (
+    <Skeleton
+      name="collection-card"
+      loading={isLoading}
+      className="flex h-full flex-col items-stretch rounded-3xl *:data-boneyard-content:flex *:data-boneyard-content:h-full *:data-boneyard-content:min-h-0 *:data-boneyard-content:flex-1 *:data-boneyard-content:items-stretch [&>[data-boneyard-content]>*]:flex-1"
+    >
+      <div
+        onClick={onClick}
+        className={cn(
+          "group flex h-full min-h-0 w-full flex-1 flex-col self-stretch overflow-hidden",
+          className
+        )}
+      >
+        <CollectionCardInner {...rest} />
+      </div>
+    </Skeleton>
+  )
+}

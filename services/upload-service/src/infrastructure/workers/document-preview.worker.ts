@@ -99,10 +99,11 @@ export class DocumentPreviewWorker extends WorkerHost {
         mimeType,
         DEFAULT_PREVIEW_PERCENTAGE,
       );
+      const previewMimeType = this.previewProcessor.getPreviewMimeType(mimeType);
 
       // ── 5. Upload preview to S3 ─────────────────────────────────
       this.logger.debug(`Uploading preview to: ${previewKey}`);
-      await this.s3Service.uploadBuffer(previewKey, previewBuffer, mimeType);
+      await this.s3Service.uploadBuffer(previewKey, previewBuffer, previewMimeType);
 
       // ── 6. Update database ──────────────────────────────────────
       await this.prisma.client.mediaFile.update({

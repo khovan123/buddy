@@ -25,6 +25,7 @@ import {
   getResourceBySlug,
   getResourcePreview,
 } from "@/features/content"
+import { ItemInteractionControls, TrackContentView } from "@/features/interaction"
 
 type PageParams = Promise<{ id: string }>
 
@@ -127,6 +128,13 @@ export default async function ExploreResourceDetailPage({
 
   return (
     <section className="space-y-10 pb-12">
+      <TrackContentView
+        itemId={resource.id}
+        itemType="RESOURCE"
+        majorId={resource.majorId}
+        courseId={resource.courseId}
+        semester={resource.course?.semester}
+      />
       <script
         type="application/ld+json"
         // react-doctor-ignore
@@ -177,6 +185,13 @@ export default async function ExploreResourceDetailPage({
               {resourceTitle}
             </h2>
             <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-muted-foreground">
+              <ItemInteractionControls
+                itemId={resource.id}
+                itemType="RESOURCE"
+                initialStats={{
+                  purchaseCount: resource._count.resourceOrders,
+                }}
+              />
               <Item variant="default" size="xs" className="w-auto border-0 p-0">
                 <ItemMedia variant="icon">
                   <Star className="size-4 fill-amber-500 text-amber-500" />

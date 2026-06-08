@@ -105,6 +105,7 @@ export const baseApi = createApi({
     "Subscription",
     "Notification",
     "NotificationPreferences",
+    "Interaction",
   ], // Centralize tag definitions here
   endpoints: () => ({}),
 })

@@ -7,6 +7,7 @@ import { InteractionEntity } from '../../../domain/entities/interaction.entity';
 import type { IInteractionRepository } from '../../../domain/repositories/interaction.repository.interface';
 import { INTERACTION_REPOSITORY } from '../../../domain/repositories/tokens';
 import { InteractionPublisher } from '../../../infrastructure/messaging/interaction.publisher';
+import { InteractionStreamService } from '../../interactions/interaction-stream.service';
 import { TrackInteractionCommand } from '../track-interaction.command';
 
 @CommandHandler(TrackInteractionCommand)
@@ -17,6 +18,7 @@ export class TrackInteractionHandler implements ICommandHandler<TrackInteraction
     @Inject(INTERACTION_REPOSITORY)
     private readonly repository: IInteractionRepository,
     private readonly publisher: InteractionPublisher,
+    private readonly interactionStream: InteractionStreamService,
   ) {}
 
   async execute(command: TrackInteractionCommand): Promise<void> {
@@ -45,6 +47,13 @@ export class TrackInteractionHandler implements ICommandHandler<TrackInteraction
       metadata: entity.metadata,
     };
     this.publisher.publish(payload);
+
+    const stats = await this.repository.getStatsForItem({
+      itemId: entity.itemId,
+      itemType: entity.itemType,
+      userId: entity.userId,
+    });
+    this.interactionStream.publish(stats);
 
     this.logger.debug(
       `Tracked ${entity.action} by ${entity.userId} on ${entity.itemType}:${entity.itemId} (w=${entity.weight})`,

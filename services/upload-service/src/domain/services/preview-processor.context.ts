@@ -48,6 +48,19 @@ export class PreviewProcessorContext {
   }
 
   /**
+   * Resolve the MIME type that should be attached to the generated preview object.
+   */
+  getPreviewMimeType(mimeType: string): string {
+    const processor = this.getProcessor(mimeType);
+
+    if (!processor) {
+      throw new UnsupportedFormatError(mimeType);
+    }
+
+    return processor.previewMimeType?.(mimeType) ?? mimeType;
+  }
+
+  /**
    * Generate a preview buffer from the original file.
    *
    * @param buffer - Original file content

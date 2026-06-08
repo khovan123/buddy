@@ -201,6 +201,9 @@ export interface ResourceQueryItem {
   createdAt: string
   updatedAt: string
   thumbnailUrl?: string
+  totalViews?: number
+  viewCount?: number
+  views?: number
   deletedAt?: string | null
   tutorialId?: string | null
   collectionId?: string | null
@@ -322,6 +325,9 @@ export interface TutorialQueryItem {
   resources?: TutorialResourceDetails[] | null
   collectionIds?: string[] | null
   thumbnailUrl?: string
+  totalViews?: number
+  viewCount?: number
+  views?: number
   trailerUrl?: string
   steps?: Array<{
     title: string
@@ -424,6 +430,9 @@ export interface CollectionQueryItem {
   createdAt: string
   updatedAt: string
   thumbnailUrl?: string
+  totalViews?: number
+  viewCount?: number
+  views?: number
   deletedAt?: string | null
   _count: CollectionQueryCount
   uploader?: UserProfileRpcResponse

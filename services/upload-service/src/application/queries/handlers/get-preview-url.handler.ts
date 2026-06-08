@@ -65,7 +65,10 @@ export class GetPreviewUrlHandler implements IQueryHandler<GetPreviewUrlQuery> {
 
     // 2. If preview is already available → generate inline signed URL
     if (mediaFile.previewS3Key && mediaFile.previewStatus === 'AVAILABLE') {
-      const previewUrl = await this.s3Service.generatePreviewSignedUrl(mediaFile.previewS3Key);
+      const previewUrl = await this.s3Service.generatePreviewSignedUrl(
+        mediaFile.previewS3Key,
+        this.previewProcessor.getPreviewMimeType(mediaFile.mimeType),
+      );
 
       return {
         previewUrl,

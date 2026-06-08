@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/item"
 import { PurchaseButton } from "@/features/billing"
 import { getTutorialCollectionBySlug } from "@/features/content"
+import { ItemInteractionControls, TrackContentView } from "@/features/interaction"
 
 type PageParams = Promise<{ id: string }>
 
@@ -152,6 +153,13 @@ export default async function ExploreCollectionTutorialDetailPage({
 
   return (
     <section className="space-y-10 pb-12">
+      <TrackContentView
+        itemId={collection.id}
+        itemType="TUTORIAL_COLLECTION"
+        majorId={collection.majorId}
+        courseId={collection.courseId}
+        semester={collection.course?.semester}
+      />
       <script
         type="application/ld+json"
         // react-doctor-ignore
@@ -196,6 +204,10 @@ export default async function ExploreCollectionTutorialDetailPage({
               {collectionTitle}
             </h1>
             <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-muted-foreground">
+              <ItemInteractionControls
+                itemId={collection.id}
+                itemType="TUTORIAL_COLLECTION"
+              />
               <Item variant="default" size="xs" className="w-auto border-0 p-0">
                 <ItemMedia variant="icon">
                   <Star className="size-4 fill-amber-500 text-amber-500" />

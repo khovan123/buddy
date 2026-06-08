@@ -4,6 +4,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 import mongooseAutopopulate from 'mongoose-autopopulate';
 import { MongoService } from './mongo.service';
+import { ForumMessage, ForumMessageSchema } from './schemas/forum-message.schema';
+import { ForumTopic, ForumTopicSchema } from './schemas/forum-topic.schema';
 import { Interaction, InteractionSchema } from './schemas/interaction.schema';
 
 @Global()
@@ -25,6 +27,14 @@ import { Interaction, InteractionSchema } from './schemas/interaction.schema';
           schema.plugin(mongooseAutopopulate);
           return schema;
         },
+      },
+      {
+        name: ForumTopic.name,
+        useFactory: () => ForumTopicSchema,
+      },
+      {
+        name: ForumMessage.name,
+        useFactory: () => ForumMessageSchema,
       },
     ]),
   ],

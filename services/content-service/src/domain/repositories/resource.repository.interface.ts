@@ -91,6 +91,7 @@ export interface ResourceQueryItem {
   collectionId?: string | null;
   collection?: ResourceCollectionDetails | null;
   primaryS3Key?: string | null;
+  primaryFileExtension?: string | null;
   _count: ResourceQueryCount;
   uploader?: UserProfileRpcResponseDto;
   major?: ResourceQueryMajor;

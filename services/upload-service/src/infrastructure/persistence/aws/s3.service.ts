@@ -249,11 +249,12 @@ export class S3Service implements OnModuleDestroy {
    * the file in-page rather than triggering a download dialog.
    * TTL: 60 seconds (previews are transient, re-requestable).
    */
-  async generatePreviewSignedUrl(s3Key: string): Promise<string> {
+  async generatePreviewSignedUrl(s3Key: string, contentType?: string): Promise<string> {
     const command = new GetObjectCommand({
       Bucket: this.defaultBucket,
       Key: s3Key,
       ResponseContentDisposition: 'inline',
+      ...(contentType ? { ResponseContentType: contentType } : {}),
     });
 
     return getSignedUrl(this.s3Client, command, { expiresIn: 60 });

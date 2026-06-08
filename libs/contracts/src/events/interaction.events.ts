@@ -52,6 +52,19 @@ export interface InteractionPayload {
   };
 }
 
+export interface InteractionStatsPayload {
+  itemId: string;
+  itemType: InteractionContentType;
+  viewCount: number;
+  likeCount: number;
+  purchaseCount: number;
+  commentCount: number;
+  downloadCount: number;
+  ratingCount: number;
+  ratingAverage: number;
+  likedByCurrentUser?: boolean;
+}
+
 // ─── Domain Event ──────────────────────────────────────────────────────────────
 
 /** Emitted when a user interaction is recorded by the interaction-service. */

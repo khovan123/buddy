@@ -6,10 +6,14 @@ import { TerminusModule } from '@nestjs/terminus';
 import { HealthController, MessagingModule } from '@libs/common';
 import { INTERACTION_REPOSITORY } from './domain/repositories/tokens';
 import { COMMAND_HANDLERS } from './application/commands/command.module';
+import { ForumService } from './application/forum/forum.service';
+import { ForumStreamService } from './application/forum/forum-stream.service';
 import { QUERY_HANDLERS } from './application/queries/query.module';
+import { InteractionStreamService } from './application/interactions/interaction-stream.service';
 import { MESSAGE_COMPONENTS } from './infrastructure/messaging/message.module';
 import { MongoModule } from './infrastructure/persistence/mongo/mongo.module';
 import { InteractionMongoRepository } from './infrastructure/persistence/mongo/repositories/interaction.mongo.repository';
+import { ForumController } from './presentation/http/controllers/forum.controller';
 import { InteractionController } from './presentation/http/controllers/interaction.controller';
 
 @Module({
@@ -23,7 +27,7 @@ import { InteractionController } from './presentation/http/controllers/interacti
     TerminusModule,
     MessagingModule,
   ],
-  controllers: [InteractionController, HealthController],
+  controllers: [InteractionController, ForumController, HealthController],
   providers: [
     // Domain → Infrastructure binding
     {
@@ -33,6 +37,9 @@ import { InteractionController } from './presentation/http/controllers/interacti
     ...COMMAND_HANDLERS,
     ...QUERY_HANDLERS,
     ...MESSAGE_COMPONENTS,
+    InteractionStreamService,
+    ForumStreamService,
+    ForumService,
   ],
 })
 export class AppModule {}

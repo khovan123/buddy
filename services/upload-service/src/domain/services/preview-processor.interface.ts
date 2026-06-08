@@ -12,6 +12,12 @@ export interface IPreviewProcessor {
   supportedMimeTypes(): string[];
 
   /**
+   * MIME type of the generated preview object.
+   * Defaults to the original MIME type when a strategy omits this hook.
+   */
+  previewMimeType?(sourceMimeType: string): string;
+
+  /**
    * Process the original file buffer and return a preview buffer.
    *
    * @param buffer - The original file content

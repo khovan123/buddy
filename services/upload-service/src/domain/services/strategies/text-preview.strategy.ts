@@ -16,6 +16,10 @@ export class TextPreviewStrategy implements IPreviewProcessor {
     return ['text/plain', 'text/markdown'];
   }
 
+  previewMimeType(): string {
+    return 'text/plain; charset=utf-8';
+  }
+
   async process(buffer: Buffer, percentage: number): Promise<Buffer> {
     const fullText = buffer.toString('utf-8');
 

@@ -36,6 +36,7 @@ const BASE_NAV_ITEMS: NavigationItem[] = [
       },
     ],
   },
+  { href: "/forum", label: "Forum" },
   { href: "/library", label: "Library" },
   { href: "/profile", label: "Profile" },
 ]

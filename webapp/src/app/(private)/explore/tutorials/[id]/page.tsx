@@ -36,6 +36,7 @@ import {
   getResourcePreview,
   getTutorialBySlug,
 } from "@/features/content"
+import { ItemInteractionControls, TrackContentView } from "@/features/interaction"
 
 type PageParams = Promise<{ id: string }>
 
@@ -170,6 +171,13 @@ export default async function ExploreTutorialDetailPage({
 
   return (
     <section className="space-y-10 pb-12">
+      <TrackContentView
+        itemId={tutorial.id}
+        itemType="TUTORIAL"
+        majorId={tutorial.majorId}
+        courseId={tutorial.courseId}
+        semester={tutorial.course?.semester}
+      />
       <script
         type="application/ld+json"
         // react-doctor-ignore
@@ -241,6 +249,13 @@ export default async function ExploreTutorialDetailPage({
               {courseTitle}
             </h2>
             <div className="flex flex-wrap items-center gap-6 text-sm font-medium text-muted-foreground">
+              <ItemInteractionControls
+                itemId={tutorial.id}
+                itemType="TUTORIAL"
+                initialStats={{
+                  purchaseCount: tutorial._count.tutorialOrders,
+                }}
+              />
               <Item variant="default" size="xs" className="w-auto border-0 p-0">
                 <ItemMedia variant="icon">
                   <Star className="size-4 fill-amber-500 text-amber-500" />

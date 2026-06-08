@@ -753,6 +753,7 @@ export class ResourceMongoRepository implements IResourceRepository {
       collectionId: this.toQueryNullableStringId(row.collectionId),
       collection: this.toQueryCollectionDetails(row.collectionId),
       primaryS3Key: row.primaryS3Key ?? null,
+      primaryFileExtension: row.meta[0]?.extension ?? null,
       major: row.major
         ? {
             id: row.major._id.toString(),

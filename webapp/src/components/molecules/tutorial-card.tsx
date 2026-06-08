@@ -1,11 +1,20 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 
+import { Skeleton } from "boneyard-js/react"
 import { Play, Star } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { WithSkeletonLink } from "@/hoc/with-skeleton-link"
+import type { PurchasableContentType } from "@/features/billing/services/billing-api"
+import { ItemInteractionControls } from "@/features/interaction"
+import type {
+  InteractionContentType,
+  InteractionStats,
+} from "@/features/interaction"
+import type { WithSkeletonLinkProps } from "@/hoc/with-skeleton-link"
+import { cn } from "@/lib/utils"
 
 export type TutorialCardData = {
   id: string
@@ -16,8 +25,12 @@ export type TutorialCardData = {
   rating: string
   reviews: string
   price: string
+  views?: string
   discount?: string
   href: string
+  interactionType?: InteractionContentType
+  initialStats?: Partial<InteractionStats>
+  purchaseType?: PurchasableContentType
   thumbnailUrl?: string
   author?: {
     name: string
@@ -30,12 +43,33 @@ type TutorialCardInnerProps = {
   imageSizes?: string
 }
 
+function buildCheckoutHref(
+  href: string,
+  itemId: string,
+  itemType: PurchasableContentType
+) {
+  const separator = href.includes("?") ? "&" : "?"
+  return `${href}${separator}checkout=resume&itemType=${encodeURIComponent(itemType)}&itemId=${encodeURIComponent(itemId)}`
+}
+
 function TutorialCardInner({
   tutorial,
   imageSizes = "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw",
 }: TutorialCardInnerProps) {
+  const checkoutHref =
+    tutorial?.href && tutorial.purchaseType
+      ? buildCheckoutHref(tutorial.href, tutorial.id, tutorial.purchaseType)
+      : undefined
+
   return (
-    <article className="learning-glass flex h-full flex-col rounded-lg p-2 transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:bg-card/86">
+    <article className="learning-glass relative flex h-full flex-col rounded-lg p-2 transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:bg-card/86">
+      {tutorial?.href ? (
+        <Link
+          href={tutorial.href}
+          className="absolute inset-0 z-20 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          aria-label={`View ${tutorial.title}`}
+        />
+      ) : null}
       {/* Cover Image */}
       <div
         className="relative w-full overflow-hidden rounded-md border border-border/60 bg-muted"
@@ -103,21 +137,33 @@ function TutorialCardInner({
         </div>
 
         {/* Pricing Row */}
-        <div className="mt-auto flex items-baseline gap-2 pt-2">
-          {tutorial?.discount ? (
-            <>
+        <div className="relative z-30 mt-auto flex flex-col gap-2 pt-2">
+          <div className="flex min-w-0 flex-col">
+            {tutorial?.discount ? (
+              <>
+                <span className="text-base font-bold text-foreground">
+                  {tutorial.discount}
+                </span>
+                <span className="text-caption text-muted-foreground line-through">
+                  {tutorial.price}
+                </span>
+              </>
+            ) : (
               <span className="text-base font-bold text-foreground">
-                {tutorial.discount}
+                {tutorial?.price || "—"}
               </span>
-              <span className="text-caption text-muted-foreground line-through">
-                {tutorial.price}
-              </span>
-            </>
-          ) : (
-            <span className="text-base font-bold text-foreground">
-              {tutorial?.price || "—"}
-            </span>
-          )}
+            )}
+          </div>
+          {tutorial?.interactionType ? (
+            <ItemInteractionControls
+              itemId={tutorial.id}
+              itemType={tutorial.interactionType}
+              initialStats={tutorial.initialStats}
+              buyHref={checkoutHref}
+              buyLabel={`Buy ${tutorial.title}`}
+              compact
+            />
+          ) : null}
         </div>
 
         {/* Bestseller Badge */}
@@ -133,8 +179,27 @@ function TutorialCardInner({
   )
 }
 
-export const TutorialCard = WithSkeletonLink(
-  TutorialCardInner,
-  "tutorial-card",
-  (props) => props.tutorial?.href
-)
+export function TutorialCard({
+  isLoading = false,
+  onClick,
+  className,
+  ...rest
+}: TutorialCardInnerProps & WithSkeletonLinkProps) {
+  return (
+    <Skeleton
+      name="tutorial-card"
+      loading={isLoading}
+      className="flex h-full flex-col items-stretch rounded-3xl *:data-boneyard-content:flex *:data-boneyard-content:h-full *:data-boneyard-content:min-h-0 *:data-boneyard-content:flex-1 *:data-boneyard-content:items-stretch [&>[data-boneyard-content]>*]:flex-1"
+    >
+      <div
+        onClick={onClick}
+        className={cn(
+          "group flex h-full min-h-0 w-full flex-1 flex-col self-stretch overflow-hidden",
+          className
+        )}
+      >
+        <TutorialCardInner {...rest} />
+      </div>
+    </Skeleton>
+  )
+}
