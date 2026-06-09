@@ -61,7 +61,7 @@ COPY --from=builder --chown=nestjs:nodejs /app/libs ./libs
 COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=deps --chown=nestjs:nodejs /app/services/${SERVICE_NAME}/node_modules ./services/${SERVICE_NAME}/node_modules
 
-EXPOSE 3000
+EXPOSE 8080
 
 # Graceful shutdown support
 STOPSIGNAL SIGTERM

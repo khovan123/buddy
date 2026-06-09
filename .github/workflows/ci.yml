@@ -287,13 +287,176 @@ jobs:
   #           --image "${{ env.AZURE_REGISTRY }}/${{ matrix.service }}:${{ github.sha }}"
 
   # ─── Stage 3: Deploy to Koyeb ──────────────────────────────────────
+  # deploy:
+  #   name: Deploy ${{ matrix.service }}
+  #   runs-on: ubuntu-latest
+  #   needs: [detect, test]
+  #   environment: production
+  #   concurrency:
+  #     group: koyeb-deploy-${{ github.ref }}
+  #     cancel-in-progress: false
+
+  #   if: |
+  #     needs.detect.outputs.has_service_changes == 'true'
+  #     && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+  #     && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/production')
+
+  #   strategy:
+  #     fail-fast: false
+  #     max-parallel: 1
+  #     matrix: ${{ fromJson(needs.detect.outputs.services_matrix) }}
+
+  #   steps:
+  #     - uses: actions/checkout@v4
+
+  #     - name: Install Koyeb CLI
+  #       run: |
+  #         set -euo pipefail
+
+  #         docker pull koyeb/koyeb-cli:latest
+
+  #         KOYEB_BIN="/tmp/koyeb-bin"
+  #         mkdir -p "$KOYEB_BIN"
+  #         cat > "$KOYEB_BIN/koyeb" <<'EOF'
+  #         #!/usr/bin/env bash
+  #         set -euo pipefail
+
+  #         docker run --rm \
+  #           -e KOYEB_TOKEN \
+  #           -v "$PWD:$PWD" \
+  #           -v /tmp:/tmp \
+  #           -w "$PWD" \
+  #           koyeb/koyeb-cli:latest "$@"
+  #         EOF
+  #         chmod +x "$KOYEB_BIN/koyeb"
+
+  #         echo "$KOYEB_BIN" >> "$GITHUB_PATH"
+  #         "$KOYEB_BIN/koyeb" version
+
+  #     - name: Deploy to Koyeb
+  #       env:
+  #         KOYEB_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
+  #         KOYEB_APP: buddy
+  #         SERVICE: ${{ matrix.service }}
+  #       run: |
+  #         set -euo pipefail
+
+  #         if [[ -z "${KOYEB_TOKEN:-}" ]]; then
+  #           echo "KOYEB_API_TOKEN secret is required." >&2
+  #           exit 1
+  #         fi
+
+  #         koyeb services get "$SERVICE" --app "$KOYEB_APP" >/dev/null || {
+  #           echo "Koyeb service ${KOYEB_APP}/${SERVICE} must exist with production env configured before CI deploys it." >&2
+  #           exit 1
+  #         }
+
+  #         DEPLOY_CONTEXT="/tmp/buddy-koyeb-${SERVICE}"
+  #         rm -rf "$DEPLOY_CONTEXT"
+  #         mkdir -p "$DEPLOY_CONTEXT/services" "$DEPLOY_CONTEXT/libs"
+
+  #         rsync -a \
+  #           package.json package-lock.json turbo.json tsconfig.base.json .dockerignore Dockerfile \
+  #           "$DEPLOY_CONTEXT/"
+
+  #         rsync -a \
+  #           --exclude node_modules \
+  #           --exclude dist \
+  #           --exclude .turbo \
+  #           libs/ "$DEPLOY_CONTEXT/libs/"
+
+  #         rsync -a \
+  #           --exclude node_modules \
+  #           --exclude dist \
+  #           --exclude .turbo \
+  #           --exclude .env \
+  #           --exclude '.env.*' \
+  #           --exclude .venv \
+  #           --exclude __pycache__ \
+  #           --exclude .pytest_cache \
+  #           "services/${SERVICE}" "$DEPLOY_CONTEXT/services/"
+
+  #         if [[ "$SERVICE" == "recommendation-service" || "$SERVICE" == "rag-service" ]]; then
+  #           INSTANCE_TYPE="small"
+  #         else
+  #           INSTANCE_TYPE="nano"
+  #         fi
+
+  #         COMMON_ARGS=(
+  #           --archive-builder docker
+  #           --archive-docker-dockerfile "services/${SERVICE}/Dockerfile"
+  #           --regions was
+  #           --instance-type "$INSTANCE_TYPE"
+  #           --min-scale 1
+  #           --max-scale 1
+  #           --deployment-strategy immediate
+  #           --env PORT=8080
+  #           --env HOST=0.0.0.0
+  #           --env NODE_ENV=production
+  #           --env SERVICE_NAME="$SERVICE"
+  #           --env LOG_LEVEL=info
+  #           --env 'ALLOWED_ORIGINS=*'
+  #           --env OTEL_SDK_DISABLED=true
+  #           --wait
+  #           --wait-timeout 20m
+  #         )
+
+  #         if [[ "$SERVICE" == "api-gateway" ]]; then
+  #           koyeb deploy "$DEPLOY_CONTEXT" "${KOYEB_APP}/${SERVICE}" \
+  #             "${COMMON_ARGS[@]}" \
+  #             --ports 8080:http \
+  #             --routes /:8080 \
+  #             --checks 8080:http:/v1/health/liveness \
+  #             --env AUTH_SERVICE_URL=http://auth-service.buddy.internal:8080 \
+  #             --env USER_SERVICE_URL=http://user-service.buddy.internal:8080 \
+  #             --env NOTIFICATION_SERVICE_URL=http://notification-service.buddy.internal:8080 \
+  #             --env CONTENT_SERVICE_URL=http://content-service.buddy.internal:8080 \
+  #             --env UPLOAD_SERVICE_URL=http://upload-service.buddy.internal:8080 \
+  #             --env BILLING_SERVICE_URL=http://billing-service.buddy.internal:8080 \
+  #             --env CONTENT_ACCESS_SERVICE_URL=http://content-access-service.buddy.internal:8080 \
+  #             --env INTERACTION_SERVICE_URL=http://interaction-service.buddy.internal:8080 \
+  #             --env RECOMMENDATION_SERVICE_URL=http://recommendation-service.buddy.internal:8080 \
+  #             --env RAG_SERVICE_URL=http://rag-service.buddy.internal:8080
+  #         else
+  #           koyeb deploy "$DEPLOY_CONTEXT" "${KOYEB_APP}/${SERVICE}" \
+  #             "${COMMON_ARGS[@]}" \
+  #             --ports 8080:tcp \
+  #             --checks 8080:tcp
+  #         fi
+
+  #     - name: Verify Koyeb exposure contract
+  #       env:
+  #         KOYEB_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
+  #         SERVICE: ${{ matrix.service }}
+  #       run: |
+  #         set -euo pipefail
+
+  #         DEPLOYMENT_ID=$(koyeb services get "${SERVICE}" --app buddy -o json | jq -r '.active_deployment_id')
+  #         DEPLOYMENT=$(curl -fsSL \
+  #           -H "Authorization: Bearer ${KOYEB_TOKEN}" \
+  #           "https://app.koyeb.com/v1/deployments/${DEPLOYMENT_ID}")
+
+  #         ROUTES_COUNT=$(jq '.deployment.definition.routes | length' <<< "$DEPLOYMENT")
+  #         PORT_PROTOCOL=$(jq -r '.deployment.definition.ports[0].protocol' <<< "$DEPLOYMENT")
+
+  #         if [[ "$SERVICE" == "api-gateway" ]]; then
+  #           [[ "$PORT_PROTOCOL" == "http" && "$ROUTES_COUNT" -gt 0 ]]
+  #         else
+  #           [[ "$PORT_PROTOCOL" == "tcp" && "$ROUTES_COUNT" -eq 0 ]]
+  #         fi
+
   deploy:
-    name: Deploy ${{ matrix.service }}
+    name: Deploy ${{ matrix.service }} to Cloud Run
     runs-on: ubuntu-latest
     needs: [detect, test]
     environment: production
+
+    permissions:
+      contents: read
+      id-token: write
+
     concurrency:
-      group: koyeb-deploy-${{ github.ref }}
+      group: cloud-run-deploy-${{ github.ref }}
       cancel-in-progress: false
 
     if: |
@@ -306,141 +469,68 @@ jobs:
       max-parallel: 1
       matrix: ${{ fromJson(needs.detect.outputs.services_matrix) }}
 
+    env:
+      PROJECT_ID: project-20fe2419-cbae-442e-aea
+      REGION: asia-southeast1
+      REPOSITORY: buddy-services
+      SERVICE: ${{ matrix.service }}
+      IMAGE: gcr.io/cloudrun/project-20fe2419-cbae-442e-aea/buddy-services/${{ matrix.service }}:${{ github.sha }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Koyeb CLI
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker auth
         run: |
-          set -euo pipefail
+          gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
 
-          docker pull koyeb/koyeb-cli:latest
-
-          KOYEB_BIN="/tmp/koyeb-bin"
-          mkdir -p "$KOYEB_BIN"
-          cat > "$KOYEB_BIN/koyeb" <<'EOF'
-          #!/usr/bin/env bash
-          set -euo pipefail
-
-          docker run --rm \
-            -e KOYEB_TOKEN \
-            -v "$PWD:$PWD" \
-            -v /tmp:/tmp \
-            -w "$PWD" \
-            koyeb/koyeb-cli:latest "$@"
-          EOF
-          chmod +x "$KOYEB_BIN/koyeb"
-
-          echo "$KOYEB_BIN" >> "$GITHUB_PATH"
-          "$KOYEB_BIN/koyeb" version
-
-      - name: Deploy to Koyeb
-        env:
-          KOYEB_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
-          KOYEB_APP: buddy
-          SERVICE: ${{ matrix.service }}
+      - name: Build Docker image
         run: |
-          set -euo pipefail
+          docker build \
+            --build-arg SERVICE_NAME=$SERVICE \
+            -t $IMAGE \
+            .
 
-          if [[ -z "${KOYEB_TOKEN:-}" ]]; then
-            echo "KOYEB_API_TOKEN secret is required." >&2
-            exit 1
-          fi
-
-          koyeb services get "$SERVICE" --app "$KOYEB_APP" >/dev/null || {
-            echo "Koyeb service ${KOYEB_APP}/${SERVICE} must exist with production env configured before CI deploys it." >&2
-            exit 1
-          }
-
-          DEPLOY_CONTEXT="/tmp/buddy-koyeb-${SERVICE}"
-          rm -rf "$DEPLOY_CONTEXT"
-          mkdir -p "$DEPLOY_CONTEXT/services" "$DEPLOY_CONTEXT/libs"
-
-          rsync -a \
-            package.json package-lock.json turbo.json tsconfig.base.json .dockerignore Dockerfile \
-            "$DEPLOY_CONTEXT/"
-
-          rsync -a \
-            --exclude node_modules \
-            --exclude dist \
-            --exclude .turbo \
-            libs/ "$DEPLOY_CONTEXT/libs/"
-
-          rsync -a \
-            --exclude node_modules \
-            --exclude dist \
-            --exclude .turbo \
-            --exclude .env \
-            --exclude '.env.*' \
-            --exclude .venv \
-            --exclude __pycache__ \
-            --exclude .pytest_cache \
-            "services/${SERVICE}" "$DEPLOY_CONTEXT/services/"
-
-          if [[ "$SERVICE" == "recommendation-service" || "$SERVICE" == "rag-service" ]]; then
-            INSTANCE_TYPE="small"
-          else
-            INSTANCE_TYPE="nano"
-          fi
-
-          COMMON_ARGS=(
-            --archive-builder docker
-            --archive-docker-dockerfile "services/${SERVICE}/Dockerfile"
-            --regions was
-            --instance-type "$INSTANCE_TYPE"
-            --min-scale 1
-            --max-scale 1
-            --deployment-strategy immediate
-            --env PORT=8080
-            --env HOST=0.0.0.0
-            --env NODE_ENV=production
-            --env SERVICE_NAME="$SERVICE"
-            --env LOG_LEVEL=info
-            --env 'ALLOWED_ORIGINS=*'
-            --env OTEL_SDK_DISABLED=true
-            --wait
-            --wait-timeout 20m
-          )
-
-          if [[ "$SERVICE" == "api-gateway" ]]; then
-            koyeb deploy "$DEPLOY_CONTEXT" "${KOYEB_APP}/${SERVICE}" \
-              "${COMMON_ARGS[@]}" \
-              --ports 8080:http \
-              --routes /:8080 \
-              --checks 8080:http:/v1/health/liveness \
-              --env AUTH_SERVICE_URL=http://auth-service.buddy.internal:8080 \
-              --env USER_SERVICE_URL=http://user-service.buddy.internal:8080 \
-              --env NOTIFICATION_SERVICE_URL=http://notification-service.buddy.internal:8080 \
-              --env CONTENT_SERVICE_URL=http://content-service.buddy.internal:8080 \
-              --env UPLOAD_SERVICE_URL=http://upload-service.buddy.internal:8080 \
-              --env BILLING_SERVICE_URL=http://billing-service.buddy.internal:8080 \
-              --env CONTENT_ACCESS_SERVICE_URL=http://content-access-service.buddy.internal:8080 \
-              --env INTERACTION_SERVICE_URL=http://interaction-service.buddy.internal:8080 \
-              --env RECOMMENDATION_SERVICE_URL=http://recommendation-service.buddy.internal:8080 \
-              --env RAG_SERVICE_URL=http://rag-service.buddy.internal:8080
-          else
-            koyeb deploy "$DEPLOY_CONTEXT" "${KOYEB_APP}/${SERVICE}" \
-              "${COMMON_ARGS[@]}" \
-              --ports 8080:tcp \
-              --checks 8080:tcp
-          fi
-
-      - name: Verify Koyeb exposure contract
-        env:
-          KOYEB_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
-          SERVICE: ${{ matrix.service }}
+      - name: Push Docker image
         run: |
-          set -euo pipefail
+          docker push $IMAGE
 
-          DEPLOYMENT_ID=$(koyeb services get "${SERVICE}" --app buddy -o json | jq -r '.active_deployment_id')
-          DEPLOYMENT=$(curl -fsSL \
-            -H "Authorization: Bearer ${KOYEB_TOKEN}" \
-            "https://app.koyeb.com/v1/deployments/${DEPLOYMENT_ID}")
+      - name: Deploy api-gateway to Cloud Run
+        if: matrix.service == 'api-gateway'
+        run: |
+          gcloud run deploy $SERVICE \
+            --image $IMAGE \
+            --project $PROJECT_ID \
+            --region $REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --memory 256MiB \
+            --cpu 1 \
+            --min-instances 0 \
+            --max-instances 1 \
+          --set-env-vars PORT=8080,HOST=0.0.0.0,NODE_ENV=production,SERVICE_NAME=$SERVICE,LOG_LEVEL=info,ALLOWED_ORIGINS=*,OTEL_SDK_DISABLED=true
 
-          ROUTES_COUNT=$(jq '.deployment.definition.routes | length' <<< "$DEPLOYMENT")
-          PORT_PROTOCOL=$(jq -r '.deployment.definition.ports[0].protocol' <<< "$DEPLOYMENT")
-
-          if [[ "$SERVICE" == "api-gateway" ]]; then
-            [[ "$PORT_PROTOCOL" == "http" && "$ROUTES_COUNT" -gt 0 ]]
-          else
-            [[ "$PORT_PROTOCOL" == "tcp" && "$ROUTES_COUNT" -eq 0 ]]
-          fi
+      - name: Deploy internal service to Cloud Run
+        if: matrix.service != 'api-gateway'
+        run: |
+          gcloud run deploy $SERVICE \
+            --image $IMAGE \
+            --project $PROJECT_ID \
+            --region $REGION \
+            --platform managed \
+            --no-allow-unauthenticated \
+            --port 8080 \
+            --memory 256MiB \
+            --cpu 1 \
+            --min-instances 0 \
+            --max-instances 1 \
+            --set-env-vars PORT=8080,HOST=0.0.0.0,NODE_ENV=production,SERVICE_NAME=$SERVICE,LOG_LEVEL=info,OTEL_SDK_DISABLED=true
