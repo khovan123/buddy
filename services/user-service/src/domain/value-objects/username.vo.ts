@@ -1,6 +1,6 @@
 import { IUserProfileRepository } from '../repositories/user-profile.repository.interface';
 
-function usernameSeedFromEmail(email: string): string {
+export function usernameSeedFromEmail(email: string): string {
   const localPart = email.split('@')[0] ?? '';
   const username = localPart
     .normalize('NFKD')
