@@ -513,11 +513,11 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
-            --memory 256MiB \
+            --memory 1Gi \
             --cpu 1 \
             --min-instances 0 \
             --max-instances 1 \
-          --set-env-vars PORT=8080,HOST=0.0.0.0,NODE_ENV=production,SERVICE_NAME=$SERVICE,LOG_LEVEL=info,ALLOWED_ORIGINS=*,OTEL_SDK_DISABLED=true
+            --set-env-vars PORT=8080,HOST=0.0.0.0,NODE_ENV=production,SERVICE_NAME=$SERVICE,LOG_LEVEL=info,ALLOWED_ORIGINS=*,OTEL_SDK_DISABLED=true
 
       - name: Deploy internal service to Cloud Run
         if: matrix.service != 'api-gateway'
@@ -529,7 +529,7 @@ jobs:
             --platform managed \
             --no-allow-unauthenticated \
             --port 8080 \
-            --memory 256MiB \
+            --memory 1Gi \
             --cpu 1 \
             --min-instances 0 \
             --max-instances 1 \
