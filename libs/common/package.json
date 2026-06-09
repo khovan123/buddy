@@ -21,6 +21,7 @@
   "dependencies": {
     "@libs/contracts": "*",
     "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/auto-instrumentations-node": "^0.76.0",
     "bcryptjs": "^3.0.3",
     "cache-manager-ioredis-yet": "^1.0.0",
     "dotenv": "^16.5.0",
