@@ -12,7 +12,6 @@ export interface UserProps {
   id: string;
   email: Email;
   password: Password;
-  username: string;
   nickname: string;
   roles: UserRole[];
   subscriptionPlan: string | null;
@@ -36,18 +35,12 @@ export class User {
    * @param params - The params parameter
    * @returns Result of type User
    */
-  static create(params: {
-    email: string;
-    hashedPassword: string;
-    username: string;
-    nickname: string;
-  }): User {
+  static create(params: { email: string; hashedPassword: string; nickname: string }): User {
     const now = new Date();
     const user = new User({
       id: uuidv4(),
       email: Email.create(params.email),
       password: Password.fromHashed(params.hashedPassword),
-      username: params.username,
       nickname: params.nickname.trim(),
       roles: ['user'],
       subscriptionPlan: null,
@@ -61,7 +54,6 @@ export class User {
       new UserRegisteredDomainEvent({
         userId: user.id,
         email: user.email.value,
-        username: user.username,
         nickname: user.nickname,
       }),
     );
@@ -170,9 +162,6 @@ export class User {
   }
   get nickname(): string {
     return this.props.nickname;
-  }
-  get username(): string {
-    return this.props.username;
   }
   get roles(): UserRole[] {
     return [...this.props.roles];

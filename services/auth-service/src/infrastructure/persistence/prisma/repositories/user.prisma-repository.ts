@@ -82,13 +82,6 @@ export class UserPrismaRepository implements IUserRepository {
     return count > 0;
   }
 
-  async existsByUsername(username: string): Promise<boolean> {
-    const count = await this.prisma.client.user.count({
-      where: { username },
-    });
-    return count > 0;
-  }
-
   // ── Mappers ───────────────────────────────────────────────────────
   /**
    * Executes the to domain operation.
@@ -101,7 +94,6 @@ export class UserPrismaRepository implements IUserRepository {
       id: row.id,
       email: Email.create(row.email),
       password: Password.fromHashed(row.passwordHash),
-      username: row.username,
       nickname: row.nickname,
       roles: row.roles as UserRole[],
       subscriptionPlan: row.subscriptionPlan,
@@ -125,7 +117,6 @@ export class UserPrismaRepository implements IUserRepository {
       id: user.id,
       email: user.email.value,
       passwordHash: user.password.hashed,
-      username: user.username,
       nickname: user.nickname,
       roles: user.roles,
       subscriptionPlan: user.subscriptionPlan,

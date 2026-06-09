@@ -24,4 +24,5 @@ export interface IUserProfileRepository {
   update(user: UserProfileAggregate): Promise<void>;
   delete(id: string): Promise<void>;
   existsById(id: string): Promise<boolean>;
+  existsByUsername(username: string): Promise<boolean>;
 }

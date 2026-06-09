@@ -8,7 +8,7 @@ import { UserProfileAggregate } from '../../../domain/entities/user-profile.enti
 import { DomainException } from '../../../domain/exceptions/domain.exception';
 import { USER_REPOSITORY } from '../../../domain/repositories/tokens';
 import type { IUserProfileRepository } from '../../../domain/repositories/user-profile.repository.interface';
-import { usernameSeedFromEmail } from '../../../domain/value-objects/username.vo';
+import { generateUniqueUsername } from '../../../domain/value-objects/username.vo';
 import { UserEventPublisher } from '../../../infrastructure/messaging/publishers/user-event.publisher';
 import { UpdateProfileCommand } from '../update-profile.command';
 
@@ -28,6 +28,9 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
    */
   async execute(command: UpdateProfileCommand) {
     let user = await this.repo.findById(command.userId);
+    if (command.changes.username && (await this.repo.existsByUsername(command.changes.username))) {
+      throw new BadRequestException(`${command.changes.username} is already existed!`);
+    }
 
     if (!user) {
       // Create user if not found
@@ -35,7 +38,7 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
       user = UserProfileAggregate.create({
         userId: command.userId,
         email,
-        username: usernameSeedFromEmail(email),
+        username: await generateUniqueUsername(email, this.repo),
         nickname: command.changes.nickname || 'User',
       });
       try {

@@ -44,7 +44,7 @@ export function ForumMentionTextarea({
     const controller = new AbortController()
     const timer = globalThis.setTimeout(() => {
       setIsSearching(true)
-      fetch(`/api/users/search?q=${encodeURIComponent(mentionQuery)}`, {
+      fetch(`/api/users?search=${encodeURIComponent(mentionQuery)}`, {
         signal: controller.signal,
       })
         .then(async (response) => {

@@ -3,6 +3,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { UserProfileAggregate } from '../../../domain/entities/user-profile.entity';
 import { USER_REPOSITORY } from '../../../domain/repositories/tokens';
 import type { IUserProfileRepository } from '../../../domain/repositories/user-profile.repository.interface';
+import { generateUniqueUsername } from '../../../domain/value-objects/username.vo';
 import { UserEventPublisher } from '../../../infrastructure/messaging/publishers/user-event.publisher';
 import { CreateUserProfileCommand } from '../create-user-profile.command';
 
@@ -27,7 +28,7 @@ export class CreateUserProfileHandler implements ICommandHandler<CreateUserProfi
     const user = UserProfileAggregate.create({
       userId: command.userId,
       email: command.email,
-      username: command.username,
+      username: await generateUniqueUsername(command.email, this.repo),
       nickname: command.nickname,
     });
 

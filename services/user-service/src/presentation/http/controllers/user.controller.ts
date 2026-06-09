@@ -18,7 +18,6 @@ import { CreateUserProfileCommand } from '../../../application/commands/create-u
 import { UpdateProfileCommand } from '../../../application/commands/update-profile.command';
 import { GetUserByIdQuery } from '../../../application/queries/get-user-by-id.query';
 import { GetUsersQuery } from '../../../application/queries/get-users.query';
-import { usernameSeedFromEmail } from '../../../domain/value-objects/username.vo';
 import { UpdateProfileDto } from '../dtos/update-profile.dto';
 
 /** Controller handling incoming requests for User. */
@@ -60,16 +59,9 @@ export class UserController {
       if (e instanceof NotFoundException) {
         const dummyEmail = req.user.email || 'unknown@example.com';
         const nickname = req.user.email ? req.user.email.split('@')[0] : 'New User';
-        const username = req.user.username ?? usernameSeedFromEmail(dummyEmail);
 
         await this.commandBus.execute(
-          new CreateUserProfileCommand(
-            req.user.sub,
-            dummyEmail,
-            username,
-            nickname,
-            getCorrelationId(),
-          ),
+          new CreateUserProfileCommand(req.user.sub, dummyEmail, nickname, getCorrelationId()),
         );
 
         const retryResult = await this.queryBus.execute(new GetUserByIdQuery(req.user.sub));

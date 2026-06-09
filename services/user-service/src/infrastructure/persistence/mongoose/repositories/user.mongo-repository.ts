@@ -162,6 +162,10 @@ export class UserMongoRepository implements IUserProfileRepository {
     return !!(await this.model.exists({ userId: id }));
   }
 
+  async existsByUsername(username: string): Promise<boolean> {
+    return !!(await this.model.exists({ username: username }));
+  }
+
   // ── Mappers ───────────────────────────────────────────────────────
   /**
    * Executes the to domain operation.

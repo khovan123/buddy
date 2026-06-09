@@ -4,6 +4,7 @@ export class UpdateProfileCommand {
     public readonly userId: string,
     public readonly changes: Partial<{
       nickname: string;
+      username: string;
       phone: string;
       bio: string;
       dateOfBirth: Date;
