@@ -474,7 +474,7 @@ jobs:
       REGION: asia-southeast1
       REPOSITORY: buddy-services
       SERVICE: ${{ matrix.service }}
-      IMAGE: gcr.io/cloudrun/project-20fe2419-cbae-442e-aea/buddy-services/${{ matrix.service }}:${{ github.sha }}
+      IMAGE: asia-southeast1-docker.pkg.dev/project-20fe2419-cbae-442e-aea/buddy-services/${{ matrix.service }}:${{ github.sha }}
 
     steps:
       - uses: actions/checkout@v4
