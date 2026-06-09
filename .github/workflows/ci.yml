@@ -512,9 +512,9 @@ jobs:
     env:
       PROJECT_ID: project-20fe2419-cbae-442e-aea
       REGION: asia-southeast1
-      REPOSITORY: buddy-services
+      REPOSITORY: buddy
       SERVICE: ${{ matrix.service }}
-      IMAGE: asia-southeast1-docker.pkg.dev/project-20fe2419-cbae-442e-aea/buddy-services/${{ matrix.service }}:${{ github.sha }}
+      IMAGE: asia-southeast1-docker.pkg.dev/project-20fe2419-cbae-442e-aea/buddy/${{ matrix.service }}:${{ github.sha }}
 
     steps:
       - uses: actions/checkout@v4
