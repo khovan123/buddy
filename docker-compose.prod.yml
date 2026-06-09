@@ -30,16 +30,36 @@ services:
     ports:
       - '3001:3001'
     env_file:
-      - services/auth-service/.env
+      - services/auth-service/.env.prod
     environment:
       POSTGRES_HOST: postgres
       REDIS_HOST: redis
       RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/microservices
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_TRACES_EXPORTER: otlp
+    depends_on:
+      auth-service-migrate:
+        condition: service_completed_successfully
     networks:
       - ms_network
     restart: unless-stopped
+
+  auth-service-migrate:
+    build:
+      context: .
+      dockerfile: services/auth-service/Dockerfile
+      target: builder
+    container_name: ms_auth_service_migrate
+    env_file:
+      - services/auth-service/.env.prod
+    environment:
+      POSTGRES_HOST: postgres
+      REDIS_HOST: redis
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672/microservices
+    command: sh -c "cd services/auth-service && npx prisma migrate deploy --config ../../libs/common/src/config/prisma.config.ts"
+    networks:
+      - ms_network
+    restart: "no"
 
   user-service:
     build:
