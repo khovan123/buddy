@@ -66,4 +66,4 @@ EXPOSE 8080
 # Graceful shutdown support
 STOPSIGNAL SIGTERM
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
