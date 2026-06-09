@@ -13,6 +13,7 @@ import {
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import type { ITokenService } from '../../../domain/services/token.service.interface';
 import { AuthEventPublisher } from '../../../infrastructure/messaging/publishers/auth-event.publisher';
+import { generateUniqueUsername } from '../../utils/username.util';
 import type { OAuthProvider } from '../oauth-login.command';
 import { OAuthLoginCommand } from '../oauth-login.command';
 
@@ -53,8 +54,14 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
       // Auto-create account with sentinel password hash
       const sentinelHash = await CryptoUtil.hashPassword(uuidv4());
       const nickname = profile.name || profile.email.split('@')[0];
+      const username = await generateUniqueUsername(profile.email, this.userRepository);
 
-      user = User.create({ email: profile.email, hashedPassword: sentinelHash, nickname });
+      user = User.create({
+        email: profile.email,
+        hashedPassword: sentinelHash,
+        username,
+        nickname,
+      });
       // Auto-verify email since OAuth provider already verified it
       user.verifyEmail();
       await this.userRepository.save(user);
@@ -65,6 +72,7 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
           {
             userId: user.id,
             email: user.email.value,
+            username: user.username,
             nickname: user.nickname,
             registeredAt: user.createdAt,
           },
@@ -114,6 +122,7 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
       user: {
         id: user.id,
         email: user.email.value,
+        username: user.username,
         nickname: user.nickname,
         role: user.roles[0] ?? 'user',
         roles: user.roles,

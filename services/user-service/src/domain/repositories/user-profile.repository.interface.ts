@@ -13,7 +13,7 @@ export interface IUserProfileRepository {
   findByIds(ids: string[]): Promise<UserProfileAggregate[]>;
   getBasicProfilesByIds(
     ids: string[],
-  ): Promise<Array<{ userId: string; nickname: string; avatarUrl?: string }>>;
+  ): Promise<Array<{ userId: string; username: string; nickname: string; avatarUrl?: string }>>;
   findByEmail(email: string): Promise<UserProfileAggregate | null>;
   findAll(
     filter: UserFilter,

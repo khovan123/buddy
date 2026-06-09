@@ -27,6 +27,7 @@ export class CreateUserProfileHandler implements ICommandHandler<CreateUserProfi
     const user = UserProfileAggregate.create({
       userId: command.userId,
       email: command.email,
+      username: command.username,
       nickname: command.nickname,
     });
 

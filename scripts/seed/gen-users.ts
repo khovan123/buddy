@@ -58,21 +58,36 @@ const FIRST_NAMES = [
 
 const PASSWORD = 'Minh@1234567';
 
+function usernameFromEmail(email: string) {
+  return (
+    email
+      .split('@')[0]
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '') || 'user'
+  );
+}
+
 export async function genAuthUsers() {
   const hash = await bcrypt.hash(PASSWORD, 10);
-  return authUserIds.map((id, i) => ({
-    id,
-    email: `${FIRST_NAMES[i].toLowerCase()}${i}@unibuddy.dev`,
-    password_hash: hash,
-    nickname: FIRST_NAMES[i],
-    roles: ['user'],
-    subscription_plan: i < 10 ? 'CREATOR_PRO' : 'STUDENT_FREE',
-    status: 'active',
-    email_verified: true,
-    last_login_at: new Date(),
-    created_at: new Date(),
-    updated_at: new Date(),
-  }));
+  return authUserIds.map((id, i) => {
+    const email = `${FIRST_NAMES[i].toLowerCase()}${i}@unibuddy.dev`;
+    return {
+      id,
+      email,
+      username: usernameFromEmail(email),
+      password_hash: hash,
+      nickname: FIRST_NAMES[i],
+      roles: ['user'],
+      subscription_plan: i < 10 ? 'CREATOR_PRO' : 'STUDENT_FREE',
+      status: 'active',
+      email_verified: true,
+      last_login_at: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+  });
 }
 
 export function genUserProfiles() {
@@ -82,10 +97,12 @@ export function genUserProfiles() {
     const course = pick(courses);
     const careerIdx = i % 8;
     const skills = skillsByCareer(careerIdx);
+    const email = `${FIRST_NAMES[i].toLowerCase()}${i}@unibuddy.dev`;
 
     return {
       userId,
-      email: `${FIRST_NAMES[i].toLowerCase()}${i}@unibuddy.dev`,
+      email,
+      username: usernameFromEmail(email),
       profile: {
         nickname: FIRST_NAMES[i],
         phone: `09${String(10000000 + i).slice(0, 8)}`,

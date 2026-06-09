@@ -10,7 +10,6 @@ import {
 } from "@/features/forum/utils/forum-utils"
 import { cn } from "@/lib/utils"
 
-
 export function ForumReactionControl({
   topic,
   onReact,
@@ -60,7 +59,10 @@ export function ForumReactionControl({
                   "flex size-9 items-center justify-center rounded-full transition-transform hover:scale-110 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                   isActive
                     ? reaction.activeClassName
-                    : "bg-background text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    : cn(
+                        "bg-background text-muted-foreground",
+                        reaction.hoverClassName
+                      )
                 )}
               >
                 <Icon className="size-4" />
@@ -82,7 +84,7 @@ export function ForumReactionControl({
         )}
       >
         <ActiveReactionIcon className="size-3.5" />
-        {activeReaction ? activeReactionMeta.label : "Like"}
+        {/* {activeReaction ? activeReactionMeta.label : "Like"} */}
         {totalReactions > 0 ? (
           <span className="text-xs opacity-85">{totalReactions}</span>
         ) : null}

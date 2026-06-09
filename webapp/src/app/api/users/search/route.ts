@@ -7,6 +7,7 @@ type UserSearchItem = {
   userId?: string
   id?: string
   email?: string
+  username?: string
   profile?: {
     nickname?: string
     avatarUrl?: string
@@ -30,15 +31,15 @@ function normalizeUsers(payload: unknown) {
   }
 
   return items
-    .map((item: UserSearchItem) => ({
-      userId: item.userId ?? item.id ?? "",
-      name:
-        item.profile?.nickname ??
-        item.nickname ??
-        item.email?.split("@")[0] ??
-        "Buddy learner",
-      avatarUrl: item.profile?.avatarUrl ?? item.avatarUrl,
-    }))
+    .map((item: UserSearchItem) => {
+      const username = item.username ?? item.email?.split("@")[0] ?? ""
+      return {
+        userId: item.userId ?? item.id ?? "",
+        name: username || item.profile?.nickname || item.nickname || "buddy",
+        username,
+        avatarUrl: item.profile?.avatarUrl ?? item.avatarUrl,
+      }
+    })
     .filter((item) => item.userId && item.name)
 }
 

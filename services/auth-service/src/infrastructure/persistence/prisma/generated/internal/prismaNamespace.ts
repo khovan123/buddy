@@ -595,6 +595,7 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
+  username: 'username',
   passwordHash: 'passwordHash',
   nickname: 'nickname',
   roles: 'roles',
@@ -746,7 +747,7 @@ export type PrismaClientOptions = ({
    * ```
    * // Shorthand for `emit: 'stdout'`
    * log: ['query', 'info', 'warn', 'error']
-   *
+   * 
    * // Emit as events only
    * log: [
    *   { emit: 'event', level: 'query' },
@@ -812,7 +813,7 @@ export type PrismaClientOptions = ({
    * A value of `0` can be used to disable the cache entirely. A higher cache size can improve
    * performance for applications that execute a large number of unique queries, while a smaller
    * cache size can reduce memory usage.
-   *
+   * 
    * @example
    * ```
    * const prisma = new PrismaClient({
@@ -888,3 +889,4 @@ export type PrismaAction =
  * `PrismaClient` proxy available in interactive transactions.
  */
 export type TransactionClient = Omit<DefaultPrismaClient, runtime.ITXClientDenyList>
+

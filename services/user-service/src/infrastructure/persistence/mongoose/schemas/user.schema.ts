@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
+import { usernameSeedFromEmail } from '../../../../domain/value-objects/username.vo';
 
 @Schema({ _id: false })
 class UserProfile {
@@ -45,6 +46,9 @@ export class User {
   @Prop({ type: String, required: true, lowercase: true, trim: true })
   email!: string;
 
+  @Prop({ type: String, required: true, lowercase: true, trim: true })
+  username!: string;
+
   @Prop({ type: UserProfile })
   profile!: UserProfile;
 
@@ -56,8 +60,18 @@ export type UserDocument = HydratedDocument<User>;
 export const UserSchema = SchemaFactory.createForClass(User);
 
 UserSchema.index({ email: 1 }, { unique: true });
+UserSchema.index(
+  { username: 1 },
+  { unique: true, partialFilterExpression: { username: { $type: 'string' } } },
+);
 UserSchema.index({ isActive: 1 });
-UserSchema.index({ 'profile.nickname': 'text' });
+UserSchema.index({ username: 'text', 'profile.nickname': 'text' });
+
+UserSchema.pre('validate', function () {
+  if (!this.username && this.email) {
+    this.username = usernameSeedFromEmail(this.email);
+  }
+});
 
 UserSchema.set('toJSON', { virtuals: true });
 UserSchema.set('toObject', { virtuals: true });

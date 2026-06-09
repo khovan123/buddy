@@ -4,6 +4,7 @@ export class UserRegisteredDomainEvent {
     public readonly payload: {
       userId: string;
       email: string;
+      username: string;
       nickname: string;
     },
   ) {}

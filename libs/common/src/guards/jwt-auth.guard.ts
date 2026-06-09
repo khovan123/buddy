@@ -17,6 +17,7 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 export interface JwtPayload {
   sub: string; // userId
   email: string;
+  username?: string;
   roles: string[];
   subscriptionPlan?: string; // SubscriptionPlan enum value
   subscriptionPlanDetails?: SubscriptionPlanDetails;

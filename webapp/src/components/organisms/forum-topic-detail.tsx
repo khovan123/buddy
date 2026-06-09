@@ -1,14 +1,20 @@
 "use client"
 
-import { type FormEvent, type RefObject } from "react"
+import { useRef, useState } from "react"
 
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Hash, MessageCircle, Reply, Sparkles } from "lucide-react"
+import { useForm, useWatch } from "react-hook-form"
 
 import { ForumMentionTextarea } from "@/components/molecules/forum-mention-textarea"
 import { ForumMessageItem } from "@/components/molecules/forum-message-item"
 import { ForumReactionControl } from "@/components/molecules/forum-reaction-control"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  forumMessageSchema,
+  type ForumMessageFormValues,
+} from "@/features/forum/schema"
 import type {
   ForumMention,
   ForumMessage,
@@ -16,28 +22,46 @@ import type {
   ForumTopicReaction,
 } from "@/features/forum/types"
 
-
 export function ForumTopicDetail({
   topic,
   messages,
-  replyInput,
-  replyMentions,
-  onReplyInputChange,
-  onReplyMentionsChange,
   onReplySubmit,
   onReact,
-  replyInputRef,
 }: {
   topic?: ForumTopic
   messages: ForumMessage[]
-  replyInput: string
-  replyMentions: ForumMention[]
-  onReplyInputChange: (value: string) => void
-  onReplyMentionsChange: (mentions: ForumMention[]) => void
-  onReplySubmit: (event: FormEvent<HTMLFormElement>) => void
+  onReplySubmit: (
+    values: ForumMessageFormValues & { mentions: ForumMention[] }
+  ) => Promise<boolean | void>
   onReact: (reaction: ForumTopicReaction) => void
-  replyInputRef: RefObject<HTMLTextAreaElement | null>
 }) {
+  const replyInputRef = useRef<HTMLTextAreaElement | null>(null)
+  const [mentions, setMentions] = useState<ForumMention[]>([])
+  const {
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<ForumMessageFormValues>({
+    resolver: zodResolver(forumMessageSchema),
+    defaultValues: { message: "" },
+  })
+  const message = useWatch({ control, name: "message" }) ?? ""
+
+  async function submit(values: ForumMessageFormValues) {
+    if (!topic) {
+      return false
+    }
+
+    const didSubmit = await onReplySubmit({ ...values, mentions })
+
+    if (didSubmit !== false) {
+      reset()
+      setMentions([])
+    }
+  }
+
   if (!topic) {
     return (
       <section className="rounded-2xl border border-border/80 bg-card/70 p-4 text-sm text-muted-foreground">
@@ -86,27 +110,32 @@ export function ForumTopicDetail({
           </Button>
         </div>
       </div>
-      <div className="max-h-112 space-y-3 overflow-y-auto p-4">
-        {messages.length === 0 ? (
-          <div className="rounded-xl border border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
-            No answers yet.
-          </div>
-        ) : null}
-        {messages.map((message) => (
-          <ForumMessageItem key={message.id} message={message} isReply />
-        ))}
-      </div>
-      <form onSubmit={onReplySubmit} className="space-y-2 border-t p-3">
+      {messages.length > 0 ? (
+        <div className="max-h-112 space-y-3 overflow-y-auto p-4">
+          {messages.map((message) => (
+            <ForumMessageItem key={message.id} message={message} isReply />
+          ))}
+        </div>
+      ) : null}
+      <form onSubmit={handleSubmit(submit)} className="space-y-2 border-t p-3">
         <ForumMentionTextarea
           textareaRef={replyInputRef}
-          value={replyInput}
-          mentions={replyMentions}
-          onValueChange={onReplyInputChange}
-          onMentionsChange={onReplyMentionsChange}
+          value={message}
+          mentions={mentions}
+          onValueChange={(value) =>
+            setValue("message", value, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
+          onMentionsChange={setMentions}
           placeholder="Answer this topic. Type @ to mention someone."
         />
+        {errors.message ? (
+          <p className="text-xs text-destructive">{errors.message.message}</p>
+        ) : null}
         <div className="flex justify-end">
-          <Button type="submit" size="sm">
+          <Button type="submit" size="sm" disabled={isSubmitting}>
             <Reply className="size-4" />
             Answer
           </Button>

@@ -22,6 +22,7 @@ export class UserRegisteredEvent extends BaseEvent {
     public readonly payload: {
       userId: string;
       email: string;
+      username: string;
       nickname: string;
       registeredAt: Date;
     },

@@ -19,7 +19,7 @@ type ForumSocketRequest = {
 
 type ForumSocketResponse = {
   id?: string;
-  type: 'forum.response' | 'forum.error' | 'forum.topic' | 'forum.message';
+  type: 'forum.response' | 'forum.error' | 'forum.topic' | 'forum.message' | 'forum.presence';
   ok?: boolean;
   status?: number;
   data?: unknown;
@@ -38,6 +38,14 @@ export function registerForumWebSocket(app: NestFastifyApplication, logger: AppL
   const jwtService = app.get(JwtService);
   const registry = app.get(ServiceRegistryService);
   const wss = new WebSocketServer({ noServer: true });
+  const onlineUsers = new Map<string, number>();
+
+  function broadcastPresence() {
+    broadcast(wss, {
+      type: 'forum.presence',
+      data: { onlineUsers: onlineUsers.size },
+    });
+  }
 
   server.on('upgrade', async (request, socket, head) => {
     const url = new URL(request.url ?? '/', 'http://localhost');
@@ -78,6 +86,9 @@ export function registerForumWebSocket(app: NestFastifyApplication, logger: AppL
       },
     ) => {
       const streamController = new AbortController();
+      const currentConnections = onlineUsers.get(context.user.sub) ?? 0;
+      onlineUsers.set(context.user.sub, currentConnections + 1);
+      broadcastPresence();
       void forwardForumStream(ws, registry, context.token, streamController.signal, logger);
 
       ws.on('message', (raw) => {
@@ -86,6 +97,13 @@ export function registerForumWebSocket(app: NestFastifyApplication, logger: AppL
 
       ws.on('close', () => {
         streamController.abort();
+        const remainingConnections = (onlineUsers.get(context.user.sub) ?? 1) - 1;
+        if (remainingConnections > 0) {
+          onlineUsers.set(context.user.sub, remainingConnections);
+        } else {
+          onlineUsers.delete(context.user.sub);
+        }
+        broadcastPresence();
       });
     },
   );
@@ -320,6 +338,10 @@ function send(ws: WebSocket, message: ForumSocketResponse) {
   if (ws.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify(message));
   }
+}
+
+function broadcast(wss: WebSocketServer, message: ForumSocketResponse) {
+  wss.clients.forEach((client) => send(client, message));
 }
 
 function resolveAuthorName(user?: ForumUser): string | undefined {

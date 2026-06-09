@@ -32,6 +32,7 @@ export class TokenService implements ITokenService {
     const payload: AccessTokenPayload = {
       sub: user.id,
       email: user.email.value,
+      username: user.username,
       nickname: user.nickname,
       roles: user.roles,
       type: 'access',

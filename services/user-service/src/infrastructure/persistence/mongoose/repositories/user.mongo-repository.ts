@@ -7,6 +7,7 @@ import {
   IUserProfileRepository,
   UserFilter,
 } from '../../../../domain/repositories/user-profile.repository.interface';
+import { usernameSeedFromEmail } from '../../../../domain/value-objects/username.vo';
 import { UserDocument } from '../schemas/user.schema';
 
 /** Repository interface/implementation for  user mongo data access. */
@@ -43,14 +44,18 @@ export class UserMongoRepository implements IUserProfileRepository {
 
   async getBasicProfilesByIds(
     ids: string[],
-  ): Promise<Array<{ userId: string; nickname: string; avatarUrl?: string }>> {
+  ): Promise<Array<{ userId: string; username: string; nickname: string; avatarUrl?: string }>> {
     const docs = await this.model
-      .find({ userId: { $in: ids } }, { userId: 1, 'profile.nickname': 1, 'profile.avatarUrl': 1 })
+      .find(
+        { userId: { $in: ids } },
+        { userId: 1, username: 1, 'profile.nickname': 1, 'profile.avatarUrl': 1 },
+      )
       .lean()
       .exec();
 
     return docs.map((doc) => ({
       userId: doc.userId,
+      username: doc.username ?? usernameSeedFromEmail(doc.email),
       nickname: doc.profile?.nickname || 'User',
       avatarUrl: doc.profile?.avatarUrl,
     }));
@@ -86,7 +91,14 @@ export class UserMongoRepository implements IUserProfileRepository {
   ): Promise<PaginatedResult<UserProfileAggregate>> {
     const query: Record<string, unknown> = {};
     if (filter.isActive !== undefined) query.isActive = filter.isActive;
-    if (filter.search) query.$text = { $search: filter.search };
+    if (filter.search) {
+      const search = escapeRegex(filter.search.trim());
+      query.$or = [
+        { username: { $regex: search, $options: 'i' } },
+        { 'profile.nickname': { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
+    }
 
     const skip = (page - 1) * limit;
     const [docs, total] = await Promise.all([
@@ -165,6 +177,7 @@ export class UserMongoRepository implements IUserProfileRepository {
       id: doc._id.toString(),
       userId: doc.userId,
       email: doc.email,
+      username: doc.username ?? usernameSeedFromEmail(doc.email),
       profile: {
         nickname: doc.profile.nickname,
         phone: doc.profile.phone,
@@ -204,10 +217,15 @@ export class UserMongoRepository implements IUserProfileRepository {
     const data: Record<string, unknown> = {
       userId: user.userId,
       email: user.email,
+      username: user.username,
       profile: profileDoc,
       isActive: user.isActive,
     };
     if (user.id) data._id = user.id;
     return data;
   }
+}
+
+function escapeRegex(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

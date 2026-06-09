@@ -9,6 +9,7 @@ import type { IUserRepository } from '../../../domain/repositories/user.reposito
 import { Otp } from '../../../domain/value-objects/otp.vo';
 import { Password } from '../../../domain/value-objects/password.vo';
 import { AuthEventPublisher } from '../../../infrastructure/messaging/publishers/auth-event.publisher';
+import { generateUniqueUsername } from '../../utils/username.util';
 import { RegisterUserCommand } from '../register-user.command';
 
 /** Interface representing data constraints for  register user result. */
@@ -53,11 +54,12 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
 
     // 3. Hash password
     const hashedPassword = await CryptoUtil.hashPassword(password);
+    const username = await generateUniqueUsername(email, this.userRepository);
 
     // 4. Create domain entity (status: pending_verification)
     let user: User;
     try {
-      user = User.create({ email, hashedPassword, nickname });
+      user = User.create({ email, hashedPassword, username, nickname });
     } catch (e: unknown) {
       throw new BadRequestException(e instanceof Error ? e.message : String(e));
     }
@@ -75,6 +77,7 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
         {
           userId: user.id,
           email: user.email.value,
+          username: user.username,
           nickname: user.nickname,
           registeredAt: user.createdAt,
         },

@@ -13,24 +13,28 @@ export const REACTION_META: Array<{
   label: string
   icon: typeof ThumbsUp
   activeClassName: string
+  hoverClassName: string
 }> = [
   {
     type: "like",
     label: "Like",
     icon: ThumbsUp,
     activeClassName: "bg-primary text-primary-foreground hover:bg-primary/90",
+    hoverClassName: "hover:bg-primary hover:text-primary-foreground",
   },
   {
     type: "tym",
     label: "Tym",
     icon: Heart,
     activeClassName: "bg-rose-600 text-white hover:bg-rose-600/90",
+    hoverClassName: "hover:bg-rose-600 hover:text-white",
   },
   {
     type: "haha",
     label: "Haha",
     icon: Laugh,
     activeClassName: "bg-amber-500 text-white hover:bg-amber-500/90",
+    hoverClassName: "hover:bg-amber-500 hover:text-white",
   },
 ]
 

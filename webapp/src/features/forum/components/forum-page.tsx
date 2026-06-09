@@ -1,35 +1,24 @@
 "use client"
 
-import { type FormEvent, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
-import {
-  Flame,
-  Hash,
-  MessageCircle,
-  Plus,
-  Search,
-  Send,
-  Users,
-} from "lucide-react"
+import { Search, Users } from "lucide-react"
 
 import { ForumMetric } from "@/components/atoms/forum-metric"
-import { ForumMentionTextarea } from "@/components/molecules/forum-mention-textarea"
-import { ForumMessageItem } from "@/components/molecules/forum-message-item"
 import { ForumTopicCard } from "@/components/molecules/forum-topic-card"
+import { ForumChatting } from "@/components/organisms/forum-chatting"
+import { ForumTags } from "@/components/organisms/forum-tags"
 import { ForumTopicDetail } from "@/components/organisms/forum-topic-detail"
+import { ForumTopicForm } from "@/components/organisms/forum-topic-form"
+import { ForumTrendingTopic } from "@/components/organisms/forum-trending-topic"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
 import { useGetContentMetaQuery } from "@/features/content/services/content-api"
 import { MajorStatus } from "@/features/content/types"
+import type {
+  ForumMessageFormValues,
+  ForumTopicFormValues,
+} from "@/features/forum/schema"
 import { forumSocket } from "@/features/forum/services/forum-socket"
 import type {
   ForumBootstrap,
@@ -50,20 +39,13 @@ export function ForumPage() {
   const [topicMessages, setTopicMessages] = useState<
     Record<string, ForumMessage[]>
   >({})
-  const [topicTitle, setTopicTitle] = useState("")
-  const [topicBody, setTopicBody] = useState("")
-  const [topicMajorId, setTopicMajorId] = useState("")
-  const [chatInput, setChatInput] = useState("")
-  const [chatMentions, setChatMentions] = useState<ForumMention[]>([])
-  const [replyInput, setReplyInput] = useState("")
-  const [replyMentions, setReplyMentions] = useState<ForumMention[]>([])
   const [messages, setMessages] = useState<ForumMessage[]>([])
   const [selectedTopicId, setSelectedTopicId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [onlineUsers, setOnlineUsers] = useState(0)
   const highlightedCommentRef = useRef<string | null>(null)
   const viewedTopicIdsRef = useRef<Set<string>>(new Set())
-  const replyInputRef = useRef<HTMLTextAreaElement | null>(null)
   const { data: metaResponse } = useGetContentMetaQuery()
 
   const majors = useMemo(
@@ -73,7 +55,6 @@ export function ForumPage() {
       ),
     [metaResponse]
   )
-  const selectedMajor = majors.find((major) => major.id === topicMajorId)
   const filteredTopics = useMemo(() => {
     const query = searchTerm.trim().toLowerCase()
 
@@ -161,6 +142,10 @@ export function ForumPage() {
 
         setMessages((currentMessages) => addMessage(currentMessages, message))
       }
+
+      if (event.type === "forum.presence") {
+        setOnlineUsers(event.data.onlineUsers)
+      }
     })
   }, [])
 
@@ -196,19 +181,16 @@ export function ForumPage() {
     return () => globalThis.clearTimeout(timer)
   }, [messages, selectedTopicMessages])
 
-  async function createTopic(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  async function createTopic(values: ForumTopicFormValues) {
+    const selectedMajor = majors.find((major) => major.id === values.majorId)
 
-    const title = topicTitle.trim()
-    const body = topicBody.trim()
-
-    if (!title || !body || !selectedMajor) {
-      return
+    if (!selectedMajor) {
+      return false
     }
 
     const topic = await forumSocket.createTopic({
-      title,
-      excerpt: body,
+      title: values.title,
+      excerpt: values.excerpt,
       majorId: selectedMajor.id,
       tag: selectedMajor.name,
     })
@@ -218,46 +200,35 @@ export function ForumPage() {
       setSelectedTopicId(topic.id)
     }
 
-    setTopicTitle("")
-    setTopicBody("")
-    setTopicMajorId("")
+    return Boolean(topic)
   }
 
-  async function sendMessage(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    const message = chatInput.trim()
-
-    if (!message) {
-      return
-    }
-
+  async function sendMessage(
+    values: ForumMessageFormValues & { mentions: ForumMention[] }
+  ) {
     const nextMessage = await forumSocket.createMessage({
-      message,
-      mentions: chatMentions,
+      message: values.message,
+      mentions: values.mentions ?? [],
     })
 
     if (nextMessage) {
       setMessages((currentMessages) => addMessage(currentMessages, nextMessage))
     }
 
-    setChatInput("")
-    setChatMentions([])
+    return Boolean(nextMessage)
   }
 
-  async function sendReply(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
-    const message = replyInput.trim()
-
-    if (!message || !selectedTopicId) {
-      return
+  async function sendReply(
+    values: ForumMessageFormValues & { mentions: ForumMention[] }
+  ) {
+    if (!selectedTopicId) {
+      return false
     }
 
     const reply = await forumSocket.createReply({
       topicId: selectedTopicId,
-      message,
-      mentions: replyMentions,
+      message: values.message,
+      mentions: values.mentions ?? [],
     })
 
     if (reply) {
@@ -270,8 +241,7 @@ export function ForumPage() {
       }))
     }
 
-    setReplyInput("")
-    setReplyMentions([])
+    return Boolean(reply)
   }
 
   async function reactToTopic(reaction: ForumTopicReaction) {
@@ -330,57 +300,13 @@ export function ForumPage() {
               <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/70 bg-background/70 p-2 text-center">
                 <ForumMetric label="Topics" value={topics.length.toString()} />
                 <ForumMetric label="Replies" value={totalReplies.toString()} />
-                <ForumMetric label="Online" value="42" />
+                <ForumMetric label="Online" value={onlineUsers.toString()} />
               </div>
             </div>
           </div>
 
           <div className="grid gap-5 p-4 sm:p-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-            <form
-              onSubmit={createTopic}
-              className="space-y-4 rounded-xl border border-border/75 bg-background/68 p-4"
-            >
-              <div className="flex items-center gap-2">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Plus className="size-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold">New topic</h2>
-                  <p className="text-xs text-muted-foreground">
-                    Pick a major tag before posting.
-                  </p>
-                </div>
-              </div>
-              <Select value={topicMajorId} onValueChange={setTopicMajorId}>
-                <SelectTrigger aria-label="Topic major tag">
-                  <SelectValue placeholder="Select major tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  {majors.map((major) => (
-                    <SelectItem key={major.id} value={major.id}>
-                      {major.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                value={topicTitle}
-                onChange={(event) => setTopicTitle(event.target.value)}
-                placeholder="Topic title"
-                aria-label="Topic title"
-              />
-              <Textarea
-                value={topicBody}
-                onChange={(event) => setTopicBody(event.target.value)}
-                placeholder="What do you want to discuss?"
-                aria-label="Topic body"
-                className="min-h-28 rounded-xl"
-              />
-              <Button type="submit" className="w-full" disabled={!topicMajorId}>
-                <Plus className="size-4" />
-                Post topic
-              </Button>
-            </form>
+            <ForumTopicForm majors={majors} onSubmit={createTopic} />
 
             <div className="space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -427,113 +353,25 @@ export function ForumPage() {
         </section>
 
         <aside className="space-y-4">
-          <section className="rounded-2xl border border-border/80 bg-card/70 p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-semibold">Trending</h2>
-                <p className="text-sm text-muted-foreground">
-                  Most active right now.
-                </p>
-              </div>
-              <Flame className="size-5 text-primary" />
-            </div>
-            <div className="space-y-3">
-              {trendingTopics.map((topic, index) => (
-                <button
-                  key={topic.id}
-                  type="button"
-                  onClick={() => setSelectedTopicId(topic.id)}
-                  className="w-full rounded-xl border border-border/70 bg-background/60 p-3 text-left transition-colors hover:border-primary/30 hover:bg-secondary/40"
-                >
-                  <div className="mb-2 flex items-center gap-2">
-                    <Badge variant="secondary">#{index + 1}</Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {topic.replies} replies
-                    </span>
-                  </div>
-                  <p className="text-sm leading-5 font-medium">{topic.title}</p>
-                </button>
-              ))}
-            </div>
-          </section>
+          <ForumTrendingTopic
+            topics={trendingTopics}
+            onTopicSelect={setSelectedTopicId}
+          />
 
-          <section className="rounded-2xl border border-border/80 bg-card/70 p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-semibold">Major tags</h2>
-                <p className="text-sm text-muted-foreground">
-                  Topic channels from content majors.
-                </p>
-              </div>
-              <Hash className="size-5 text-primary" />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {majors.slice(0, 8).map((major) => (
-                <div
-                  key={major.id}
-                  className="rounded-xl border border-border/70 bg-background/60 p-3"
-                >
-                  <p className="truncate text-sm font-medium">{major.name}</p>
-                  <p className="text-xs text-muted-foreground">{major.code}</p>
-                </div>
-              ))}
-            </div>
-          </section>
+          <ForumTags majors={majors} />
 
           <ForumTopicDetail
             topic={selectedTopic}
             messages={selectedTopicMessages}
-            replyInput={replyInput}
-            replyMentions={replyMentions}
-            onReplyInputChange={setReplyInput}
-            onReplyMentionsChange={setReplyMentions}
             onReplySubmit={sendReply}
             onReact={reactToTopic}
-            replyInputRef={replyInputRef}
           />
 
-          <section className="rounded-2xl border border-border/80 bg-card/70">
-            <div className="border-b border-border/70 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-semibold">Chat everyone</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Open study room.
-                  </p>
-                </div>
-                <MessageCircle className="size-5 text-primary" />
-              </div>
-            </div>
-            <div className="max-h-90 space-y-3 overflow-y-auto p-4">
-              {!isLoading && messages.length === 0 ? (
-                <div className="rounded-xl border border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
-                  No messages yet.
-                </div>
-              ) : null}
-              {messages.map((message) => (
-                <ForumMessageItem key={message.id} message={message} />
-              ))}
-            </div>
-            <form
-              onSubmit={sendMessage}
-              className="space-y-2 border-t border-border/70 p-3"
-            >
-              <ForumMentionTextarea
-                value={chatInput}
-                mentions={chatMentions}
-                onValueChange={setChatInput}
-                onMentionsChange={setChatMentions}
-                placeholder="Message everyone"
-                minHeightClassName="min-h-10"
-              />
-              <div className="flex justify-end">
-                <Button type="submit" size="sm">
-                  <Send className="size-4" />
-                  Send
-                </Button>
-              </div>
-            </form>
-          </section>
+          <ForumChatting
+            isLoading={isLoading}
+            messages={messages}
+            onSubmit={sendMessage}
+          />
         </aside>
       </div>
     </section>

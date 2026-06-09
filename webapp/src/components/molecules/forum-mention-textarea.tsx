@@ -11,12 +11,8 @@ import type {
   ForumMention,
   ForumMentionCandidate,
 } from "@/features/forum/types"
-import {
-  addMention,
-  getMentionQuery,
-} from "@/features/forum/utils/forum-utils"
+import { addMention, getMentionQuery } from "@/features/forum/utils/forum-utils"
 import { cn } from "@/lib/utils"
-
 
 export function ForumMentionTextarea({
   textareaRef,
@@ -72,10 +68,11 @@ export function ForumMentionTextarea({
     const query = getMentionQuery(value)
     const marker = query === null ? "@" : `@${query}`
     const markerIndex = value.lastIndexOf(marker)
+    const username = candidate.username ?? candidate.name
     const nextValue =
       markerIndex >= 0
-        ? `${value.slice(0, markerIndex)}@${candidate.name} ${value.slice(markerIndex + marker.length)}`
-        : `${value} @${candidate.name} `
+        ? `${value.slice(0, markerIndex)}@${username} ${value.slice(markerIndex + marker.length)}`
+        : `${value} @${username} `
 
     onValueChange(nextValue)
     onMentionsChange(addMention(mentions, candidate))
@@ -127,6 +124,12 @@ export function ForumMentionTextarea({
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium">
                       {candidate.name}
+                      {candidate.username &&
+                      candidate.username !== candidate.name ? (
+                        <span className="block truncate text-xs text-muted-foreground">
+                          @{candidate.username}
+                        </span>
+                      ) : null}
                     </span>
                   </span>
                 </button>

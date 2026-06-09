@@ -12,12 +12,14 @@ import { Controller } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import type { ConsumeMessage } from 'amqplib';
 import { CreateUserProfileCommand } from '../../../application/commands/create-user-profile.command';
+import { usernameSeedFromEmail } from '../../../domain/value-objects/username.vo';
 
 /** Interface representing data constraints for  user registered payload. */
 interface UserRegisteredPayload {
   payload: {
     userId: string;
     email: string;
+    username?: string;
     nickname: string;
     registeredAt: string;
   };
@@ -63,6 +65,7 @@ export class UserEventConsumer {
           new CreateUserProfileCommand(
             data.payload.userId,
             data.payload.email,
+            data.payload.username ?? usernameSeedFromEmail(data.payload.email),
             data.payload.nickname,
             correlationId,
           ),

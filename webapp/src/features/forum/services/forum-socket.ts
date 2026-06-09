@@ -13,6 +13,7 @@ import type {
 type ForumSocketEvent =
   | { type: "forum.topic"; data: ForumTopic }
   | { type: "forum.message"; data: ForumMessage }
+  | { type: "forum.presence"; data: { onlineUsers: number } }
   | { type: "forum.error"; error?: string; status?: number }
 
 type ForumSocketResponse<T> = {

@@ -21,6 +21,7 @@ export type ForumTopicReactions = Record<ForumTopicReaction, number>
 export type ForumMention = {
   userId: string
   name: string
+  username?: string
   avatarUrl?: string
 }
 

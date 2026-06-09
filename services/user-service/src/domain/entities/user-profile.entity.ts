@@ -22,6 +22,7 @@ export interface UserProps {
   id?: string;
   userId: string;
   email: string;
+  username: string;
   profile: UserProfile;
   isActive: boolean;
   createdAt: Date;
@@ -40,11 +41,17 @@ export class UserProfileAggregate {
    * @param params - The params parameter
    * @returns Result of type UserProfileAggregate
    */
-  static create(params: { userId: string; email: string; nickname: string }): UserProfileAggregate {
+  static create(params: {
+    userId: string;
+    email: string;
+    username: string;
+    nickname: string;
+  }): UserProfileAggregate {
     const now = new Date();
     return new UserProfileAggregate({
       userId: params.userId,
       email: params.email,
+      username: params.username,
       profile: { nickname: params.nickname },
       isActive: true,
       createdAt: now,
@@ -121,6 +128,9 @@ export class UserProfileAggregate {
   }
   get email(): string {
     return this.props.email;
+  }
+  get username(): string {
+    return this.props.username;
   }
   get profile(): UserProfile {
     return { ...this.props.profile };

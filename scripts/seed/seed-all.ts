@@ -100,12 +100,13 @@ async function createLocalPgAdapter(): Promise<PgAdapter> {
     async seedAuthUsers(users) {
       for (const u of users) {
         await pgAuth.query(
-          `INSERT INTO users (id, email, password_hash, nickname, roles, subscription_plan, status, email_verified, last_login_at, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+          `INSERT INTO users (id, email, username, password_hash, nickname, roles, subscription_plan, status, email_verified, last_login_at, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
            ON CONFLICT (id) DO NOTHING`,
           [
             u.id,
             u.email,
+            u.username,
             u.password_hash,
             u.nickname,
             u.roles,
@@ -319,6 +320,7 @@ async function createProdPgAdapter(): Promise<PgAdapter> {
           create: {
             id: u.id,
             email: u.email,
+            username: u.username,
             passwordHash: u.password_hash,
             nickname: u.nickname,
             roles: u.roles,

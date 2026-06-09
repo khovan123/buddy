@@ -8,6 +8,7 @@ import { UserProfileAggregate } from '../../../domain/entities/user-profile.enti
 import { DomainException } from '../../../domain/exceptions/domain.exception';
 import { USER_REPOSITORY } from '../../../domain/repositories/tokens';
 import type { IUserProfileRepository } from '../../../domain/repositories/user-profile.repository.interface';
+import { usernameSeedFromEmail } from '../../../domain/value-objects/username.vo';
 import { UserEventPublisher } from '../../../infrastructure/messaging/publishers/user-event.publisher';
 import { UpdateProfileCommand } from '../update-profile.command';
 
@@ -30,9 +31,11 @@ export class UpdateProfileHandler implements ICommandHandler<UpdateProfileComman
 
     if (!user) {
       // Create user if not found
+      const email = command.email || 'unknown@example.com';
       user = UserProfileAggregate.create({
         userId: command.userId,
-        email: command.email || 'unknown@example.com',
+        email,
+        username: usernameSeedFromEmail(email),
         nickname: command.changes.nickname || 'User',
       });
       try {

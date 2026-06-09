@@ -12,6 +12,7 @@ export interface TokenPair {
 export interface AccessTokenPayload {
   sub: string;
   email: string;
+  username: string;
   nickname: string;
   roles: string[];
   subscriptionPlan?: string;

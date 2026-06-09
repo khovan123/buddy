@@ -84,6 +84,7 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
         user: {
           id: user.id,
           email: user.email.value,
+          username: user.username,
           nickname: user.nickname,
           role: user.roles[0] ?? 'user',
           roles: user.roles,
@@ -147,6 +148,7 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
       user: {
         id: user.id,
         email: user.email.value,
+        username: user.username,
         nickname: user.nickname,
         role: user.roles[0] ?? 'user',
         roles: user.roles,

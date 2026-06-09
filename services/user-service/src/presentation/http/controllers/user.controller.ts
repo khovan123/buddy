@@ -18,6 +18,7 @@ import { CreateUserProfileCommand } from '../../../application/commands/create-u
 import { UpdateProfileCommand } from '../../../application/commands/update-profile.command';
 import { GetUserByIdQuery } from '../../../application/queries/get-user-by-id.query';
 import { GetUsersQuery } from '../../../application/queries/get-users.query';
+import { usernameSeedFromEmail } from '../../../domain/value-objects/username.vo';
 import { UpdateProfileDto } from '../dtos/update-profile.dto';
 
 /** Controller handling incoming requests for User. */
@@ -49,7 +50,9 @@ export class UserController {
    * @param req - The req parameter
    */
   @Get('me')
-  async getMe(@Req() req: FastifyRequest & { user: { sub: string; email?: string } }) {
+  async getMe(
+    @Req() req: FastifyRequest & { user: { sub: string; email?: string; username?: string } },
+  ) {
     try {
       const result = await this.queryBus.execute(new GetUserByIdQuery(req.user.sub));
       return successResponse(result, undefined, getCorrelationId());
@@ -57,9 +60,16 @@ export class UserController {
       if (e instanceof NotFoundException) {
         const dummyEmail = req.user.email || 'unknown@example.com';
         const nickname = req.user.email ? req.user.email.split('@')[0] : 'New User';
+        const username = req.user.username ?? usernameSeedFromEmail(dummyEmail);
 
         await this.commandBus.execute(
-          new CreateUserProfileCommand(req.user.sub, dummyEmail, nickname, getCorrelationId()),
+          new CreateUserProfileCommand(
+            req.user.sub,
+            dummyEmail,
+            username,
+            nickname,
+            getCorrelationId(),
+          ),
         );
 
         const retryResult = await this.queryBus.execute(new GetUserByIdQuery(req.user.sub));
