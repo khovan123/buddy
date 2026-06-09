@@ -6,6 +6,25 @@ on:
   pull_request:
     branches: [main, production]
   workflow_dispatch:
+    inputs:
+      service:
+        description: Service to deploy manually
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - api-gateway
+          - auth-service
+          - user-service
+          - notification-service
+          - content-service
+          - upload-service
+          - billing-service
+          - content-access-service
+          - interaction-service
+          - recommendation-service
+          - rag-service
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Stage 1: Detect which services/webapp have code changes.
@@ -63,10 +82,9 @@ jobs:
         id: set-webapp
         run: |
           SHARED="${{ steps.filter.outputs.libs == 'true' || steps.filter.outputs.lockfile == 'true' || steps.filter.outputs.rootpkg == 'true' }}"
-          FORCE="${{ github.event_name == 'workflow_dispatch' }}"
           WEBAPP="${{ steps.filter.outputs.webapp }}"
 
-          if [[ "$FORCE" == "true" || "$WEBAPP" == "true" || "$SHARED" == "true" ]]; then
+          if [[ "$WEBAPP" == "true" || "$SHARED" == "true" ]]; then
             echo "has_webapp_changes=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_webapp_changes=false" >> "$GITHUB_OUTPUT"
@@ -76,22 +94,44 @@ jobs:
         id: set-matrix
         run: |
           SERVICES=()
+          ALL_SERVICES=(
+            api-gateway
+            auth-service
+            user-service
+            notification-service
+            content-service
+            upload-service
+            billing-service
+            content-access-service
+            interaction-service
+            recommendation-service
+            rag-service
+          )
+
           SHARED="${{ steps.filter.outputs.libs == 'true' || steps.filter.outputs.lockfile == 'true' || steps.filter.outputs.rootpkg == 'true' }}"
-          FORCE="${{ github.event_name == 'workflow_dispatch' }}"
 
-          for SVC in api-gateway auth-service user-service notification-service \
-                     content-service upload-service billing-service \
-                     content-access-service interaction-service \
-                     recommendation-service rag-service; do
-            # dorny/paths-filter outputs are named exactly as the filter keys,
-            # but GHA expressions can't do dynamic property access.
-            # Parse from the full outputs JSON instead.
-            CHANGED=$(echo '${{ toJson(steps.filter.outputs) }}' | jq -r --arg key "$SVC" '.[$key]')
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            SELECTED="${{ inputs.service }}"
 
-            if [[ "$FORCE" == "true" || "$CHANGED" == "true" || "$SHARED" == "true" ]]; then
-              SERVICES+=("\"$SVC\"")
+            if [[ "$SELECTED" == "all" ]]; then
+              for SVC in "${ALL_SERVICES[@]}"; do
+                SERVICES+=("\"$SVC\"")
+              done
+            else
+              SERVICES+=("\"$SELECTED\"")
             fi
-          done
+          else
+            for SVC in "${ALL_SERVICES[@]}"; do
+              # dorny/paths-filter outputs are named exactly as the filter keys,
+              # but GHA expressions can't do dynamic property access.
+              # Parse from the full outputs JSON instead.
+              CHANGED=$(echo '${{ toJson(steps.filter.outputs) }}' | jq -r --arg key "$SVC" '.[$key]')
+
+              if [[ "$CHANGED" == "true" || "$SHARED" == "true" ]]; then
+                SERVICES+=("\"$SVC\"")
+              fi
+            done
+          fi
 
           if [[ ${#SERVICES[@]} -gt 0 ]]; then
             MATRIX="{\"service\":[$(IFS=,; echo "${SERVICES[*]}")]}"
@@ -492,9 +532,15 @@ jobs:
         run: |
           gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
 
+      - name: Verify service exists
+        run: |
+          echo "Deploying service: $SERVICE"
+          test -f "services/$SERVICE/package.json"
+
       - name: Build Docker image
         run: |
           docker build \
+            --progress=plain \
             --build-arg SERVICE_NAME=$SERVICE \
             -t $IMAGE \
             .
