@@ -1,4 +1,4 @@
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { AmqpConnectionManager } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   EXCHANGES,
@@ -21,7 +21,7 @@ export class BillingSubscriptionPlanPublisher {
 
   constructor(
     @Inject('AmqpConnection')
-    private readonly amqpConnection: AmqpConnection,
+    private readonly amqpConnectionManager: AmqpConnectionManager,
   ) {}
 
   async resolveUserPlanDetails(
@@ -88,7 +88,10 @@ export class BillingSubscriptionPlanPublisher {
     const messageData = this.toMessageData(event);
     const correlationId =
       typeof messageData.correlationId === 'string' ? messageData.correlationId : event.eventId;
-
+    const connection = this.amqpConnectionManager.getConnection('default');
+    if (!connection) {
+      throw new Error('RabbitMQ default connection is not available');
+    }
     this.logger.log('Publishing billing subscription plan RPC request', {
       userId: event.payload.userId,
       routingKey,
@@ -98,7 +101,7 @@ export class BillingSubscriptionPlanPublisher {
       timeoutMs: 10_000,
     });
 
-    const response = await this.amqpConnection.request<BillingSubscriptionPlanRpcResponse>({
+    const response = await connection.request<BillingSubscriptionPlanRpcResponse>({
       exchange: EXCHANGES.BILLING,
       routingKey,
       payload: messageData,

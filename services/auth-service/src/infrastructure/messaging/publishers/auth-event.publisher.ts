@@ -1,4 +1,4 @@
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { AmqpConnectionManager } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   CORRELATION_ID_HEADER,
@@ -16,7 +16,7 @@ export class AuthEventPublisher {
 
   constructor(
     @Inject('AmqpConnection')
-    private readonly amqpConnection: AmqpConnection,
+    private readonly amqpConnectionManager: AmqpConnectionManager,
   ) {}
 
   /**
@@ -30,7 +30,10 @@ export class AuthEventPublisher {
   async publish(event: BaseEvent): Promise<void> {
     const routingKey = event.routingKey; // e.g. "auth.user.registered"
     const correlationId = event.correlationId ?? getCorrelationId() ?? event.eventId;
-
+    const connection = this.amqpConnectionManager.getConnection('default');
+    if (!connection) {
+      throw new Error('RabbitMQ default connection is not available');
+    }
     const message = {
       pattern: routingKey,
       data: {
@@ -45,7 +48,7 @@ export class AuthEventPublisher {
     };
 
     try {
-      this.amqpConnection.publish(EXCHANGES.AUTH, routingKey, message, {
+      await connection.publish(EXCHANGES.AUTH, routingKey, message, {
         persistent: true,
         contentType: 'application/json',
         messageId: event.eventId,
