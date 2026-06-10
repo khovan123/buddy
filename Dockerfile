@@ -6,7 +6,7 @@ WORKDIR /app
 RUN npm install -g turbo
 
 # Copy workspace manifests for layer caching
-COPY package.json turbo.json ./
+COPY package.json package-lock.json turbo.json ./
 COPY libs/common/package.json ./libs/common/
 COPY libs/contracts/package.json ./libs/contracts/
 COPY libs/testing/package.json ./libs/testing/
@@ -14,12 +14,8 @@ COPY libs/testing/package.json ./libs/testing/
 ARG SERVICE_NAME
 COPY services/${SERVICE_NAME}/package.json ./services/${SERVICE_NAME}/
 
-# Install only production deps
-RUN npm install --workspace=libs/common \
-  --workspace=libs/contracts \
-  --workspace=services/${SERVICE_NAME} \
-  --omit=dev \
-  --legacy-peer-deps
+# Install only production deps from root lockfile/workspaces
+RUN npm ci --omit=dev --legacy-peer-deps
 
 # ─── Stage 2: builder ─────────────────────────────────────────────
 FROM node:22-alpine AS builder
@@ -33,7 +29,7 @@ COPY . .
 ARG SERVICE_NAME
 
 # Install all deps (including devDeps for build)
-RUN npm install --legacy-peer-deps
+RUN npm ci --legacy-peer-deps
 
 # Build shared libs first, then the service
 RUN turbo run build --filter=@libs/common \
@@ -59,7 +55,6 @@ COPY --from=builder --chown=nestjs:nodejs /app/libs ./libs
 
 # Copy production node_modules
 COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
-# COPY --from=deps --chown=nestjs:nodejs /app/services/${SERVICE_NAME}/node_modules ./services/${SERVICE_NAME}/node_modules
 
 EXPOSE 8080
 
