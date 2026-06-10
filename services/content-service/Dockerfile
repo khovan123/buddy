@@ -16,6 +16,6 @@ ENV NODE_ENV=production SERVICE_NAME=content-service
 COPY --from=builder --chown=nestjs:nodejs /app/services/content-service/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/libs ./libs
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
-EXPOSE 3004
+EXPOSE 8080
 STOPSIGNAL SIGTERM
 CMD ["node", "dist/src/main.js"]

@@ -16,6 +16,6 @@ ENV NODE_ENV=production SERVICE_NAME=notification-service
 COPY --from=builder --chown=nestjs:nodejs /app/services/notification-service/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/libs ./libs
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
-EXPOSE 3003
+EXPOSE 8080
 STOPSIGNAL SIGTERM
 CMD ["node", "dist/src/main.js"]
