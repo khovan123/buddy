@@ -7,17 +7,14 @@ import {
   mergeTraceContextIntoHeaders,
 } from '@libs/common';
 import { BaseEvent } from '@libs/contracts';
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 /** Represents the  rabbit m q publisher component. */
 @Injectable()
 export class AuthEventPublisher {
   private readonly logger = new AppLogger(AuthEventPublisher.name);
 
-  constructor(
-    @Inject('AmqpConnection')
-    private readonly amqpConnectionManager: AmqpConnectionManager,
-  ) {}
+  constructor(private readonly amqpConnectionManager: AmqpConnectionManager) {}
 
   /**
    * Publish domain event lên auth.events exchange.

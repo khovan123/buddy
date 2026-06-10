@@ -12,17 +12,14 @@ import {
   type BillingSubscriptionPlanRpcResponse,
   type SubscriptionPlanDetails,
 } from '@libs/contracts';
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 /** RabbitMQ RPC publisher for billing subscription-plan lookups. */
 @Injectable()
 export class BillingSubscriptionPlanPublisher {
   private readonly logger = new AppLogger(BillingSubscriptionPlanPublisher.name);
 
-  constructor(
-    @Inject('AmqpConnection')
-    private readonly amqpConnectionManager: AmqpConnectionManager,
-  ) {}
+  constructor(private readonly amqpConnectionManager: AmqpConnectionManager) {}
 
   async resolveUserPlanDetails(
     userId: string,
