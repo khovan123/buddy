@@ -59,7 +59,7 @@ COPY --from=builder --chown=nestjs:nodejs /app/libs ./libs
 
 # Copy production node_modules
 COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
-COPY --from=deps --chown=nestjs:nodejs /app/services/${SERVICE_NAME}/node_modules ./services/${SERVICE_NAME}/node_modules
+# COPY --from=deps --chown=nestjs:nodejs /app/services/${SERVICE_NAME}/node_modules ./services/${SERVICE_NAME}/node_modules
 
 EXPOSE 8080
 
