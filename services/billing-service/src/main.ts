@@ -78,10 +78,17 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: false, trustProxy: true }),
+    new FastifyAdapter({
+      logger: false,
+      trustProxy: true,
+      bodyLimit: 10 * 1024 * 1024,
+    }),
     { bodyParser: false, bufferLogs: true, rawBody: true },
   );
+
   registerBillingBodyParsers(app);
+
+  app.useGlobalInterceptors(new CorrelationIdInterceptor(), new OtelTracingInterceptor());
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -93,7 +100,6 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new GlobalExceptionFilter(logger));
-  app.useGlobalInterceptors(new CorrelationIdInterceptor(), new OtelTracingInterceptor());
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
   const allowedOrigins = process.env.ALLOWED_ORIGINS;
@@ -104,6 +110,7 @@ async function bootstrap() {
   app.enableCors({
     origin: allowedOrigins === '*' ? '*' : allowedOrigins.split(',').map((origin) => origin.trim()),
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
     exposedHeaders: ['x-correlation-id'],
   });
@@ -120,19 +127,24 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
 
-  const host = process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '::' : '127.0.0.1');
   const maxRetries = 5;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      const configuredHost =
+        process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
+      const host = configuredHost === '::' ? '0.0.0.0' : configuredHost;
+
       await app.listen(port, host);
-      logger.log(`Billing service running on port ${port}`, 'Bootstrap');
+      logger.log(`Billing service running on http://${host}:${port}`);
       return;
-    } catch (err: any) {
-      if (err.code === 'EADDRINUSE' && attempt < maxRetries) {
+    } catch (err: unknown) {
+      const error = err as NodeJS.ErrnoException;
+
+      if (error.code === 'EADDRINUSE' && attempt < maxRetries) {
         logger.warn(
           `Port ${port} in use, retrying in ${attempt * 500}ms... (${attempt}/${maxRetries})`,
         );
-        await new Promise((r) => setTimeout(r, attempt * 500));
+        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
       } else {
         throw err;
       }

@@ -1,6 +1,6 @@
 import { initializeOpenTelemetry } from '@libs/common';
-
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
+import 'reflect-metadata';
 
 async function bootstrap() {
   await initializeOpenTelemetry('content-service');
@@ -20,9 +20,18 @@ async function bootstrap() {
     new FastifyAdapter({
       logger: false,
       trustProxy: true,
+      bodyLimit: 10 * 1024 * 1024,
     }),
     { bufferLogs: true },
   );
+
+  await app.register(contentParser, {
+    limits: {
+      fileSize: 50 * 1024 * 1024,
+    },
+  });
+
+  app.useGlobalInterceptors(new CorrelationIdInterceptor(), new OtelTracingInterceptor());
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -33,14 +42,7 @@ async function bootstrap() {
     }),
   );
 
-  await app.register(contentParser, {
-    limits: {
-      fileSize: 50 * 1024 * 1024, //50MB
-    },
-  });
-
   app.useGlobalFilters(new GlobalExceptionFilter(logger));
-  app.useGlobalInterceptors(new CorrelationIdInterceptor(), new OtelTracingInterceptor());
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
   const allowedOrigins = process.env.ALLOWED_ORIGINS;
@@ -51,6 +53,7 @@ async function bootstrap() {
   app.enableCors({
     origin: allowedOrigins === '*' ? '*' : allowedOrigins.split(',').map((origin) => origin.trim()),
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
     exposedHeaders: ['x-correlation-id'],
   });
@@ -67,26 +70,32 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
 
-  const host = process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '::' : '127.0.0.1');
   const maxRetries = 5;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      const configuredHost =
+        process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
+      const host = configuredHost === '::' ? '0.0.0.0' : configuredHost;
+
       await app.listen(port, host);
-      logger.log(`Content service running on port ${port}`, 'Bootstrap');
+      logger.log(`Content service running on http://${host}:${port}`);
       return;
-    } catch (err: any) {
-      if (err.code === 'EADDRINUSE' && attempt < maxRetries) {
+    } catch (err: unknown) {
+      const error = err as NodeJS.ErrnoException;
+
+      if (error.code === 'EADDRINUSE' && attempt < maxRetries) {
         logger.warn(
           `Port ${port} in use, retrying in ${attempt * 500}ms... (${attempt}/${maxRetries})`,
         );
-        await new Promise((r) => setTimeout(r, attempt * 500));
+        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
       } else {
         throw err;
       }
     }
   }
 }
+
 bootstrap().catch((err) => {
-  console.error('Lỗi khởi động content-service:', err);
+  console.error('Fatal bootstrap error:', err);
   process.exit(1);
 });

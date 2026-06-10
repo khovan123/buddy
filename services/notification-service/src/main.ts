@@ -16,14 +16,28 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: false }),
+    new FastifyAdapter({
+      logger: false,
+      trustProxy: true,
+      bodyLimit: 10 * 1024 * 1024,
+    }),
     { bufferLogs: true },
   );
 
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.useGlobalFilters(new GlobalExceptionFilter(logger));
   app.useGlobalInterceptors(new CorrelationIdInterceptor(), new OtelTracingInterceptor());
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
+
+  app.useGlobalFilters(new GlobalExceptionFilter(logger));
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
+
   const allowedOrigins = process.env.ALLOWED_ORIGINS;
   if (!allowedOrigins) {
     throw new Error('Need ALLOWED_ORIGINS config');
@@ -32,9 +46,11 @@ async function bootstrap() {
   app.enableCors({
     origin: allowedOrigins === '*' ? '*' : allowedOrigins.split(',').map((origin) => origin.trim()),
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
     exposedHeaders: ['x-correlation-id'],
   });
+
   const portRaw = process.env.PORT;
   if (!portRaw) {
     throw new Error('Need PORT config');
@@ -47,19 +63,26 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
 
-  const host = process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '::' : '127.0.0.1');
   const maxRetries = 5;
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      const configuredHost =
+        process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
+
+      const host = configuredHost === '::' ? '0.0.0.0' : configuredHost;
+
       await app.listen(port, host);
-      logger.log(`Notification service running on port ${port}`);
+      logger.log(`Notification service running on http://${host}:${port}`);
       return;
-    } catch (err: any) {
-      if (err.code === 'EADDRINUSE' && attempt < maxRetries) {
+    } catch (err: unknown) {
+      const error = err as NodeJS.ErrnoException;
+
+      if (error.code === 'EADDRINUSE' && attempt < maxRetries) {
         logger.warn(
           `Port ${port} in use, retrying in ${attempt * 500}ms... (${attempt}/${maxRetries})`,
         );
-        await new Promise((r) => setTimeout(r, attempt * 500));
+        await new Promise((resolve) => setTimeout(resolve, attempt * 500));
       } else {
         throw err;
       }
@@ -68,6 +91,6 @@ async function bootstrap() {
 }
 
 bootstrap().catch((err) => {
-  console.error(err);
+  console.error('Fatal bootstrap error:', err);
   process.exit(1);
 });
