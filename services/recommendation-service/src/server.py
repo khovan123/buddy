@@ -1,62 +1,84 @@
 """
 FastAPI server — recommendation API + health endpoints.
 
-This module defines the main FastAPI application for the recommendation service.
-It exposes versioned REST endpoints under ``/v1/health`` and ``/v1/recommendation``
-and wires up the RabbitMQ consumer, model scheduler, and CORS middleware on startup.
+Cloud Run production-ready version for recommendation-service.
 
-RAG functionality (embedding, retrieval, generation) is handled by the dedicated
-``rag-service``.  This service focuses on scoring, trending, and ML model lifecycle.
+Key properties:
+- Binds PORT immediately; heavy Mongo/Redis/ML/RabbitMQ init runs in background.
+- Readiness checks HTTP-serving dependencies only; RabbitMQ consumer is observed, not required.
+- Uses bounded thread pool for blocking Mongo/Redis/ML operations.
+- Keeps Redis optional/fail-open.
+- Keeps RabbitMQ consumer isolated with reconnect/backoff.
+- Performs safe shutdown for scheduler, consumer, stores, and executor.
 """
 
+import asyncio
+import json
 import logging
 import threading
-import asyncio
-import os
+import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 import redis
-import json
-import uuid
-from fastapi import APIRouter, FastAPI, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from config import HOST, PORT, RECOMMENDATION_CACHE_TTL, REDIS_URL, ALLOWED_ORIGINS
-from models import RecommendResponse, TrendingResponse, HealthResponse
-from stores.catalog_store import CatalogStore
-from stores.user_profile_store import UserProfileStore
-from stores.item_popularity_store import ItemPopularityStore
-from scoring.engine import ScoringEngine
+from config import (
+    ALLOWED_ORIGINS,
+    HOST,
+    PORT,
+    RECOMMENDATION_CACHE_TTL,
+    RECOMMENDATION_CONSUMER_ENABLED,
+    REDIS_URL,
+)
 from consumer import EventConsumer
-from scheduler import ModelScheduler
 from ml.drift_monitor import DriftMonitor
+from models import HealthResponse, RecommendResponse, TrendingResponse
+from scheduler import ModelScheduler
+from scoring.engine import ScoringEngine
+from stores.catalog_store import CatalogStore
+from stores.item_popularity_store import ItemPopularityStore
+from stores.user_profile_store import UserProfileStore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 HEALTH_CHECK_TIMEOUT_SECONDS = 5
 RECOMMENDATION_TIMEOUT_SECONDS = 25
-BLOCKING_WORKER_LIMIT = int(os.getenv("RECOMMENDATION_BLOCKING_WORKERS", "12"))
-RECOMMENDATION_CONSUMER_ENABLED = os.getenv("RECOMMENDATION_CONSUMER_ENABLED", "true").lower() != "false"
+BLOCKING_WORKER_LIMIT = 12
+
 blocking_executor = ThreadPoolExecutor(
     max_workers=BLOCKING_WORKER_LIMIT,
     thread_name_prefix="recommendation-blocking",
 )
 blocking_slots = threading.BoundedSemaphore(BLOCKING_WORKER_LIMIT)
 
-# ─── Global singletons (all read from recommendation_db only) ──────────────────
-
-catalog_store = CatalogStore()
-user_store = UserProfileStore()
-popularity_store = ItemPopularityStore()
-scoring_engine = ScoringEngine(user_store, popularity_store, catalog_store)
-redis_client = redis.from_url(REDIS_URL, decode_responses=True, socket_connect_timeout=10, socket_timeout=10)
+catalog_store: CatalogStore | None = None
+user_store: UserProfileStore | None = None
+popularity_store: ItemPopularityStore | None = None
+scoring_engine: ScoringEngine | None = None
+redis_client: redis.Redis | None = None
 
 
+def _require_runtime() -> tuple[CatalogStore, UserProfileStore, ItemPopularityStore, ScoringEngine]:
+    """Return initialized runtime dependencies or raise 503 while startup is still running."""
+    if (
+        catalog_store is None
+        or user_store is None
+        or popularity_store is None
+        or scoring_engine is None
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="Recommendation runtime is still initializing",
+        )
+
+    return catalog_store, user_store, popularity_store, scoring_engine
 
 
 async def _run_blocking_with_timeout(
@@ -67,14 +89,7 @@ async def _run_blocking_with_timeout(
     unavailable_status: int = 503,
     **kwargs,
 ):
-    """Run blocking work in a bounded pool and fail fast on slow dependencies.
-
-    ``asyncio.wait_for`` cannot stop synchronous Mongo/Redis/ML work once a
-    worker thread has started it. The semaphore is intentionally released by the
-    worker after the callable really finishes, so timed-out jobs keep consuming
-    capacity and repeated slow requests cannot exhaust Starlette/AnyIO's shared
-    threadpool or queue unbounded work.
-    """
+    """Run blocking work in a bounded executor and fail fast on slow dependencies."""
     if not blocking_slots.acquire(blocking=False):
         logger.warning("%s rejected because blocking worker pool is full", name)
         return JSONResponse(
@@ -89,6 +104,7 @@ async def _run_blocking_with_timeout(
             blocking_slots.release()
 
     loop = asyncio.get_running_loop()
+
     try:
         future = loop.run_in_executor(blocking_executor, _run)
     except Exception:
@@ -107,48 +123,78 @@ async def _run_blocking_with_timeout(
 
 
 def _consume_late_blocking_result(name: str, future) -> None:
-    """Consume a late result so post-timeout exceptions are logged, not leaked."""
+    """Consume late executor result so post-timeout exceptions are logged, not leaked."""
     try:
         future.result()
     except Exception as e:
         logger.warning("%s failed after request timed out: %s", name, e)
 
 
+def _close_store_safely(store, label: str) -> None:
+    if not store:
+        return
 
+    try:
+        store.close()
+    except Exception as e:
+        logger.warning("%s close error ignored: %s", label, e)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Manage application lifecycle — startup and shutdown hooks.
-
-    CRITICAL: Yields immediately so Uvicorn binds port 3009 ASAP.
-    All heavy initialization runs in background threads AFTER the port is open.
-    This ensures Azure startup probes (TCP 3009) pass without waiting for
-    RabbitMQ or ML model loading.
-    """
-    # Store references for cleanup
+    """Start quickly for Cloud Run, initialize heavy dependencies in a background thread."""
     app.state.consumer = None
     app.state.scheduler = None
 
-    def _background_init():
-        """Run all heavy init in a single background thread."""
+    def _background_init() -> None:
+        global catalog_store
+        global user_store
+        global popularity_store
+        global scoring_engine
+        global redis_client
+
         try:
-            model_manager = scoring_engine.model_manager
-            if RECOMMENDATION_CONSUMER_ENABLED:
-                consumer = EventConsumer(
-                    user_store, popularity_store, catalog_store,
-                    model_manager=model_manager,
+            catalog_store = CatalogStore()
+            catalog_store.ping()
+
+            user_store = UserProfileStore()
+            popularity_store = ItemPopularityStore()
+            scoring_engine = ScoringEngine(
+                user_store,
+                popularity_store,
+                catalog_store,
+            )
+
+            try:
+                redis_client = redis.from_url(
+                    REDIS_URL,
+                    decode_responses=True,
+                    socket_connect_timeout=10,
+                    socket_timeout=10,
                 )
-                app.state.consumer = consumer
+                redis_client.ping()
+                logger.info("Redis client initialized")
+            except Exception:
+                redis_client = None
+                logger.exception("Redis unavailable; recommendation cache disabled")
+
+            model_manager = scoring_engine.model_manager
+
+            if RECOMMENDATION_CONSUMER_ENABLED:
                 consumer_thread = threading.Thread(
-                    target=_start_consumer, args=(consumer,), daemon=True,
+                    target=_start_consumer,
+                    args=(app,),
+                    name="rabbitmq-consumer",
                 )
                 consumer_thread.start()
             else:
                 logger.info("Recommendation RabbitMQ consumer disabled by environment")
 
-            # 2. Model scheduler
-            drift_monitor = DriftMonitor(catalog_store, model_manager, scoring_engine)
+            drift_monitor = DriftMonitor(
+                catalog_store,
+                model_manager,
+                scoring_engine,
+            )
             scheduler = ModelScheduler(
                 model_manager,
                 catalog_store=catalog_store,
@@ -159,48 +205,106 @@ async def lifespan(app: FastAPI):
 
             logger.info("Background init complete")
 
-        except Exception as e:
-            logger.error(f"Background init failed: {e}")
+        except Exception:
+            logger.exception("Background init failed")
 
-    # Spawn background init THEN yield immediately
-    init_thread = threading.Thread(target=_background_init, daemon=True)
+            _close_store_safely(user_store, "UserProfileStore")
+            _close_store_safely(popularity_store, "ItemPopularityStore")
+            _close_store_safely(catalog_store, "CatalogStore")
+
+            catalog_store = None
+            user_store = None
+            popularity_store = None
+            scoring_engine = None
+            redis_client = None
+
+    init_thread = threading.Thread(
+        target=_background_init,
+        daemon=True,
+        name="recommendation-background-init",
+    )
     init_thread.start()
 
-    logger.info("Recommendation service started (port bound, init in background)")
+    logger.info("Recommendation service started; port binding is not blocked by init")
 
     yield
 
-    # Shutdown
-    if app.state.scheduler:
-        app.state.scheduler.stop()
-    if app.state.consumer:
+    scheduler = getattr(app.state, "scheduler", None)
+    if scheduler:
         try:
-            app.state.consumer.close()
+            scheduler.stop()
         except Exception as e:
-            logger.warning(f"Consumer close error (ignored): {e}")
-    user_store.close()
-    popularity_store.close()
-    catalog_store.close()
+            logger.warning("Scheduler stop error ignored: %s", e)
+
+    consumer = getattr(app.state, "consumer", None)
+    if consumer:
+        try:
+            consumer.close()
+        except Exception as e:
+            logger.warning("Consumer close error ignored: %s", e)
+
+    _close_store_safely(user_store, "UserProfileStore")
+    _close_store_safely(popularity_store, "ItemPopularityStore")
+    _close_store_safely(catalog_store, "CatalogStore")
+
+    blocking_executor.shutdown(wait=False, cancel_futures=True)
     logger.info("Recommendation service shutdown")
 
 
-def _start_consumer(consumer: EventConsumer) -> None:
-    """Run the RabbitMQ consumer in a blocking loop.
+def _start_consumer(app: FastAPI) -> None:
+    """Run RabbitMQ consumer independently from HTTP readiness."""
+    if not RECOMMENDATION_CONSUMER_ENABLED:
+        return
 
-    Intended to be executed inside a daemon thread so it does not block
-    the main async event loop.
+    retry_delay = 5
 
-    Args:
-        consumer: Fully configured ``EventConsumer`` instance.
-    """
-    try:
-        consumer.connect()
-        consumer.start_consuming()
-    except Exception as e:
-        logger.error(f"Consumer failed: {e}")
+    while True:
+        consumer = None
 
+        try:
+            if (
+                user_store is None
+                or popularity_store is None
+                or catalog_store is None
+                or scoring_engine is None
+            ):
+                logger.warning(
+                    "Recommendation runtime not ready. Retry consumer in %ss...",
+                    retry_delay,
+                )
+                time.sleep(retry_delay)
+                retry_delay = min(retry_delay * 2, 60)
+                continue
 
+            consumer = EventConsumer(
+                user_store,
+                popularity_store,
+                catalog_store,
+                model_manager=scoring_engine.model_manager,
+            )
 
+            consumer.connect()
+            app.state.consumer = consumer
+            retry_delay = 5
+            consumer.start_consuming()
+
+        except Exception:
+            logger.exception(
+                "Consumer crashed. Restarting in %ss...",
+                retry_delay,
+            )
+
+        finally:
+            app.state.consumer = None
+
+            if consumer:
+                try:
+                    consumer.close()
+                except Exception:
+                    pass
+
+        time.sleep(retry_delay)
+        retry_delay = min(retry_delay * 2, 60)
 
 
 app = FastAPI(
@@ -209,20 +313,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
-    """Middleware that propagates an ``x-correlation-id`` header.
-
-    If the incoming request carries the header it is reused; otherwise a
-    new UUID v4 is generated.  The ID is stored on ``request.state`` and
-    echoed back in the response headers.
-    """
-
     async def dispatch(self, request: Request, call_next):
         correlation_id = request.headers.get("x-correlation-id") or str(uuid.uuid4())
         request.state.correlation_id = correlation_id
+
         response = await call_next(request)
         response.headers["x-correlation-id"] = correlation_id
+
         return response
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -232,44 +333,37 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization", "x-correlation-id"],
     expose_headers=["x-correlation-id"],
 )
-
 app.add_middleware(CorrelationIdMiddleware)
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """Catch-all handler that logs unhandled exceptions with their correlation ID.
-
-    Args:
-        request: The incoming HTTP request.
-        exc: The unhandled exception.
-
-    Returns:
-        A 500 ``JSONResponse`` containing the correlation ID.
-    """
     correlation_id = getattr(request.state, "correlation_id", "unknown")
-    logger.error(f"[{correlation_id}] Unhandled exception: {exc}", exc_info=True)
+    logger.error("[%s] Unhandled exception: %s", correlation_id, exc, exc_info=True)
+
     return JSONResponse(
         status_code=500,
-        content={"message": "Internal server error", "correlationId": correlation_id}
+        content={
+            "message": "Internal server error",
+            "correlationId": correlation_id,
+        },
     )
 
-
-# ─── Health endpoints  ───────────────────────────────────────────────────
 
 health_router = APIRouter(prefix="/v1/health", tags=["health"])
 
 
 @health_router.get("", response_model=HealthResponse)
 async def health():
-    """Return a lightweight service health report.
+    try:
+        _require_runtime()
+        status = "healthy"
+    except HTTPException:
+        status = "starting"
 
-    This endpoint is called through the gateway's public recommendation health
-    proxy, so it must not perform MongoDB aggregate scans.
-    Deep dependency checks belong in ``/readiness`` or operational stats routes.
-    """
     return {
-        "status": "healthy",
-        "phase": "unknown",
+        "status": status,
+        "phase": scoring_engine.phase if scoring_engine else "starting",
         "totalInteractions": -1,
         "totalUsers": -1,
         "totalItems": -1,
@@ -278,72 +372,82 @@ async def health():
 
 @health_router.get("/liveness")
 async def liveness():
-    """Lightweight liveness probe.
-
-    Always returns ``{"status": "ok"}`` with a UTC timestamp.  Used by the
-    gateway's ``GatewayHealthController`` to verify the process is alive.
-
-    Returns:
-        dict: ``{"status": "ok", "timestamp": "..."}``.
-    """
-    return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+    return {
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @health_router.get("/readiness")
 async def readiness():
-    """Readiness probe — verifies MongoDB connectivity.
+    try:
+        catalog, _, _, _ = _require_runtime()
+    except HTTPException:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "starting"},
+        )
 
-    Sends a ``ping`` command to the MongoDB server.  Returns 200 on success
-    or 503 (Service Unavailable) if the database is unreachable.
-
-    Returns:
-        dict | JSONResponse: ``{"status": "ok"}`` on success, or a 503
-        response with the error detail.
-    """
     try:
         result = await _run_blocking_with_timeout(
             "readiness check",
-            catalog_store._db.command,
-            "ping",
+            catalog.ping,
             timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
         )
+
         if isinstance(result, JSONResponse):
             return result
-        return {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+        return {
+            "status": "ok",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+
     except Exception as e:
-        logger.error(f"Readiness check failed: {e}")
-        return JSONResponse(status_code=503, content={"status": "unavailable", "error": str(e)})
+        logger.error("Readiness check failed: %s", e)
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unavailable",
+                "error": str(e),
+            },
+        )
 
 
 app.include_router(health_router)
 
 
-# ─── Recommendation endpoints ───────────────────────────────────────────────────
-
 rec_router = APIRouter(prefix="/v1/recommendation", tags=["recommendation"])
 
 
 def _with_catalog_display(items: list[dict]) -> list[dict]:
-    """Attach lightweight display fields from the local recommendation catalog."""
-    catalog_by_id = catalog_store.get_items_by_ids([item.get("itemId", "") for item in items])
+    catalog, _, _, _ = _require_runtime()
+
+    catalog_by_id = catalog.get_items_by_ids(
+        [item.get("itemId", "") for item in items],
+    )
+
     enriched = []
+
     for item in items:
-        catalog = catalog_by_id.get(item.get("itemId"), {})
-        enriched.append({
-            **item,
-            "display": {
-                "title": catalog.get("title", ""),
-                "slug": catalog.get("slug", ""),
-                "itemType": catalog.get("itemType", item.get("itemType", "")),
-                "majorId": catalog.get("majorId", ""),
-                "courseId": catalog.get("courseId", ""),
+        catalog_item = catalog_by_id.get(item.get("itemId"), {})
+        enriched.append(
+            {
+                **item,
+                "display": {
+                    "title": catalog_item.get("title", ""),
+                    "slug": catalog_item.get("slug", ""),
+                    "itemType": catalog_item.get("itemType", item.get("itemType", "")),
+                    "majorId": catalog_item.get("majorId", ""),
+                    "courseId": catalog_item.get("courseId", ""),
+                },
             },
-        })
+        )
+
     return enriched
 
 
 async def _attach_catalog_display(items: list[dict]) -> list[dict]:
-    """Best-effort display enrichment that does not block core recommendation output."""
     if not items:
         return items
 
@@ -354,9 +458,11 @@ async def _attach_catalog_display(items: list[dict]) -> list[dict]:
         timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
         unavailable_status=200,
     )
+
     if isinstance(result, JSONResponse):
         logger.warning("Catalog display lookup unavailable; returning scored items only")
         return items
+
     return result
 
 
@@ -364,70 +470,62 @@ async def _attach_catalog_display(items: list[dict]) -> list[dict]:
 async def recommend(
     userId: str = Query(..., description="User ID to get recommendations for"),
     limit: int = Query(10, ge=1),
-    contentType: str | None = Query(None, description="RESOURCE | TUTORIAL | RESOURCE_COLLECTION | TUTORIAL_COLLECTION"),
+    contentType: str | None = Query(
+        None,
+        description="RESOURCE | TUTORIAL | RESOURCE_COLLECTION | TUTORIAL_COLLECTION",
+    ),
 ):
-    """Generate personalised content recommendations for a user.
-
-    The result is cached in Redis (key ``rec:{userId}:{contentType}:{limit}``)
-    for ``RECOMMENDATION_CACHE_TTL`` seconds.  On a cache miss the scoring
-    engine is invoked (ML or rule-based depending on phase/tier).
-
-    Args:
-        userId: Unique identifier of the requesting user.
-        limit: Maximum number of items to return (default 10). API gateway PBAC
-            enforces plan-specific limits for authenticated clients.
-        contentType: Optional filter — one of ``RESOURCE``, ``TUTORIAL``,
-            ``RESOURCE_COLLECTION``, ``TUTORIAL_COLLECTION``.
-
-    Returns:
-        RecommendResponse: Recommendations with scores, strategy, and phase.
-    """
-
-
-    # Check Redis cache
+    _, _, _, engine = _require_runtime()
+    cache = redis_client
     cache_key = f"rec:{userId}:{contentType}:{limit}"
-    try:
-        cached = await _run_blocking_with_timeout(
-            "recommendation cache read",
-            redis_client.get,
-            cache_key,
-            timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
-        )
-        if isinstance(cached, JSONResponse):
-            cached = None
-        if cached:
-            result = json.loads(cached)
-            result["recommendations"] = await _attach_catalog_display(result.get("recommendations", []))
-            return result
-    except Exception as e:
-        logger.warning(f"Redis get failed: {e}")
 
-    # Generate recommendations
+    if cache:
+        try:
+            cached = await _run_blocking_with_timeout(
+                "recommendation cache read",
+                cache.get,
+                cache_key,
+                timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
+            )
+
+            if not isinstance(cached, JSONResponse) and cached:
+                result = json.loads(cached)
+                result["recommendations"] = await _attach_catalog_display(
+                    result.get("recommendations", []),
+                )
+                return result
+
+        except Exception as e:
+            logger.warning("Redis get failed: %s", e)
+
     result = await _run_blocking_with_timeout(
         "recommendation scoring",
-        scoring_engine.recommend,
+        engine.recommend,
         userId,
         limit,
         contentType,
         timeout=RECOMMENDATION_TIMEOUT_SECONDS,
     )
+
     if isinstance(result, JSONResponse):
         return result
 
-    result["recommendations"] = await _attach_catalog_display(result.get("recommendations", []))
+    result["recommendations"] = await _attach_catalog_display(
+        result.get("recommendations", []),
+    )
 
-    # Cache result
-    try:
-        await _run_blocking_with_timeout(
-            "recommendation cache write",
-            redis_client.setex,
-            cache_key,
-            RECOMMENDATION_CACHE_TTL,
-            json.dumps(result),
-            timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
-        )
-    except Exception as e:
-        logger.warning(f"Redis set failed: {e}")
+    if cache:
+        try:
+            await _run_blocking_with_timeout(
+                "recommendation cache write",
+                cache.setex,
+                cache_key,
+                RECOMMENDATION_CACHE_TTL,
+                json.dumps(result),
+                timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
+            )
+        except Exception as e:
+            logger.warning("Redis set failed: %s", e)
 
     return result
 
@@ -438,28 +536,16 @@ async def trending(
     days: int = Query(7, ge=1, le=30),
     limit: int = Query(10, ge=1),
 ):
-    """Return trending content items ranked by aggregate popularity.
-
-    Items are sorted by ``trendingScore`` from the popularity store.  The
-    response aggregates view, like, and purchase counts per item.
-
-    Args:
-        majorId: Optional major to scope the trending list.
-        days: Trend window in days (1–30, default 7).
-        limit: Maximum items to return (default 10).
-
-    Returns:
-        TrendingResponse: Trending items with interaction totals and ratings.
-    """
-
+    _, _, popularity, _ = _require_runtime()
 
     items = await _run_blocking_with_timeout(
         "trending lookup",
-        popularity_store.get_popular_items,
+        popularity.get_popular_items,
         majorId,
         limit,
         timeout=RECOMMENDATION_TIMEOUT_SECONDS,
     )
+
     if isinstance(items, JSONResponse):
         return items
 
@@ -467,11 +553,13 @@ async def trending(
         {
             "itemId": item["itemId"],
             "itemType": item.get("itemType", ""),
-            "totalInteractions": sum([
-                item.get("stats", {}).get("viewCount", 0),
-                item.get("stats", {}).get("likeCount", 0),
-                item.get("stats", {}).get("purchaseCount", 0),
-            ]),
+            "totalInteractions": sum(
+                [
+                    item.get("stats", {}).get("viewCount", 0),
+                    item.get("stats", {}).get("likeCount", 0),
+                    item.get("stats", {}).get("purchaseCount", 0),
+                ],
+            ),
             "avgRating": item.get("avgRating", 0.0),
         }
         for item in items
@@ -484,21 +572,13 @@ async def trending(
     }
 
 
-# ─── ML Model Management ───────────────────────────────────────────────────────
-
 def _notify_training_result(result: dict) -> None:
-    """Publish a training result notification to ``notification-service`` via RabbitMQ.
-
-    Publishes to exchange ``notification.events`` with routing key
-    ``recommendation.model.trained``.  The payload includes training metrics,
-    evaluation scores, and model version.
-
-    Args:
-        result: Dictionary returned by ``Trainer.train()`` containing keys
-            such as ``status``, ``output_dir``, ``eval_final``, etc.
-    """
     import pika
     from config import RABBITMQ_URL
+
+    if not RABBITMQ_URL:
+        logger.warning("RABBITMQ_URL not configured; skip training notification")
+        return
 
     try:
         params = pika.URLParameters(RABBITMQ_URL)
@@ -549,12 +629,17 @@ def _notify_training_result(result: dict) -> None:
             exchange="notification.events",
             routing_key="recommendation.model.trained",
             body=json.dumps(message),
-            properties=pika.BasicProperties(content_type="application/json", delivery_mode=2),
+            properties=pika.BasicProperties(
+                content_type="application/json",
+                delivery_mode=2,
+            ),
         )
+
         conn.close()
-        logger.info(f"Training notification published: status={status}, version={version}")
+        logger.info("Training notification published: status=%s, version=%s", status, version)
+
     except Exception as e:
-        logger.error(f"Failed to publish training notification: {e}")
+        logger.error("Failed to publish training notification: %s", e)
 
 
 @rec_router.post("/model/train")
@@ -562,138 +647,134 @@ async def train_model(
     epochs: int = Query(10, ge=1, le=100),
     batch_size: int = Query(256, ge=32, le=2048),
 ):
-    """Trigger a full Two-Tower model training run in a background thread.
+    _, _, _, engine = _require_runtime()
 
-    The endpoint returns immediately with ``training_started``.  On
-    completion the model is hot-reloaded and an admin notification is sent
-    via RabbitMQ regardless of outcome.
-
-    Args:
-        epochs: Number of training epochs (1–100, default 10).
-        batch_size: Mini-batch size (32–2048, default 256).
-
-    Returns:
-        dict: ``{"status": "training_started", "epochs": ..., "batch_size": ...}``.
-    """
-    import threading
     from ml.trainer import Trainer
+
+    def _notify_async(payload: dict) -> None:
+        threading.Thread(
+            target=_notify_training_result,
+            args=(payload,),
+            daemon=True,
+            name="training-notification",
+        ).start()
 
     def _train():
         trainer = Trainer()
+
         try:
             result = trainer.train(epochs=epochs, batch_size=batch_size)
+
             if result.get("status") == "completed":
-                scoring_engine.reload_model()
-                logger.info(f"Model trained and reloaded: {result}")
+                engine.reload_model()
+                logger.info("Model trained and reloaded: %s", result)
             else:
-                logger.warning(f"Training skipped: {result}")
-            # Notify admin regardless of outcome
-            _notify_training_result(result)
+                logger.warning("Training skipped: %s", result)
+
+            _notify_async(result)
+
         except Exception as e:
-            logger.error(f"Training failed: {e}")
-            _notify_training_result({
-                "status": "error",
-                "reason": str(e),
-            })
+            logger.error("Training failed: %s", e)
+            _notify_async(
+                {
+                    "status": "error",
+                    "reason": str(e),
+                },
+            )
+
         finally:
             trainer.close()
 
-    thread = threading.Thread(target=_train, daemon=True)
+    thread = threading.Thread(
+        target=_train,
+        daemon=True,
+        name="model-training",
+    )
     thread.start()
-    return {"status": "training_started", "epochs": epochs, "batch_size": batch_size}
+
+    return {
+        "status": "training_started",
+        "epochs": epochs,
+        "batch_size": batch_size,
+    }
 
 
 @rec_router.post("/model/reload")
 async def reload_model():
-    """Hot-reload the latest trained model artifacts without restarting.
+    _, _, _, engine = _require_runtime()
 
-    Delegates to ``ScoringEngine.reload_model()`` which loads the newest
-    version from the artifacts directory.
-
-    Returns:
-        dict: ``{"status": "loaded" | "no_model", "version": ...}``.
-    """
     loaded = await _run_blocking_with_timeout(
         "model reload",
-        scoring_engine.reload_model,
+        engine.reload_model,
         timeout=RECOMMENDATION_TIMEOUT_SECONDS,
     )
+
     if isinstance(loaded, JSONResponse):
         return loaded
+
     return {
         "status": "loaded" if loaded else "no_model",
-        "version": scoring_engine.model_manager.active_version,
+        "version": engine.model_manager.active_version,
     }
 
 
 @rec_router.get("/model/versions")
 async def model_versions():
-    """List all available model versions stored in the artifacts directory.
+    _, _, _, engine = _require_runtime()
 
-    Returns:
-        dict: ``{"activeVersion": ..., "versions": [...]}`` where each
-        version entry includes accuracy, loss, and timestamp.
-    """
     versions = await _run_blocking_with_timeout(
         "model versions lookup",
-        scoring_engine.model_manager.list_versions,
+        engine.model_manager.list_versions,
         timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
     )
+
     if isinstance(versions, JSONResponse):
         return versions
+
     return {
-        "activeVersion": scoring_engine.model_manager.active_version,
+        "activeVersion": engine.model_manager.active_version,
         "versions": versions,
     }
 
 
 @rec_router.get("/model/info")
 async def model_info():
-    """Return diagnostic information for the currently active model.
+    _, _, _, engine = _require_runtime()
 
-    Includes embedding dimension, temperature, FAISS index size, and the
-    full ``metrics.json`` from the active model version.
-
-    Returns:
-        dict: Model metadata and runtime state.
-    """
     return await _run_blocking_with_timeout(
         "model info lookup",
-        scoring_engine.model_manager.get_model_info,
+        engine.model_manager.get_model_info,
         timeout=HEALTH_CHECK_TIMEOUT_SECONDS,
     )
 
 
 @rec_router.post("/model/rebuild-index")
 async def rebuild_index():
-    """Force-rebuild the FAISS ANN index from the current catalog.
+    catalog, _, _, engine = _require_runtime()
 
-    Fetches all items from the catalog store, computes item-tower
-    embeddings, and replaces the in-memory FAISS index.
-
-    Returns:
-        dict: ``{"status": "rebuilt", "items_indexed": N}``.
-    """
     def _rebuild() -> int:
-        items = catalog_store.get_all_items()
-        return scoring_engine.model_manager.rebuild_index(items)
+        items = catalog.get_all_items()
+        return engine.model_manager.rebuild_index(items)
 
     count = await _run_blocking_with_timeout(
         "model index rebuild",
         _rebuild,
         timeout=RECOMMENDATION_TIMEOUT_SECONDS,
     )
+
     if isinstance(count, JSONResponse):
         return count
-    return {"status": "rebuilt", "items_indexed": count}
+
+    return {
+        "status": "rebuilt",
+        "items_indexed": count,
+    }
 
 
 app.include_router(rec_router)
 
 
-
-
-
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host=HOST, port=PORT, access_log=False)

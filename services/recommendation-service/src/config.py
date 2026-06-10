@@ -18,7 +18,8 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/recommendation_db"
 MONGO_DB_NAME = "recommendation_db"
 
 # ─── RabbitMQ ───────────────────────────────────────────────────────────────────
-RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://admin:admin123@localhost:5672/microservices")
+RECOMMENDATION_CONSUMER_ENABLED = os.getenv("RECOMMENDATION_CONSUMER_ENABLED", "false").lower() == "true"
+RABBITMQ_URL = os.getenv("RABBITMQ_URL")
 INTERACTION_QUEUE = os.getenv("INTERACTION_QUEUE", "recommendation.events")
 
 # ─── Redis ──────────────────────────────────────────────────────────────────────
@@ -69,7 +70,7 @@ RETRAIN_INTERVAL_HOURS = int(os.getenv("RETRAIN_INTERVAL_HOURS", "168"))  # week
 OOV_RETRAIN_THRESHOLD = float(os.getenv("OOV_RETRAIN_THRESHOLD", "0.20"))
 
 # ─── Server ─────────────────────────────────────────────────────────────────────
-HOST = os.getenv("HOST", "::")
-PORT = int(os.getenv("PORT", "3009"))
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8080"))
 _allowed_origins_raw = os.getenv("ALLOWED_ORIGINS", "*")
 ALLOWED_ORIGINS = ["*"] if _allowed_origins_raw == "*" else [o.strip() for o in _allowed_origins_raw.split(",")]

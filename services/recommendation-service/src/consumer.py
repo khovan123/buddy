@@ -77,6 +77,10 @@ class EventConsumer:
         rag-service receive the same events independently.
         Sets ``prefetch_count=50`` for flow control.
         """
+        if not RABBITMQ_URL:
+          raise RuntimeError(
+            "RABBITMQ_URL not configured but consumer is enabled"
+          )
         params = pika.URLParameters(RABBITMQ_URL)
         self._connection = pika.BlockingConnection(params)
         self._channel = self._connection.channel()

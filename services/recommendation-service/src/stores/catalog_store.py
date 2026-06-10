@@ -215,3 +215,7 @@ class CatalogStore:
     def close(self) -> None:
         """Close the underlying MongoDB connection."""
         self._client.close()
+        
+    def ping(self) -> dict:
+        """Ping MongoDB to verify readiness."""
+        return self._db.command("ping")
