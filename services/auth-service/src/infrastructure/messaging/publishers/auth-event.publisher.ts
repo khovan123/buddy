@@ -5,16 +5,20 @@ import {
   EXCHANGES,
   getCorrelationId,
   mergeTraceContextIntoHeaders,
+  RABBITMQ_CONNECTION,
 } from '@libs/common';
 import { BaseEvent } from '@libs/contracts';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 /** Represents the  rabbit m q publisher component. */
 @Injectable()
 export class AuthEventPublisher {
   private readonly logger = new AppLogger(AuthEventPublisher.name);
 
-  constructor(private readonly amqpConnectionManager: AmqpConnectionManager) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnectionManager: AmqpConnectionManager,
+  ) {}
 
   /**
    * Publish domain event lên auth.events exchange.

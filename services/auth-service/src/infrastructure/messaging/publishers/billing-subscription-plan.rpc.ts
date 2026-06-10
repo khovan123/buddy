@@ -2,6 +2,7 @@ import { AmqpConnectionManager } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   EXCHANGES,
+  RABBITMQ_CONNECTION,
   attachTraceContextToMessage,
   ensureCorrelationId,
   getCorrelationId,
@@ -12,14 +13,17 @@ import {
   type BillingSubscriptionPlanRpcResponse,
   type SubscriptionPlanDetails,
 } from '@libs/contracts';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 /** RabbitMQ RPC publisher for billing subscription-plan lookups. */
 @Injectable()
 export class BillingSubscriptionPlanPublisher {
   private readonly logger = new AppLogger(BillingSubscriptionPlanPublisher.name);
 
-  constructor(private readonly amqpConnectionManager: AmqpConnectionManager) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnectionManager: AmqpConnectionManager,
+  ) {}
 
   async resolveUserPlanDetails(
     userId: string,

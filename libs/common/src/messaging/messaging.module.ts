@@ -1,6 +1,8 @@
-import { RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
+import { AmqpConnection, RabbitMQModule } from '@golevelup/nestjs-rabbitmq';
 import { Global, Module } from '@nestjs/common';
 import { EXCHANGES } from '../config/rabbitmq.config';
+
+export const RABBITMQ_CONNECTION = Symbol('RABBITMQ_CONNECTION');
 
 @Global()
 @Module({
@@ -36,6 +38,12 @@ import { EXCHANGES } from '../config/rabbitmq.config';
       },
     }),
   ],
-  exports: [RabbitMQModule],
+  providers: [
+    {
+      provide: RABBITMQ_CONNECTION,
+      useExisting: AmqpConnection,
+    },
+  ],
+  exports: [RabbitMQModule, RABBITMQ_CONNECTION],
 })
 export class MessagingModule {}
