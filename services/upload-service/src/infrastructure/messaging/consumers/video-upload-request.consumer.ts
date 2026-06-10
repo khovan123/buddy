@@ -1,16 +1,16 @@
+import { AmqpConnection, Nack, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   CORRELATION_ID_HEADER,
   EXCHANGES,
   QUEUES,
+  RABBITMQ_CONNECTION,
   ensureCorrelationId,
   runWithCorrelationId,
 } from '@libs/common';
 import { UPLOAD_ROUTINGKEYS, VideoUploadRequestEvent } from '@libs/contracts';
-import { Controller } from '@nestjs/common';
+import { Controller, Inject } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { RabbitSubscribe, Nack } from '@golevelup/nestjs-rabbitmq';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import type { ConsumeMessage } from 'amqplib';
 import { ProcessVideoCommand } from '../../../application/commands/process-video.command';
 
@@ -23,6 +23,7 @@ export class VideoUploadRequestConsumer {
 
   constructor(
     private readonly commandBus: CommandBus,
+    @Inject(RABBITMQ_CONNECTION)
     private readonly amqpConnection: AmqpConnection,
   ) {}
 

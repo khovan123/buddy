@@ -539,11 +539,23 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build \
-            --progress=plain \
-            --build-arg SERVICE_NAME=$SERVICE \
-            -t $IMAGE \
-            .
+          if [[ -f "services/$SERVICE/Dockerfile" ]]; then
+            echo "Using service Dockerfile: services/$SERVICE/Dockerfile"
+
+            docker build \
+              --progress=plain \
+              -f services/$SERVICE/Dockerfile \
+              -t $IMAGE \
+              .
+          else
+            echo "Using root Dockerfile for Node/NestJS service"
+
+            docker build \
+              --progress=plain \
+              --build-arg SERVICE_NAME=$SERVICE \
+              -t $IMAGE \
+              .
+          fi
 
       - name: Push Docker image
         run: |
