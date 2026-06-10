@@ -1,6 +1,8 @@
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   EXCHANGES,
+  RABBITMQ_CONNECTION,
   attachTraceContextToMessage,
   ensureCorrelationId,
   getCorrelationId,
@@ -17,15 +19,17 @@ import {
   UploadHistoryItemRpcResponseDto,
   UploadThumbnailEvent,
 } from '@libs/contracts';
-import { Injectable } from '@nestjs/common';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { Inject, Injectable } from '@nestjs/common';
 
 /** Represents the  storage broker publisher component. */
 @Injectable()
 export class StorageBrokerPublisher {
   private readonly logger = new AppLogger(StorageBrokerPublisher.name);
 
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
 
   // Đổi kiểu tham số thành GetPresignedUrlEvent để tận dụng type-checking
   /**

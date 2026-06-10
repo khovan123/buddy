@@ -5,9 +5,10 @@ import {
   EXCHANGES,
   getCorrelationId,
   mergeTraceContextIntoHeaders,
+  RABBITMQ_CONNECTION,
 } from '@libs/common';
 import { BaseEvent } from '@libs/contracts';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import type { ISagaPublisher } from '../../../domain/repositories/saga-publisher.interface';
 
 /**
@@ -18,7 +19,10 @@ import type { ISagaPublisher } from '../../../domain/repositories/saga-publisher
 export class CompensationPublisher implements ISagaPublisher {
   private readonly logger = new AppLogger(CompensationPublisher.name);
 
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
 
   async publish(event: BaseEvent): Promise<void> {
     const routingKey = event.routingKey;

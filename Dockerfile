@@ -3,13 +3,16 @@ FROM node:22-alpine AS deps
 WORKDIR /app
 
 # Improve npm reliability in CI/Docker
-RUN npm config set fetch-retries 5 \
-  && npm config set fetch-retry-mintimeout 20000 \
-  && npm config set fetch-retry-maxtimeout 120000 \
-  && npm config set fetch-timeout 300000
+RUN npm config set registry https://registry.npmjs.org/ \
+  && npm config set fetch-retries 10 \
+  && npm config set fetch-retry-factor 2 \
+  && npm config set fetch-retry-mintimeout 30000 \
+  && npm config set fetch-retry-maxtimeout 180000 \
+  && npm config set fetch-timeout 600000 \
+  && npm config set maxsockets 5
 
 # Install turbo globally
-RUN npm install -g turbo --no-audit
+RUN npm install -g turbo --no-audit --no-fund
 
 # Copy workspace manifests for layer caching
 COPY package.json package-lock.json turbo.json ./
@@ -20,29 +23,20 @@ COPY libs/testing/package.json ./libs/testing/
 ARG SERVICE_NAME
 COPY services/${SERVICE_NAME}/package.json ./services/${SERVICE_NAME}/
 
-# Install only production deps from root lockfile/workspaces
-RUN npm ci --omit=dev --legacy-peer-deps --no-audit
+# Install production deps from root lockfile/workspaces
+RUN npm ci --omit=dev --legacy-peer-deps --no-audit --no-fund
 
 # ─── Stage 2: builder ─────────────────────────────────────────────
-FROM node:22-alpine AS builder
+FROM deps AS builder
 WORKDIR /app
-
-# Improve npm reliability in CI/Docker
-RUN npm config set fetch-retries 5 \
-  && npm config set fetch-retry-mintimeout 20000 \
-  && npm config set fetch-retry-maxtimeout 120000 \
-  && npm config set fetch-timeout 300000
-
-# Install turbo globally
-RUN npm install -g turbo --no-audit
 
 # Copy everything
 COPY . .
 
 ARG SERVICE_NAME
 
-# Install all deps including devDeps for build
-RUN npm ci --legacy-peer-deps --no-audit
+# Install devDeps for build, reusing deps layer/cache
+RUN npm ci --legacy-peer-deps --no-audit --no-fund
 
 # Build shared libs first, then the service
 RUN turbo run build \

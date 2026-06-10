@@ -6,7 +6,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { InteractionEntity } from '../../../domain/entities/interaction.entity';
 import type { IInteractionRepository } from '../../../domain/repositories/interaction.repository.interface';
 import { INTERACTION_REPOSITORY } from '../../../domain/repositories/tokens';
-import { InteractionPublisher } from '../../../infrastructure/messaging/interaction.publisher';
+import { InteractionPublisher } from '../../../infrastructure/messaging/publishers/interaction.publisher';
 import { InteractionStreamService } from '../../interactions/interaction-stream.service';
 import { TrackInteractionCommand } from '../track-interaction.command';
 

@@ -1,17 +1,20 @@
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
-import { AppLogger, EXCHANGES } from '@libs/common';
+import { AppLogger, EXCHANGES, RABBITMQ_CONNECTION } from '@libs/common';
 import {
   INTERACTION_ROUTINGKEYS,
   InteractionPayload,
   InteractionTrackedEvent,
 } from '@libs/contracts';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class InteractionPublisher {
   private readonly logger = new AppLogger(InteractionPublisher.name);
 
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
 
   /** Publish interaction event to RabbitMQ for recommendation-service consumption. */
   async publish(payload: InteractionPayload): Promise<void> {

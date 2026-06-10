@@ -1,13 +1,14 @@
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   EXCHANGES,
+  RABBITMQ_CONNECTION,
   attachTraceContextToMessage,
   ensureCorrelationId,
   getCorrelationId,
 } from '@libs/common';
 import { ContentValidationItemType, ValidateContentStatusEvent } from '@libs/contracts';
-import { Injectable } from '@nestjs/common';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { Inject, Injectable } from '@nestjs/common';
 import { IContentValidator } from '../../../domain/services/content-validator.interface';
 
 type ValidateContentStatusResponse = {
@@ -19,7 +20,10 @@ type ValidateContentStatusResponse = {
 export class ContentValidationRpcPublisher implements IContentValidator {
   private readonly logger = new AppLogger(ContentValidationRpcPublisher.name);
 
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
 
   async validateContentStatus(
     itemId: string,

@@ -1,6 +1,8 @@
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   EXCHANGES,
+  RABBITMQ_CONNECTION,
   REDIS_KEYS,
   attachTraceContextToMessage,
   ensureCorrelationId,
@@ -9,7 +11,6 @@ import {
 import { GetUsersProfilesEvent, UserProfileRpcResponseDto } from '@libs/contracts';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import type { Cache } from 'cache-manager';
 
 /** Cache TTL for user profiles in milliseconds (10 minutes). */
@@ -20,6 +21,7 @@ export class UserServicePublisher {
   private readonly logger = new AppLogger(UserServicePublisher.name);
 
   constructor(
+    @Inject(RABBITMQ_CONNECTION)
     private readonly amqpConnection: AmqpConnection,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
   ) {}

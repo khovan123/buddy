@@ -1,13 +1,16 @@
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
-import { AppLogger, EXCHANGES } from '@libs/common';
+import { AppLogger, EXCHANGES, RABBITMQ_CONNECTION } from '@libs/common';
 import { INTERACTION_ROUTINGKEYS, type ForumMentionCreatedPayload } from '@libs/contracts';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class ForumNotificationPublisher {
   private readonly logger = new AppLogger(ForumNotificationPublisher.name);
 
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
 
   async publishMention(payload: ForumMentionCreatedPayload): Promise<void> {
     try {

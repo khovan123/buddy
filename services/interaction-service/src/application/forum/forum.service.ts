@@ -2,22 +2,22 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
+import { ForumNotificationPublisher } from '../../infrastructure/messaging/publishers/forum-notification.publisher';
 import {
-  ForumMessage,
-  type ForumMessageDocument,
+    ForumMessage,
+    type ForumMessageDocument,
 } from '../../infrastructure/persistence/mongo/schemas/forum-message.schema';
 import {
-  ForumTopic,
-  type ForumTopicDocument,
+    ForumTopic,
+    type ForumTopicDocument,
 } from '../../infrastructure/persistence/mongo/schemas/forum-topic.schema';
-import { ForumNotificationPublisher } from '../../infrastructure/messaging/forum-notification.publisher';
 import { ForumStreamService } from './forum-stream.service';
 import type {
-  ForumBootstrapView,
-  ForumMentionView,
-  ForumMessageView,
-  ForumTopicReactionType,
-  ForumTopicView,
+    ForumBootstrapView,
+    ForumMentionView,
+    ForumMessageView,
+    ForumTopicReactionType,
+    ForumTopicView,
 } from './forum.types';
 
 type CreateTopicInput = {

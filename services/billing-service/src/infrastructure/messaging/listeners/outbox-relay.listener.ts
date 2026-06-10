@@ -1,7 +1,7 @@
-import { OUTBOX_EVENTS } from '@libs/common';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { OnEvent } from '@nestjs/event-emitter';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { OUTBOX_EVENTS, RABBITMQ_CONNECTION } from '@libs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { PrismaService } from '../../persistence/prisma/prisma.service';
 
 /**
@@ -23,6 +23,7 @@ export class OutboxRelayService implements OnModuleInit {
 
   constructor(
     private readonly prisma: PrismaService,
+    @Inject(RABBITMQ_CONNECTION)
     private readonly amqpConnection: AmqpConnection,
   ) {}
 

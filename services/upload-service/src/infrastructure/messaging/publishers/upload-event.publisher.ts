@@ -1,20 +1,24 @@
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   CORRELATION_ID_HEADER,
   EXCHANGES,
   getCorrelationId,
   mergeTraceContextIntoHeaders,
+  RABBITMQ_CONNECTION,
 } from '@libs/common';
 import { BaseEvent, FileProcessedEvent } from '@libs/contracts';
-import { Injectable } from '@nestjs/common';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { Inject, Injectable } from '@nestjs/common';
 
 /** Represents the  upload event publisher component. */
 @Injectable()
 export class UploadEventPublisher {
   private readonly logger = new AppLogger(UploadEventPublisher.name);
 
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
 
   /**
    * Executes the publish operation.

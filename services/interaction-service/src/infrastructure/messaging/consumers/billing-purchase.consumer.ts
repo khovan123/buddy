@@ -2,16 +2,16 @@ import { Nack, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { AppLogger, EXCHANGES, QUEUES } from '@libs/common';
 import {
   BILLING_ROUTINGKEYS,
+  extractRmqPayload,
   InteractionAction,
   type InteractionContentType,
-  type PurchasedItemType,
   type PurchaseCompletedEvent,
-  extractRmqPayload,
+  type PurchasedItemType,
   type RmqMessagePayload,
 } from '@libs/contracts';
 import { Controller } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { TrackInteractionCommand } from '../../application/commands/track-interaction.command';
+import { TrackInteractionCommand } from '../../../application/commands/track-interaction.command';
 
 @Controller()
 export class BillingPurchaseConsumer {

@@ -1,7 +1,7 @@
-import { AppLogger, EXCHANGES } from '@libs/common';
-import type { RecommendationContentSyncPayload } from '@libs/contracts';
-import { Injectable } from '@nestjs/common';
 import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { AppLogger, EXCHANGES, RABBITMQ_CONNECTION } from '@libs/common';
+import type { RecommendationContentSyncPayload } from '@libs/contracts';
+import { Inject, Injectable } from '@nestjs/common';
 
 /**
  * Publishes catalog sync events to a **fanout exchange** so that
@@ -14,7 +14,10 @@ import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 export class RecommendationSyncPublisher {
   private readonly logger = new AppLogger(RecommendationSyncPublisher.name);
 
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
 
   /** Publish a sync payload to the content.sync fanout exchange (fire-and-forget). */
   async send(payload: RecommendationContentSyncPayload): Promise<void> {

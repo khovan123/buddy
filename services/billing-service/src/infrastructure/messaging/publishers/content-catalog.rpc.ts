@@ -1,6 +1,8 @@
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   EXCHANGES,
+  RABBITMQ_CONNECTION,
   attachTraceContextToMessage,
   ensureCorrelationId,
   getCorrelationId,
@@ -11,15 +13,17 @@ import {
   PurchaseCatalogResponse,
   PurchasedItemPayload,
 } from '@libs/contracts';
-import { Injectable } from '@nestjs/common';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { Inject, Injectable } from '@nestjs/common';
 
 /** Represents the  content catalog rpc publisher component. */
 @Injectable()
 export class ContentCatalogRpcPublisher {
   private readonly logger = new AppLogger(ContentCatalogRpcPublisher.name);
 
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
 
   async getPurchaseCatalog(input: {
     itemId: string;

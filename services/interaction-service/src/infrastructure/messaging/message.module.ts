@@ -1,6 +1,6 @@
-import { BillingPurchaseConsumer } from './billing-purchase.consumer';
-import { ForumNotificationPublisher } from './forum-notification.publisher';
-import { InteractionPublisher } from './interaction.publisher';
+import { BillingPurchaseConsumer } from './consumers/billing-purchase.consumer';
+import { ForumNotificationPublisher } from './publishers/forum-notification.publisher';
+import { InteractionPublisher } from './publishers/interaction.publisher';
 
 export const MESSAGE_COMPONENTS = [
   InteractionPublisher,

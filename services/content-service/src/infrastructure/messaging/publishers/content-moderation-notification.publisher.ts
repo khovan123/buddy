@@ -1,19 +1,23 @@
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   EXCHANGES,
+  RABBITMQ_CONNECTION,
   attachTraceContextToMessage,
   ensureCorrelationId,
   getCorrelationId,
 } from '@libs/common';
 import type { ContentModerationCompletedEvent } from '@libs/contracts';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class ContentModerationNotificationPublisher {
   private readonly logger = new AppLogger(ContentModerationNotificationPublisher.name);
 
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
 
   async send(event: ContentModerationCompletedEvent): Promise<void> {
     const correlationId = ensureCorrelationId(

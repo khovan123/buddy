@@ -1,12 +1,13 @@
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   CORRELATION_ID_HEADER,
   EXCHANGES,
+  RABBITMQ_CONNECTION,
   RETRY_OPTIONS,
   mergeTraceContextIntoHeaders,
 } from '@libs/common';
-import { Injectable } from '@nestjs/common';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { Inject, Injectable } from '@nestjs/common';
 
 /**
  * Handles re-publishing failed messages back to the UPLOAD exchange with an
@@ -22,7 +23,10 @@ import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 export class ContentRetryPublisher {
   private readonly logger = new AppLogger(ContentRetryPublisher.name);
 
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
 
   /**
    * Re-publishes a failed message to the UPLOAD exchange with the same routing

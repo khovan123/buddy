@@ -1,12 +1,13 @@
+import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   CORRELATION_ID_HEADER,
   EXCHANGES,
+  RABBITMQ_CONNECTION,
   RETRY_OPTIONS,
   mergeTraceContextIntoHeaders,
 } from '@libs/common';
-import { Injectable } from '@nestjs/common';
-import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
+import { Inject, Injectable } from '@nestjs/common';
 
 /**
  * NotificationEventPublisher chỉ chịu trách nhiệm:
@@ -18,7 +19,10 @@ import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 export class NotificationEventPublisher {
   private readonly logger = new AppLogger(NotificationEventPublisher.name);
 
-  constructor(private readonly amqpConnection: AmqpConnection) {}
+  constructor(
+    @Inject(RABBITMQ_CONNECTION)
+    private readonly amqpConnection: AmqpConnection,
+  ) {}
 
   /**
    * Re-publishes a failed message to the retry exchange.
