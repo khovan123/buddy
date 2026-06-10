@@ -2,8 +2,14 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 
+# Improve npm reliability in CI/Docker
+RUN npm config set fetch-retries 5 \
+  && npm config set fetch-retry-mintimeout 20000 \
+  && npm config set fetch-retry-maxtimeout 120000 \
+  && npm config set fetch-timeout 300000
+
 # Install turbo globally
-RUN npm install -g turbo
+RUN npm install -g turbo --no-audit
 
 # Copy workspace manifests for layer caching
 COPY package.json package-lock.json turbo.json ./
@@ -15,24 +21,32 @@ ARG SERVICE_NAME
 COPY services/${SERVICE_NAME}/package.json ./services/${SERVICE_NAME}/
 
 # Install only production deps from root lockfile/workspaces
-RUN npm ci --omit=dev --legacy-peer-deps
+RUN npm ci --omit=dev --legacy-peer-deps --no-audit
 
 # ─── Stage 2: builder ─────────────────────────────────────────────
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-RUN npm install -g turbo
+# Improve npm reliability in CI/Docker
+RUN npm config set fetch-retries 5 \
+  && npm config set fetch-retry-mintimeout 20000 \
+  && npm config set fetch-retry-maxtimeout 120000 \
+  && npm config set fetch-timeout 300000
+
+# Install turbo globally
+RUN npm install -g turbo --no-audit
 
 # Copy everything
 COPY . .
 
 ARG SERVICE_NAME
 
-# Install all deps (including devDeps for build)
-RUN npm ci --legacy-peer-deps
+# Install all deps including devDeps for build
+RUN npm ci --legacy-peer-deps --no-audit
 
 # Build shared libs first, then the service
-RUN turbo run build --filter=@libs/common \
+RUN turbo run build \
+  --filter=@libs/common \
   --filter=@libs/contracts \
   --filter=${SERVICE_NAME}
 
@@ -42,8 +56,7 @@ WORKDIR /app
 
 # Security: non-root user
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser  --system --uid 1001 nestjs
-USER nestjs
+  && adduser --system --uid 1001 nestjs
 
 ARG SERVICE_NAME
 ENV SERVICE_NAME=${SERVICE_NAME}
@@ -55,6 +68,8 @@ COPY --from=builder --chown=nestjs:nodejs /app/libs ./libs
 
 # Copy production node_modules
 COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
+
+USER nestjs
 
 EXPOSE 8080
 
