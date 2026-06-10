@@ -515,9 +515,6 @@ jobs:
       REPOSITORY: buddy
       SERVICE: ${{ matrix.service }}
       IMAGE: asia-southeast1-docker.pkg.dev/project-20fe2419-cbae-442e-aea/buddy/${{ matrix.service }}:${{ github.sha }}
-      REDIS_HOST: ${{ secrets.REDIS_HOST }}
-      REDIS_PORT: ${{ secrets.REDIS_PORT }}
-      REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -552,11 +549,6 @@ jobs:
         run: |
           docker push $IMAGE
 
-      - name: Validate required runtime secrets
-        run: |
-          test -n "$REDIS_HOST"
-          test -n "$REDIS_PORT"
-
       - name: Deploy api-gateway to Cloud Run
         if: matrix.service == 'api-gateway'
         run: |
@@ -570,8 +562,7 @@ jobs:
             --memory 1Gi \
             --cpu 1 \
             --min-instances 0 \
-            --max-instances 1 \
-            --update-env-vars "HOST=0.0.0.0,NODE_ENV=production,SERVICE_NAME=$SERVICE,LOG_LEVEL=info,ALLOWED_ORIGINS=*,OTEL_SDK_DISABLED=true,REDIS_HOST=$REDIS_HOST,REDIS_PORT=$REDIS_PORT,REDIS_PASSWORD=$REDIS_PASSWORD"
+            --max-instances 1
 
       - name: Deploy internal service to Cloud Run
         if: matrix.service != 'api-gateway'
@@ -586,5 +577,4 @@ jobs:
             --memory 1Gi \
             --cpu 1 \
             --min-instances 0 \
-            --max-instances 1 \
-            --update-env-vars "HOST=0.0.0.0,NODE_ENV=production,SERVICE_NAME=$SERVICE,LOG_LEVEL=info,ALLOWED_ORIGINS=*,OTEL_SDK_DISABLED=true,REDIS_HOST=$REDIS_HOST,REDIS_PORT=$REDIS_PORT,REDIS_PASSWORD=$REDIS_PASSWORD"
+            --max-instances 1
