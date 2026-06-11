@@ -17,6 +17,10 @@ export class OfficePreviewStrategy implements IPreviewProcessor {
     ];
   }
 
+  supportedExtensions(): string[] {
+    return ['.doc', '.docx', '.ppt', '.pptx'];
+  }
+
   previewMimeType(): string {
     return 'text/plain; charset=utf-8';
   }

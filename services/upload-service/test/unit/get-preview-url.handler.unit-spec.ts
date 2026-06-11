@@ -57,4 +57,206 @@ describe('GetPreviewUrlHandler', () => {
     );
     expect(previewQueue.add).not.toHaveBeenCalled();
   });
+
+  it('marks stale processing previews as failed internally and serves original fallback', async () => {
+    const prisma = {
+      client: {
+        mediaFile: {
+          findFirst: jest.fn(async () => ({
+            id: 'file-2',
+            previewS3Key: null,
+            previewStatus: 'PROCESSING',
+            mimeType: 'application/pdf',
+            originalFilename: 'notes.pdf',
+            updatedAt: new Date(Date.now() - 11 * 60 * 1000),
+          })),
+          update: jest.fn(async () => undefined),
+        },
+      },
+    } as unknown as PrismaService;
+    const s3Service = {
+      generatePreviewSignedUrl: jest.fn(async () => 'https://signed.example/original.pdf'),
+    } as unknown as S3Service;
+    const previewProcessor = {
+      getPreviewMimeType: jest.fn(),
+      isSupported: jest.fn(),
+    } as unknown as PreviewProcessorContext;
+    const previewQueue = { add: jest.fn() };
+    const handler = new GetPreviewUrlHandler(
+      prisma,
+      s3Service,
+      previewProcessor,
+      previewQueue as never,
+    );
+
+    const result = await handler.execute(new GetPreviewUrlQuery('resources/file.pdf'));
+
+    expect(result.status).toBe(PreviewStatus.AVAILABLE);
+    expect(result.previewUrl).toBe('https://signed.example/original.pdf');
+    expect(s3Service.generatePreviewSignedUrl).toHaveBeenCalledWith(
+      'resources/file.pdf',
+      'application/pdf',
+    );
+    expect(prisma.client.mediaFile.update).toHaveBeenCalledWith({
+      where: { id: 'file-2' },
+      data: {
+        previewStatus: 'FAILED',
+        processingError: 'Preview generation timed out.',
+      },
+    });
+    expect(previewQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('serves original fallback for failed previews without requeueing on every request', async () => {
+    const prisma = {
+      client: {
+        mediaFile: {
+          findFirst: jest.fn(async () => ({
+            id: 'file-3',
+            previewS3Key: null,
+            previewStatus: 'FAILED',
+            mimeType: 'application/pdf',
+            originalFilename: 'notes.pdf',
+            updatedAt: new Date(),
+          })),
+        },
+      },
+    } as unknown as PrismaService;
+    const s3Service = {
+      generatePreviewSignedUrl: jest.fn(async () => 'https://signed.example/original.pdf'),
+    } as unknown as S3Service;
+    const previewProcessor = {
+      getPreviewMimeType: jest.fn(),
+      isSupported: jest.fn(),
+    } as unknown as PreviewProcessorContext;
+    const previewQueue = { add: jest.fn() };
+    const handler = new GetPreviewUrlHandler(
+      prisma,
+      s3Service,
+      previewProcessor,
+      previewQueue as never,
+    );
+
+    const result = await handler.execute(new GetPreviewUrlQuery('resources/file.pdf'));
+
+    expect(result.status).toBe(PreviewStatus.AVAILABLE);
+    expect(result.previewUrl).toBe('https://signed.example/original.pdf');
+    expect(previewQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('serves original fallback while preview generation is still processing', async () => {
+    const prisma = {
+      client: {
+        mediaFile: {
+          findFirst: jest.fn(async () => ({
+            id: 'file-processing',
+            previewS3Key: null,
+            previewStatus: 'PROCESSING',
+            mimeType: 'application/pdf',
+            originalFilename: 'notes.pdf',
+            updatedAt: new Date(),
+          })),
+        },
+      },
+    } as unknown as PrismaService;
+    const s3Service = {
+      generatePreviewSignedUrl: jest.fn(async () => 'https://signed.example/processing.pdf'),
+    } as unknown as S3Service;
+    const previewProcessor = {
+      getPreviewMimeType: jest.fn(),
+      isSupported: jest.fn(),
+    } as unknown as PreviewProcessorContext;
+    const previewQueue = { add: jest.fn() };
+    const handler = new GetPreviewUrlHandler(
+      prisma,
+      s3Service,
+      previewProcessor,
+      previewQueue as never,
+    );
+
+    const result = await handler.execute(new GetPreviewUrlQuery('resources/processing.pdf'));
+
+    expect(result.status).toBe(PreviewStatus.AVAILABLE);
+    expect(result.previewUrl).toBe('https://signed.example/processing.pdf');
+    expect(previewQueue.add).not.toHaveBeenCalled();
+  });
+
+  it('uses filename extension fallback when MIME type is generic', async () => {
+    const prisma = {
+      client: {
+        mediaFile: {
+          findFirst: jest.fn(async () => ({
+            id: 'file-4',
+            previewS3Key: null,
+            previewStatus: 'PENDING',
+            mimeType: 'application/octet-stream',
+            originalFilename: 'lesson.md',
+            updatedAt: new Date(),
+          })),
+          update: jest.fn(async () => undefined),
+        },
+      },
+    } as unknown as PrismaService;
+    const s3Service = {
+      generatePreviewSignedUrl: jest.fn(async () => 'https://signed.example/lesson.md'),
+    } as unknown as S3Service;
+    const previewProcessor = {
+      isSupported: jest.fn(() => true),
+      getPreviewMimeType: jest.fn(),
+    } as unknown as PreviewProcessorContext;
+    const previewQueue = { add: jest.fn() };
+    const handler = new GetPreviewUrlHandler(
+      prisma,
+      s3Service,
+      previewProcessor,
+      previewQueue as never,
+    );
+
+    const result = await handler.execute(new GetPreviewUrlQuery('resources/lesson.md'));
+
+    expect(result.status).toBe(PreviewStatus.AVAILABLE);
+    expect(result.previewUrl).toBe('https://signed.example/lesson.md');
+    expect(previewProcessor.isSupported).toHaveBeenCalledWith(
+      'application/octet-stream',
+      'lesson.md',
+    );
+    expect(previewQueue.add).toHaveBeenCalledWith('generate-preview', { fileId: 'file-4' });
+  });
+
+  it('serves original fallback when preview format is unsupported', async () => {
+    const prisma = {
+      client: {
+        mediaFile: {
+          findFirst: jest.fn(async () => ({
+            id: 'file-5',
+            previewS3Key: null,
+            previewStatus: 'PENDING',
+            mimeType: 'application/zip',
+            originalFilename: 'archive.zip',
+            updatedAt: new Date(),
+          })),
+        },
+      },
+    } as unknown as PrismaService;
+    const s3Service = {
+      generatePreviewSignedUrl: jest.fn(async () => 'https://signed.example/archive.zip'),
+    } as unknown as S3Service;
+    const previewProcessor = {
+      isSupported: jest.fn(() => false),
+      getPreviewMimeType: jest.fn(),
+    } as unknown as PreviewProcessorContext;
+    const previewQueue = { add: jest.fn() };
+    const handler = new GetPreviewUrlHandler(
+      prisma,
+      s3Service,
+      previewProcessor,
+      previewQueue as never,
+    );
+
+    const result = await handler.execute(new GetPreviewUrlQuery('resources/archive.zip'));
+
+    expect(result.status).toBe(PreviewStatus.AVAILABLE);
+    expect(result.previewUrl).toBe('https://signed.example/archive.zip');
+    expect(previewQueue.add).not.toHaveBeenCalled();
+  });
 });

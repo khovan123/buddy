@@ -161,6 +161,7 @@ export class ContentExtractedConsumer {
       mediaUrls: payload.files
         .map((item) => item.downloadUrl)
         .filter((url): url is string => Boolean(url)),
+      files: this.resolveModerationFiles(payload),
       extractionStatus: this.resolveExtractionStatus(payload),
       extractionError: this.joinExtractionErrors(payload),
     });
@@ -242,6 +243,7 @@ export class ContentExtractedConsumer {
       course: tutorial.course?.name,
       extractedText: this.joinExtractedText(payload),
       mediaUrls: [],
+      files: this.resolveModerationFiles(payload),
       extractionStatus: this.resolveExtractionStatus(payload),
       extractionError: this.joinExtractionErrors(payload),
     });
@@ -306,6 +308,15 @@ export class ContentExtractedConsumer {
       .map((item) => item.extractionError)
       .filter((reason): reason is string => Boolean(reason));
     return errors.length > 0 ? errors.join('; ') : null;
+  }
+
+  private resolveModerationFiles(
+    payload: ContentExtractedEvent['payload'],
+  ): Array<{ originalFilename?: string | null; mimeType?: string | null }> {
+    return payload.files.map((file) => ({
+      originalFilename: file.originalFilename,
+      mimeType: file.mimeType,
+    }));
   }
 
   private resolveExtractionStatus(payload: ContentExtractedEvent['payload']): string {

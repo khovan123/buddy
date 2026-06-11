@@ -14,6 +14,7 @@ export interface ModerationPayload {
   course?: string;
   extractedText: string;
   mediaUrls?: string[];
+  files?: Array<{ originalFilename?: string | null; mimeType?: string | null }>;
   extractionStatus?: string;
   extractionError?: string | null;
 }
@@ -71,6 +72,36 @@ interface GeminiResponse {
   }>;
 }
 
+const SOURCE_CODE_EXTENSIONS = new Set([
+  '.c',
+  '.cc',
+  '.cpp',
+  '.cs',
+  '.css',
+  '.dart',
+  '.go',
+  '.h',
+  '.hpp',
+  '.html',
+  '.java',
+  '.js',
+  '.jsx',
+  '.kt',
+  '.mjs',
+  '.php',
+  '.py',
+  '.rb',
+  '.rs',
+  '.scss',
+  '.sh',
+  '.sql',
+  '.svelte',
+  '.swift',
+  '.ts',
+  '.tsx',
+  '.vue',
+]);
+
 @Injectable()
 export class ContentModerationService {
   private readonly logger = new AppLogger(ContentModerationService.name);
@@ -82,6 +113,15 @@ export class ContentModerationService {
     const enabled = this.config.get<string>('CONTENT_MODERATION_ENABLED', 'true') !== 'false';
     const endpoint = this.config.get<string>('CONTENT_MODERATION_PROVIDER_URL');
     const geminiApiKey = this.config.get<string>('GEMINI_API_KEY');
+
+    if (this.shouldAutoApproveSourceCode(payload)) {
+      return {
+        decision: 'APPROVED',
+        score: null,
+        reasons: ['Source code file extension is allowed by moderation policy.'],
+        ruleVersion,
+      };
+    }
 
     if (!enabled) {
       return {
@@ -333,5 +373,27 @@ export class ContentModerationService {
     return (Object.keys(labels) as Array<keyof ModerationCategories>)
       .filter((key) => categories[key] === true)
       .map((key) => labels[key]);
+  }
+
+  private shouldAutoApproveSourceCode(payload: ModerationPayload): boolean {
+    const files = payload.files ?? [];
+    if (files.length === 0) {
+      return false;
+    }
+
+    return files.every((file) => {
+      const extension = this.resolveExtension(file.originalFilename);
+      return extension ? SOURCE_CODE_EXTENSIONS.has(extension) : false;
+    });
+  }
+
+  private resolveExtension(fileName?: string | null): string | null {
+    if (!fileName) {
+      return null;
+    }
+
+    const normalized = fileName.trim().toLowerCase();
+    const dotIndex = normalized.lastIndexOf('.');
+    return dotIndex >= 0 ? normalized.slice(dotIndex) : null;
   }
 }

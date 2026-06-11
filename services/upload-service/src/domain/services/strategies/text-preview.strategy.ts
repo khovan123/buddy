@@ -13,7 +13,45 @@ export class TextPreviewStrategy implements IPreviewProcessor {
     '\n\n---\n⚠️ This is a preview. Purchase to view the full document.\n';
 
   supportedMimeTypes(): string[] {
-    return ['text/plain', 'text/markdown'];
+    return ['text/plain', 'text/markdown', 'text/csv'];
+  }
+
+  supportedExtensions(): string[] {
+    return [
+      '.c',
+      '.cc',
+      '.cpp',
+      '.cs',
+      '.csv',
+      '.dart',
+      '.go',
+      '.h',
+      '.hpp',
+      '.html',
+      '.java',
+      '.js',
+      '.json',
+      '.jsx',
+      '.kt',
+      '.md',
+      '.mjs',
+      '.php',
+      '.py',
+      '.rb',
+      '.rs',
+      '.scss',
+      '.sh',
+      '.sql',
+      '.svelte',
+      '.swift',
+      '.ts',
+      '.tsx',
+      '.txt',
+      '.vue',
+      '.xml',
+      '.yaml',
+      '.yml',
+    ];
   }
 
   previewMimeType(): string {

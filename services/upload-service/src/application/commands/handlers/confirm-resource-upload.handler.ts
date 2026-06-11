@@ -152,7 +152,7 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
     // ── Pre-generation: queue preview for supported formats ─────
     // Fire-and-forget — failures handled by BullMQ retry mechanism
     for (const meta of validFileMetas) {
-      if (this.previewProcessor.isSupported(meta.mimeType)) {
+      if (this.previewProcessor.isSupported(meta.mimeType, meta.originalFilename)) {
         try {
           await this.previewQueue.add('generate-preview', { fileId: meta.id });
           this.logger.debug(`Queued preview generation for file ${meta.id} (${meta.mimeType})`);

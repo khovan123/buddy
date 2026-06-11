@@ -58,16 +58,11 @@ export class GetResourcePreviewHandler implements IQueryHandler<GetResourcePrevi
         `No primaryS3Key cached for resource ${resource.id} (slug=${slug}). ` +
           `Upload may still be processing.`,
       );
-      return {
-        previewUrl: null,
-        isReady: false,
-        isPreview: true,
-        previewPercentage: 30,
-        status: PreviewStatus.PROCESSING,
-        resourceTitle: resource.title,
-        resourceSlug: resource.slug,
-        format: extension,
-      };
+      return this.buildPlaceholderPreview(
+        resource,
+        extension,
+        'The uploaded file is still being attached.',
+      );
     }
 
     // 4. Single RPC → upload-service (s3Key only, no upload-history round-trip)
@@ -85,16 +80,11 @@ export class GetResourcePreviewHandler implements IQueryHandler<GetResourcePrevi
       this.logger.error(
         `Failed to get preview for resource ${resource.id}: ${error instanceof Error ? error.message : String(error)}`,
       );
-      return {
-        previewUrl: null,
-        isReady: false,
-        isPreview: true,
-        previewPercentage: 30,
-        status: PreviewStatus.FAILED,
-        resourceTitle: resource.title,
-        resourceSlug: resource.slug,
-        format: extension,
-      };
+      return this.buildPlaceholderPreview(
+        resource,
+        extension,
+        'Preview service is temporarily unavailable.',
+      );
     }
   }
 
@@ -141,5 +131,33 @@ export class GetResourcePreviewHandler implements IQueryHandler<GetResourcePrevi
     }
 
     return filename.slice(dotIndex);
+  }
+
+  private buildPlaceholderPreview(
+    resource: { title: string; slug: string; summary?: string | null },
+    format: string,
+    reason: string,
+  ): ResourcePreviewResponse {
+    const content = [
+      `# ${resource.title}`,
+      '',
+      resource.summary ?? '',
+      '',
+      '---',
+      reason,
+      '',
+      'The full resource will open from the uploaded file as soon as storage metadata is reachable.',
+    ].join('\n');
+
+    return {
+      previewUrl: `data:text/markdown;charset=utf-8,${encodeURIComponent(content)}`,
+      isReady: true,
+      isPreview: true,
+      previewPercentage: 30,
+      status: PreviewStatus.AVAILABLE,
+      resourceTitle: resource.title,
+      resourceSlug: resource.slug,
+      format,
+    };
   }
 }

@@ -55,6 +55,7 @@ export class DocumentPreviewWorker extends WorkerHost {
         select: {
           s3Key: true,
           mimeType: true,
+          originalFilename: true,
           previewS3Key: true,
           previewStatus: true,
           deletedAt: true,
@@ -71,7 +72,7 @@ export class DocumentPreviewWorker extends WorkerHost {
         return;
       }
 
-      const { s3Key, mimeType } = mediaFile;
+      const { s3Key, mimeType, originalFilename } = mediaFile;
 
       // ── 2. Check S3 cache — skip if preview already exists ───────
       const previewKey = this.s3Service.getPreviewKey(s3Key);
@@ -94,12 +95,13 @@ export class DocumentPreviewWorker extends WorkerHost {
       const originalBuffer = await this.s3Service.getObjectBuffer(s3Key);
 
       // ── 4. Generate preview via Strategy Pattern ─────────────────
-      const previewBuffer = await this.previewProcessor.generatePreview(
+      const previewBuffer = await this.previewProcessor.generatePreviewForFile(
         originalBuffer,
         mimeType,
+        originalFilename,
         DEFAULT_PREVIEW_PERCENTAGE,
       );
-      const previewMimeType = this.previewProcessor.getPreviewMimeType(mimeType);
+      const previewMimeType = this.previewProcessor.getPreviewMimeType(mimeType, originalFilename);
 
       // ── 5. Upload preview to S3 ─────────────────────────────────
       this.logger.debug(`Uploading preview to: ${previewKey}`);

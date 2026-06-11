@@ -83,4 +83,41 @@ describe('GetResourcePreviewHandler', () => {
 
     expect(result?.format).toBe('TXT');
   });
+
+  it('returns an available placeholder preview when primary S3 key is missing', async () => {
+    const resourceRepository = {
+      findBySlugWithDetails: jest.fn(async () =>
+        makeResource({
+          primaryS3Key: null,
+        }),
+      ),
+    } as unknown as IResourceRepository;
+    const storageBroker = {
+      getPreviewUrl: jest.fn(),
+    } as unknown as StorageBrokerPublisher;
+    const handler = new GetResourcePreviewHandler(resourceRepository, storageBroker);
+
+    const result = await handler.execute(new GetResourcePreviewQuery('system-design-notes'));
+
+    expect(result?.status).toBe(PreviewStatus.AVAILABLE);
+    expect(result?.previewUrl).toContain('data:text/markdown');
+    expect(storageBroker.getPreviewUrl).not.toHaveBeenCalled();
+  });
+
+  it('returns an available placeholder preview when upload preview RPC fails', async () => {
+    const resourceRepository = {
+      findBySlugWithDetails: jest.fn(async () => makeResource()),
+    } as unknown as IResourceRepository;
+    const storageBroker = {
+      getPreviewUrl: jest.fn(async () => {
+        throw new Error('upload-service unavailable');
+      }),
+    } as unknown as StorageBrokerPublisher;
+    const handler = new GetResourcePreviewHandler(resourceRepository, storageBroker);
+
+    const result = await handler.execute(new GetResourcePreviewQuery('system-design-notes'));
+
+    expect(result?.status).toBe(PreviewStatus.AVAILABLE);
+    expect(result?.previewUrl).toContain('data:text/markdown');
+  });
 });

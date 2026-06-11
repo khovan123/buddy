@@ -50,6 +50,7 @@ export class RecheckTutorialModerationHandler implements ICommandHandler<Recheck
       course: tutorial.course?.name,
       extractedText: '',
       mediaUrls: this.resolveMediaUrls(histories),
+      files: this.resolveModerationFiles(histories),
       extractionStatus: this.resolveExtractionStatus(histories),
       extractionError: this.resolveExtractionError(histories),
     });
@@ -123,6 +124,15 @@ export class RecheckTutorialModerationHandler implements ICommandHandler<Recheck
     return histories
       .flatMap((item) => [item.streamingUrl, item.trailerUrl, item.downloadUrl])
       .filter((url): url is string => Boolean(url));
+  }
+
+  private resolveModerationFiles(
+    histories: UploadHistoryItemRpcResponseDto[],
+  ): Array<{ originalFilename?: string | null; mimeType?: string | null }> {
+    return histories.map((item) => ({
+      originalFilename: item.originalFilename,
+      mimeType: item.mimeType,
+    }));
   }
 
   private resolveExtractionStatus(histories: UploadHistoryItemRpcResponseDto[]): string {

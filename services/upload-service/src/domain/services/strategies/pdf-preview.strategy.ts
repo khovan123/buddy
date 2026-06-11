@@ -16,6 +16,10 @@ export class PdfPreviewStrategy implements IPreviewProcessor {
     return ['application/pdf'];
   }
 
+  supportedExtensions(): string[] {
+    return ['.pdf'];
+  }
+
   previewMimeType(): string {
     return 'application/pdf';
   }

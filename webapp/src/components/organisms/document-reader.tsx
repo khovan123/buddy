@@ -58,7 +58,21 @@ function sanitizeSource(content: string) {
   return content.replace(/\r\n/g, "\n")
 }
 
-function getSourceKind(sourceUrl: string): SourceKind {
+function getSourceKind(
+  sourceUrl: string,
+  format?: string,
+  isPreview?: boolean
+): SourceKind {
+  const normalizedFormat = format?.toLowerCase()
+
+  if (
+    isPreview &&
+    normalizedFormat &&
+    ["doc", "docx", "ppt", "pptx"].includes(normalizedFormat)
+  ) {
+    return "md"
+  }
+
   const cleanUrl = sourceUrl.split("?")[0].toLowerCase()
 
   if (cleanUrl.endsWith(".pdf")) {
@@ -103,7 +117,10 @@ export function DocumentReader({
   hideHeader = false,
   hideDetails = false,
 }: DocumentReaderProps) {
-  const kind = useMemo(() => getSourceKind(sourceUrl), [sourceUrl])
+  const kind = useMemo(
+    () => getSourceKind(sourceUrl, format, isPreview),
+    [format, isPreview, sourceUrl]
+  )
   const viewerRef = useRef<HTMLDivElement>(null)
   const [documentText, setDocumentText] = useState("")
   const [documentHtml, setDocumentHtml] = useState("")

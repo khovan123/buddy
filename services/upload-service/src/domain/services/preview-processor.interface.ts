@@ -12,6 +12,12 @@ export interface IPreviewProcessor {
   supportedMimeTypes(): string[];
 
   /**
+   * Optional file extensions this strategy can handle when the upload provider
+   * only detected a generic MIME type such as application/octet-stream.
+   */
+  supportedExtensions?(): string[];
+
+  /**
    * MIME type of the generated preview object.
    * Defaults to the original MIME type when a strategy omits this hook.
    */

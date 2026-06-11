@@ -39,6 +39,22 @@ export function ResourceDocumentPreview({
   previewData,
 }: ResourceDocumentPreviewProps) {
   const [isPlaying, setIsPlaying] = useState(false)
+  const previewStatus = previewData?.status
+  const canViewPreview = Boolean(previewData?.previewUrl)
+  const unavailableLabel =
+    previewStatus === "FAILED"
+      ? "Preview failed"
+      : previewStatus === "UNSUPPORTED"
+        ? "Preview unavailable"
+        : "Processing Preview..."
+  const previewMessage =
+    previewStatus === "FAILED"
+      ? "Preview generation failed. Purchase to access the full document."
+      : previewStatus === "UNSUPPORTED"
+        ? "Preview is unavailable for this file format."
+        : previewData?.isPreview
+          ? `Preview limited to ${previewData.previewPercentage}%. Buy to unlock full document.`
+          : "Free resource. View full document."
 
   if (isPlaying && previewData?.previewUrl) {
     return (
@@ -95,9 +111,7 @@ export function ResourceDocumentPreview({
             <ShieldCheck className="size-5 text-primary" />
           </ItemMedia>
           <ItemTitle className="text-sm font-medium">
-            {previewData?.isPreview
-              ? `Preview limited to ${previewData.previewPercentage}%. Buy to unlock full document.`
-              : "Free resource. View full document."}
+            {previewMessage}
           </ItemTitle>
         </Item>
         <Button
@@ -105,9 +119,9 @@ export function ResourceDocumentPreview({
           size="sm"
           className="font-bold shadow-sm"
           onClick={() => setIsPlaying(true)}
-          disabled={!previewData?.previewUrl}
+          disabled={!canViewPreview}
         >
-          {previewData?.previewUrl ? "View Document" : "Processing Preview..."}
+          {canViewPreview ? "View Document" : unavailableLabel}
         </Button>
       </div>
     </Card>

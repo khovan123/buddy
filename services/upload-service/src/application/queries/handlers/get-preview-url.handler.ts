@@ -12,6 +12,7 @@ import { GetPreviewUrlQuery } from '../get-preview-url.query';
 
 /** Default preview percentage (30%) */
 const DEFAULT_PREVIEW_PERCENTAGE = 30;
+const PREVIEW_PROCESSING_TIMEOUT_MS = 10 * 60 * 1000;
 
 /**
  * GetPreviewUrlHandler — Handles document preview URL requests.
@@ -49,25 +50,21 @@ export class GetPreviewUrlHandler implements IQueryHandler<GetPreviewUrlQuery> {
         previewS3Key: true,
         previewStatus: true,
         mimeType: true,
+        originalFilename: true,
+        updatedAt: true,
       },
     });
 
     if (!mediaFile) {
       this.logger.warn(`File with s3Key=${s3Key} not found or deleted`);
-      return {
-        previewUrl: null,
-        isReady: false,
-        isPreview: true,
-        previewPercentage: DEFAULT_PREVIEW_PERCENTAGE,
-        status: PreviewStatus.FAILED,
-      };
+      return this.buildOriginalFilePreview(s3Key);
     }
 
     // 2. If preview is already available → generate inline signed URL
     if (mediaFile.previewS3Key && mediaFile.previewStatus === 'AVAILABLE') {
       const previewUrl = await this.s3Service.generatePreviewSignedUrl(
         mediaFile.previewS3Key,
-        this.previewProcessor.getPreviewMimeType(mediaFile.mimeType),
+        this.previewProcessor.getPreviewMimeType(mediaFile.mimeType, mediaFile.originalFilename),
       );
 
       return {
@@ -79,45 +76,75 @@ export class GetPreviewUrlHandler implements IQueryHandler<GetPreviewUrlQuery> {
       };
     }
 
-    // 3. If preview is already being processed → return pending
+    // 3. If preview is already being processed → return pending unless stale
     if (mediaFile.previewStatus === 'PROCESSING') {
-      return {
-        previewUrl: null,
-        isReady: false,
-        isPreview: true,
-        previewPercentage: DEFAULT_PREVIEW_PERCENTAGE,
-        status: PreviewStatus.PROCESSING,
-      };
+      if (this.isStaleProcessing(mediaFile.updatedAt)) {
+        this.logger.warn(
+          `Preview processing timed out for file ${mediaFile.id} (s3Key=${s3Key}); marking failed`,
+        );
+        await this.prisma.client.mediaFile.update({
+          where: { id: mediaFile.id },
+          data: {
+            previewStatus: 'FAILED',
+            processingError: 'Preview generation timed out.',
+          },
+        });
+
+        return this.buildOriginalFilePreview(s3Key, mediaFile.mimeType);
+      }
+
+      return this.buildOriginalFilePreview(s3Key, mediaFile.mimeType);
+    }
+
+    if (mediaFile.previewStatus === 'FAILED') {
+      return this.buildOriginalFilePreview(s3Key, mediaFile.mimeType);
     }
 
     // 4. Check if format is supported
-    if (!this.previewProcessor.isSupported(mediaFile.mimeType)) {
-      this.logger.debug(`Preview not supported for mimeType=${mediaFile.mimeType}`);
-      return {
-        previewUrl: null,
-        isReady: false,
-        isPreview: true,
-        previewPercentage: DEFAULT_PREVIEW_PERCENTAGE,
-        status: PreviewStatus.UNSUPPORTED,
-      };
+    if (!this.previewProcessor.isSupported(mediaFile.mimeType, mediaFile.originalFilename)) {
+      this.logger.debug(
+        `Preview not supported for mimeType=${mediaFile.mimeType}, fileName=${mediaFile.originalFilename}`,
+      );
+      return this.buildOriginalFilePreview(s3Key, mediaFile.mimeType);
     }
 
     // 5. Queue a new generation job (PENDING or FAILED → retry)
     this.logger.log(`Queueing preview generation for file ${mediaFile.id} (s3Key=${s3Key})`);
 
-    await this.prisma.client.mediaFile.update({
-      where: { id: mediaFile.id },
-      data: { previewStatus: 'PROCESSING' },
-    });
+    try {
+      await this.prisma.client.mediaFile.update({
+        where: { id: mediaFile.id },
+        data: { previewStatus: 'PROCESSING' },
+      });
 
-    await this.previewQueue.add('generate-preview', { fileId: mediaFile.id });
+      await this.previewQueue.add('generate-preview', { fileId: mediaFile.id });
+    } catch (error) {
+      this.logger.warn(
+        `Preview queue failed for file ${mediaFile.id}; serving original inline fallback: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+
+    return this.buildOriginalFilePreview(s3Key, mediaFile.mimeType);
+  }
+
+  private isStaleProcessing(updatedAt: Date): boolean {
+    return Date.now() - updatedAt.getTime() > PREVIEW_PROCESSING_TIMEOUT_MS;
+  }
+
+  private async buildOriginalFilePreview(
+    s3Key: string,
+    mimeType?: string,
+  ): Promise<PreviewUrlRpcResponse> {
+    const previewUrl = await this.s3Service.generatePreviewSignedUrl(s3Key, mimeType);
 
     return {
-      previewUrl: null,
-      isReady: false,
+      previewUrl,
+      isReady: true,
       isPreview: true,
       previewPercentage: DEFAULT_PREVIEW_PERCENTAGE,
-      status: PreviewStatus.PROCESSING,
+      status: PreviewStatus.AVAILABLE,
     };
   }
 }
