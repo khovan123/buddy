@@ -1,4 +1,9 @@
-import { getRedisConfig, SearchResultLimitPolicy, SubscriptionRequiredPolicy } from '@libs/common';
+import {
+  CloudRunHealthIndicator,
+  getRedisConfig,
+  SearchResultLimitPolicy,
+  SubscriptionRequiredPolicy,
+} from '@libs/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -26,7 +31,6 @@ import { TutorialProxyController } from './presentation/http/controllers/tutoria
 import { UploadProxyController } from './presentation/http/controllers/upload-proxy.controller';
 import { UserProxyController } from './presentation/http/controllers/user-proxy.controller';
 
-import { CloudRunHealthIndicator } from '@libs/common/src/health/cloud-run-health.indicator';
 import { HttpModule } from '@nestjs/axios';
 import { ServiceRegistryService } from './infrastructure/config/service-registry.service';
 import { ApiComposerService } from './infrastructure/http/api-composer.service';

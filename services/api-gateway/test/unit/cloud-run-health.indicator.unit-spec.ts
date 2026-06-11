@@ -1,4 +1,4 @@
-import { CloudRunHealthIndicator } from '@libs/common/src/health/cloud-run-health.indicator';
+import { CloudRunHealthIndicator } from '@libs/common';
 import { HealthCheckError } from '@nestjs/terminus';
 
 const getIdTokenClient = jest.fn();

@@ -1,5 +1,4 @@
-import { Public } from '@libs/common';
-import { CloudRunHealthIndicator } from '@libs/common/src/health/cloud-run-health.indicator';
+import { CloudRunHealthIndicator, Public } from '@libs/common';
 import { Controller, Get } from '@nestjs/common';
 import { HealthCheck, HealthCheckService, MemoryHealthIndicator } from '@nestjs/terminus';
 import { ServiceRegistryService } from '../../../infrastructure/config/service-registry.service';
