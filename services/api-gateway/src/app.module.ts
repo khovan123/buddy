@@ -26,6 +26,7 @@ import { TutorialProxyController } from './presentation/http/controllers/tutoria
 import { UploadProxyController } from './presentation/http/controllers/upload-proxy.controller';
 import { UserProxyController } from './presentation/http/controllers/user-proxy.controller';
 
+import { CloudRunHealthIndicator } from '@libs/common/src/health/cloud-run-health.indicator';
 import { HttpModule } from '@nestjs/axios';
 import { ServiceRegistryService } from './infrastructure/config/service-registry.service';
 import { ApiComposerService } from './infrastructure/http/api-composer.service';
@@ -84,6 +85,7 @@ import { HttpProxyService } from './infrastructure/http/http-proxy.service';
     HttpProxyService,
     ServiceRegistryService,
     ApiComposerService,
+    CloudRunHealthIndicator,
     SubscriptionRequiredPolicy,
     SearchResultLimitPolicy,
   ],

@@ -101,7 +101,8 @@ export class HttpProxyService {
 
     const headers = await client.getRequestHeaders();
 
-    const authorization = headers.get('Authorization ') ?? headers.get('authorization');
+    const authorization =
+      headers.get('Authorization') ?? headers.get('authorization') ?? headers.get('AUTHORIZATION');
 
     if (!authorization) {
       return {};

@@ -8,6 +8,6 @@
       "@libs/contracts/*": ["../../libs/contracts/src/*"]
     }
   },
-  "include": ["src/**/*", "test/**/*"],
+  "include": ["src/**/*", "test/**/*", "../../libs/common/src/health/cloud-run-health.indicator.ts"],
   "exclude": ["node_modules", "dist"]
 }

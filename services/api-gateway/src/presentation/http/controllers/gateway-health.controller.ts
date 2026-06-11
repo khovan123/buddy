@@ -1,11 +1,7 @@
 import { Public } from '@libs/common';
+import { CloudRunHealthIndicator } from '@libs/common/src/health/cloud-run-health.indicator';
 import { Controller, Get } from '@nestjs/common';
-import {
-  HealthCheck,
-  HealthCheckService,
-  HttpHealthIndicator,
-  MemoryHealthIndicator,
-} from '@nestjs/terminus';
+import { HealthCheck, HealthCheckService, MemoryHealthIndicator } from '@nestjs/terminus';
 import { ServiceRegistryService } from '../../../infrastructure/config/service-registry.service';
 
 /** Controller handling incoming requests for GatewayHealth. */
@@ -13,7 +9,7 @@ import { ServiceRegistryService } from '../../../infrastructure/config/service-r
 export class GatewayHealthController {
   constructor(
     private readonly health: HealthCheckService,
-    private readonly http: HttpHealthIndicator,
+    private readonly cloudRun: CloudRunHealthIndicator,
     private readonly memory: MemoryHealthIndicator,
     private readonly registry: ServiceRegistryService,
   ) {}
@@ -48,15 +44,15 @@ export class GatewayHealthController {
 
     try {
       const result = await this.health.check([
-        () => this.http.pingCheck('auth-service', authUrl),
-        () => this.http.pingCheck('user-service', userUrl),
-        () => this.http.pingCheck('notification-service', notifyUrl),
-        () => this.http.pingCheck('content-service', contentUrl),
-        () => this.http.pingCheck('content-access-service', contentAccessUrl),
-        () => this.http.pingCheck('upload-service', uploadUrl),
-        () => this.http.pingCheck('billing-service', billingUrl),
-        () => this.http.pingCheck('interaction-service', interactUrl),
-        () => this.http.pingCheck('recommendation-service', recommendUrl),
+        () => this.cloudRun.pingCheck('auth-service', authUrl),
+        () => this.cloudRun.pingCheck('user-service', userUrl),
+        () => this.cloudRun.pingCheck('notification-service', notifyUrl),
+        () => this.cloudRun.pingCheck('content-service', contentUrl),
+        () => this.cloudRun.pingCheck('content-access-service', contentAccessUrl),
+        () => this.cloudRun.pingCheck('upload-service', uploadUrl),
+        () => this.cloudRun.pingCheck('billing-service', billingUrl),
+        () => this.cloudRun.pingCheck('interaction-service', interactUrl),
+        () => this.cloudRun.pingCheck('recommendation-service', recommendUrl),
         () => this.memory.checkHeap('memory_heap', 300 * 1024 * 1024),
       ]);
       return result;
