@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button"
 
 type OAuthProvider = "google" | "github"
 
+type OAuthButtonsProps = {
+  callbackUrl?: string
+}
+
 const providers: {
   id: OAuthProvider
   label: string
@@ -53,7 +57,7 @@ const providers: {
   },
 ]
 
-export function OAuthButtons() {
+export function OAuthButtons({ callbackUrl = "/home" }: OAuthButtonsProps) {
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(
     null
   )
@@ -61,7 +65,7 @@ export function OAuthButtons() {
   const handleOAuth = async (provider: OAuthProvider) => {
     setLoadingProvider(provider)
     try {
-      await signIn(provider, { callbackUrl: "/home" })
+      await signIn(provider, { callbackUrl })
     } catch {
       setLoadingProvider(null)
     }

@@ -19,13 +19,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-  FieldSet,
-} from "@/components/ui/field"
+import { Field, FieldGroup, FieldLabel, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { OAuthButtons } from "@/features/auth/components/oauth-buttons"
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas"
 import { setToken } from "@/features/auth/store/auth-slice"
 import { OtpPurpose } from "@/features/auth/type"
@@ -66,6 +62,7 @@ export function SessionLoginDialogProvider({
   const dispatch = useDispatch<AppDispatch>()
   const { handleError, clearError } = useGlobalError()
   const [open, setOpen] = useState(false)
+  const [callbackUrl, setCallbackUrl] = useState("/home")
 
   const disabled = useMemo(() => isDisabledPath(pathname), [pathname])
 
@@ -73,6 +70,7 @@ export function SessionLoginDialogProvider({
     const handleSessionLoginRequired = () => {
       if (!isDisabledPath(globalThis.location.pathname)) {
         clearError()
+        setCallbackUrl(globalThis.location.href)
         setOpen(true)
       }
     }
@@ -142,64 +140,73 @@ export function SessionLoginDialogProvider({
     <>
       {children}
       <Dialog open={!disabled && open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Log in to continue</DialogTitle>
             <DialogDescription>
-              Your session expired. Log in again to continue from this page.
+              Your session expired. Use the same account method again to
+              continue from this page.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <FieldGroup className="gap-4">
-              <FieldSet className="gap-4">
-                <Field>
-                  <FieldLabel htmlFor="session-login-email">Email</FieldLabel>
-                  <Input
-                    id="session-login-email"
-                    type="email"
-                    autoComplete="email"
-                    disabled={isSubmitting}
-                    {...register("email")}
-                  />
-                  {errors.email ? (
-                    <p className="text-sm text-destructive">
-                      {errors.email.message}
-                    </p>
-                  ) : null}
-                </Field>
+          <div className="space-y-5">
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <FieldGroup className="gap-4">
+                <FieldSet className="gap-4">
+                  <Field>
+                    <FieldLabel htmlFor="session-login-email">Email</FieldLabel>
+                    <Input
+                      id="session-login-email"
+                      type="email"
+                      autoComplete="email"
+                      disabled={isSubmitting}
+                      {...register("email")}
+                    />
+                    {errors.email ? (
+                      <p className="text-sm text-destructive">
+                        {errors.email.message}
+                      </p>
+                    ) : null}
+                  </Field>
 
-                <Field>
-                  <FieldLabel htmlFor="session-login-password">
-                    Password
-                  </FieldLabel>
-                  <Input
-                    id="session-login-password"
-                    type="password"
-                    autoComplete="current-password"
-                    disabled={isSubmitting}
-                    {...register("password")}
-                  />
-                  {errors.password ? (
-                    <p className="text-sm text-destructive">
-                      {errors.password.message}
-                    </p>
-                  ) : null}
-                </Field>
-              </FieldSet>
+                  <Field>
+                    <FieldLabel htmlFor="session-login-password">
+                      Password
+                    </FieldLabel>
+                    <Input
+                      id="session-login-password"
+                      type="password"
+                      autoComplete="current-password"
+                      disabled={isSubmitting}
+                      {...register("password")}
+                    />
+                    {errors.password ? (
+                      <p className="text-sm text-destructive">
+                        {errors.password.message}
+                      </p>
+                    ) : null}
+                  </Field>
+                </FieldSet>
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="animate-spin" />
-                    Logging in...
-                  </>
-                ) : (
-                  "Log in"
-                )}
-              </Button>
-            </FieldGroup>
-          </form>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Logging in...
+                    </>
+                  ) : (
+                    "Log in"
+                  )}
+                </Button>
+              </FieldGroup>
+            </form>
+
+            <OAuthButtons callbackUrl={callbackUrl} />
+          </div>
         </DialogContent>
       </Dialog>
     </>
