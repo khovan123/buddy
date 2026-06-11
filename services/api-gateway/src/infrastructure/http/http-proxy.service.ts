@@ -10,8 +10,8 @@ import {
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { GoogleAuth, IdTokenClient } from 'google-auth-library';
 import { ServiceName, ServiceRegistryService } from '../config/service-registry.service';
-
 /** Interface representing data constraints for  proxy options. */
 export interface ProxyOptions {
   service: ServiceName;
@@ -56,6 +56,8 @@ export class HttpProxyService {
   private readonly breakers = new Map<string, CircuitBreaker>();
   /** Per-service or per-route-group bulkheads */
   private readonly bulkheads = new Map<string, Bulkhead>();
+  private readonly googleAuth = new GoogleAuth();
+  private readonly idTokenClients = new Map<string, IdTokenClient>();
 
   constructor(
     private readonly registry: ServiceRegistryService,
@@ -86,6 +88,28 @@ export class HttpProxyService {
         this.executeWithRetry(req, options, reply),
       ),
     );
+  }
+
+  private async getCloudRunAuthHeader(serviceBaseUrl: string): Promise<Record<string, string>> {
+    const audience = new URL(serviceBaseUrl).origin;
+
+    let client = this.idTokenClients.get(audience);
+    if (!client) {
+      client = await this.googleAuth.getIdTokenClient(audience);
+      this.idTokenClients.set(audience, client);
+    }
+
+    const headers = await client.getRequestHeaders();
+
+    const authorization = headers.get('Authorization ') ?? headers.get('authorization');
+
+    if (!authorization) {
+      return {};
+    }
+
+    return {
+      'X-Serverless-Authorization': authorization,
+    };
   }
 
   /**
@@ -132,6 +156,8 @@ export class HttpProxyService {
       Object.entries(optionHeaders).filter(([key]) => key.toLowerCase() !== 'content-type'),
     );
 
+    const cloudRunAuthHeaders = await this.getCloudRunAuthHeader(baseUrl);
+
     const headers: Record<string, string> = {
       [CORRELATION_ID_HEADER]: correlationId,
       'x-forwarded-for': req.ip,
@@ -139,6 +165,7 @@ export class HttpProxyService {
       ...(req.headers.authorization ? { authorization: req.headers.authorization } : {}),
       ...(req.headers.cookie ? { cookie: req.headers.cookie } : {}),
       ...forwardedHeaders,
+      ...cloudRunAuthHeaders,
     };
 
     // Only set Content-Type and body for non-GET methods with a body

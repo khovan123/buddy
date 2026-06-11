@@ -96,6 +96,7 @@
     "axios": "^1.15.2",
     "cache-manager": "^6.4.0",
     "ctx": "^0.3.0",
+    "google-auth-library": "^10.7.0",
     "keyv": "^5.6.0",
     "mongoose-autopopulate": "^1.1.0",
     "pdf-lib": "^1.17.1",
