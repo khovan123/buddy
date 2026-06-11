@@ -27,6 +27,7 @@ describe('DocumentPreviewWorker', () => {
           findUnique: jest.fn(async () => ({
             s3Key: 'resources/file.docx',
             mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            originalFilename: 'file.docx',
             previewS3Key: null,
             previewStatus: 'PENDING',
             deletedAt: null,
@@ -42,13 +43,23 @@ describe('DocumentPreviewWorker', () => {
       uploadBuffer: jest.fn(async () => undefined),
     } as unknown as S3Service;
     const previewProcessor = {
-      generatePreview: jest.fn(async () => Buffer.from('preview text')),
+      generatePreviewForFile: jest.fn(async () => Buffer.from('preview text')),
       getPreviewMimeType: jest.fn(() => 'text/plain; charset=utf-8'),
     } as unknown as PreviewProcessorContext;
     const worker = new DocumentPreviewWorker(prisma, s3Service, previewProcessor);
 
     await worker.process({ data: { fileId: 'file-1' } } as Job<DocumentPreviewJobData>);
 
+    expect(previewProcessor.generatePreviewForFile).toHaveBeenCalledWith(
+      Buffer.from('source'),
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'file.docx',
+      0.3,
+    );
+    expect(previewProcessor.getPreviewMimeType).toHaveBeenCalledWith(
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'file.docx',
+    );
     expect(s3Service.uploadBuffer).toHaveBeenCalledWith(
       'previews/30pct/resources/file.docx',
       Buffer.from('preview text'),
