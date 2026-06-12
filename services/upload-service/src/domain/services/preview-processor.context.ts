@@ -3,10 +3,11 @@ import { Injectable } from '@nestjs/common';
 import { AppLogger } from '@libs/common';
 
 import type { IPreviewProcessor } from './preview-processor.interface';
-import { UnsupportedFormatError } from './preview-processor.interface';
 import { OfficePreviewStrategy } from './strategies/office-preview.strategy';
 import { PdfPreviewStrategy } from './strategies/pdf-preview.strategy';
 import { TextPreviewStrategy } from './strategies/text-preview.strategy';
+
+const FALLBACK_PREVIEW_MIME_TYPE = 'text/plain; charset=utf-8';
 
 /**
  * PreviewProcessorContext — Registry that auto-selects the correct
@@ -50,10 +51,12 @@ export class PreviewProcessorContext {
   }
 
   /**
-   * Check if any strategy supports the given MIME type.
+   * Check if any file can produce a preview artifact.
+   * Specific strategies generate partial previews; unsupported formats get
+   * a text placeholder preview so every upload can have a preview file.
    */
-  isSupported(mimeType: string, fileName?: string | null): boolean {
-    return this.getProcessor(mimeType, fileName) !== null;
+  isSupported(_mimeType: string, _fileName?: string | null): boolean {
+    return true;
   }
 
   /**
@@ -63,7 +66,7 @@ export class PreviewProcessorContext {
     const processor = this.getProcessor(mimeType, fileName);
 
     if (!processor) {
-      throw new UnsupportedFormatError(mimeType);
+      return FALLBACK_PREVIEW_MIME_TYPE;
     }
 
     return processor.previewMimeType?.(mimeType) ?? mimeType;
@@ -81,7 +84,7 @@ export class PreviewProcessorContext {
     const processor = this.getProcessor(mimeType);
 
     if (!processor) {
-      throw new UnsupportedFormatError(mimeType);
+      return this.buildFallbackPreview(mimeType);
     }
 
     this.logger.debug(
@@ -106,7 +109,7 @@ export class PreviewProcessorContext {
     const processor = this.getProcessor(mimeType, fileName);
 
     if (!processor) {
-      throw new UnsupportedFormatError(mimeType);
+      return this.buildFallbackPreview(mimeType, fileName);
     }
 
     this.logger.debug(
@@ -120,6 +123,21 @@ export class PreviewProcessorContext {
     );
 
     return result;
+  }
+
+  private buildFallbackPreview(mimeType: string, fileName?: string | null): Buffer {
+    const displayName = fileName?.trim() || 'Uploaded file';
+    const content = [
+      '# File Preview',
+      '',
+      `File: ${displayName}`,
+      `Type: ${mimeType || 'application/octet-stream'}`,
+      '',
+      'A generated inline preview is not available for this file format.',
+      'The full file is available after purchase.',
+    ].join('\n');
+
+    return Buffer.from(content, 'utf-8');
   }
 
   private resolveExtension(fileName?: string | null): string | null {

@@ -84,7 +84,11 @@ export class UserServicePublisher {
           }
         })
         .catch((err) => {
-          this.logger.error(`Failed bulk RPC fetch`, err);
+          this.logger.warn(
+            `User profile enrichment degraded after bulk RPC failure: ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
           // Resolve with null so caller doesn't hang
           for (const id of idsToFetch) {
             deferredResolvers.get(id)!(null);
@@ -207,9 +211,16 @@ export class UserServicePublisher {
         timeout: 10000,
       });
     } catch (err) {
-      this.logger.error(
-        `Error fetching user profiles via RPC`,
-        err instanceof Error ? err.stack : String(err),
+      this.logger.warn(
+        `User profile RPC unavailable; continuing without uploader enrichment: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+        {
+          routingKey,
+          exchange: EXCHANGES.USER,
+          userCount: userIds.length,
+          correlationId,
+        },
       );
       // Graceful fallback to avoid breaking query endpoints
       return [];

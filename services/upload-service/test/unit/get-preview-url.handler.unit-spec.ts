@@ -104,10 +104,10 @@ describe('GetPreviewUrlHandler', () => {
         processingError: 'Preview generation timed out.',
       },
     });
-    expect(previewQueue.add).not.toHaveBeenCalled();
+    expect(previewQueue.add).toHaveBeenCalledWith('generate-preview', { fileId: 'file-2' });
   });
 
-  it('serves original fallback for failed previews without requeueing on every request', async () => {
+  it('requeues failed previews and serves original fallback while preview file is regenerated', async () => {
     const prisma = {
       client: {
         mediaFile: {
@@ -119,6 +119,7 @@ describe('GetPreviewUrlHandler', () => {
             originalFilename: 'notes.pdf',
             updatedAt: new Date(),
           })),
+          update: jest.fn(async () => undefined),
         },
       },
     } as unknown as PrismaService;
@@ -141,7 +142,7 @@ describe('GetPreviewUrlHandler', () => {
 
     expect(result.status).toBe(PreviewStatus.AVAILABLE);
     expect(result.previewUrl).toBe('https://signed.example/original.pdf');
-    expect(previewQueue.add).not.toHaveBeenCalled();
+    expect(previewQueue.add).toHaveBeenCalledWith('generate-preview', { fileId: 'file-3' });
   });
 
   it('serves original fallback while preview generation is still processing', async () => {
@@ -201,7 +202,6 @@ describe('GetPreviewUrlHandler', () => {
       generatePreviewSignedUrl: jest.fn(async () => 'https://signed.example/lesson.md'),
     } as unknown as S3Service;
     const previewProcessor = {
-      isSupported: jest.fn(() => true),
       getPreviewMimeType: jest.fn(),
     } as unknown as PreviewProcessorContext;
     const previewQueue = { add: jest.fn() };
@@ -216,14 +216,10 @@ describe('GetPreviewUrlHandler', () => {
 
     expect(result.status).toBe(PreviewStatus.AVAILABLE);
     expect(result.previewUrl).toBe('https://signed.example/lesson.md');
-    expect(previewProcessor.isSupported).toHaveBeenCalledWith(
-      'application/octet-stream',
-      'lesson.md',
-    );
     expect(previewQueue.add).toHaveBeenCalledWith('generate-preview', { fileId: 'file-4' });
   });
 
-  it('serves original fallback when preview format is unsupported', async () => {
+  it('queues a placeholder preview file when preview format is unsupported', async () => {
     const prisma = {
       client: {
         mediaFile: {
@@ -235,6 +231,7 @@ describe('GetPreviewUrlHandler', () => {
             originalFilename: 'archive.zip',
             updatedAt: new Date(),
           })),
+          update: jest.fn(async () => undefined),
         },
       },
     } as unknown as PrismaService;
@@ -242,7 +239,6 @@ describe('GetPreviewUrlHandler', () => {
       generatePreviewSignedUrl: jest.fn(async () => 'https://signed.example/archive.zip'),
     } as unknown as S3Service;
     const previewProcessor = {
-      isSupported: jest.fn(() => false),
       getPreviewMimeType: jest.fn(),
     } as unknown as PreviewProcessorContext;
     const previewQueue = { add: jest.fn() };
@@ -257,6 +253,6 @@ describe('GetPreviewUrlHandler', () => {
 
     expect(result.status).toBe(PreviewStatus.AVAILABLE);
     expect(result.previewUrl).toBe('https://signed.example/archive.zip');
-    expect(previewQueue.add).not.toHaveBeenCalled();
+    expect(previewQueue.add).toHaveBeenCalledWith('generate-preview', { fileId: 'file-5' });
   });
 });

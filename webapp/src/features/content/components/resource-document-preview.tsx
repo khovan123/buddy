@@ -44,15 +44,11 @@ export function ResourceDocumentPreview({
   const unavailableLabel =
     previewStatus === "FAILED"
       ? "Preview failed"
-      : previewStatus === "UNSUPPORTED"
-        ? "Preview unavailable"
-        : "Processing Preview..."
+      : "Processing Preview..."
   const previewMessage =
     previewStatus === "FAILED"
       ? "Preview generation failed. Purchase to access the full document."
-      : previewStatus === "UNSUPPORTED"
-        ? "Preview is unavailable for this file format."
-        : previewData?.isPreview
+      : previewData?.isPreview
           ? `Preview limited to ${previewData.previewPercentage}%. Buy to unlock full document.`
           : "Free resource. View full document."
 

@@ -23,9 +23,9 @@ const PREVIEW_PROCESSING_TIMEOUT_MS = 10 * 60 * 1000;
  * Flow:
  * 1. Look up file by s3Key
  * 2. If preview AVAILABLE → generate inline signed URL
- * 3. If PROCESSING → return { isReady: false, status: PROCESSING }
- * 4. If PENDING/FAILED and format supported → queue job, return PROCESSING
- * 5. If format unsupported → return UNSUPPORTED
+ * 3. If PROCESSING → return an inline original-file fallback while the job runs
+ * 4. If PENDING/FAILED → queue job, return inline original-file fallback while preview file is created
+ * 5. Unsupported formats still generate a text placeholder preview file
  */
 @QueryHandler(GetPreviewUrlQuery)
 export class GetPreviewUrlHandler implements IQueryHandler<GetPreviewUrlQuery> {
@@ -90,6 +90,7 @@ export class GetPreviewUrlHandler implements IQueryHandler<GetPreviewUrlQuery> {
           },
         });
 
+        await this.queuePreviewGeneration(mediaFile.id, s3Key);
         return this.buildOriginalFilePreview(s3Key, mediaFile.mimeType);
       }
 
@@ -97,35 +98,11 @@ export class GetPreviewUrlHandler implements IQueryHandler<GetPreviewUrlQuery> {
     }
 
     if (mediaFile.previewStatus === 'FAILED') {
+      await this.queuePreviewGeneration(mediaFile.id, s3Key);
       return this.buildOriginalFilePreview(s3Key, mediaFile.mimeType);
     }
 
-    // 4. Check if format is supported
-    if (!this.previewProcessor.isSupported(mediaFile.mimeType, mediaFile.originalFilename)) {
-      this.logger.debug(
-        `Preview not supported for mimeType=${mediaFile.mimeType}, fileName=${mediaFile.originalFilename}`,
-      );
-      return this.buildOriginalFilePreview(s3Key, mediaFile.mimeType);
-    }
-
-    // 5. Queue a new generation job (PENDING or FAILED → retry)
-    this.logger.log(`Queueing preview generation for file ${mediaFile.id} (s3Key=${s3Key})`);
-
-    try {
-      await this.prisma.client.mediaFile.update({
-        where: { id: mediaFile.id },
-        data: { previewStatus: 'PROCESSING' },
-      });
-
-      await this.previewQueue.add('generate-preview', { fileId: mediaFile.id });
-    } catch (error) {
-      this.logger.warn(
-        `Preview queue failed for file ${mediaFile.id}; serving original inline fallback: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-    }
-
+    await this.queuePreviewGeneration(mediaFile.id, s3Key);
     return this.buildOriginalFilePreview(s3Key, mediaFile.mimeType);
   }
 
@@ -146,5 +123,24 @@ export class GetPreviewUrlHandler implements IQueryHandler<GetPreviewUrlQuery> {
       previewPercentage: DEFAULT_PREVIEW_PERCENTAGE,
       status: PreviewStatus.AVAILABLE,
     };
+  }
+
+  private async queuePreviewGeneration(fileId: string, s3Key: string): Promise<void> {
+    this.logger.log(`Queueing preview generation for file ${fileId} (s3Key=${s3Key})`);
+
+    try {
+      await this.prisma.client.mediaFile.update({
+        where: { id: fileId },
+        data: { previewStatus: 'PROCESSING' },
+      });
+
+      await this.previewQueue.add('generate-preview', { fileId });
+    } catch (error) {
+      this.logger.warn(
+        `Preview queue failed for file ${fileId}; serving original inline fallback: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
   }
 }
