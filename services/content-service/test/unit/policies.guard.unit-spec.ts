@@ -130,6 +130,31 @@ describe('PoliciesGuard', () => {
     );
   });
 
+  it('falls back to known creator plan limits when the external resolver misses', async () => {
+    const handle = jest.fn().mockReturnValue(true);
+    const guard = createGuard(handle, {
+      resolvePlanLimits: jest.fn().mockResolvedValue(null),
+    });
+
+    await guard.canActivate(
+      createContext({
+        sub: 'user-1',
+        roles: ['user'],
+        subscriptionPlan: SubscriptionPlan.CREATOR_FREE,
+      }),
+    );
+
+    expect(handle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        subscriptionPlan: SubscriptionPlan.CREATOR_FREE,
+        planLimits: expect.objectContaining({
+          canCreateContent: true,
+          maxResources: 5,
+        }),
+      }),
+    );
+  });
+
   it('keeps student plans student-only when there is no creator role', async () => {
     const handle = jest.fn().mockReturnValue(true);
     const guard = createGuard(handle, {

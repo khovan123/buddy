@@ -45,6 +45,52 @@ export const DEFAULT_PLAN_LIMITS: PlanLimits = {
   maxSearchResults: 0,
 };
 
+const MB = 1024 * 1024;
+const GB = 1024 * MB;
+
+/**
+ * Static fallback for known plans when billing-service plan catalog is unavailable.
+ * Billing-service remains the source of truth for mutable limits.
+ */
+export const FALLBACK_PLAN_LIMITS: Record<SubscriptionPlan, PlanLimits> = {
+  [SubscriptionPlan.CREATOR_FREE]: {
+    storageBytes: 500 * MB,
+    maxResources: 5,
+    maxTutorials: 3,
+    maxCollections: 2,
+    canCreateContent: true,
+    maxSearchResults: 20,
+  },
+  [SubscriptionPlan.CREATOR_PRO]: {
+    storageBytes: 50 * GB,
+    maxResources: -1,
+    maxTutorials: -1,
+    maxCollections: -1,
+    canCreateContent: true,
+    maxSearchResults: -1,
+  },
+  [SubscriptionPlan.STUDENT_FREE]: {
+    storageBytes: 1 * GB,
+    maxResources: 0,
+    maxTutorials: 0,
+    maxCollections: 0,
+    canCreateContent: false,
+    maxSearchResults: 10,
+  },
+  [SubscriptionPlan.STUDENT_PRO]: {
+    storageBytes: 25 * GB,
+    maxResources: 0,
+    maxTutorials: 0,
+    maxCollections: 0,
+    canCreateContent: false,
+    maxSearchResults: -1,
+  },
+};
+
+export function getFallbackPlanLimits(plan: SubscriptionPlan): PlanLimits {
+  return FALLBACK_PLAN_LIMITS[plan] ?? DEFAULT_PLAN_LIMITS;
+}
+
 export function isSubscriptionPlan(plan: string | undefined): plan is SubscriptionPlan {
   return Object.values(SubscriptionPlan).includes(plan as SubscriptionPlan);
 }

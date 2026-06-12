@@ -44,17 +44,20 @@ export class UserMongoRepository implements IUserProfileRepository {
 
   async getBasicProfilesByIds(
     ids: string[],
-  ): Promise<Array<{ userId: string; username: string; nickname: string; avatarUrl?: string }>> {
+  ): Promise<
+    Array<{ userId: string; email: string; username: string; nickname: string; avatarUrl?: string }>
+  > {
     const docs = await this.model
       .find(
         { userId: { $in: ids } },
-        { userId: 1, username: 1, 'profile.nickname': 1, 'profile.avatarUrl': 1 },
+        { userId: 1, email: 1, username: 1, 'profile.nickname': 1, 'profile.avatarUrl': 1 },
       )
       .lean()
       .exec();
 
     return docs.map((doc) => ({
       userId: doc.userId,
+      email: doc.email,
       username: doc.username ?? usernameSeedFromEmail(doc.email),
       nickname: doc.profile?.nickname || 'User',
       avatarUrl: doc.profile?.avatarUrl,

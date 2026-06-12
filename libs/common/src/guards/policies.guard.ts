@@ -1,6 +1,7 @@
 import {
   DEFAULT_PLAN_LIMITS,
   SubscriptionPlan,
+  getFallbackPlanLimits,
   isCreatorSubscriptionPlan,
   isSubscriptionPlan,
   type PlanLimits,
@@ -164,13 +165,13 @@ export class PoliciesGuard implements CanActivate {
         : null;
 
     if (!this.planLimitsResolver) {
-      return claimLimits ?? DEFAULT_PLAN_LIMITS;
+      return claimLimits ?? getFallbackPlanLimits(plan);
     }
 
     return (
       (await this.planLimitsResolver.resolvePlanLimits(plan, context)) ??
       claimLimits ??
-      DEFAULT_PLAN_LIMITS
+      getFallbackPlanLimits(plan)
     );
   }
 

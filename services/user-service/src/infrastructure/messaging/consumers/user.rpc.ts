@@ -30,19 +30,13 @@ export class UserRpcController {
 
     try {
       const uniqueIds = Array.from(new Set(data.payload.userIds)).slice(0, 100);
-      const users = await this.userRepository.findByIds(uniqueIds);
+      const users = await this.userRepository.getBasicProfilesByIds(uniqueIds);
+
       return users.map((user) => ({
         id: user.userId,
         nickname: user.nickname,
         email: user.email,
-        avatarUrl: user.profile.avatarUrl,
-        phone: user.profile.phone,
-        bio: user.profile.bio,
-        dateOfBirth: user.profile.dateOfBirth,
-        semester: user.profile.semester,
-        career: user.profile.career,
-        skills: user.profile.skills,
-        majorId: user.profile.majorId,
+        avatarUrl: user.avatarUrl,
       }));
     } catch (err) {
       this.logger.error(
