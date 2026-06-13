@@ -678,7 +678,7 @@ export function CreateTutorialForm() {
           : "Select a video file. Duration, file name, and size will be auto-detected."}
       </p>
 
-      <div className="rounded-2xl border bg-muted/20 p-6">
+      <div className="flex gap-6 rounded-2xl border bg-muted/20 p-6">
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           <Field>
             <Label htmlFor="fileName">File Name</Label>
@@ -724,32 +724,32 @@ export function CreateTutorialForm() {
         </div>
 
         {!isEditMode ? (
-        <div>
-          <Input
-            ref={fileInputRef}
-            id="video-picker"
-            type="file"
-            accept="video/*"
-            className="hidden"
-            onChange={handleVideoSelect}
-          />
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <FileUp className="size-6" />
-              {watchFileName ? "Change Video File" : "Choose Video File"}
-            </Button>
-            {watchFileName && (
-              <span className="text-xs text-muted-foreground">
-                {watchFileName} · {formatFileSize(watchFileSizeBytes)}
-              </span>
-            )}
-          </div>
-        </div>
+          <Field>
+            <Input
+              ref={fileInputRef}
+              id="video-picker"
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={handleVideoSelect}
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FileUp className="size-6" />
+                {watchFileName ? "Change Video File" : "Choose Video File"}
+              </Button>
+              {watchFileName && (
+                <span className="text-xs text-muted-foreground">
+                  {watchFileName} · {formatFileSize(watchFileSizeBytes)}
+                </span>
+              )}
+            </div>
+          </Field>
         ) : null}
       </div>
     </div>
@@ -953,10 +953,7 @@ export function CreateTutorialForm() {
         </div>
       </CardHeader>
       <CardContent>
-        <form
-          onSubmit={handleFormSubmit}
-          className="space-y-8"
-        >
+        <form onSubmit={handleFormSubmit} className="space-y-8">
           {mode === "minimal" ? (
             /* ── Minimal Mode: All sections sequential ───── */
             <div className="space-y-10">

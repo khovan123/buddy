@@ -650,7 +650,7 @@ export function CreateCollectionForm() {
         name="thumbnailFile"
         render={({ field, fieldState }) => (
           <div className="space-y-2">
-            <Label>Thumbnail (Optional)</Label>
+            <Label>Thumbnail</Label>
             <ThumbnailPicker
               value={field.value || thumbnailBase64 || null}
               onChange={(file) => {

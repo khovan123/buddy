@@ -102,7 +102,7 @@ export function ThumbnailPicker({
   }
 
   return (
-    <div className="w-full space-y-2">
+    <div className="flex w-1/2 flex-col items-center justify-center space-y-2">
       <input
         type="file"
         ref={inputRef}
@@ -116,12 +116,13 @@ export function ThumbnailPicker({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 transition-all duration-200 ${previewSource
+        className={`relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 transition-all duration-200 ${
+          previewSource
             ? "border-transparent bg-muted/20"
             : isDragging
               ? "border-primary bg-primary/5"
               : "cursor-pointer border-dashed border-border hover:border-primary/50 hover:bg-muted/50"
-          } ${error ? "border-destructive/50 hover:border-destructive" : ""}`}
+        } ${error ? "border-destructive/50 hover:border-destructive" : ""}`}
       >
         {previewSource ? (
           <>
@@ -169,10 +170,7 @@ export function ThumbnailPicker({
               Select a thumbnail
             </p>
             <p className="text-xs">
-              Drag and drop an image here or click to browse (Max 2MB)
-            </p>
-            <p className="mt-2 text-2xs tracking-widest text-muted-foreground/50 uppercase">
-              16:9 Aspect Ratio
+              Drag and drop an image here or click to browse
             </p>
           </div>
         )}
@@ -183,7 +181,7 @@ export function ThumbnailPicker({
           <p className="text-sm font-medium text-destructive">{error}</p>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Use JPG, PNG, or WEBP formats.
+            Use JPG, PNG, or WEBP formats (MAX 2MB).
           </p>
         )}
 

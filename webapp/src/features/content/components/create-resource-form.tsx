@@ -250,7 +250,13 @@ export function CreateResourceForm() {
     return () => {
       ignore = true
     }
-  }, [editingResourceResponse, isEditMode, selectedCourseId, selectedMajorId, setValue])
+  }, [
+    editingResourceResponse,
+    isEditMode,
+    selectedCourseId,
+    selectedMajorId,
+    setValue,
+  ])
 
   // ── Error-to-tab auto-navigation (called on validation failure) ──
   const onInvalid = useCallback(
@@ -617,104 +623,107 @@ export function CreateResourceForm() {
           : "Add at least one file. Upload URLs will be generated after submission."}
       </p>
 
-      {!isEditMode && fileFields.map((field, index) => (
-        <div
-          key={field.id}
-          className="flex items-start gap-3 rounded-xl border bg-muted/20 p-4"
-        >
-          <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-3">
-            <Field>
-              <Label htmlFor={`file-name-${index}`}>File Name</Label>
-              <Input
-                id={`file-name-${index}`}
-                {...form.register(`files.${index}.fileName` as const)}
-                placeholder="lecture-notes.pdf"
-                readOnly
-                className="cursor-default rounded-xl bg-muted/50"
-              />
-              {errors.files?.[index]?.fileName && (
-                <p className="text-xs text-destructive">
-                  {errors.files[index]?.fileName?.message}
-                </p>
-              )}
-            </Field>
-            <Field>
-              <Label htmlFor={`file-size-${index}`}>File Size (bytes)</Label>
-              <Input
-                id={`file-size-${index}`}
-                type="number"
-                {...form.register(`files.${index}.fileSizeBytes` as const, {
-                  valueAsNumber: true,
-                })}
-                placeholder="1048576"
-                readOnly
-                className="cursor-default rounded-xl bg-muted/50"
-              />
-              {errors.files?.[index]?.fileSizeBytes && (
-                <p className="text-xs text-destructive">
-                  {errors.files[index]?.fileSizeBytes?.message}
-                </p>
-              )}
-            </Field>
-            <Field>
-              <Label htmlFor={`file-mime-${index}`}>MIME Type (optional)</Label>
-              <Input
-                id={`file-mime-${index}`}
-                {...form.register(`files.${index}.mimeType` as const)}
-                placeholder="application/pdf"
-                readOnly
-                className="cursor-default rounded-xl bg-muted/50"
-              />
-            </Field>
-
-            {/* File Picker — spans full row below the detail inputs */}
-            <div className="col-span-full">
-              <Input
-                ref={(el) => {
-                  fileInputRefs.current[index] = el
-                }}
-                id={`file-picker-${index}`}
-                type="file"
-                className="hidden"
-                onChange={(e) => handleFileSelect(index, e)}
-              />
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRefs.current[index]?.click()}
-                >
-                  <FileUp className="size-5" />
-                  {watchedFiles[index]?.fileName
-                    ? "Change File"
-                    : "Choose File"}
-                </Button>
-                {watchedFiles[index]?.fileName && (
-                  <span className="text-xs text-muted-foreground">
-                    {watchedFiles[index]?.fileName} ·{" "}
-                    {formatFileSize(watchedFiles[index]?.fileSizeBytes || 0)}
-                  </span>
+      {!isEditMode &&
+        fileFields.map((field, index) => (
+          <div
+            key={field.id}
+            className="flex items-start gap-3 rounded-xl border bg-muted/20 p-4"
+          >
+            <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-3">
+              <Field>
+                <Label htmlFor={`file-name-${index}`}>File Name</Label>
+                <Input
+                  id={`file-name-${index}`}
+                  {...form.register(`files.${index}.fileName` as const)}
+                  placeholder="lecture-notes.pdf"
+                  readOnly
+                  className="cursor-default rounded-xl bg-muted/50"
+                />
+                {errors.files?.[index]?.fileName && (
+                  <p className="text-xs text-destructive">
+                    {errors.files[index]?.fileName?.message}
+                  </p>
                 )}
-              </div>
+              </Field>
+              <Field>
+                <Label htmlFor={`file-size-${index}`}>File Size (bytes)</Label>
+                <Input
+                  id={`file-size-${index}`}
+                  type="number"
+                  {...form.register(`files.${index}.fileSizeBytes` as const, {
+                    valueAsNumber: true,
+                  })}
+                  placeholder="1048576"
+                  readOnly
+                  className="cursor-default rounded-xl bg-muted/50"
+                />
+                {errors.files?.[index]?.fileSizeBytes && (
+                  <p className="text-xs text-destructive">
+                    {errors.files[index]?.fileSizeBytes?.message}
+                  </p>
+                )}
+              </Field>
+              <Field>
+                <Label htmlFor={`file-mime-${index}`}>
+                  MIME Type (optional)
+                </Label>
+                <Input
+                  id={`file-mime-${index}`}
+                  {...form.register(`files.${index}.mimeType` as const)}
+                  placeholder="application/pdf"
+                  readOnly
+                  className="cursor-default rounded-xl bg-muted/50"
+                />
+              </Field>
+
+              {/* File Picker — spans full row below the detail inputs */}
+              <Field>
+                <Input
+                  ref={(el) => {
+                    fileInputRefs.current[index] = el
+                  }}
+                  id={`file-picker-${index}`}
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(index, e)}
+                />
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRefs.current[index]?.click()}
+                  >
+                    <FileUp className="size-5" />
+                    {watchedFiles[index]?.fileName
+                      ? "Change File"
+                      : "Choose File"}
+                  </Button>
+                  {/* {watchedFiles[index]?.fileName && (
+                    <span className="text-xs text-muted-foreground">
+                      {watchedFiles[index]?.fileName} ·{" "}
+                      {formatFileSize(watchedFiles[index]?.fileSizeBytes || 0)}
+                    </span>
+                  )} */}
+                </div>
+              </Field>
             </div>
+            {fileFields.length > 1 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="mt-6"
+                onClick={() => {
+                  selectedFilesRef.current.delete(index)
+                  removeFile(index)
+                }}
+              >
+                <Trash2 className="size-4 text-destructive" />
+              </Button>
+            )}
           </div>
-          {fileFields.length > 1 && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="mt-6"
-              onClick={() => {
-                selectedFilesRef.current.delete(index)
-                removeFile(index)
-              }}
-            >
-              <Trash2 className="size-4 text-destructive" />
-            </Button>
-          )}
-        </div>
-      ))}
+        ))}
       {errors.files?.root && (
         <p className="text-sm text-destructive">{errors.files.root.message}</p>
       )}
@@ -738,7 +747,7 @@ export function CreateResourceForm() {
           name="thumbnailFile"
           render={({ field, fieldState }) => (
             <div className="space-y-2">
-              <Label>Thumbnail (Optional)</Label>
+              <Label>Thumbnail</Label>
               <ThumbnailPicker
                 value={field.value || thumbnailBase64 || null}
                 onChange={(file) => {
@@ -834,7 +843,7 @@ export function CreateResourceForm() {
       </div>
       <div className="border-t border-border/50 pt-4">
         <Field>
-          <Label>Collection (optional)</Label>
+          <Label>Collection</Label>
           {!selectedMajorId || !selectedCourseId ? (
             <div className="rounded-xl border border-dashed border-border/60 p-6 text-sm text-muted-foreground">
               Select a major and course to load your matching resource
@@ -853,10 +862,7 @@ export function CreateResourceForm() {
               emptyDescription="Create a Resource Collection for this major and course, then come back here."
             />
           )}
-          <input
-            type="hidden"
-            {...form.register("collectionId")}
-          />
+          <input type="hidden" {...form.register("collectionId")} />
         </Field>
       </div>
     </div>
