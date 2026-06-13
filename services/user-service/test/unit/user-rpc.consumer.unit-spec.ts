@@ -7,7 +7,7 @@ import { AppLogger } from '@libs/common';
 
 import { USER_REPOSITORY } from '../../src/domain/repositories/tokens';
 import { UserRpcController } from '../../src/infrastructure/messaging/consumers/user.rpc';
-import { MESSAGE_CONTROLLERS } from '../../src/infrastructure/messaging/message.module';
+import { MESSAGE_COMPONENTS } from '../../src/infrastructure/messaging/message.module';
 
 describe('UserRpcController', () => {
   beforeAll(() => {
@@ -19,8 +19,8 @@ describe('UserRpcController', () => {
   const createController = (repository: ConstructorParameters<typeof UserRpcController>[0]) =>
     new UserRpcController(repository);
 
-  it('is registered for RabbitMQ controller discovery', () => {
-    expect(MESSAGE_CONTROLLERS).toContain(UserRpcController);
+  it('is registered for RabbitMQ provider discovery', () => {
+    expect(MESSAGE_COMPONENTS).toContain(UserRpcController);
   });
 
   it('returns basic profiles through the lightweight repository path', async () => {
