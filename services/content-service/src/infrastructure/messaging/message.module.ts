@@ -13,7 +13,9 @@ import { StorageBrokerPublisher } from './publishers/storage-broker.rpc';
 import { UserServicePublisher } from './publishers/user-service.rpc';
 import { IdempotentConsumerService } from '../services/idempotent-consumer.service';
 
-export const MESSAGE_CONTROLLERS = [
+export const MESSAGE_CONTROLLERS = [];
+
+export const MESSAGE_COMPONENTS = [
   ContentValidationConsumer,
   PurchaseCatalogConsumer,
   PurchaseConsumer,
@@ -22,9 +24,6 @@ export const MESSAGE_CONTROLLERS = [
   ResourceUploadedConsumer,
   ThumbnailUploadedConsumer,
   UserProfileUpdatedConsumer,
-];
-
-export const MESSAGE_COMPONENTS = [
   RecommendationSyncPublisher,
   ContentModerationNotificationPublisher,
   ContentRetryPublisher,

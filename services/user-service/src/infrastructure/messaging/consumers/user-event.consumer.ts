@@ -8,7 +8,7 @@ import {
   runWithCorrelationId,
 } from '@libs/common';
 import { AUTH_ROUTINGKEYS } from '@libs/contracts';
-import { Controller } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import type { ConsumeMessage } from 'amqplib';
 import { CreateUserProfileCommand } from '../../../application/commands/create-user-profile.command';
@@ -26,7 +26,7 @@ interface UserRegisteredPayload {
 }
 
 /** Represents the  user event consumer component. */
-@Controller()
+@Injectable()
 export class UserEventConsumer {
   private readonly logger = new AppLogger(UserEventConsumer.name);
 

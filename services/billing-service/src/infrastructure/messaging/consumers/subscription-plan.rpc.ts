@@ -5,7 +5,7 @@ import {
   type BillingSubscriptionPlanRpcResponse,
   type SubscriptionPlanDetails,
 } from '@libs/contracts';
-import { Controller } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { Prisma } from '../../persistence/prisma/generated/client';
 import { PrismaService } from '../../persistence/prisma/prisma.service';
 
@@ -26,7 +26,7 @@ type CatalogRow = {
   pbac: Prisma.JsonValue | null;
 };
 
-@Controller()
+@Injectable()
 export class SubscriptionPlanRpcController {
   private readonly logger = new AppLogger(SubscriptionPlanRpcController.name);
 

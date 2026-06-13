@@ -5,7 +5,7 @@ import {
   extractRmqPayload,
   type RmqMessagePayload,
 } from '@libs/contracts';
-import { Controller, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { RabbitSubscribe, Nack } from '@golevelup/nestjs-rabbitmq';
 import type { ConsumeMessage } from 'amqplib';
 
@@ -14,7 +14,7 @@ import { RESOURCE_REPOSITORY } from '../../../domain/repositories/tokens';
 import { IdempotentConsumerService } from '../../../infrastructure/services/idempotent-consumer.service';
 
 /** Represents the  resource uploaded consumer component. */
-@Controller()
+@Injectable()
 export class ResourceUploadedConsumer {
   private readonly logger = new AppLogger(ResourceUploadedConsumer.name);
 

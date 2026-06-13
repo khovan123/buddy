@@ -16,9 +16,8 @@ describe('UserRpcController', () => {
     process.env.NODE_ENV ??= 'test';
   });
 
-  const createController = (
-    repository: ConstructorParameters<typeof UserRpcController>[0],
-  ) => new UserRpcController(repository);
+  const createController = (repository: ConstructorParameters<typeof UserRpcController>[0]) =>
+    new UserRpcController(repository);
 
   it('is registered for RabbitMQ controller discovery', () => {
     expect(MESSAGE_CONTROLLERS).toContain(UserRpcController);

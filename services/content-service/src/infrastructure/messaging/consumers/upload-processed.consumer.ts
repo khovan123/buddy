@@ -7,7 +7,7 @@ import {
   extractRmqPayload,
   type RmqMessagePayload,
 } from '@libs/contracts';
-import { Controller, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import type { ConsumeMessage } from 'amqplib';
 
 import type { IResourceRepository } from '../../../domain/repositories/resource.repository.interface';
@@ -25,7 +25,7 @@ import { IdempotentConsumerService } from '../../../infrastructure/services/idem
  * 4. Chuyển status sang AVAILABLE
  * 5. Retry tối đa 3 lần nếu lỗi, sau đó discard
  */
-@Controller()
+@Injectable()
 export class UploadProcessedConsumer {
   private readonly logger = new AppLogger(UploadProcessedConsumer.name);
 

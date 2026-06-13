@@ -9,7 +9,7 @@ import {
   runWithCorrelationId,
 } from '@libs/common';
 import { UPLOAD_ROUTINGKEYS, VideoUploadRequestEvent } from '@libs/contracts';
-import { Controller, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import type { ConsumeMessage } from 'amqplib';
 import { ProcessVideoCommand } from '../../../application/commands/process-video.command';
@@ -17,7 +17,7 @@ import { ProcessVideoCommand } from '../../../application/commands/process-video
 const MAX_RETRY = 3;
 
 /** Represents the  video upload request consumer component. */
-@Controller()
+@Injectable()
 export class VideoUploadRequestConsumer {
   private readonly logger = new AppLogger(VideoUploadRequestConsumer.name);
 

@@ -17,7 +17,7 @@ import {
   PurchaseCompletedEvent,
   RECOMMENDATION_ROUTINGKEYS,
 } from '@libs/contracts';
-import { Controller, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { RabbitSubscribe, Nack } from '@golevelup/nestjs-rabbitmq';
 import type { ConsumeMessage } from 'amqplib';
@@ -57,7 +57,7 @@ type ModelTrainedPayload = {
 };
 
 /** RabbitMQ consumer for auth-related notification events. */
-@Controller()
+@Injectable()
 export class NotificationConsumer {
   private readonly logger = new AppLogger(NotificationConsumer.name);
 

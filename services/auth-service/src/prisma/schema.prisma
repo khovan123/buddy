@@ -18,6 +18,7 @@ enum UserStatus {
 model User {
   id               String     @id @default(uuid())
   email            String     @unique
+  username         String     @unique
   passwordHash     String     @map("password_hash")
   nickname         String     @map("nickname")
   roles            String[]   @default(["user"])

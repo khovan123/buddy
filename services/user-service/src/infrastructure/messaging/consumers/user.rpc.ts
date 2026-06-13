@@ -1,11 +1,11 @@
 import { Nack, RabbitRPC } from '@golevelup/nestjs-rabbitmq';
 import { AppLogger, EXCHANGES, QUEUES } from '@libs/common';
 import { GetUsersProfilesEvent, USER_RPC, UserProfileRpcResponseDto } from '@libs/contracts';
-import { Controller, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { USER_REPOSITORY } from '../../../domain/repositories/tokens';
 import type { IUserProfileRepository } from '../../../domain/repositories/user-profile.repository.interface';
 
-@Controller()
+@Injectable()
 export class UserRpcController {
   private readonly logger = new AppLogger(UserRpcController.name);
 

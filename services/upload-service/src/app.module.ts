@@ -58,6 +58,7 @@ const uploadQueueImports = uploadWorkersEnabled
         useFactory: () => ({
           connection: {
             ...getRedisConnectionOptions('upload-bullmq', {
+              enableOfflineQueue: true,
               maxRetriesPerRequest: null,
             }),
           },

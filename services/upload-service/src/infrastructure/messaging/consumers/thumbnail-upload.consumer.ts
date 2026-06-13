@@ -14,7 +14,7 @@ import {
   UploadThumbnailEvent,
   type RmqMessagePayload,
 } from '@libs/contracts';
-import { Controller } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { RabbitSubscribe, Nack } from '@golevelup/nestjs-rabbitmq';
 import type { ConsumeMessage } from 'amqplib';
 import { CloudinaryService } from '../../persistence/cloudinary/cloudinary.service';
@@ -24,7 +24,7 @@ import { UploadEventPublisher } from '../publishers/upload-event.publisher';
  * Event consumer that handles async thumbnail image uploads to Cloudinary.
  * After processing, publishes a completion/failure event back for content-service.
  */
-@Controller()
+@Injectable()
 export class ThumbnailUploadConsumer {
   private readonly logger = new AppLogger(ThumbnailUploadConsumer.name);
 

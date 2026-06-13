@@ -3,6 +3,7 @@ import { User, UserRole } from '../../../../domain/entities/user.entity';
 import { IUserRepository } from '../../../../domain/repositories/user.repository.interface';
 import { Email } from '../../../../domain/value-objects/email.vo';
 import { Password } from '../../../../domain/value-objects/password.vo';
+import { usernameSeedFromEmail } from '../../../../domain/value-objects/username.vo';
 import { PrismaService } from '../prisma.service';
 
 import type { User as PrismaUser, UserStatus } from '../generated/browser';
@@ -116,6 +117,7 @@ export class UserPrismaRepository implements IUserRepository {
     return {
       id: user.id,
       email: user.email.value,
+      username: usernameSeedFromEmail(user.email.value),
       passwordHash: user.password.hashed,
       nickname: user.nickname,
       roles: user.roles,

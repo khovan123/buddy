@@ -1,6 +1,6 @@
 import { AppLogger, EXCHANGES, QUEUES } from '@libs/common';
 import { CONTENT_ROUTINGKEYS, ContentValidationItemType } from '@libs/contracts';
-import { Controller, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { RabbitRPC } from '@golevelup/nestjs-rabbitmq';
 import { isValidObjectId } from 'mongoose';
 import type { ICollectionRepository } from '../../../domain/repositories/collection.repository.interface';
@@ -28,7 +28,7 @@ type ValidateContentStatusResponse = {
 };
 
 /** Represents the  content validation consumer component. */
-@Controller()
+@Injectable()
 export class ContentValidationConsumer {
   private readonly logger = new AppLogger(ContentValidationConsumer.name);
 

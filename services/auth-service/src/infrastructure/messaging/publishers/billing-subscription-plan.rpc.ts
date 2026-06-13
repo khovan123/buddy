@@ -9,6 +9,7 @@ import {
 } from '@libs/common';
 import {
   GetBillingSubscriptionPlanEvent,
+  getFallbackPlanLimits,
   isSubscriptionPlan,
   type BillingSubscriptionPlanRpcResponse,
   type SubscriptionPlanDetails,
@@ -146,14 +147,7 @@ export class BillingSubscriptionPlanPublisher {
 
     return {
       code: plan,
-      limits: {
-        storageBytes: 0,
-        maxResources: 0,
-        maxTutorials: 0,
-        maxCollections: 0,
-        canCreateContent: false,
-        maxSearchResults: 0,
-      },
+      limits: getFallbackPlanLimits(plan),
       pbac: {},
     };
   }

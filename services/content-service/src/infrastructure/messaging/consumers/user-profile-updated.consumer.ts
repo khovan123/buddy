@@ -9,7 +9,7 @@ import {
 import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import type { ConsumeMessage } from 'amqplib';
 import { USER_ROUTINGKEYS } from '@libs/contracts';
-import { Controller } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UserServicePublisher } from '../publishers/user-service.rpc';
 
 interface UserProfileUpdatedPayload {
@@ -27,7 +27,7 @@ interface UserProfileUpdatedPayload {
  *
  * All cache operations are fail-safe — errors are logged but never propagated.
  */
-@Controller()
+@Injectable()
 export class UserProfileUpdatedConsumer {
   private readonly logger = new AppLogger(UserProfileUpdatedConsumer.name);
 

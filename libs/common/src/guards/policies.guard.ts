@@ -1,5 +1,4 @@
 import {
-  DEFAULT_PLAN_LIMITS,
   SubscriptionPlan,
   getFallbackPlanLimits,
   isCreatorSubscriptionPlan,

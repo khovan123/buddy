@@ -7,7 +7,7 @@ import {
   extractRmqPayload,
   type RmqMessagePayload,
 } from '@libs/contracts';
-import { Controller, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import type { ConsumeMessage } from 'amqplib';
 
 import type { IResourceRepository } from '../../../domain/repositories/resource.repository.interface';
@@ -21,7 +21,7 @@ import { ContentRetryPublisher } from '../publishers/content-retry.publisher';
 import { ContentModerationNotificationPublisher } from '../publishers/content-moderation-notification.publisher';
 import { RecommendationSyncPublisher } from '../publishers/recommendation-sync.publisher';
 
-@Controller()
+@Injectable()
 export class ContentExtractedConsumer {
   private readonly logger = new AppLogger(ContentExtractedConsumer.name);
 

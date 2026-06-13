@@ -13,7 +13,7 @@
     "mfe:check": "node scripts/validate-micro-frontends.mjs",
     "test": "jest",
     "test:unit": "jest",
-    "proxy": "microfrontends proxy microfrontends.json --local-apps buddy",
+    "proxy": "microfrontends proxy",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"
   },

@@ -7,14 +7,14 @@ import {
   extractRmqPayload,
   type RmqMessagePayload,
 } from '@libs/contracts';
-import { Controller, Inject, UseInterceptors } from '@nestjs/common';
+import { Injectable, Inject, UseInterceptors } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { GrantAccessCommand } from '../../../application/commands/grant-access.command';
 import type { ISagaPublisher } from '../../../domain/repositories/saga-publisher.interface';
 import { COMPENSATION_PUBLISHER } from '../../../domain/repositories/tokens';
 
 /** RabbitMQ consumer for purchase-completed events (access granting). */
-@Controller()
+@Injectable()
 @UseInterceptors(OtelTracingInterceptor)
 export class AccessConsumer {
   private readonly logger = new AppLogger(AccessConsumer.name);

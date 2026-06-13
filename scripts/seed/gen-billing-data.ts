@@ -16,7 +16,7 @@ import {
  *   - userId: must reference existing auth user
  *   - type: TransactionType enum (TOP_UP, PURCHASE_DEBIT, PURCHASE_CREDIT, etc.)
  *   - status: TransactionStatus enum (PENDING, SUCCESS, FAILED)
- *   - provider: PaymentProvider enum (PAYOS, PAYPAL, BANK_TRANSFER) — required for TOP_UP
+ *   - provider: PaymentProvider enum (SEPAY, BANK_TRANSFER) — required for TOP_UP
  *   - externalRef: unique if present
  *   - idempotencyKey: unique if present
  *   - amountInCents: BigInt
@@ -46,7 +46,7 @@ export function genWalletTransactions(walletIdsByUser: Map<string, string>, coun
 
     if (r < 0.6) {
       type = 'TOP_UP';
-      provider = ['PAYOS', 'BANK_TRANSFER'][randInt(0, 1)];
+      provider = ['SEPAY', 'BANK_TRANSFER'][randInt(0, 1)];
       amountInCents = BigInt(randInt(50, 500) * 1000); // 50k–500k VND
     } else if (r < 0.9) {
       type = 'PURCHASE_DEBIT';

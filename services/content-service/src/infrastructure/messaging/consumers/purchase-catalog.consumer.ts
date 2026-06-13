@@ -4,7 +4,7 @@ import {
   ContentPurchaseCatalogItemType,
   PurchaseCatalogResponse,
 } from '@libs/contracts';
-import { Controller } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { RabbitRPC } from '@golevelup/nestjs-rabbitmq';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -47,7 +47,7 @@ type TutorialBundleSource = {
 };
 
 /** Represents the  purchase catalog consumer component. */
-@Controller()
+@Injectable()
 export class PurchaseCatalogConsumer {
   private readonly logger = new AppLogger(PurchaseCatalogConsumer.name);
 

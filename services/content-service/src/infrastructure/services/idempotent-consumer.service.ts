@@ -204,7 +204,8 @@ export class IdempotentConsumerService {
 
     return (
       error.message.includes('Transaction numbers are only allowed on a replica set member') ||
-      error.message.includes('Transaction support is not available')
+      error.message.includes('Transaction support is not available') ||
+      error.message.includes('This MongoDB deployment does not support retryable writes')
     );
   }
 }

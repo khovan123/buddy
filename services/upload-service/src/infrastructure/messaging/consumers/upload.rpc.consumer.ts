@@ -7,7 +7,7 @@ import {
   UPLOAD_ROUTINGKEYS,
   UploadType,
 } from '@libs/contracts';
-import { Controller } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { QueryBus } from '@nestjs/cqrs';
 import { GetPreviewUrlQuery } from '../../../application/queries/get-preview-url.query';
 import { GetUploadHistoryByContentQuery } from '../../../application/queries/get-upload-history-by-content.query';
@@ -19,7 +19,7 @@ import {
 import { GetUploadHistoryByContentRpcDto } from '../../../presentation/events/dtos/rpc-upload-history.dto';
 
 /** Controller handling incoming requests for UploadRpc. */
-@Controller()
+@Injectable()
 export class UploadUrlConsumer {
   constructor(private readonly queryBus: QueryBus) {}
 

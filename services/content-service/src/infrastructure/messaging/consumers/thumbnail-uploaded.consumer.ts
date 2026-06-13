@@ -6,7 +6,7 @@ import {
   UPLOAD_ROUTINGKEYS,
   type RmqMessagePayload,
 } from '@libs/contracts';
-import { Controller, Inject } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { RabbitSubscribe, Nack } from '@golevelup/nestjs-rabbitmq';
 import type { ConsumeMessage } from 'amqplib';
 
@@ -21,7 +21,7 @@ import { IdempotentConsumerService } from '../../../infrastructure/services/idem
  *
  * Uses IdempotentConsumerService for duplicate detection and transactional safety.
  */
-@Controller()
+@Injectable()
 export class ThumbnailUploadedConsumer {
   private readonly logger = new AppLogger(ThumbnailUploadedConsumer.name);
 

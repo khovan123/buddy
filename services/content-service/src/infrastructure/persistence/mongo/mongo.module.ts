@@ -21,6 +21,7 @@ import { SavedContent, SavedContentSchema } from './schemas/saved-content.schema
       useFactory: (config: ConfigService) => ({
         uri: config.get<string>('MONGO_URI'),
         dbName: 'content_db',
+        retryWrites: false,
       }),
     }),
 

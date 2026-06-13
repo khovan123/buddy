@@ -1,7 +1,7 @@
 import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { EXCHANGES, QUEUES } from '@libs/common';
 import { BILLING_ROUTINGKEYS, PurchaseCompletedEvent } from '@libs/contracts';
-import { Controller, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { ConsumeMessage } from 'amqplib';
 import { Model } from 'mongoose';
@@ -26,7 +26,7 @@ type SavedContentInput = {
   };
 };
 
-@Controller()
+@Injectable()
 export class PurchaseConsumer {
   private readonly logger = new Logger(PurchaseConsumer.name);
 
