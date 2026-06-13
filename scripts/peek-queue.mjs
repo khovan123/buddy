@@ -3,9 +3,9 @@
  * Gets them without acking to see what's stuck
  */
 import amqplib from 'amqplib';
+import { getRabbitMqUrl } from './rabbitmq-env.mjs';
 
-const RABBITMQ_URL =
-  'amqps://hujzkhnr:Hxc9jXXGqVEOaXpysq_DDrA47rt8B86W@turkey.rmq.cloudamqp.com/hujzkhnr';
+const RABBITMQ_URL = getRabbitMqUrl();
 const QUEUE = 'upload.video.commands';
 
 async function main() {

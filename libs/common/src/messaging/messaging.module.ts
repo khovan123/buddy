@@ -4,15 +4,50 @@ import { EXCHANGES } from '../config/rabbitmq.config';
 
 export const RABBITMQ_CONNECTION = Symbol('RABBITMQ_CONNECTION');
 
+function getRequiredRabbitMqUrl(): URL {
+  const rawUrl = process.env.RABBITMQ_URL?.trim().replace(/^['"]|['"]$/g, '');
+  if (!rawUrl) {
+    throw new Error('Need RABBITMQ_URL config for MessagingModule');
+  }
+
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error('Invalid RABBITMQ_URL config for MessagingModule');
+  }
+
+  if (url.protocol !== 'amqp:' && url.protocol !== 'amqps:') {
+    throw new Error('RABBITMQ_URL must use amqp:// or amqps://');
+  }
+
+  if (url.protocol === 'amqps:' && url.port === '5672') {
+    throw new Error(
+      'RABBITMQ_URL uses amqps:// with non-TLS port 5672; use port 5671 or omit port',
+    );
+  }
+
+  return url;
+}
+
+function getPositiveIntEnv(name: string, fallback: number): number {
+  const rawValue = process.env[name]?.trim();
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const value = Number.parseInt(rawValue, 10);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 @Global()
 @Module({
   imports: [
     RabbitMQModule.forRootAsync({
       useFactory: () => {
-        const url = process.env.RABBITMQ_URL;
-        if (!url) {
-          throw new Error('Need RABBITMQ_URL config for MessagingModule');
-        }
+        const url = getRequiredRabbitMqUrl();
+        const heartbeatIntervalInSeconds = getPositiveIntEnv('RABBITMQ_HEARTBEAT_SECONDS', 30);
+        const reconnectTimeInSeconds = getPositiveIntEnv('RABBITMQ_RECONNECT_SECONDS', 5);
 
         return {
           exchanges: [
@@ -31,7 +66,28 @@ export const RABBITMQ_CONNECTION = Symbol('RABBITMQ_CONNECTION');
             },
             { name: EXCHANGES.DEAD_LETTER, type: 'direct' },
           ],
-          uri: url,
+          uri: url.toString(),
+          connectionManagerOptions: {
+            heartbeatIntervalInSeconds,
+            reconnectTimeInSeconds,
+            connectionOptions:
+              url.protocol === 'amqps:'
+                ? {
+                    servername: url.hostname,
+                    clientProperties: {
+                      connection_name: `${process.env.SERVICE_NAME ?? 'service'}:${
+                        process.env.K_REVISION ?? process.env.NODE_ENV ?? 'local'
+                      }`,
+                    },
+                  }
+                : {
+                    clientProperties: {
+                      connection_name: `${process.env.SERVICE_NAME ?? 'service'}:${
+                        process.env.K_REVISION ?? process.env.NODE_ENV ?? 'local'
+                      }`,
+                    },
+                  },
+          },
           connectionInitOptions: { wait: false },
           enableControllerDiscovery: true,
         };
