@@ -8,7 +8,7 @@ class SocketService {
       return this.socket
     }
 
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL
+    const socketUrl = process.env.NEXT_SOCKET_URL
 
     if (!this.socket) {
       this.socket = io(socketUrl, {

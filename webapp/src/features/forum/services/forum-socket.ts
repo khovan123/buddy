@@ -1,6 +1,6 @@
 "use client"
 
-import { getSession } from "next-auth/react"
+import { getSession } from "next-auth/react";
 
 import type {
   ForumBootstrap,
@@ -8,7 +8,7 @@ import type {
   ForumMessage,
   ForumTopic,
   ForumTopicReaction,
-} from "@/features/forum/types"
+} from "@/features/forum/types";
 
 type ForumSocketEvent =
   | { type: "forum.topic"; data: ForumTopic }
@@ -260,8 +260,7 @@ function unwrapApiData<T>(payload: ForumSocketResponse<T>["data"]) {
 
 function getForumSocketUrl() {
   const base =
-    process.env.NEXT_PUBLIC_SOCKET_URL ||
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_SOCKET_URL ||
     process.env.NEXT_API_BASE_URL ||
     "http://127.0.0.1:3000"
   const url = new URL(base)

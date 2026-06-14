@@ -26,6 +26,7 @@ export * from './config/s3.config';
 export * from './config/supabase.config';
 
 // Health
+export * from './health/cloud-run-auth.util';
 export * from './health/cloud-run-health.indicator';
 export * from './health/health.controller';
 export * from './health/prisma-health.indicator';

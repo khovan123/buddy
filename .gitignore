@@ -35,6 +35,8 @@ GEMINI.md
 /.codex/config.toml.bak
 /.mcp.json
 /.mcp.json.bak
+/.vscode/mcp.json
+/.vscode/mcp.json.bak
 /AGENTS.md
 /AGENTS.md.bak
 /CLAUDE.md
@@ -45,3 +47,10 @@ GEMINI.md
 .codex/marketplaces/contextos/
 .claude/settings.json
 .gemini/
+
+QODER.md
+RTK.md
+
+awesome-claude-skills/
+awesome-codex-skills/
+.qoder/

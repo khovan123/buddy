@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { HealthCheckError, HealthIndicator, HealthIndicatorResult } from '@nestjs/terminus';
 import { GoogleAuth, IdTokenClient } from 'google-auth-library';
+import { shouldUseCloudRunAuth } from './cloud-run-auth.util';
 
 /**
  * Health indicator for Cloud Run services protected by IAM.
@@ -31,6 +32,10 @@ export class CloudRunHealthIndicator extends HealthIndicator {
   }
 
   private async getCloudRunAuthHeader(serviceBaseUrl: string): Promise<Record<string, string>> {
+    if (!shouldUseCloudRunAuth(serviceBaseUrl)) {
+      return {};
+    }
+
     const audience = new URL(serviceBaseUrl).origin;
 
     let client = this.idTokenClients.get(audience);

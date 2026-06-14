@@ -12,7 +12,7 @@ import { clearToken, setToken } from "@/features/auth/store/auth-slice"
 
 import type { RootState } from "./store"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? ""
+const API_BASE_URL = process.env.NEXT_API_BASE_URL ?? ""
 export const SESSION_LOGIN_REQUIRED_EVENT = "buddy:session-login-required"
 
 let isOpeningSessionLoginDialog = false

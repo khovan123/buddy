@@ -15,7 +15,7 @@
     "prisma:generate": "dotenv -e .env -- prisma generate --config ../../libs/common/src/config/prisma.config.ts",
     "prisma:migrate:reset": "dotenv -e .env.prod -- prisma migrate reset --config ../../libs/common/src/config/prisma.config.ts",
     "prisma:migrate:create": "dotenv -e .env.prod -- prisma migrate dev --create-only --config ../../libs/common/src/config/prisma.config.ts",
-    "prisma:db:push": "dotenv -e .env.prod -- prisma db push --config ../../libs/common/src/config/prisma.config.ts --accept-data-loss",
+    "prisma:db:push": "dotenv -e .env -- prisma db push --config ../../libs/common/src/config/prisma.config.ts --accept-data-loss",
     "prisma:migrate:deploy:prod": "dotenv -e .env.prod -- prisma migrate deploy --config ../../libs/common/src/config/prisma.config.ts",
     "dev:prod": "cross-env PORT=3006 dotenv -e .env.prod -- nest start --watch"
   },

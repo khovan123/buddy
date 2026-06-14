@@ -47,6 +47,26 @@ describe('CloudRunHealthIndicator', () => {
     expect(result).toEqual({ 'auth-service': { status: 'up' } });
   });
 
+  it('does not load Google credentials before pinging a local service', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200 });
+
+    const indicator = new CloudRunHealthIndicator();
+    const result = await indicator.pingCheck(
+      'auth-service',
+      'http://127.0.0.1:3001/v1/health/liveness',
+    );
+
+    expect(getIdTokenClient).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://127.0.0.1:3001/v1/health/liveness',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {},
+      }),
+    );
+    expect(result).toEqual({ 'auth-service': { status: 'up' } });
+  });
+
   it('throws a health check error when the service returns 403', async () => {
     const getRequestHeaders = jest.fn().mockResolvedValue(new Headers());
     getIdTokenClient.mockResolvedValue({ getRequestHeaders });

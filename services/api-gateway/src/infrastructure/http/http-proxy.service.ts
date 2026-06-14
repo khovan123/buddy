@@ -6,6 +6,7 @@ import {
   ensureCorrelationId,
   getCorrelationId,
   retry,
+  shouldUseCloudRunAuth,
 } from '@libs/common';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -91,6 +92,10 @@ export class HttpProxyService {
   }
 
   private async getCloudRunAuthHeader(serviceBaseUrl: string): Promise<Record<string, string>> {
+    if (!shouldUseCloudRunAuth(serviceBaseUrl)) {
+      return {};
+    }
+
     const audience = new URL(serviceBaseUrl).origin;
 
     let client = this.idTokenClients.get(audience);
