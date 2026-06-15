@@ -1,4 +1,6 @@
-const API_BASE = process.env.NEXT_API_BASE_URL || "http://127.0.0.1:3000"
+import { getServerApiBaseUrl } from "@/lib/api-gateway"
+
+const API_BASE = getServerApiBaseUrl()
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH"
 

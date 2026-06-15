@@ -9,10 +9,11 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 
 import { clearAuthCookies } from "@/features/auth/actions"
 import { clearToken, setToken } from "@/features/auth/store/auth-slice"
+import { getClientApiBaseUrl } from "@/lib/api-gateway"
 
 import type { RootState } from "./store"
 
-const API_BASE_URL = process.env.NEXT_API_BASE_URL ?? ""
+const API_BASE_URL = getClientApiBaseUrl()
 export const SESSION_LOGIN_REQUIRED_EVENT = "buddy:session-login-required"
 
 let isOpeningSessionLoginDialog = false

@@ -1,6 +1,7 @@
+import { getServerApiBaseUrl } from "@/lib/api-gateway"
 import { getAccessToken } from "@/lib/server-session"
 
-const API_BASE = process.env.NEXT_API_BASE_URL || "http://127.0.0.1:3000"
+const API_BASE = getServerApiBaseUrl()
 
 export const dynamic = "force-dynamic"
 

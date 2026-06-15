@@ -1,5 +1,7 @@
 "use client"
 
+import { getClientApiBaseUrl } from "@/lib/api-gateway"
+
 import type {
   RAGHistoryResponse,
   RAGRequest,
@@ -7,7 +9,7 @@ import type {
   RAGRetrieveResponse,
 } from "../types"
 
-const API_BASE = process.env.NEXT_API_BASE_URL || "http://127.0.0.1:3000"
+const API_BASE = getClientApiBaseUrl()
 
 export class RAGServiceError extends Error {
   status: number

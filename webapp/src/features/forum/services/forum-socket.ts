@@ -9,6 +9,7 @@ import type {
   ForumTopic,
   ForumTopicReaction,
 } from "@/features/forum/types";
+import { DEFAULT_API_GATEWAY_URL } from "@/lib/api-gateway"
 
 type ForumSocketEvent =
   | { type: "forum.topic"; data: ForumTopic }
@@ -262,7 +263,7 @@ function getForumSocketUrl() {
   const base =
     process.env.NEXT_SOCKET_URL ||
     process.env.NEXT_API_BASE_URL ||
-    "http://127.0.0.1:3000"
+    DEFAULT_API_GATEWAY_URL
   const url = new URL(base)
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
   url.pathname = "/v1/forum/ws"
