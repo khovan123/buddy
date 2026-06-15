@@ -1,6 +1,7 @@
-import { AppLogger, type JwtPayload } from '@libs/common';
+import { AppLogger, shouldUseCloudRunAuth, type JwtPayload } from '@libs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { GoogleAuth, type IdTokenClient } from 'google-auth-library';
 import type { IncomingMessage } from 'node:http';
 import { WebSocketServer, WebSocket, type RawData } from 'ws';
 
@@ -32,6 +33,9 @@ type UpstreamRequest = {
   body?: Record<string, unknown>;
   query?: Record<string, string>;
 };
+
+const googleAuth = new GoogleAuth();
+const idTokenClients = new Map<string, IdTokenClient>();
 
 export function registerForumWebSocket(app: NestFastifyApplication, logger: AppLogger) {
   const server = app.getHttpServer();
@@ -236,10 +240,12 @@ async function callInteraction(
 ) {
   const baseUrl = registry.getUrl('interaction');
   const queryString = request.query ? `?${new URLSearchParams(request.query)}` : '';
+  const cloudRunAuthHeaders = await getCloudRunAuthHeader(baseUrl);
   const response = await fetch(`${baseUrl}${request.path}${queryString}`, {
     method: request.method,
     headers: {
       Authorization: `Bearer ${token}`,
+      ...cloudRunAuthHeaders,
       ...(request.body ? { 'Content-Type': 'application/json' } : {}),
     },
     body: request.body ? JSON.stringify(request.body) : undefined,
@@ -250,10 +256,10 @@ async function callInteraction(
     : await response.text();
 
   if (!response.ok) {
-    const message =
-      payload && typeof payload === 'object' && 'message' in payload
-        ? String(payload.message)
-        : 'Forum upstream request failed';
+    const message = extractUpstreamErrorMessage(
+      payload,
+      `Forum upstream returned HTTP ${response.status}`,
+    );
     throw new UpstreamError(message, response.status);
   }
 
@@ -268,10 +274,13 @@ async function forwardForumStream(
   logger: AppLogger,
 ) {
   try {
+    const baseUrl = registry.getUrl('interaction');
+    const cloudRunAuthHeaders = await getCloudRunAuthHeader(baseUrl);
     const response = await fetch(`${registry.getUrl('interaction')}/v1/forum/events`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
+        ...cloudRunAuthHeaders,
       },
       signal,
     });
@@ -346,6 +355,58 @@ function broadcast(wss: WebSocketServer, message: ForumSocketResponse) {
 
 function resolveAuthorName(user?: ForumUser): string | undefined {
   return user?.name ?? user?.nickname ?? user?.email;
+}
+
+async function getCloudRunAuthHeader(serviceBaseUrl: string): Promise<Record<string, string>> {
+  if (!shouldUseCloudRunAuth(serviceBaseUrl)) {
+    return {};
+  }
+
+  const audience = new URL(serviceBaseUrl).origin;
+  let client = idTokenClients.get(audience);
+  if (!client) {
+    client = await googleAuth.getIdTokenClient(audience);
+    idTokenClients.set(audience, client);
+  }
+
+  const headers = await client.getRequestHeaders();
+  const authorization =
+    headers.get('Authorization') ?? headers.get('authorization') ?? headers.get('AUTHORIZATION');
+
+  return authorization ? { 'X-Serverless-Authorization': authorization } : {};
+}
+
+function extractUpstreamErrorMessage(payload: unknown, fallback: string) {
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim();
+    return trimmed.length > 0 ? trimmed : fallback;
+  }
+
+  if (!payload || typeof payload !== 'object') {
+    return fallback;
+  }
+
+  const body = payload as Record<string, unknown>;
+  const message = body.message;
+  if (typeof message === 'string') {
+    return message;
+  }
+  if (Array.isArray(message) && message.every((item) => typeof item === 'string')) {
+    return message.join(', ');
+  }
+
+  for (const key of ['error', 'detail', 'details']) {
+    const value = body[key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+  }
+
+  try {
+    return JSON.stringify(payload);
+  } catch {
+    return fallback;
+  }
 }
 
 class UpstreamError extends Error {

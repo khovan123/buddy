@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { ForumPage } from "@/features/forum/components/forum-page"
+import { ForumContent } from "@/features/forum/components/forum-content"
 
 export const metadata: Metadata = {
   title: "Forum",
@@ -11,6 +11,6 @@ export const metadata: Metadata = {
   },
 }
 
-export default function Page() {
-  return <ForumPage />
+export default function ForumPage() {
+  return <ForumContent />
 }

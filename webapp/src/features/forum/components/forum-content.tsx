@@ -34,7 +34,7 @@ import {
   upsertTopic,
 } from "@/features/forum/utils/forum-utils"
 
-export function ForumPage() {
+export function ForumContent() {
   const [topics, setTopics] = useState<ForumTopic[]>([])
   const [topicMessages, setTopicMessages] = useState<
     Record<string, ForumMessage[]>
@@ -322,8 +322,8 @@ export function ForumPage() {
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
                     className="pl-9"
-                    placeholder="Search forum"
-                    aria-label="Search forum"
+                    placeholder="Search topics"
+                    aria-label="Search topics"
                   />
                 </div>
               </div>
@@ -336,7 +336,8 @@ export function ForumPage() {
                 ) : null}
                 {!isLoading && filteredTopics.length === 0 ? (
                   <div className="rounded-xl border border-border/75 bg-background/68 p-4 text-sm text-muted-foreground">
-                    No topics found.
+                    Let&apos;s start the discussion! Create a new topic and
+                    share your thoughts with the Buddy community.
                   </div>
                 ) : null}
                 {filteredTopics.map((topic) => (

@@ -4,12 +4,7 @@ import { useEffect, useMemo } from "react"
 
 import { useDispatch } from "react-redux"
 
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CreatorCollectionsPanel } from "@/features/content/components/creator-content/creator-collections-panel"
 import { CreatorResourcesPanel } from "@/features/content/components/creator-content/creator-resources-panel"
 import { CreatorTutorialsPanel } from "@/features/content/components/creator-content/creator-tutorials-panel"
@@ -106,21 +101,21 @@ export function ContentPage({
       <Tabs defaultValue="resources" className="w-full">
         <TabsList className="w-full justify-start sm:w-fit">
           <TabsTrigger value="resources">Resources</TabsTrigger>
-          <TabsTrigger value="collections">Collections</TabsTrigger>
           <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
+          <TabsTrigger value="collections">Collections</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resources" className="mt-4">
           <CreatorResourcesPanel resources={liveResources} />
+        </TabsContent>
+        <TabsContent value="tutorials" className="mt-4">
+          <CreatorTutorialsPanel tutorials={liveTutorials} />
         </TabsContent>
         <TabsContent value="collections" className="mt-4">
           <CreatorCollectionsPanel
             resourceCollections={resourceCollections}
             tutorialCollections={tutorialCollections}
           />
-        </TabsContent>
-        <TabsContent value="tutorials" className="mt-4">
-          <CreatorTutorialsPanel tutorials={liveTutorials} />
         </TabsContent>
       </Tabs>
     </section>

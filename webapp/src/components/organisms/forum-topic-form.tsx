@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button"
 import {
   Combobox,
   ComboboxContent,
-  ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
@@ -121,7 +120,7 @@ export function ForumTopicForm({
               }}
             />
             <ComboboxContent className="rounded-xl">
-              <ComboboxEmpty>No major found.</ComboboxEmpty>
+              {/* <ComboboxEmpty>No major found.</ComboboxEmpty> */}
               <ComboboxList>
                 {visibleMajors.map((major) => (
                   <ComboboxItem

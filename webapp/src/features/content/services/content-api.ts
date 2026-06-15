@@ -311,6 +311,26 @@ export const contentApi = baseApi.injectEndpoints({
         method: "DELETE",
       }),
       invalidatesTags: ["Resource"],
+      async onQueryStarted(resourceId, { dispatch, queryFulfilled }) {
+        const patch = dispatch(
+          contentApi.util.updateQueryData("getMyResources", undefined, (draft) => {
+            const beforeCount = draft.data.data.length
+            draft.data.data = draft.data.data.filter(
+              (resource) => resource.id !== resourceId
+            )
+
+            if (draft.data.data.length !== beforeCount) {
+              draft.data.meta.total = Math.max(0, draft.data.meta.total - 1)
+            }
+          })
+        )
+
+        try {
+          await queryFulfilled
+        } catch {
+          patch.undo()
+        }
+      },
     }),
     recheckTutorialModeration: builder.mutation<
       ApiResponse<unknown>,
@@ -331,6 +351,26 @@ export const contentApi = baseApi.injectEndpoints({
         method: "DELETE",
       }),
       invalidatesTags: ["Tutorial"],
+      async onQueryStarted(tutorialId, { dispatch, queryFulfilled }) {
+        const patch = dispatch(
+          contentApi.util.updateQueryData("getMyTutorials", undefined, (draft) => {
+            const beforeCount = draft.data.data.length
+            draft.data.data = draft.data.data.filter(
+              (tutorial) => tutorial.id !== tutorialId
+            )
+
+            if (draft.data.data.length !== beforeCount) {
+              draft.data.meta.total = Math.max(0, draft.data.meta.total - 1)
+            }
+          })
+        )
+
+        try {
+          await queryFulfilled
+        } catch {
+          patch.undo()
+        }
+      },
     }),
   }),
 })

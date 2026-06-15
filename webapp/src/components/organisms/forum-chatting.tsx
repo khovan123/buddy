@@ -62,7 +62,8 @@ export function ForumChatting({
       <div className="max-h-90 space-y-3 overflow-y-auto p-4">
         {!isLoading && messages.length === 0 ? (
           <div className="rounded-xl border border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
-            No messages yet.
+            Let&apos;s start the conversation! Send a message to everyone in
+            this study room.
           </div>
         ) : null}
         {messages.map((message) => (
