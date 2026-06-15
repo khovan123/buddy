@@ -48,6 +48,39 @@ const BULKHEAD_OVERRIDES: Record<string, { maxConcurrent: number; maxQueue: numb
   'recommendation-rag-index': { maxConcurrent: 1, maxQueue: 2 },
 };
 
+function extractUpstreamErrorMessage(data: unknown, fallback: string): string | string[] {
+  if (typeof data === 'string') {
+    const trimmed = data.trim();
+    return trimmed.length > 0 ? trimmed : fallback;
+  }
+
+  if (!data || typeof data !== 'object') {
+    return fallback;
+  }
+
+  const body = data as Record<string, unknown>;
+  const message = body.message;
+  if (
+    typeof message === 'string' ||
+    (Array.isArray(message) && message.every((item) => typeof item === 'string'))
+  ) {
+    return message;
+  }
+
+  for (const key of ['error', 'detail', 'details']) {
+    const value = body[key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+  }
+
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return fallback;
+  }
+}
+
 /** Service handling business logic for  http proxy. */
 @Injectable()
 export class HttpProxyService {
@@ -214,8 +247,26 @@ export class HttpProxyService {
         : await response.text();
 
       if (!response.ok) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        throw new HttpException((data as any)?.message || 'Upstream error', response.status);
+        const message = extractUpstreamErrorMessage(
+          data,
+          `Upstream ${options.service} returned HTTP ${response.status}`,
+        );
+
+        this.logger.warn(
+          `Upstream ${options.service} returned HTTP ${response.status} for ${options.method} ${url}: ${JSON.stringify(message)}`,
+        );
+
+        throw new HttpException(
+          {
+            message,
+            upstream: {
+              service: options.service,
+              statusCode: response.status,
+              path: options.path,
+            },
+          },
+          response.status,
+        );
       }
 
       return data;
