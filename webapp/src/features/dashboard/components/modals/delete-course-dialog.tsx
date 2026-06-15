@@ -1,15 +1,7 @@
 "use client"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
 import { useDeleteCourseMutation } from "@/features/content/services/content-api"
 
 interface DeleteCourseDialogProps {
@@ -39,34 +31,15 @@ export default function DeleteCourseDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-106.25">
-        <DialogHeader>
-          <DialogTitle className="text-destructive">Delete Course</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this course? This action cannot be
-            undone and may affect related tutorials and resources.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={handleConfirm}
-            disabled={isLoading}
-          >
-            {isLoading ? "Deleting..." : "Delete"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      variant="error"
+      title="Delete course?"
+      description="This action cannot be undone and may affect related tutorials and resources."
+      confirmLabel="Delete"
+      loading={isLoading}
+      onConfirm={handleConfirm}
+    />
   )
 }

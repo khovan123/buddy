@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+
 import { useRouter } from "next/navigation"
 
 import {
@@ -13,6 +15,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -226,12 +229,12 @@ export function ContentModerationChecklist({
             ) : null}
           </div>
           <ul className="space-y-1 text-xs text-destructive">
-          {violationReasons.slice(0, 3).map((reason) => (
-            <li key={reason} className="flex gap-2">
-              <AlertTriangle className="mt-0.5 size-3 shrink-0" />
-              <span className="line-clamp-2">{reason}</span>
-            </li>
-          ))}
+            {violationReasons.slice(0, 3).map((reason) => (
+              <li key={reason} className="flex gap-2">
+                <AlertTriangle className="mt-0.5 size-3 shrink-0" />
+                <span className="line-clamp-2">{reason}</span>
+              </li>
+            ))}
           </ul>
         </div>
       ) : null}
@@ -249,8 +252,10 @@ export function ManualModerationCheckButton({
   contentType,
 }: ManualModerationCheckButtonProps) {
   const router = useRouter()
-  const [recheckResource, resourceState] = useRecheckResourceModerationMutation()
-  const [recheckTutorial, tutorialState] = useRecheckTutorialModerationMutation()
+  const [recheckResource, resourceState] =
+    useRecheckResourceModerationMutation()
+  const [recheckTutorial, tutorialState] =
+    useRecheckTutorialModerationMutation()
   const isLoading = resourceState.isLoading || tutorialState.isLoading
 
   async function handleRecheck() {
@@ -295,19 +300,13 @@ export function DeleteContentButton({
   contentId,
   contentType,
 }: DeleteContentButtonProps) {
+  const [open, setOpen] = useState(false)
   const router = useRouter()
   const [deleteResource, resourceState] = useDeleteResourceMutation()
   const [deleteTutorial, tutorialState] = useDeleteTutorialMutation()
   const isLoading = resourceState.isLoading || tutorialState.isLoading
 
   async function handleDelete() {
-    const confirmed = globalThis.confirm(
-      `Delete this ${contentType}? It will be removed from your content list.`
-    )
-    if (!confirmed) {
-      return
-    }
-
     try {
       if (contentType === "resource") {
         await deleteResource(contentId).unwrap()
@@ -317,6 +316,7 @@ export function DeleteContentButton({
       toast.success(
         contentType === "resource" ? "Resource deleted" : "Tutorial deleted"
       )
+      setOpen(false)
       router.refresh()
     } catch {
       toast.error(
@@ -328,20 +328,38 @@ export function DeleteContentButton({
   }
 
   return (
-    <Button
-      type="button"
-      variant="destructive"
-      size="sm"
-      className="w-fit"
-      disabled={isLoading}
-      onClick={handleDelete}
+    <ConfirmDialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!isLoading) {
+          setOpen(nextOpen)
+        }
+      }}
+      variant="error"
+      icon={<Trash2 />}
+      title={`Delete this ${contentType}?`}
+      description={`This ${contentType} will be removed from your content list. This action cannot be undone.`}
+      confirmLabel="Delete"
+      loading={isLoading}
+      onConfirm={handleDelete}
+      trigger={
+        <Button
+          type="button"
+          variant="destructive"
+          size="sm"
+          className="w-fit"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Trash2 className="size-4" />
+          )}
+          Delete
+        </Button>
+      }
     >
-      {isLoading ? (
-        <Loader2 className="size-4 animate-spin" />
-      ) : (
-        <Trash2 className="size-4" />
-      )}
-      Delete
-    </Button>
+      This removes the content metadata and disconnects it from creator views.
+    </ConfirmDialog>
   )
 }

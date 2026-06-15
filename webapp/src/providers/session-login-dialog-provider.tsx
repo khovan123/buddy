@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { useDispatch } from "react-redux"
 
+import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -61,6 +62,7 @@ export function SessionLoginDialogProvider({
   const pathname = usePathname()
   const dispatch = useDispatch<AppDispatch>()
   const { handleError, clearError } = useGlobalError()
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const [open, setOpen] = useState(false)
   const [callbackUrl, setCallbackUrl] = useState("/home")
 
@@ -71,7 +73,7 @@ export function SessionLoginDialogProvider({
       if (!isDisabledPath(globalThis.location.pathname)) {
         clearError()
         setCallbackUrl(globalThis.location.href)
-        setOpen(true)
+        setConfirmOpen(true)
       }
     }
 
@@ -139,6 +141,19 @@ export function SessionLoginDialogProvider({
   return (
     <>
       {children}
+      <ConfirmDialog
+        open={!disabled && confirmOpen}
+        onOpenChange={setConfirmOpen}
+        variant="warning"
+        title="Session expired"
+        description="Log in again to continue from this page."
+        confirmLabel="Log in again"
+        cancelLabel="Not now"
+        onConfirm={() => {
+          setConfirmOpen(false)
+          setOpen(true)
+        }}
+      />
       <Dialog open={!disabled && open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>

@@ -16,6 +16,7 @@ import {
 import { useFieldArray, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
+import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -137,6 +138,9 @@ export function CreateTutorialForm() {
   // ── Mode & Tab state ──────────────────────────────────────
   const [mode, setMode] = useState<"minimal" | "advanced">("minimal")
   const [activeTab, setActiveTab] = useState("metadata")
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingSubmitData, setPendingSubmitData] =
+    useState<TutorialFormValues | null>(null)
 
   // Custom states that depend on form changes
   const [resources, setResources] = useState<ResourceQueryItem[]>([])
@@ -498,9 +502,12 @@ export function CreateTutorialForm() {
 
   const handleFormSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
-      void handleSubmit(onSubmit, onInvalid)(event)
+      void handleSubmit((data) => {
+        setPendingSubmitData(data)
+        setConfirmOpen(true)
+      }, onInvalid)(event)
     },
-    [handleSubmit, onInvalid, onSubmit]
+    [handleSubmit, onInvalid]
   )
 
   const inferContentType = useCallback((item: ContentItem) => {
@@ -1036,6 +1043,26 @@ export function CreateTutorialForm() {
                 ? "Creating Metadata & Getting Upload Links..."
                 : "Create Tutorial & Start Upload"}
           </Button>
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            variant={isEditMode ? "warning" : "confirm"}
+            title={isEditMode ? "Update this tutorial?" : "Create this tutorial?"}
+            description={
+              isEditMode
+                ? "Your tutorial metadata and attached resources will be saved."
+                : "The tutorial will be created and the selected video will begin uploading."
+            }
+            confirmLabel={isEditMode ? "Update tutorial" : "Create tutorial"}
+            loading={isLoading || isUpdating}
+            onConfirm={async () => {
+              if (!pendingSubmitData) {
+                return
+              }
+              await onSubmit(pendingSubmitData)
+              setPendingSubmitData(null)
+            }}
+          />
         </form>
       </CardContent>
     </Card>

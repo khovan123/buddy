@@ -1,15 +1,7 @@
 "use client"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
 import { useDeleteMajorMutation } from "@/features/content/services/content-api"
 
 interface DeleteMajorDialogProps {
@@ -39,34 +31,15 @@ export default function DeleteMajorDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-106.25">
-        <DialogHeader>
-          <DialogTitle className="text-destructive">Delete Major</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this major? This action cannot be
-            undone and may affect related courses.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={handleConfirm}
-            disabled={isLoading}
-          >
-            {isLoading ? "Deleting..." : "Delete"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      variant="error"
+      title="Delete major?"
+      description="This action cannot be undone and may affect related courses."
+      confirmLabel="Delete"
+      loading={isLoading}
+      onConfirm={handleConfirm}
+    />
   )
 }

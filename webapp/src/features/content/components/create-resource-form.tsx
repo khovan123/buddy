@@ -17,6 +17,7 @@ import {
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
+import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -104,6 +105,9 @@ export function CreateResourceForm() {
   // ── Mode & Tab state ──────────────────────────────────────
   const [mode, setMode] = useState<"minimal" | "advanced">("minimal")
   const [activeTab, setActiveTab] = useState("metadata")
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingSubmitData, setPendingSubmitData] =
+    useState<ResourceFormValues | null>(null)
 
   // Track upload result to display presigned URLs after successful creation
   const [uploadResult, setUploadResult] =
@@ -414,7 +418,10 @@ export function CreateResourceForm() {
   }
 
   const handleFormSubmit = (e: React.FormEvent) => {
-    void handleSubmit(onSubmit, onInvalid)(e)
+    void handleSubmit((data) => {
+      setPendingSubmitData(data)
+      setConfirmOpen(true)
+    }, onInvalid)(e)
   }
 
   // ── Copy to clipboard helper ───────────────────────────────
@@ -985,6 +992,26 @@ export function CreateResourceForm() {
                 ? "Creating Resource & Getting Upload..."
                 : "Create Resource Now"}
           </Button>
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            variant={isEditMode ? "warning" : "confirm"}
+            title={isEditMode ? "Update this resource?" : "Create this resource?"}
+            description={
+              isEditMode
+                ? "Your resource metadata changes will be saved."
+                : "The resource will be created and selected files will begin uploading."
+            }
+            confirmLabel={isEditMode ? "Update resource" : "Create resource"}
+            loading={isLoading || isUpdating}
+            onConfirm={async () => {
+              if (!pendingSubmitData) {
+                return
+              }
+              await onSubmit(pendingSubmitData)
+              setPendingSubmitData(null)
+            }}
+          />
         </form>
       </CardContent>
     </Card>

@@ -15,6 +15,7 @@ import {
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
+import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -95,6 +96,9 @@ export function CreateCollectionForm() {
   // ── Mode & Tab state ──────────────────────────────────────
   const [mode, setMode] = useState<"minimal" | "advanced">("minimal")
   const [activeTab, setActiveTab] = useState("info")
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingSubmitData, setPendingSubmitData] =
+    useState<CollectionFormValues | null>(null)
 
   // Available content for explorer
   const [availableResources, setAvailableResources] = useState<
@@ -350,6 +354,13 @@ export function CreateCollectionForm() {
       )
       console.error(error)
     }
+  }
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    void handleSubmit((data) => {
+      setPendingSubmitData(data)
+      setConfirmOpen(true)
+    }, onInvalid)(event)
   }
 
   // ── Section Renderers ─────────────────────────────────────
@@ -712,10 +723,7 @@ export function CreateCollectionForm() {
         </div>
       </CardHeader>
       <CardContent>
-        <form
-          onSubmit={handleSubmit(onSubmit, onInvalid)}
-          className="space-y-8"
-        >
+        <form onSubmit={handleFormSubmit} className="space-y-8">
           {mode === "minimal" ? (
             /* ── Minimal Mode: All sections sequential ───── */
             <div className="space-y-10">
@@ -798,6 +806,30 @@ export function CreateCollectionForm() {
                 ? "Creating Collection..."
                 : "Create Collection"}
           </Button>
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            variant={isEditMode ? "warning" : "confirm"}
+            title={
+              isEditMode ? "Update this collection?" : "Create this collection?"
+            }
+            description={
+              isEditMode
+                ? "Your collection metadata and roadmap changes will be saved."
+                : "The collection will be created from the selected content and roadmap."
+            }
+            confirmLabel={
+              isEditMode ? "Update collection" : "Create collection"
+            }
+            loading={isLoading || isUpdating}
+            onConfirm={async () => {
+              if (!pendingSubmitData) {
+                return
+              }
+              await onSubmit(pendingSubmitData)
+              setPendingSubmitData(null)
+            }}
+          />
         </form>
       </CardContent>
     </Card>
