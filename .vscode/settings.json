@@ -1,10 +1,9 @@
 {
   "files.eol": "\n",
-  "postman.settings.dotenv-detection-notification-visibility": false,
   "[javascript]": {
     "editor.codeActionsOnSave": {
       "source.organizeImports": "explicit",
-      "source.fixAll.eslint": "explicit",
+      "source.fixAll.eslint": "explicit"
     },
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.insertSpaces": true,
@@ -59,12 +58,7 @@
       "changeProcessCWD": true
     }
   ],
-  "eslint.validate": [
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact"
-  ],
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
   "github.copilot.chat.commitMessageGeneration.instructions": [
     {
       "file": "GIT_NAMING_CONVENTION_RULES.md"
@@ -72,4 +66,17 @@
   ],
   "git.ignoreLimitWarning": true,
   "python-envs.defaultEnvManager": "ms-python.python:system",
+  "js/ts.tsserver.maxMemory": 2048,
+  "search.exclude": {
+    "**/dist": true,
+    "**/.turbo": true,
+    "**/.next": true,
+    "**/coverage": true
+  },
+  "files.watcherExclude": {
+    "**/.git/**": true,
+    "**/.turbo/**": true,
+    "**/.next/**": true,
+    "**/dist/**": true
+  }
 }
