@@ -3,7 +3,7 @@ import { Inject } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { Queue } from 'bullmq';
 
-import { QUEUES } from '@libs/common';
+import { AppLogger, QUEUES } from '@libs/common';
 import { PresignedUrlResult, UploadType } from '@libs/contracts';
 import type { FileMetadataRepository } from '../../../domain/repositories/file-metadata.repository.interface';
 import { FILE_METADATA_REPOSITORY, STORAGE_PROVIDER } from '../../../domain/repositories/tokens';
@@ -30,6 +30,8 @@ type StorageProvider = {
  */
 @QueryHandler(GetUploadUrlQuery)
 export class GetUploadUrlHandler implements IQueryHandler<GetUploadUrlQuery> {
+  private readonly logger = new AppLogger(GetUploadUrlHandler.name);
+
   constructor(
     @Inject(STORAGE_PROVIDER)
     private readonly storageProvider: StorageProvider,
@@ -54,13 +56,32 @@ export class GetUploadUrlHandler implements IQueryHandler<GetUploadUrlQuery> {
     // Lấy presigned URL từ storage provider
     const { fileName, fileSizeBytes, uploadType, uploadedBy, contentId, contentType, keyPrefix } =
       query;
+    const startedAt = Date.now();
+    this.logger.log('Generating presigned upload URL', {
+      fileName,
+      fileSizeBytes,
+      uploadType,
+      contentId,
+      contentType,
+      keyPrefix,
+    });
+    const presignStartedAt = Date.now();
     const {
       fileKey: s3Key,
       uploadUrl,
       bucket,
       mimeType,
     } = await this.storageProvider.generatePresignedUploadUrl(fileName, uploadType, keyPrefix);
+    this.logger.log('Generated presigned upload URL', {
+      fileName,
+      uploadType,
+      contentId,
+      bucket,
+      s3Key,
+      elapsedMs: Date.now() - presignStartedAt,
+    });
 
+    const metadataStartedAt = Date.now();
     const metadata = await this.fileRepository.createPending({
       originalFilename: query.fileName,
       mimeType: mimeType,
@@ -70,6 +91,13 @@ export class GetUploadUrlHandler implements IQueryHandler<GetUploadUrlQuery> {
       uploadedBy,
       contentId,
       contentType,
+    });
+    this.logger.log('Created pending upload metadata', {
+      fileId: metadata.id,
+      fileName,
+      uploadType,
+      contentId,
+      elapsedMs: Date.now() - metadataStartedAt,
     });
 
     // Tính toán ETA dựa trên upload type
@@ -85,6 +113,15 @@ export class GetUploadUrlHandler implements IQueryHandler<GetUploadUrlQuery> {
     } else {
       throw new Error(`Unknown upload type: ${query.uploadType}`);
     }
+
+    this.logger.log('Prepared upload URL response', {
+      fileId: metadata.id,
+      fileName,
+      uploadType,
+      contentId,
+      estimatedTime,
+      elapsedMs: Date.now() - startedAt,
+    });
 
     return {
       fileId: metadata.id,

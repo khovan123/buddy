@@ -1,5 +1,11 @@
 import { Nack, RabbitRPC } from '@golevelup/nestjs-rabbitmq';
-import { ensureCorrelationId, EXCHANGES, QUEUES, runWithCorrelationId } from '@libs/common';
+import {
+  AppLogger,
+  ensureCorrelationId,
+  EXCHANGES,
+  QUEUES,
+  runWithCorrelationId,
+} from '@libs/common';
 import {
   PresignedUrlResult,
   PresignedUrlRpcResponse,
@@ -21,6 +27,8 @@ import { GetUploadHistoryByContentRpcDto } from '../../../presentation/events/dt
 /** Controller handling incoming requests for UploadRpc. */
 @Injectable()
 export class UploadUrlConsumer {
+  private readonly logger = new AppLogger(UploadUrlConsumer.name);
+
   constructor(private readonly queryBus: QueryBus) {}
 
   /**
@@ -41,8 +49,18 @@ export class UploadUrlConsumer {
     const correlationId = ensureCorrelationId(data.correlationId, data.eventId);
     const { file, uploadType, uploadedBy, contentId, contentType } = data.payload;
     const { fileName, fileSizeBytes, mimeType } = file;
+    const startedAt = Date.now();
 
     try {
+      this.logger.log('Received upload presigned URL RPC', {
+        correlationId,
+        eventId: data.eventId,
+        contentId,
+        contentType,
+        uploadType,
+        fileName,
+        fileSizeBytes,
+      });
       const result: PresignedUrlResult = await runWithCorrelationId(correlationId, () =>
         this.queryBus.execute(
           new GetUploadUrlQuery(
@@ -57,8 +75,25 @@ export class UploadUrlConsumer {
           ),
         ),
       );
+      this.logger.log('Completed upload presigned URL RPC', {
+        correlationId,
+        eventId: data.eventId,
+        contentId,
+        fileId: result.fileId,
+        elapsedMs: Date.now() - startedAt,
+      });
       return { contentId, uploadUrl: result };
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        'Failed upload presigned URL RPC',
+        error instanceof Error ? error.stack : String(error),
+        {
+          correlationId,
+          eventId: data.eventId,
+          contentId,
+          elapsedMs: Date.now() - startedAt,
+        },
+      );
       return new Nack(false);
     }
   }
@@ -79,8 +114,16 @@ export class UploadUrlConsumer {
   })
   async getPresignedUrls(data: GetPresignedUrlsRpcDto): Promise<PresignedUrlsRpcResponse | Nack> {
     const correlationId = ensureCorrelationId(data.correlationId, data.eventId);
+    const startedAt = Date.now();
 
     try {
+      this.logger.log('Received batch upload presigned URLs RPC', {
+        correlationId,
+        eventId: data.eventId,
+        contentId: data.payload.contentId,
+        contentType: data.payload.contentType,
+        fileCount: data.payload.files.length,
+      });
       const result = await runWithCorrelationId(correlationId, async () => {
         const uploadUrls = await Promise.all(
           data.payload.files.map(async (file) => {
@@ -111,8 +154,26 @@ export class UploadUrlConsumer {
           uploadUrls,
         };
       });
+      this.logger.log('Completed batch upload presigned URLs RPC', {
+        correlationId,
+        eventId: data.eventId,
+        contentId: data.payload.contentId,
+        fileCount: result.uploadUrls.length,
+        elapsedMs: Date.now() - startedAt,
+      });
       return result;
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        'Failed batch upload presigned URLs RPC',
+        error instanceof Error ? error.stack : String(error),
+        {
+          correlationId,
+          eventId: data.eventId,
+          contentId: data.payload.contentId,
+          fileCount: data.payload.files.length,
+          elapsedMs: Date.now() - startedAt,
+        },
+      );
       return new Nack(false);
     }
   }

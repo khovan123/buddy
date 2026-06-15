@@ -25,6 +25,10 @@ import { Inject, Injectable } from '@nestjs/common';
 @Injectable()
 export class StorageBrokerPublisher {
   private readonly logger = new AppLogger(StorageBrokerPublisher.name);
+  private readonly uploadRpcTimeoutMs = Number.parseInt(
+    process.env.UPLOAD_RPC_TIMEOUT_MS ?? '30000',
+    10,
+  );
 
   constructor(
     @Inject(RABBITMQ_CONNECTION)
@@ -41,16 +45,33 @@ export class StorageBrokerPublisher {
   async getPresignedUrl(event: GetPresignedUrlEvent): Promise<PresignedUrlRpcResponse> {
     const routingKey = event.routingKey;
     const messageData = this.toMessageData(event);
+    const startedAt = Date.now();
 
     try {
-      return await this.amqpConnection.request<PresignedUrlRpcResponse>({
+      this.logger.log(`RPC request started [${routingKey}]`, {
+        contentId: event.payload.contentId,
+        contentType: event.payload.contentType,
+        fileName: event.payload.file.fileName,
+        timeoutMs: this.uploadRpcTimeoutMs,
+      });
+      const response = await this.amqpConnection.request<PresignedUrlRpcResponse>({
         exchange: EXCHANGES.UPLOAD,
         routingKey,
         payload: messageData,
-        timeout: 8000,
+        timeout: this.uploadRpcTimeoutMs,
       });
+      this.logger.log(`RPC request completed [${routingKey}]`, {
+        contentId: event.payload.contentId,
+        elapsedMs: Date.now() - startedAt,
+        fileId: response.uploadUrl.fileId,
+      });
+      return response;
     } catch (error) {
-      this.logger.error(`RPC timeout or error [${routingKey}]`, String(error));
+      this.logger.error(`RPC timeout or error [${routingKey}]`, String(error), {
+        contentId: event.payload.contentId,
+        elapsedMs: Date.now() - startedAt,
+        timeoutMs: this.uploadRpcTimeoutMs,
+      });
       throw error;
     }
   }
@@ -64,16 +85,34 @@ export class StorageBrokerPublisher {
   async getPresignedUrls(event: GetPresignedUrlsEvent): Promise<PresignedUrlsRpcResponse> {
     const routingKey = event.routingKey;
     const messageData = this.toMessageData(event);
+    const startedAt = Date.now();
 
     try {
-      return await this.amqpConnection.request<PresignedUrlsRpcResponse>({
+      this.logger.log(`RPC request started [${routingKey}]`, {
+        contentId: event.payload.contentId,
+        contentType: event.payload.contentType,
+        fileCount: event.payload.files.length,
+        timeoutMs: this.uploadRpcTimeoutMs,
+      });
+      const response = await this.amqpConnection.request<PresignedUrlsRpcResponse>({
         exchange: EXCHANGES.UPLOAD,
         routingKey,
         payload: messageData,
-        timeout: 8000,
+        timeout: this.uploadRpcTimeoutMs,
       });
+      this.logger.log(`RPC request completed [${routingKey}]`, {
+        contentId: event.payload.contentId,
+        elapsedMs: Date.now() - startedAt,
+        fileCount: response.uploadUrls.length,
+      });
+      return response;
     } catch (error) {
-      this.logger.error(`RPC timeout or error [${routingKey}]`, String(error));
+      this.logger.error(`RPC timeout or error [${routingKey}]`, String(error), {
+        contentId: event.payload.contentId,
+        elapsedMs: Date.now() - startedAt,
+        timeoutMs: this.uploadRpcTimeoutMs,
+        fileCount: event.payload.files.length,
+      });
       throw error;
     }
   }
