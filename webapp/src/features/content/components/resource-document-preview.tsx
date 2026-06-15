@@ -42,40 +42,40 @@ export function ResourceDocumentPreview({
   const previewStatus = previewData?.status
   const canViewPreview = Boolean(previewData?.previewUrl)
   const unavailableLabel =
-    previewStatus === "FAILED"
-      ? "Preview failed"
-      : "Processing Preview..."
+    previewStatus === "FAILED" ? "Preview failed" : "Processing Preview..."
   const previewMessage =
     previewStatus === "FAILED"
       ? "Preview generation failed. Purchase to access the full document."
       : previewData?.isPreview
-          ? `Preview limited to ${previewData.previewPercentage}%. Buy to unlock full document.`
-          : "Free resource. View full document."
+        ? `Preview limited to ${previewData.previewPercentage}%. Buy to unlock full document.`
+        : "Free resource. View full document."
 
   if (isPlaying && previewData?.previewUrl) {
     return (
-      <DocumentReader
-        title={title}
-        sourceUrl={previewData.previewUrl}
-        sourceLabel={sourceLabel}
-        description={description}
-        author={author}
-        updatedAt={updatedAt}
-        pageCountHint={pageCountHint}
-        fileSize={fileSize}
-        format={previewData.format || "pdf"}
-        highlights={highlights}
-        notes={[]}
-        layout="column"
-        isPreview={previewData.isPreview}
-        previewPercentage={previewData.previewPercentage}
-        hideHeader={true}
-        hideDetails={true}
-        onUnlock={() => {
-          const buyButton = document.getElementById("buy-resource-button")
-          buyButton?.scrollIntoView({ behavior: "smooth" })
-        }}
-      />
+      <div className="min-h-[70vh] lg:min-h-190">
+        <DocumentReader
+          title={title}
+          sourceUrl={previewData.previewUrl}
+          sourceLabel={sourceLabel}
+          description={description}
+          author={author}
+          updatedAt={updatedAt}
+          pageCountHint={pageCountHint}
+          fileSize={fileSize}
+          format={previewData.format || "pdf"}
+          highlights={highlights}
+          notes={[]}
+          layout="column"
+          isPreview={previewData.isPreview}
+          previewPercentage={previewData.previewPercentage}
+          hideHeader={true}
+          hideDetails={true}
+          onUnlock={() => {
+            const buyButton = document.getElementById("buy-resource-button")
+            buyButton?.scrollIntoView({ behavior: "smooth" })
+          }}
+        />
+      </div>
     )
   }
 

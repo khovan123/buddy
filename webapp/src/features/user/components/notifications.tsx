@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react"
 
 import Link from "next/link"
 
+import { useSession } from "next-auth/react"
+
 import {
   AlertTriangle,
   Bell,
@@ -252,6 +254,7 @@ export function Notifications() {
   const [open, setOpen] = useState(false)
   const [readAllAt, setReadAllAt] = useState<string | null>(null)
   const dispatch = useDispatch()
+  const { status: sessionStatus } = useSession()
   const [markAllNotificationsRead] = useMarkAllNotificationsReadMutation()
   const {
     data: resourceResponse,
@@ -414,6 +417,10 @@ export function Notifications() {
   }, [])
 
   useEffect(() => {
+    if (sessionStatus !== "authenticated") {
+      return
+    }
+
     const events = new EventSource("/api/notifications/stream")
 
     const refreshNotifications = () => {
@@ -428,7 +435,7 @@ export function Notifications() {
       events.removeEventListener("notification", refreshNotifications)
       events.close()
     }
-  }, [dispatch])
+  }, [dispatch, sessionStatus])
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)

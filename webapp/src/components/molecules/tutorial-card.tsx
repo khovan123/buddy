@@ -53,6 +53,18 @@ function buildCheckoutHref(
   return `${href}${separator}checkout=resume&itemType=${encodeURIComponent(itemType)}&itemId=${encodeURIComponent(itemId)}`
 }
 
+function getBuyLabel(price?: string) {
+  const normalized = price?.trim().toLowerCase()
+  if (!normalized || normalized === "free") {
+    return "Learn now"
+  }
+
+  const numericPrice = Number(normalized.replace(/[^\d.-]/g, ""))
+  return Number.isFinite(numericPrice) && numericPrice > 0
+    ? "Discovery now"
+    : "Learn now"
+}
+
 function TutorialCardInner({
   tutorial,
   imageSizes = "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw",
@@ -149,7 +161,7 @@ function TutorialCardInner({
               itemType={tutorial.interactionType}
               initialStats={tutorial.initialStats}
               buyHref={checkoutHref}
-              buyLabel={`Buy ${tutorial.title}`}
+              buyLabel={getBuyLabel(tutorial.price)}
               compact
             />
           ) : (

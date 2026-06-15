@@ -59,7 +59,11 @@ function submitCheckout(checkoutUrl: string) {
   form.submit()
 }
 
-export function TopUpDialog({ open, onOpenChange, returnUrl }: TopUpDialogProps) {
+export function TopUpDialog({
+  open,
+  onOpenChange,
+  returnUrl,
+}: TopUpDialogProps) {
   const [amount, setAmount] = useState("")
   const [topUp, { isLoading }] = useTopUpWalletMutation()
 
@@ -101,9 +105,7 @@ export function TopUpDialog({ open, onOpenChange, returnUrl }: TopUpDialogProps)
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Deposit Wallet</DialogTitle>
-          <DialogDescription>
-            Add funds to your wallet with SEPAY.
-          </DialogDescription>
+          <DialogDescription>Add funds to your wallet.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 py-2">
@@ -125,9 +127,7 @@ export function TopUpDialog({ open, onOpenChange, returnUrl }: TopUpDialogProps)
 
           {/* Custom amount */}
           <div className="space-y-2">
-            <Label htmlFor="topup-custom-amount">
-              Custom Amount (VND)
-            </Label>
+            <Label htmlFor="topup-custom-amount">Custom Amount (VND)</Label>
             <Input
               id="topup-custom-amount"
               type="number"
@@ -144,7 +144,7 @@ export function TopUpDialog({ open, onOpenChange, returnUrl }: TopUpDialogProps)
           </div>
 
           <div className="rounded-xl bg-muted/50 px-4 py-3 text-sm">
-            <p className="font-medium">SEPAY checkout</p>
+            <p className="font-medium">Checkout</p>
             <p className="mt-1 text-xs text-muted-foreground">
               You will be redirected to the SEPAY payment page.
             </p>
@@ -166,7 +166,7 @@ export function TopUpDialog({ open, onOpenChange, returnUrl }: TopUpDialogProps)
             disabled={isLoading || !amount || Number(amount) <= 0}
           >
             {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
-            Continue to SEPAY
+            Continue
           </Button>
         </DialogFooter>
       </DialogContent>

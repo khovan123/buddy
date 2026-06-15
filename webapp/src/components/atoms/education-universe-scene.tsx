@@ -219,12 +219,12 @@ export default function EducationUniverseScene({
     document.addEventListener("visibilitychange", handleVisibilityChange)
     resize()
 
-    const clock = new THREE.Clock()
+    const startedAt = performance.now()
     renderer.setAnimationLoop(() => {
       if (!visible) {
         return
       }
-      const elapsed = clock.getElapsedTime()
+      const elapsed = (performance.now() - startedAt) / 1000
       const motionScale = prefersReducedMotion ? 0 : 1
 
       universe.rotation.y += (pointer.x * 0.16 - universe.rotation.y) * 0.025

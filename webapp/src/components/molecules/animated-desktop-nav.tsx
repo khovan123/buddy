@@ -51,17 +51,13 @@ export function AnimatedDesktopNav({
   return (
     <motion.div
       className={cn(
-        "hidden items-center md:grid",
+        "mx-auto hidden max-w-7xl items-center md:grid",
         "grid-cols-[minmax(0,auto)_1fr_minmax(0,auto)] gap-2",
         scrolled
           ? "w-fit! border border-border/70 bg-background/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] backdrop-blur-xl"
-          : "bg-transparent"
+          : "w-full bg-transparent"
       )}
       animate={{
-        maxWidth: scrolled ? "auto" : 1280,
-        width: "100%",
-        marginLeft: "auto",
-        marginRight: "auto",
         paddingLeft: 20,
         paddingRight: 20,
         paddingTop: 12,
@@ -76,10 +72,9 @@ export function AnimatedDesktopNav({
       {/* ── Left: Brand + divider ─────────────────────────────── */}
       <motion.div
         className={cn(
-          "flex items-center",
+          "flex items-center gap-4",
           scrolled ? "justify-self-end" : "justify-self-start"
         )}
-        animate={{ gap: 16 }}
         transition={smoothTransition}
         layout="position"
       >

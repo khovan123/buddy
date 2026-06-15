@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
+import { cn } from "@/lib/utils"
 
 const PdfDocumentViewer = dynamic(
   () =>
@@ -190,6 +191,9 @@ export function DocumentReader({
 
   const displayText = useMemo(() => documentText || "", [documentText])
   const isColumnLayout = layout === "column"
+  const readerMinHeightClassName = hideHeader
+    ? "min-h-[70vh] lg:min-h-[760px]"
+    : "min-h-[65vh]"
 
   return (
     <section className={!hideHeader ? "space-y-6 pb-12" : ""}>
@@ -249,15 +253,20 @@ export function DocumentReader({
             : "grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"
         }
       >
-        <div className="relative space-y-3">
-          <Card className="min-h-fit overflow-hidden border-border/60 bg-card shadow-sm">
+        <div className="relative space-y-0">
+          <Card
+            className={cn(
+              "overflow-hidden border-border/60 bg-card shadow-sm",
+              isPreview ? "rounded-b-none border-b-0" : ""
+            )}
+          >
             <CardContent className="bg-card">
               <div
                 ref={viewerRef}
-                className="min-h-fit overflow-auto rounded-2xl"
+                className={`${readerMinHeightClassName} overflow-auto rounded-2xl`}
               >
                 {isLoading ? (
-                  <div className="text-sm text-muted-foreground">
+                  <div className="flex min-h-72 items-center justify-center text-sm text-muted-foreground">
                     Loading document…
                   </div>
                 ) : kind === "pdf" ? (
@@ -303,18 +312,23 @@ export function DocumentReader({
             </CardContent>
           </Card>
 
-          {/* ── Preview Paywall Overlay ─────────────────────────── */}
+          {/* ── Preview Paywall Gate ─────────────────────────── */}
           {isPreview && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64">
-              <div className="h-full bg-linear-to-t from-background via-background/95 to-transparent" />
-              <div className="pointer-events-auto absolute inset-x-0 bottom-0 flex flex-col items-center gap-3 p-6 text-center">
+            <div className="rounded-2xl rounded-t-none border border-primary/20 bg-card p-6 text-center shadow-sm">
+              <div className="mx-auto flex max-w-xl flex-col items-center gap-3">
                 <div className="flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary">
                   <Lock className="size-3.5" />
-                  Viewing {previewPercentage}% preview
+                  End of {previewPercentage}% preview
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Purchase to unlock the full document with download access.
-                </p>
+                <div className="space-y-1">
+                  <p className="text-base font-semibold text-foreground">
+                    Continue reading with full access
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Purchase to unlock the complete document and download
+                    access.
+                  </p>
+                </div>
                 <Button onClick={onUnlock} size="sm" className="gap-1.5">
                   <Lock className="size-3.5" />
                   Unlock Full Document

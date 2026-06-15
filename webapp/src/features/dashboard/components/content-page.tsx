@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo } from "react"
 
+import { useSession } from "next-auth/react"
+
 import { useDispatch } from "react-redux"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -52,6 +54,7 @@ export function ContentPage({
   tutorialCollections: CollectionQueryItem[]
 }) {
   const dispatch = useDispatch()
+  const { status: sessionStatus } = useSession()
   const { data: resourceResponse } = useGetMyResourcesQuery(undefined, {
     refetchOnFocus: true,
     refetchOnReconnect: true,
@@ -72,6 +75,10 @@ export function ContentPage({
   }, [tutorialResponse, tutorials])
 
   useEffect(() => {
+    if (sessionStatus !== "authenticated") {
+      return
+    }
+
     const events = new EventSource("/api/notifications/stream")
 
     const refreshContent = () => {
@@ -86,7 +93,7 @@ export function ContentPage({
       events.removeEventListener("notification", refreshContent)
       events.close()
     }
-  }, [dispatch])
+  }, [dispatch, sessionStatus])
 
   return (
     <section className="w-full space-y-6">

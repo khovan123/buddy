@@ -149,9 +149,6 @@ export default async function ExploreResourceDetailPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <div className="space-y-2">
-        <p className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">
-          {resource.courseId}
-        </p>
         <h1 className="text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
           {resourceTitle}
         </h1>

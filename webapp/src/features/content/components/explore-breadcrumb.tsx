@@ -1,6 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
+import { Fragment } from "react"
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -80,29 +81,31 @@ export function ExploreBreadcrumb() {
     <Breadcrumb>
       <BreadcrumbList className="gap-1.5 text-xs text-muted-foreground">
         {crumbs.map((crumb, index) => (
-          <BreadcrumbItem key={`${crumb.href ?? "current"}-${crumb.label}`}>
-            {crumb.href ? (
-              <BreadcrumbLink
-                asChild
-                className="flex items-center gap-1 font-normal transition-colors hover:text-foreground"
-              >
-                <Link href={crumb.href}>
-                  {crumb.icon}
+          <Fragment key={`${crumb.href ?? "current"}-${crumb.label}`}>
+            <BreadcrumbItem>
+              {crumb.href ? (
+                <BreadcrumbLink
+                  asChild
+                  className="flex items-center gap-1 font-normal transition-colors hover:text-foreground"
+                >
+                  <Link href={crumb.href}>
+                    {crumb.icon}
+                    {crumb.label}
+                  </Link>
+                </BreadcrumbLink>
+              ) : (
+                <BreadcrumbPage className="font-medium text-foreground">
                   {crumb.label}
-                </Link>
-              </BreadcrumbLink>
-            ) : (
-              <BreadcrumbPage className="font-medium text-foreground">
-                {crumb.label}
-              </BreadcrumbPage>
-            )}
+                </BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
 
             {index < crumbs.length - 1 ? (
               <BreadcrumbSeparator className="text-muted-foreground/40">
                 ›
               </BreadcrumbSeparator>
             ) : null}
-          </BreadcrumbItem>
+          </Fragment>
         ))}
       </BreadcrumbList>
     </Breadcrumb>

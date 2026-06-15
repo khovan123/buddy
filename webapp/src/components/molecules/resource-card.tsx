@@ -8,11 +8,11 @@ import { FileText, ShieldCheck, Star } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import type { PurchasableContentType } from "@/features/billing/services/billing-api"
-import { ItemInteractionControls } from "@/features/interaction"
 import type {
   InteractionContentType,
   InteractionStats,
 } from "@/features/interaction"
+import { ItemInteractionControls } from "@/features/interaction"
 import type { WithSkeletonLinkProps } from "@/hoc/with-skeleton-link"
 import { cn } from "@/lib/utils"
 
@@ -53,6 +53,18 @@ function buildCheckoutHref(
   return `${href}${separator}checkout=resume&itemType=${encodeURIComponent(itemType)}&itemId=${encodeURIComponent(itemId)}`
 }
 
+function getBuyLabel(price?: string) {
+  const normalized = price?.trim().toLowerCase()
+  if (!normalized || normalized === "free") {
+    return "Learn now"
+  }
+
+  const numericPrice = Number(normalized.replace(/[^\d.-]/g, ""))
+  return Number.isFinite(numericPrice) && numericPrice > 0
+    ? "Discovery now"
+    : "Learn now"
+}
+
 function ResourceCardInner({
   resource,
   imageSizes = "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw",
@@ -78,12 +90,12 @@ function ResourceCardInner({
       >
         {resource?.thumbnailUrl ? (
           <Image
-              fill
-              src={resource.thumbnailUrl}
-              alt={resource.title}
-              className="object-cover transition duration-500 group-hover/resource:scale-105 group-hover/resource:opacity-92"
-              sizes={imageSizes}
-            />
+            fill
+            src={resource.thumbnailUrl}
+            alt={resource.title}
+            className="object-cover transition duration-500 group-hover/resource:scale-105 group-hover/resource:opacity-92"
+            sizes={imageSizes}
+          />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_50%_28%,color-mix(in_oklch,var(--education-sage)_18%,transparent),transparent_56%)]">
             <FileText className="size-10 text-muted-foreground/50" />
@@ -106,8 +118,10 @@ function ResourceCardInner({
       </div>
 
       <div className="relative z-10 flex w-full flex-1 flex-col gap-2 px-2 pt-4 pb-3">
-        <div className="flex items-center justify-between gap-3 text-3xs font-bold tracking-[0.16em] text-muted-foreground uppercase">
-          <span className="line-clamp-1">{resource?.category || "Category"}</span>
+        <div className="text-3xs flex items-center justify-between gap-3 font-bold tracking-[0.16em] text-muted-foreground uppercase">
+          <span className="line-clamp-1">
+            {resource?.category || "Category"}
+          </span>
           {!resource?.owned ? (
             <span className="rounded-full border border-border/70 bg-background/50 px-2 py-0.5 tracking-normal text-foreground">
               {resource?.price || "—"}
@@ -151,7 +165,7 @@ function ResourceCardInner({
               itemType={resource.interactionType}
               initialStats={resource.initialStats}
               buyHref={!resource.owned ? checkoutHref : undefined}
-              buyLabel={`Buy ${resource.title}`}
+              buyLabel={getBuyLabel(resource.price)}
               compact
             />
           ) : (

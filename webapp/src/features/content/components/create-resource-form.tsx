@@ -627,7 +627,7 @@ export function CreateResourceForm() {
       <p className="text-sm text-muted-foreground">
         {isEditMode
           ? "Uploaded files stay unchanged when editing resource metadata."
-          : "Add at least one file. Upload URLs will be generated after submission."}
+          : "Add at least one file."}
       </p>
 
       {!isEditMode &&
@@ -636,7 +636,7 @@ export function CreateResourceForm() {
             key={field.id}
             className="flex items-start gap-3 rounded-xl border bg-muted/20 p-4"
           >
-            <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-4">
               <Field>
                 <Label htmlFor={`file-name-${index}`}>File Name</Label>
                 <Input
@@ -996,7 +996,9 @@ export function CreateResourceForm() {
             open={confirmOpen}
             onOpenChange={setConfirmOpen}
             variant={isEditMode ? "warning" : "confirm"}
-            title={isEditMode ? "Update this resource?" : "Create this resource?"}
+            title={
+              isEditMode ? "Update this resource?" : "Create this resource?"
+            }
             description={
               isEditMode
                 ? "Your resource metadata changes will be saved."
