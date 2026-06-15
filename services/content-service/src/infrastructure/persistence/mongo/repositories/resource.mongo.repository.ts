@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ClientSession, InferSchemaType, Model, Types } from 'mongoose';
+import { ClientSession, InferSchemaType, Model, SortOrder, Types } from 'mongoose';
 
 import { Resource, ResourceMeta } from '../../../../domain/entities/resource.entity';
 import {
@@ -563,12 +563,12 @@ export class ResourceMongoRepository implements IResourceRepository {
       params;
     const safeLimit = Math.max(limit, 1);
     const skip = (page - 1) * safeLimit;
-    const sortBy =
+    const sortBy: Record<string, SortOrder> =
       sort === 'rating'
-        ? { isVerified: -1 as const, updatedAt: -1 as const }
+        ? { isVerified: -1, updatedAt: -1 }
         : sort === 'popular'
-          ? { updatedAt: -1 as const }
-          : { createdAt: -1 as const };
+          ? { updatedAt: -1 }
+          : { createdAt: -1 };
 
     const filter: Record<string, unknown> = {
       status: ResourceStatus.AVAILABLE,
