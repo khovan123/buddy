@@ -21,7 +21,7 @@ export class GetResourcesHandler implements IQueryHandler<GetResourcesQuery> {
    * @param query - The query parameter
    */
   async execute(query: GetResourcesQuery) {
-    const { page, limit, search, userId, semester, majorId } = query;
+    const { page, limit, search, userId, semester, majorId, price, verified, sort } = query;
     const result = await this.resourceRepository.findAvailableResources({
       page,
       limit,
@@ -29,6 +29,9 @@ export class GetResourcesHandler implements IQueryHandler<GetResourcesQuery> {
       userId,
       semester,
       majorId,
+      price,
+      verified,
+      sort,
     });
     const uploader = await this.userServicePublisher.enrichWithUploaders(result.data);
     result.data = uploader;

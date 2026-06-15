@@ -72,14 +72,14 @@ export default function CareerModal({
     try {
       if (isEditing && career) {
         await updateCareer({ id: career.id, body: data }).unwrap()
-        toast.success("Career updated successfully")
+        toast.success("Career updated.")
       } else {
         await createCareer(data).unwrap()
-        toast.success("Career created successfully")
+        toast.success("Career created.")
       }
       onOpenChange(false)
     } catch (error) {
-      toast.error("Failed to save career")
+      toast.error("We could not save this career.")
     }
   }
 

@@ -600,6 +600,9 @@ export interface ContentListParams {
   userId?: string
   semester?: number
   majorId?: string
+  price?: "free" | "paid"
+  verified?: boolean
+  sort?: "newest" | "popular" | "rating"
 }
 
 // ── Recommendation & Trending ───────────────────────────────

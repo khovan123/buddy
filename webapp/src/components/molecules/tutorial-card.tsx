@@ -61,8 +61,18 @@ function getBuyLabel(price?: string) {
 
   const numericPrice = Number(normalized.replace(/[^\d.-]/g, ""))
   return Number.isFinite(numericPrice) && numericPrice > 0
-    ? "Discovery now"
+    ? "See preview"
     : "Learn now"
+}
+
+function isPaid(price?: string) {
+  const normalized = price?.trim().toLowerCase()
+  if (!normalized || normalized === "free") {
+    return false
+  }
+
+  const numericPrice = Number(normalized.replace(/[^\d.-]/g, ""))
+  return Number.isFinite(numericPrice) && numericPrice > 0
 }
 
 function TutorialCardInner({
@@ -74,6 +84,7 @@ function TutorialCardInner({
     tutorial?.href && tutorial.purchaseType
       ? buildCheckoutHref(tutorial.href, tutorial.id, tutorial.purchaseType)
       : undefined
+  const paid = isPaid(tutorial?.price)
 
   return (
     <LearningCardShell className="group/tutorial p-2">
@@ -105,8 +116,10 @@ function TutorialCardInner({
       </div>
 
       <div className="relative z-10 flex w-full flex-1 flex-col gap-2 px-2 pt-4 pb-3">
-        <div className="flex items-center justify-between gap-3 text-3xs font-bold tracking-[0.16em] text-muted-foreground uppercase">
-          <span className="line-clamp-1">{tutorial?.category || "Category"}</span>
+        <div className="text-3xs flex items-center justify-between gap-3 font-bold tracking-[0.16em] text-muted-foreground uppercase">
+          <span className="line-clamp-1">
+            {tutorial?.category || "Category"}
+          </span>
           <div className="flex flex-col items-end gap-0.5">
             <span className="rounded-full border border-border/70 bg-background/50 px-2 py-0.5 tracking-normal text-foreground">
               {tutorial?.discount || tutorial?.price || "—"}
@@ -125,6 +138,12 @@ function TutorialCardInner({
 
         <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
           {tutorial?.author?.name || "Unibuddy Expert"}
+        </p>
+
+        <p className="line-clamp-1 text-xs text-muted-foreground">
+          {paid
+            ? "Preview first · Full lesson after purchase"
+            : "Free to learn · Start anytime"}
         </p>
 
         <div className="text-3xs flex items-center gap-1 text-muted-foreground">

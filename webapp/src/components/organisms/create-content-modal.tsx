@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 
 interface CreateContentModalProps {
@@ -23,8 +24,8 @@ const contentOptions = [
     type: "resource" as const,
     href: "/home/resources/create",
     icon: FileText,
-    title: "Resource",
-    description: "Upload PDFs, cheatsheets, or study guides for your students.",
+    titleKey: "createContent.resource" as const,
+    descriptionKey: "createContent.resourceDescription" as const,
     iconBg: "bg-primary/10 text-primary",
     featured: false,
   },
@@ -32,9 +33,8 @@ const contentOptions = [
     type: "tutorial" as const,
     href: "/home/tutorials/create",
     icon: Video,
-    title: "Tutorial",
-    description:
-      "Create engaging video lessons with interactive quizzes and markers.",
+    titleKey: "createContent.tutorial" as const,
+    descriptionKey: "createContent.tutorialDescription" as const,
     iconBg: "bg-primary-foreground/20 text-primary-foreground",
     featured: true,
   },
@@ -42,9 +42,8 @@ const contentOptions = [
     type: "collection" as const,
     href: "/home/collections/create",
     icon: FolderOpen,
-    title: "Collection",
-    description:
-      "Bundle multiple resources and tutorials into a cohesive learning path.",
+    titleKey: "createContent.collection" as const,
+    descriptionKey: "createContent.collectionDescription" as const,
     iconBg: "bg-secondary text-secondary-foreground",
     featured: false,
   },
@@ -55,6 +54,7 @@ export function CreateContentModal({
   onOpenChange,
 }: CreateContentModalProps) {
   const router = useRouter()
+  const { t } = useI18n()
 
   const handleSelect = (href: string) => {
     onOpenChange(false)
@@ -76,22 +76,22 @@ export function CreateContentModal({
         <div className="p-8 md:p-10">
           <DialogHeader className="mb-8 space-y-2">
             <DialogTitle className="text-2xl font-extrabold tracking-tight md:text-3xl">
-              Create New Content
+              {t("createContent.title")}
             </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              Choose the type of content you want to create.
+              {t("createContent.description")}
             </DialogDescription>
           </DialogHeader>
 
           {/* Option Cards */}
-          <div className="grid auto-rows-fr items-stretch grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid auto-rows-fr grid-cols-1 items-stretch gap-4 md:grid-cols-3">
             {contentOptions.map((option) => (
               <button
                 key={option.type}
                 type="button"
                 onClick={() => handleSelect(option.href)}
                 className={cn(
-                  "group relative flex h-full flex-col items-start rounded-xl p-5 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  "group relative flex h-full flex-col items-start rounded-xl p-5 text-left transition-all duration-300 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
                   option.featured
                     ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 md:-translate-y-1"
                     : "bg-muted/50 hover:bg-muted hover:shadow-md"
@@ -105,7 +105,7 @@ export function CreateContentModal({
                 >
                   <option.icon className="size-5" />
                 </div>
-                <h3 className="text-lg font-bold">{option.title}</h3>
+                <h3 className="text-lg font-bold">{t(option.titleKey)}</h3>
                 <p
                   className={cn(
                     "mt-1 text-xs leading-relaxed",
@@ -114,7 +114,7 @@ export function CreateContentModal({
                       : "text-muted-foreground"
                   )}
                 >
-                  {option.description}
+                  {t(option.descriptionKey)}
                 </p>
               </button>
             ))}

@@ -7,5 +7,8 @@ export class GetTutorialsQuery {
     public readonly userId?: string,
     public readonly semester?: number,
     public readonly majorId?: string,
+    public readonly price?: 'free' | 'paid',
+    public readonly verified?: boolean,
+    public readonly sort?: 'newest' | 'popular' | 'rating',
   ) {}
 }

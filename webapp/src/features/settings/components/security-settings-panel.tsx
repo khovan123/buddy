@@ -73,7 +73,7 @@ export function SecuritySettingsPanel() {
         newPassword: values.newPassword,
       }).unwrap()
       reset()
-      toast.success("Password changed successfully.")
+      toast.success("Password changed.")
     } catch (error) {
       toast.error(extractApiError(error))
     }

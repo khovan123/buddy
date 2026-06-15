@@ -9,6 +9,7 @@ import {
   Check,
   Copy,
   FileUp,
+  Info,
   Loader2,
   Plus,
   Trash2,
@@ -18,6 +19,7 @@ import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -62,6 +64,7 @@ import type {
   CreateResourceResponse,
   PresignedUrlItem,
 } from "../types"
+import { getFriendlyContentError } from "../utils/user-facing-content"
 
 import { CollectionPicker } from "./collection-picker"
 import { ThumbnailPicker } from "./thumbnail-picker"
@@ -92,6 +95,36 @@ const FIELD_TAB_MAP: Record<string, string> = {
   collectionId: "taxonomy",
 }
 
+type ResourceSubmitStage =
+  | "idle"
+  | "preparing"
+  | "uploading"
+  | "confirming"
+  | "processing"
+
+const RESOURCE_SUBMIT_STAGE_COPY: Record<
+  Exclude<ResourceSubmitStage, "idle">,
+  { title: string; description: string }
+> = {
+  preparing: {
+    title: "Getting your file ready",
+    description: "We are setting up a safe place for your file.",
+  },
+  uploading: {
+    title: "Uploading your file",
+    description: "You can keep this page open while the file is uploaded.",
+  },
+  confirming: {
+    title: "Almost done",
+    description: "Your file uploaded. We are preparing it for review.",
+  },
+  processing: {
+    title: "Checking your content",
+    description:
+      "We will read the file and check it in the background. You can follow the result in Content.",
+  },
+}
+
 export function CreateResourceForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -106,6 +139,7 @@ export function CreateResourceForm() {
   const [mode, setMode] = useState<"minimal" | "advanced">("minimal")
   const [activeTab, setActiveTab] = useState("metadata")
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [submitStage, setSubmitStage] = useState<ResourceSubmitStage>("idle")
   const [pendingSubmitData, setPendingSubmitData] =
     useState<ResourceFormValues | null>(null)
 
@@ -244,7 +278,7 @@ export function CreateResourceForm() {
           queueMicrotask(() => setResourceCollections(collections))
         }
       })
-      .catch(() => toast.error("Failed to fetch your resource collections."))
+      .catch(() => toast.error("We could not load your collections."))
       .finally(() => {
         if (!ignore) {
           queueMicrotask(() => setIsLoadingCollections(false))
@@ -316,12 +350,12 @@ export function CreateResourceForm() {
             collectionId: restData.collectionId || undefined,
           },
         }).unwrap()
-        toast.success("Resource updated successfully.")
+        toast.success("Resource updated.")
         router.refresh()
       } catch (error: unknown) {
         toast.error(
           extractApiError(error) ||
-            "Failed to update resource. Please fix the validation errors."
+            "We could not update this resource. Please review the form and try again."
         )
       }
       return
@@ -337,12 +371,13 @@ export function CreateResourceForm() {
 
     if (missingFiles.length > 0) {
       toast.error(
-        `Please select actual files for slot(s): #${missingFiles.join(", #")}`
+        `Please choose a file for slot(s): #${missingFiles.join(", #")}`
       )
       return
     }
 
     try {
+      setSubmitStage("preparing")
       // Exclude thumbnailFile from the request payload to prevent 400 Bad Request
       const { thumbnailFile: _, ...restData } = data
       const payload = {
@@ -377,6 +412,7 @@ export function CreateResourceForm() {
       // Add to global upload store and start background upload
       addBatch(batch)
 
+      setSubmitStage("uploading")
       startBatchUpload(batch).then(async () => {
         // Read fresh state directly from Zustand
         const currentBatch = useUploadStore
@@ -391,16 +427,24 @@ export function CreateResourceForm() {
         )
         if (allCompleted) {
           try {
+            setSubmitStage("confirming")
             await confirmResourceUpload({
               resourceId: response.resourceId,
               fileIds: currentBatch.files.map((f) => f.id),
             }).unwrap()
+            setSubmitStage("processing")
             toast.success(
-              "Resource uploaded. Extraction and moderation will continue in the background."
+              "Resource uploaded. We will read and check it in the background."
             )
           } catch (error) {
-            console.error("Failed to confirm resource:", error)
-            toast.error("Upload succeeded, but confirmation failed.")
+            console.error(
+              "Failed to confirm resource:",
+              getFriendlyContentError(error)
+            )
+            toast.error(
+              "The file uploaded, but we could not start checking it. Please try again from Content."
+            )
+            setSubmitStage("idle")
           }
         }
       })
@@ -409,11 +453,16 @@ export function CreateResourceForm() {
       selectedFilesRef.current.clear()
       form.reset()
     } catch (error: unknown) {
-      toast.error(
-        extractApiError(error) ||
-          "Failed to create resource. Please fix the validation errors."
+      const message = getFriendlyContentError(
+        error,
+        "We could not create this resource. Please review the form and try again."
       )
-      console.error(error)
+      toast.error(message)
+      console.error("Create resource failed:", {
+        message,
+        rawMessage: extractApiError(error),
+      })
+      setSubmitStage("idle")
     }
   }
 
@@ -430,7 +479,7 @@ export function CreateResourceForm() {
   const copyToClipboard = async (url: string) => {
     await navigator.clipboard.writeText(url)
     setCopiedUrl(url)
-    toast.success("Upload URL copied!")
+    toast.success("Upload link copied.")
     setTimeout(() => setCopiedUrl(null), 2000)
   }
 
@@ -445,10 +494,9 @@ export function CreateResourceForm() {
               <Check className="size-4 text-emerald-500" />
             </div>
             <div>
-              <CardTitle>Resource Created Successfully!</CardTitle>
+              <CardTitle>Resource created.</CardTitle>
               <CardDescription>
-                Use the presigned URLs below to upload your files directly to
-                cloud storage.
+                Use the upload links below to send your files safely.
               </CardDescription>
             </div>
           </div>
@@ -458,7 +506,7 @@ export function CreateResourceForm() {
           <div className="rounded-lg border bg-muted/30 p-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-muted-foreground">Resource ID:</span>
+                <span className="text-muted-foreground">Resource:</span>
                 <p className="font-mono text-xs">{uploadResult.resourceId}</p>
               </div>
               <div>
@@ -534,6 +582,8 @@ export function CreateResourceForm() {
   }
 
   // ── Section Renderers ─────────────────────────────────────
+  const activeSubmitStage =
+    submitStage === "idle" ? null : RESOURCE_SUBMIT_STAGE_COPY[submitStage]
 
   const metadataSection = (
     <div className="space-y-4">
@@ -626,8 +676,8 @@ export function CreateResourceForm() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         {isEditMode
-          ? "Uploaded files stay unchanged when editing resource metadata."
-          : "Add at least one file."}
+          ? "Your uploaded files will stay the same while you edit the details."
+          : "Add a PDF, DOCX, PPTX, or similar study file. After upload, we will read and check it before learners can see it."}
       </p>
 
       {!isEditMode &&
@@ -883,12 +933,12 @@ export function CreateResourceForm() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>
-              {isEditMode ? "Update Resource" : "Create New Resource"}
+              {isEditMode ? "Update resource" : "Create resource"}
             </CardTitle>
             <CardDescription>
               {isEditMode
-                ? "Update resource metadata, pricing, taxonomy, and thumbnail."
-                : "Upload study materials (PDFs, documents, etc.). Files will be uploaded to cloud storage after metadata creation."}
+                ? "Update the details, price, course, and cover image."
+                : "Add study materials such as PDFs, documents, or slide decks. We will upload and check them after you submit."}
             </CardDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -915,21 +965,21 @@ export function CreateResourceForm() {
             <div className="space-y-10">
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Metadata
+                  Details
                 </h3>
                 {metadataSection}
               </div>
               <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Media
+                  Files
                 </h3>
                 {mediaSection}
               </div>
               <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Packaging
+                  Course & price
                 </h3>
                 {packagingSection}
               </div>
@@ -943,13 +993,13 @@ export function CreateResourceForm() {
             >
               <TabsList className="mb-8 grid w-full grid-cols-3 rounded-xl bg-muted/50 p-1">
                 <TabsTrigger value="metadata" className="rounded-lg">
-                  Metadata
+                  Details
                 </TabsTrigger>
                 <TabsTrigger value="attachments" className="rounded-lg">
-                  Media
+                  Files
                 </TabsTrigger>
                 <TabsTrigger value="taxonomy" className="rounded-lg">
-                  Packaging
+                  Course & price
                 </TabsTrigger>
               </TabsList>
 
@@ -976,21 +1026,35 @@ export function CreateResourceForm() {
             </Tabs>
           )}
 
+          {activeSubmitStage ? (
+            <Alert className="border-primary/30 bg-primary/5">
+              {submitStage === "processing" ? (
+                <Info className="size-4 text-primary" />
+              ) : (
+                <Loader2 className="size-4 animate-spin text-primary" />
+              )}
+              <AlertTitle>{activeSubmitStage.title}</AlertTitle>
+              <AlertDescription>
+                {activeSubmitStage.description}
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
           <Button
             type="submit"
-            disabled={isLoading || isUpdating}
+            disabled={isLoading || isUpdating || submitStage !== "idle"}
             className="h-12 w-full rounded-xl bg-linear-to-r from-primary to-accent font-bold text-white shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-xl"
           >
-            {(isLoading || isUpdating) && (
+            {(isLoading || isUpdating || submitStage !== "idle") && (
               <Loader2 className="mr-2 size-5 animate-spin" />
             )}
             {isEditMode
               ? isUpdating
-                ? "Updating Resource..."
-                : "Update Resource"
-              : isLoading
-                ? "Creating Resource & Getting Upload..."
-                : "Create Resource Now"}
+                ? "Updating resource..."
+                : "Update resource"
+              : submitStage !== "idle"
+                ? activeSubmitStage?.title
+                : "Create resource"}
           </Button>
           <ConfirmDialog
             open={confirmOpen}
@@ -1001,8 +1065,8 @@ export function CreateResourceForm() {
             }
             description={
               isEditMode
-                ? "Your resource metadata changes will be saved."
-                : "The resource will be created and selected files will begin uploading."
+                ? "Your resource changes will be saved."
+                : "Your resource will be created and the selected files will start uploading."
             }
             confirmLabel={isEditMode ? "Update resource" : "Create resource"}
             loading={isLoading || isUpdating}

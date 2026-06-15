@@ -44,7 +44,7 @@ export default function HomeLoading() {
           <SectionHeading
             badge="Quick Picks"
             title="Today's Highlights"
-            description="Quickly access content streams with the highest engagement."
+            description="Jump into learning items people are opening most today."
           />
           <div className="grid auto-rows-fr items-stretch gap-4 md:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -61,11 +61,7 @@ export default function HomeLoading() {
                 <p className="mb-4 text-sm text-muted-foreground">
                   A brief description of the featured content item.
                 </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-auto w-fit"
-                >
+                <Button size="sm" variant="outline" className="mt-auto w-fit">
                   Xem chi tiet
                 </Button>
               </article>

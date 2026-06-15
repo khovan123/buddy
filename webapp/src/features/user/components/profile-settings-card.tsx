@@ -112,7 +112,7 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
       }
 
       await updateMe(payload).unwrap()
-      toast.success("Profile updated successfully!")
+      toast.success("Profile updated.")
       setEditing(false)
     } catch (err: unknown) {
       handleError(err)
@@ -209,9 +209,7 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
               </Field>
 
               <Field>
-                <Label htmlFor="profile-settings-career">
-                  Career Goal
-                </Label>
+                <Label htmlFor="profile-settings-career">Career Goal</Label>
                 <Select
                   value={selectedCareerId}
                   onValueChange={(val) => {

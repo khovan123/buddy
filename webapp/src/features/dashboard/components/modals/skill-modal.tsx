@@ -74,14 +74,14 @@ export default function SkillModal({
     try {
       if (isEditing && skill) {
         await updateSkill({ id: skill.id, body: data }).unwrap()
-        toast.success("Skill updated successfully")
+        toast.success("Skill updated.")
       } else {
         await createSkill(data).unwrap()
-        toast.success("Skill created successfully")
+        toast.success("Skill created.")
       }
       onOpenChange(false)
     } catch (error) {
-      toast.error("Failed to save skill")
+      toast.error("We could not save this skill.")
     }
   }
 

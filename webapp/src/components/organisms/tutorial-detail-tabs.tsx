@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import type {
   TutorialAttachedResource,
   TutorialDiscussionItem,
-} from "@/features/library/data/library-assets"
+} from "@/features/library/types"
 
 type TutorialTabKey = "description" | "resources" | "discussion"
 

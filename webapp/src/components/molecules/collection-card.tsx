@@ -61,8 +61,18 @@ function getBuyLabel(price?: string) {
 
   const numericPrice = Number(normalized.replace(/[^\d.-]/g, ""))
   return Number.isFinite(numericPrice) && numericPrice > 0
-    ? "Discovery now"
+    ? "See preview"
     : "Learn now"
+}
+
+function isPaid(price?: string) {
+  const normalized = price?.trim().toLowerCase()
+  if (!normalized || normalized === "free") {
+    return false
+  }
+
+  const numericPrice = Number(normalized.replace(/[^\d.-]/g, ""))
+  return Number.isFinite(numericPrice) && numericPrice > 0
 }
 
 function CollectionCardInner({
@@ -78,6 +88,7 @@ function CollectionCardInner({
           collection.purchaseType
         )
       : undefined
+  const paid = isPaid(collection?.price)
 
   return (
     <LearningCardShell className="group/collection p-2">
@@ -94,12 +105,12 @@ function CollectionCardInner({
       >
         {collection?.thumbnailUrl ? (
           <Image
-              fill
-              src={collection.thumbnailUrl}
-              alt={collection.title}
-              className="object-cover transition duration-500 group-hover/collection:scale-105 group-hover/collection:opacity-92"
-              sizes={imageSizes}
-            />
+            fill
+            src={collection.thumbnailUrl}
+            alt={collection.title}
+            className="object-cover transition duration-500 group-hover/collection:scale-105 group-hover/collection:opacity-92"
+            sizes={imageSizes}
+          />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_50%_28%,color-mix(in_oklch,var(--education-sage)_18%,transparent),transparent_56%)]">
             <FileText className="size-10 text-muted-foreground/50" />
@@ -113,7 +124,7 @@ function CollectionCardInner({
       </div>
 
       <div className="relative z-10 flex w-full flex-1 flex-col gap-2 px-2 pt-4 pb-3">
-        <div className="flex items-center justify-between gap-3 text-3xs font-bold tracking-[0.16em] text-muted-foreground uppercase">
+        <div className="text-3xs flex items-center justify-between gap-3 font-bold tracking-[0.16em] text-muted-foreground uppercase">
           <span>Collection</span>
           <span className="rounded-full border border-border/70 bg-background/50 px-2 py-0.5 tracking-normal text-foreground">
             {collection?.discount || collection?.price || "—"}
@@ -126,6 +137,12 @@ function CollectionCardInner({
 
         <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
           {collection?.author?.name || "Buddy Expert"}
+        </p>
+
+        <p className="line-clamp-1 text-xs text-muted-foreground">
+          {paid
+            ? "Preview first · Full collection after purchase"
+            : "Free to learn · Open anytime"}
         </p>
 
         <div className="mt-1 flex items-center gap-1.5">

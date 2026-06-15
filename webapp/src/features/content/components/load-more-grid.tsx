@@ -2,7 +2,9 @@
 
 import { useCallback, useState, useTransition, type ReactNode } from "react"
 
-import { Loader2 } from "lucide-react"
+import Link from "next/link"
+
+import { Compass, Loader2, Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import type { PaginationMeta } from "@/types/api"
@@ -15,7 +17,10 @@ interface LoadMoreGridProps<T> {
   /** Pagination meta from initial fetch */
   initialMeta: PaginationMeta
   /** Fetch next page — returns { data, meta } */
-  fetchMore: (page: number, limit: number) => Promise<{ data: T[]; meta: PaginationMeta }>
+  fetchMore: (
+    page: number,
+    limit: number
+  ) => Promise<{ data: T[]; meta: PaginationMeta }>
   /** Render a single item */
   renderItem: (item: T, index: number) => ReactNode
   /** Key extractor for React list rendering */
@@ -39,7 +44,9 @@ export function LoadMoreGrid<T>({
   const hasMore = meta.page < meta.totalPages
 
   const loadMore = useCallback(() => {
-    if (!hasMore) {return}
+    if (!hasMore) {
+      return
+    }
 
     startTransition(async () => {
       try {
@@ -63,9 +70,30 @@ export function LoadMoreGrid<T>({
       </div>
 
       {items.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">
-          No items found. Check back later!
-        </p>
+        <div className="rounded-2xl border border-dashed border-border bg-card/50 p-8 text-center">
+          <Compass className="mx-auto size-9 text-muted-foreground" />
+          <p className="mt-3 text-sm font-semibold text-foreground">
+            Nothing matched yet
+          </p>
+          <p className="mx-auto mt-1 max-w-md text-sm leading-6 text-muted-foreground">
+            Try clearing a filter, searching another word, or adding a resource
+            so learners have something to open.
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/explore">
+                <Compass className="size-3.5" />
+                Browse explore
+              </Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/home/resources/create">
+                <Plus className="size-3.5" />
+                Create resource
+              </Link>
+            </Button>
+          </div>
+        </div>
       ) : null}
 
       {hasMore ? (
@@ -79,7 +107,7 @@ export function LoadMoreGrid<T>({
           >
             {isPending ? <Loader2 className="size-3 animate-spin" /> : null}
             Load More
-          </Button>         
+          </Button>
         </div>
       ) : null}
     </>

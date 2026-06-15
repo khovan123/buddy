@@ -10,6 +10,7 @@ import "../bones/registry"
 import "./globals.css"
 
 import { ThemeProvider } from "../components/theme-provider"
+import { LanguageProvider } from "../i18n/language-provider"
 import { AppInitializer } from "../lib/redux/app-initializer"
 import { ReduxProvider } from "../lib/redux/redux-provider"
 import { cn } from "../lib/utils"
@@ -154,12 +155,14 @@ export default function RootLayout({
                 <ErrorProvider>
                   {/* <MotionProvider> */}
                   <NextAuthSessionProvider>
-                    <SessionLoginDialogProvider>
-                      <div className="relative flex min-h-screen flex-col">
-                        <Toaster />
-                        {children}
-                      </div>
-                    </SessionLoginDialogProvider>
+                    <LanguageProvider>
+                      <SessionLoginDialogProvider>
+                        <div className="relative flex min-h-screen flex-col">
+                          <Toaster />
+                          {children}
+                        </div>
+                      </SessionLoginDialogProvider>
+                    </LanguageProvider>
                   </NextAuthSessionProvider>
                   {/* </MotionProvider> */}
                 </ErrorProvider>

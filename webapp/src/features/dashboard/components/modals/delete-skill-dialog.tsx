@@ -24,10 +24,10 @@ export default function DeleteSkillDialog({
     }
     try {
       await deleteSkill(id).unwrap()
-      toast.success("Skill deleted successfully")
+      toast.success("Skill deleted.")
       onOpenChange(false)
     } catch {
-      toast.error("Failed to delete skill")
+      toast.error("We could not delete this skill.")
     }
   }
 

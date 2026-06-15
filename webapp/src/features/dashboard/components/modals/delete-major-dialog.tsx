@@ -23,10 +23,10 @@ export default function DeleteMajorDialog({
     }
     try {
       await deleteMajor(id).unwrap()
-      toast.success("Major deleted successfully")
+      toast.success("Major deleted.")
       onOpenChange(false)
     } catch (error) {
-      toast.error("Failed to delete major")
+      toast.error("We could not delete this major.")
     }
   }
 

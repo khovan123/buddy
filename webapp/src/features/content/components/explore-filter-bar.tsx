@@ -35,6 +35,18 @@ const SEMESTERS = [
   { value: "6", label: "Semester 6" },
 ] as const
 
+const PRICE_FILTERS = [
+  { value: "all", label: "All prices" },
+  { value: "free", label: "Free" },
+  { value: "paid", label: "Paid" },
+] as const
+
+const SORT_OPTIONS = [
+  { value: "newest", label: "Newest" },
+  { value: "popular", label: "Popular" },
+  { value: "rating", label: "Best rated" },
+] as const
+
 /** All-option sentinel used by the combobox (empty string clears the URL param). */
 const ALL_MAJORS_OPTION = { id: "", name: "All Majors" } as const
 
@@ -50,6 +62,9 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
   const semester = searchParams.get("semester") ?? ""
   const majorId = searchParams.get("majorId") ?? ""
   const search = searchParams.get("search") ?? ""
+  const price = searchParams.get("price") ?? ""
+  const verified = searchParams.get("verified") ?? ""
+  const sort = searchParams.get("sort") ?? ""
 
   /** Combobox needs a flat array including the "All" sentinel. */
   const majorOptions = useMemo(() => [ALL_MAJORS_OPTION, ...majors], [majors])
@@ -86,7 +101,7 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
     [updateParams]
   )
 
-  const hasFilters = semester || majorId || search
+  const hasFilters = semester || majorId || search || price || verified || sort
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -175,6 +190,84 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
           </ComboboxContent>
         </Combobox>
 
+        <Select
+          value={price || "all"}
+          onValueChange={(val) =>
+            updateParams("price", val === "all" ? "" : val)
+          }
+        >
+          <SelectTrigger
+            size="sm"
+            className="h-8 w-auto min-w-30 gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 text-xs font-medium shadow-xs backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-card/80 focus-visible:border-primary/40 focus-visible:bg-card/80"
+          >
+            <SelectValue placeholder="All prices" />
+          </SelectTrigger>
+          <SelectContent position="popper" className="rounded-xl">
+            <SelectGroup>
+              {PRICE_FILTERS.map((option) => (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="rounded-lg text-xs"
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={verified || "all"}
+          onValueChange={(val) =>
+            updateParams("verified", val === "all" ? "" : val)
+          }
+        >
+          <SelectTrigger
+            size="sm"
+            className="h-8 w-auto min-w-34 gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 text-xs font-medium shadow-xs backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-card/80 focus-visible:border-primary/40 focus-visible:bg-card/80"
+          >
+            <SelectValue placeholder="All items" />
+          </SelectTrigger>
+          <SelectContent position="popper" className="rounded-xl">
+            <SelectGroup>
+              <SelectItem value="all" className="rounded-lg text-xs">
+                All items
+              </SelectItem>
+              <SelectItem value="true" className="rounded-lg text-xs">
+                Checked by Buddy
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={sort || "newest"}
+          onValueChange={(val) =>
+            updateParams("sort", val === "newest" ? "" : val)
+          }
+        >
+          <SelectTrigger
+            size="sm"
+            className="h-8 w-auto min-w-32 gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 text-xs font-medium shadow-xs backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-card/80 focus-visible:border-primary/40 focus-visible:bg-card/80"
+          >
+            <SelectValue placeholder="Newest" />
+          </SelectTrigger>
+          <SelectContent position="popper" className="rounded-xl">
+            <SelectGroup>
+              {SORT_OPTIONS.map((option) => (
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="rounded-lg text-xs"
+                >
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+
         {/* ── Clear All ── */}
         {hasFilters ? (
           <Button
@@ -197,7 +290,7 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
         <Input
           name="search"
           defaultValue={search}
-          placeholder="Search..."
+          placeholder="Search by title or tag"
           className="h-8 rounded-lg border-border/60 bg-card/50 pl-8 text-xs shadow-xs backdrop-blur-sm placeholder:text-muted-foreground/50"
         />
       </form>

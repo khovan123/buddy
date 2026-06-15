@@ -58,6 +58,7 @@ import {
 import { extractApiError } from "@/types/api"
 
 import { CollectionFormValues, collectionSchema } from "../schema"
+import { getFriendlyContentError } from "../utils/user-facing-content"
 
 import {
   CollectionRoadmapBuilder,
@@ -339,20 +340,27 @@ export function CreateCollectionForm() {
 
       if (isEditMode && editId) {
         await updateCollection({ id: editId, body: payload }).unwrap()
-        toast.success("Collection updated successfully!")
+        toast.success("Collection updated.")
         router.refresh()
       } else {
         await createCollection(payload).unwrap()
-        toast.success("Collection created successfully!")
+        toast.success("Collection created.")
         form.reset()
         setRoadmapPhases([])
       }
     } catch (error: unknown) {
-      toast.error(
-        extractApiError(error) ||
-          `Failed to ${isEditMode ? "update" : "create"} collection. Please fix the validation errors.`
+      const message = getFriendlyContentError(
+        error,
+        `We could not ${isEditMode ? "update" : "create"} this collection. Please review the form and try again.`
       )
-      console.error(error)
+      toast.error(message)
+      console.error(
+        `Failed to ${isEditMode ? "update" : "create"} collection:`,
+        {
+          message,
+          rawMessage: extractApiError(error),
+        }
+      )
     }
   }
 
@@ -599,11 +607,11 @@ export function CreateCollectionForm() {
           <h3 className="flex gap-2 text-lg font-semibold tracking-tight">
             {selectedType === CollectionType.RESOURCE ? (
               <>
-                <ListOrderedIcon /> Resource Selection
+                <ListOrderedIcon /> Choose resources
               </>
             ) : (
               <>
-                <ListVideoIcon /> Tutorial Roadmap
+                <ListVideoIcon /> Tutorial path
               </>
             )}
           </h3>
@@ -611,7 +619,7 @@ export function CreateCollectionForm() {
         <p className="text-sm text-muted-foreground">
           {selectedType === CollectionType.RESOURCE
             ? "Browse and add resources to your collection."
-            : "Organize tutorials into learning phases. Each phase represents a stage in the roadmap."}
+            : "Organize tutorials into clear steps learners can follow."}
         </p>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -695,14 +703,14 @@ export function CreateCollectionForm() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>
-              {isEditMode ? "Update Collection" : "Create New Collection"}
+              {isEditMode ? "Update collection" : "Create collection"}
             </CardTitle>
             <CardDescription>
               {isEditMode
-                ? "Update collection metadata, thumbnail, taxonomy, and roadmap items."
+                ? "Update the details, cover image, course, and learning path."
                 : selectedType === CollectionType.RESOURCE
-                  ? "Bundle resources into a collection that can be attached to tutorials."
-                  : "Organize tutorials into a structured learning roadmap with phases."}
+                  ? "Group resources so learners can follow them together."
+                  : "Organize tutorials into a clear learning path."}
             </CardDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -729,21 +737,21 @@ export function CreateCollectionForm() {
             <div className="space-y-10">
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Metadata
+                  Details
                 </h3>
                 {infoSection}
               </div>
               <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Media
+                  Cover
                 </h3>
                 {mediaSection}
               </div>
               <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Packaging
+                  Learning path
                 </h3>
                 {packagingSection}
               </div>
@@ -757,13 +765,13 @@ export function CreateCollectionForm() {
             >
               <TabsList className="mb-8 grid w-full grid-cols-3 rounded-xl bg-muted/50 p-1">
                 <TabsTrigger value="info" className="rounded-lg">
-                  Metadata
+                  Details
                 </TabsTrigger>
                 <TabsTrigger value="pricing" className="rounded-lg">
-                  Media
+                  Cover
                 </TabsTrigger>
                 <TabsTrigger value="mapping" className="rounded-lg">
-                  Packaging
+                  Learning path
                 </TabsTrigger>
               </TabsList>
 
@@ -800,11 +808,11 @@ export function CreateCollectionForm() {
             )}
             {isEditMode
               ? isUpdating
-                ? "Updating Collection..."
-                : "Update Collection"
+                ? "Updating collection..."
+                : "Update collection"
               : isLoading
-                ? "Creating Collection..."
-                : "Create Collection"}
+                ? "Creating collection..."
+                : "Create collection"}
           </Button>
           <ConfirmDialog
             open={confirmOpen}
@@ -815,8 +823,8 @@ export function CreateCollectionForm() {
             }
             description={
               isEditMode
-                ? "Your collection metadata and roadmap changes will be saved."
-                : "The collection will be created from the selected content and roadmap."
+                ? "Your collection details and learning path will be saved."
+                : "The collection will be created from the items you selected."
             }
             confirmLabel={
               isEditMode ? "Update collection" : "Create collection"

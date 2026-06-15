@@ -26,6 +26,7 @@ import { OAuthButtons } from "@/features/auth/components/oauth-buttons"
 import { loginSchema, type LoginFormValues } from "@/features/auth/schemas"
 import { setToken } from "@/features/auth/store/auth-slice"
 import { OtpPurpose } from "@/features/auth/type"
+import { useI18n } from "@/i18n/language-provider"
 import { baseApi, SESSION_LOGIN_REQUIRED_EVENT } from "@/lib/redux/base-api"
 import type { AppDispatch } from "@/lib/redux/store"
 import { useGlobalError } from "@/providers/error-provider"
@@ -62,6 +63,7 @@ export function SessionLoginDialogProvider({
   const pathname = usePathname()
   const dispatch = useDispatch<AppDispatch>()
   const { handleError, clearError } = useGlobalError()
+  const { t } = useI18n()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [open, setOpen] = useState(false)
   const [callbackUrl, setCallbackUrl] = useState("/home")
@@ -145,10 +147,10 @@ export function SessionLoginDialogProvider({
         open={!disabled && confirmOpen}
         onOpenChange={setConfirmOpen}
         variant="warning"
-        title="Session expired"
-        description="Log in again to continue from this page."
-        confirmLabel="Log in again"
-        cancelLabel="Not now"
+        title={t("session.expiredTitle")}
+        description={t("session.expiredDescription")}
+        confirmLabel={t("session.loginAgain")}
+        cancelLabel={t("common.notNow")}
         onConfirm={() => {
           setConfirmOpen(false)
           setOpen(true)
@@ -157,10 +159,9 @@ export function SessionLoginDialogProvider({
       <Dialog open={!disabled && open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Log in to continue</DialogTitle>
+            <DialogTitle>{t("session.loginTitle")}</DialogTitle>
             <DialogDescription>
-              Your session expired. Use the same account method again to
-              continue from this page.
+              {t("session.loginDescription")}
             </DialogDescription>
           </DialogHeader>
 
@@ -169,7 +170,9 @@ export function SessionLoginDialogProvider({
               <FieldGroup className="gap-4">
                 <FieldSet className="gap-4">
                   <Field>
-                    <FieldLabel htmlFor="session-login-email">Email</FieldLabel>
+                    <FieldLabel htmlFor="session-login-email">
+                      {t("common.email")}
+                    </FieldLabel>
                     <Input
                       id="session-login-email"
                       type="email"
@@ -186,7 +189,7 @@ export function SessionLoginDialogProvider({
 
                   <Field>
                     <FieldLabel htmlFor="session-login-password">
-                      Password
+                      {t("common.password")}
                     </FieldLabel>
                     <Input
                       id="session-login-password"
@@ -211,10 +214,10 @@ export function SessionLoginDialogProvider({
                   {isSubmitting ? (
                     <>
                       <Loader2 className="animate-spin" />
-                      Logging in...
+                      {t("common.loadingLogin")}
                     </>
                   ) : (
-                    "Log in"
+                    t("common.login")
                   )}
                 </Button>
               </FieldGroup>

@@ -64,6 +64,7 @@ import {
   useUploadStore,
   type UploadBatch,
 } from "../store/upload-store"
+import { getFriendlyContentError } from "../utils/user-facing-content"
 
 import { CollectionPicker } from "./collection-picker"
 import { ResourceExplorer } from "./resource-explorer"
@@ -279,14 +280,14 @@ export function CreateTutorialForm() {
     queueMicrotask(() => setIsLoadingResources(true))
     fetchResourcesByCourse(selectedCourseId)
       .then((fetched) => queueMicrotask(() => setResources(fetched)))
-      .catch(() => toast.error("Failed to fetch related resources."))
+      .catch(() => toast.error("We could not load related resources."))
       .finally(() => queueMicrotask(() => setIsLoadingResources(false)))
 
     // Fetch resource collections (for collection mode)
     queueMicrotask(() => setIsLoadingCollections(true))
     fetchResourceCollectionsByCourse(selectedCourseId)
       .then((fetched) => queueMicrotask(() => setResourceCollections(fetched)))
-      .catch(() => toast.error("Failed to fetch resource collections."))
+      .catch(() => toast.error("We could not load resource collections."))
       .finally(() => queueMicrotask(() => setIsLoadingCollections(false)))
   }, [
     form,
@@ -345,7 +346,9 @@ export function CreateTutorialForm() {
       const duration = await getVideoDuration(file)
       setValue("videoDurationSeconds", duration, { shouldValidate: true })
     } catch {
-      toast.error("Could not detect video duration. Please enter it manually.")
+      toast.error(
+        "We could not detect the video length. Please enter it manually."
+      )
     }
   }
 
@@ -387,12 +390,14 @@ export function CreateTutorialForm() {
               steps: stepsPayload,
             },
           }).unwrap()
-          toast.success("Tutorial updated successfully.")
+          toast.success("Tutorial updated.")
           router.refresh()
         } catch (error: unknown) {
           toast.error(
-            extractApiError(error) ||
-              "Failed to update tutorial. Please fix the validation errors."
+            getFriendlyContentError(
+              error,
+              "We could not update this tutorial. Please review the form and try again."
+            )
           )
         }
         return
@@ -467,12 +472,12 @@ export function CreateTutorialForm() {
                 s3Key: response.s3Key,
               }).unwrap()
               toast.success(
-                "Video uploaded. Transcript and moderation will continue in the background."
+                "Video uploaded. We will prepare captions and check the content in the background."
               )
             } catch (error) {
               console.error("Failed to confirm tutorial:", error)
               toast.error(
-                "Video uploaded, but failed to alert the processing server."
+                "Video uploaded, but we could not start checking it. Please try again from Content."
               )
             }
           }
@@ -481,11 +486,15 @@ export function CreateTutorialForm() {
         selectedFileRef.current = null
         form.reset()
       } catch (error: unknown) {
-        toast.error(
-          extractApiError(error) ||
-            "Failed to create tutorial. Please fix the validation errors."
+        const message = getFriendlyContentError(
+          error,
+          "We could not create this tutorial. Please review the form and try again."
         )
-        console.error(error)
+        toast.error(message)
+        console.error("Failed to create tutorial:", {
+          message,
+          rawMessage: extractApiError(error),
+        })
       }
     },
     [
@@ -681,8 +690,8 @@ export function CreateTutorialForm() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         {isEditMode
-          ? "Uploaded video stays unchanged when editing tutorial metadata."
-          : "Select a video file. Duration, file name, and size will be auto-detected."}
+          ? "Your uploaded video will stay the same while you edit the details."
+          : "Select a video file. We will fill in the length, file name, and size for you."}
       </p>
 
       <div className="flex gap-6 rounded-2xl border bg-muted/20 p-6">
@@ -835,9 +844,9 @@ export function CreateTutorialForm() {
       {/*   2. "Manual Pick" — use ResourceExplorer + TutorialStepBuilder */}
       <div className="space-y-4 border-t border-border/50 pt-4">
         <div className="space-y-1">
-          <Label className="text-base text-primary">Resource Attachment</Label>
+          <Label className="text-base text-primary">Study materials</Label>
           <p className="text-xs text-muted-foreground">
-            Choose how to attach resources to this tutorial.
+            Choose which resources should go with this tutorial.
           </p>
         </div>
 
@@ -851,10 +860,10 @@ export function CreateTutorialForm() {
         >
           <TabsList className="grid w-full grid-cols-2 rounded-xl bg-muted/50 p-1">
             <TabsTrigger value="collection" className="rounded-lg">
-              <LibraryIcon /> From Collection
+              <LibraryIcon /> Use a collection
             </TabsTrigger>
             <TabsTrigger value="manual" className="rounded-lg">
-              <TableOfContentsIcon /> Manual Pick
+              <TableOfContentsIcon /> Pick one by one
             </TabsTrigger>
           </TabsList>
 
@@ -882,7 +891,7 @@ export function CreateTutorialForm() {
               <div className="flex animate-in items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">
-                    Organize resources into timeline steps.
+                    Organize resources into learning steps.
                   </p>
                 </div>
                 {errors.steps && (
@@ -934,12 +943,12 @@ export function CreateTutorialForm() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>
-              {isEditMode ? "Update Tutorial" : "Create New Tutorial"}
+              {isEditMode ? "Update tutorial" : "Create tutorial"}
             </CardTitle>
             <CardDescription>
               {isEditMode
-                ? "Update tutorial metadata, pricing, taxonomy, and attached resources."
-                : "Upload your video course. Note: Resources attached must belong to the exact same Major and Course."}
+                ? "Update the details, price, course, and linked resources."
+                : "Upload your video lesson. Linked resources must use the same major and course."}
             </CardDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -966,21 +975,21 @@ export function CreateTutorialForm() {
             <div className="space-y-10">
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Metadata
+                  Details
                 </h3>
                 {metadataSection}
               </div>
               <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Media
+                  Video
                 </h3>
                 {mediaSection}
               </div>
               <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Packaging
+                  Course & resources
                 </h3>
                 {packagingSection}
               </div>
@@ -994,13 +1003,13 @@ export function CreateTutorialForm() {
             >
               <TabsList className="mb-8 grid w-full grid-cols-3 rounded-xl bg-muted/50 p-1">
                 <TabsTrigger value="metadata" className="rounded-lg">
-                  Metadata
+                  Details
                 </TabsTrigger>
                 <TabsTrigger value="media" className="rounded-lg">
-                  Media
+                  Video
                 </TabsTrigger>
                 <TabsTrigger value="packaging" className="rounded-lg">
-                  Packaging
+                  Course & resources
                 </TabsTrigger>
               </TabsList>
 
@@ -1037,21 +1046,23 @@ export function CreateTutorialForm() {
             )}
             {isEditMode
               ? isUpdating
-                ? "Updating Tutorial..."
-                : "Update Tutorial"
+                ? "Updating tutorial..."
+                : "Update tutorial"
               : isLoading
-                ? "Creating Metadata & Getting Upload Links..."
-                : "Create Tutorial & Start Upload"}
+                ? "Getting upload ready..."
+                : "Create tutorial and upload"}
           </Button>
           <ConfirmDialog
             open={confirmOpen}
             onOpenChange={setConfirmOpen}
             variant={isEditMode ? "warning" : "confirm"}
-            title={isEditMode ? "Update this tutorial?" : "Create this tutorial?"}
+            title={
+              isEditMode ? "Update this tutorial?" : "Create this tutorial?"
+            }
             description={
               isEditMode
-                ? "Your tutorial metadata and attached resources will be saved."
-                : "The tutorial will be created and the selected video will begin uploading."
+                ? "Your tutorial changes and linked resources will be saved."
+                : "Your tutorial will be created and the selected video will start uploading."
             }
             confirmLabel={isEditMode ? "Update tutorial" : "Create tutorial"}
             loading={isLoading || isUpdating}

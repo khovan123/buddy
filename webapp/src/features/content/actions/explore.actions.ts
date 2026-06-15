@@ -20,7 +20,10 @@ import type {
 export async function fetchMoreTutorials(
   page: number,
   limit: number,
-  filters?: Pick<ContentListParams, "semester" | "majorId" | "search">
+  filters?: Pick<
+    ContentListParams,
+    "semester" | "majorId" | "search" | "price" | "verified" | "sort"
+  >
 ): Promise<PaginatedResult<TutorialQueryItem>> {
   return getTutorials({ page, limit, ...filters })
 }
@@ -28,7 +31,10 @@ export async function fetchMoreTutorials(
 export async function fetchMoreResources(
   page: number,
   limit: number,
-  filters?: Pick<ContentListParams, "semester" | "majorId" | "search">
+  filters?: Pick<
+    ContentListParams,
+    "semester" | "majorId" | "search" | "price" | "verified" | "sort"
+  >
 ): Promise<PaginatedResult<ResourceQueryItem>> {
   return getResources({ page, limit, ...filters })
 }

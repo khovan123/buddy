@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 
 import type { NavigationItem } from "@/components/atoms/nav-dropdown-item"
 import { CreateContentCTA } from "@/components/molecules/create-content-cta"
+import { LanguageSwitcher } from "@/components/molecules/language-switcher"
 import { Navigation } from "@/components/organisms/navigation"
 import { useGetSubscriptionQuery } from "@/features/billing/services/billing-api"
 import { HeaderWalletPopover } from "@/features/user/components/header-wallet-popover"
@@ -13,33 +14,10 @@ import { ProfileCompleteBanner } from "@/features/user/components/profile-comple
 import { ProfileUpdateDialog } from "@/features/user/components/profile-update-dialog"
 import { UserMenuPopover } from "@/features/user/components/user-menu-popover"
 import type { UserProfile } from "@/features/user/services/user-api"
+import { useI18n } from "@/i18n/language-provider"
 import { isAdminAccess, isCreatorAccess } from "@/lib/auth/role-access"
 
 /* ── Navigation items (same as previously in the server layout) ── */
-
-const BASE_NAV_ITEMS: NavigationItem[] = [
-  { href: "/home", label: "Home" },
-  {
-    label: "Explore",
-    dropdown: [
-      {
-        href: "/explore/resources",
-        label: "Resource",
-        description: "Browse study materials, notes, and documents",
-        iconKey: "BookOpen",
-      },
-      {
-        href: "/explore/tutorials",
-        label: "Tutorial",
-        description: "Browse guided videos and learning sessions",
-        iconKey: "GraduationCap",
-      },
-    ],
-  },
-  { href: "/forum", label: "Forum" },
-  { href: "/library", label: "Library" },
-  { href: "/profile", label: "Profile" },
-]
 
 interface PrivateHeaderProps {
   user: UserProfile | null
@@ -60,12 +38,10 @@ interface PrivateHeaderProps {
  * Manages the shared `ProfileUpdateDialog` state so both
  * `ProfileCompleteBanner` and `UserMenuPopover` can trigger it.
  */
-export function PrivateHeader({
-  user,
-  accountFallback,
-}: PrivateHeaderProps) {
+export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
   const { data: subscriptionData } = useGetSubscriptionQuery()
+  const { t } = useI18n()
 
   const openProfileDialog = () => setProfileDialogOpen(true)
   const isAdmin = isAdminAccess(accountFallback)
@@ -74,18 +50,39 @@ export function PrivateHeader({
     subscriptionPlan:
       subscriptionData?.data?.plan ?? accountFallback?.subscriptionPlan,
   })
-  const navigationItems = useMemo(
-    () => {
-      if (isAdmin) {
-        return [{ href: "/dashboard", label: "Dashboard" }]
-      }
+  const navigationItems = useMemo(() => {
+    const baseNavItems: NavigationItem[] = [
+      { href: "/home", label: t("nav.home") },
+      {
+        label: t("nav.explore"),
+        dropdown: [
+          {
+            href: "/explore/resources",
+            label: t("nav.resource"),
+            description: t("nav.resourceDescription"),
+            iconKey: "BookOpen",
+          },
+          {
+            href: "/explore/tutorials",
+            label: t("nav.tutorial"),
+            description: t("nav.tutorialDescription"),
+            iconKey: "GraduationCap",
+          },
+        ],
+      },
+      { href: "/forum", label: t("nav.forum") },
+      { href: "/library", label: t("nav.library") },
+      { href: "/profile", label: t("nav.profile") },
+    ]
 
-      return isCreator
-        ? [...BASE_NAV_ITEMS, { href: "/content", label: "Content" }]
-        : BASE_NAV_ITEMS
-    },
-    [isAdmin, isCreator]
-  )
+    if (isAdmin) {
+      return [{ href: "/dashboard", label: t("nav.dashboard") }]
+    }
+
+    return isCreator
+      ? [...baseNavItems, { href: "/content", label: t("nav.content") }]
+      : baseNavItems
+  }, [isAdmin, isCreator, t])
   const menuUser = useMemo<UserProfile | null>(() => {
     if (user?.email && (user.profile?.nickname || user.nickname)) {
       return user
@@ -130,6 +127,7 @@ export function PrivateHeader({
             {!isAdmin && isCreator ? <CreateContentCTA /> : null}
             {!isAdmin ? <PlanSelectorDialog /> : null}
             {!isAdmin ? <HeaderWalletPopover /> : null}
+            <LanguageSwitcher compact />
             <Notifications />
             <UserMenuPopover
               user={menuUser}

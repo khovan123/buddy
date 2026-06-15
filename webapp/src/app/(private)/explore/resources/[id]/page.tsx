@@ -281,13 +281,10 @@ export default async function ExploreResourceDetailPage({
             </div>
 
             <div className="pt-2">
-              <h4 className="mb-2 font-bold text-foreground">
-                Technical Information
-              </h4>
+              <h4 className="mb-2 font-bold text-foreground">File details</h4>
               <p>
-                This document is provided as a high-resolution, searchable PDF.
-                It is optimized for both digital viewing on tablets and
-                professional printing in A4 format.
+                This document is easy to read on screen and works well for A4
+                printing.
               </p>
             </div>
           </div>

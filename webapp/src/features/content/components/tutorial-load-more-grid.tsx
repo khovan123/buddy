@@ -15,7 +15,10 @@ import { LoadMoreGrid } from "./load-more-grid"
 interface Props {
   initialItems: TutorialCardData[]
   initialMeta: PaginationMeta
-  filters?: Pick<ContentListParams, "semester" | "majorId" | "search">
+  filters?: Pick<
+    ContentListParams,
+    "semester" | "majorId" | "search" | "price" | "verified" | "sort"
+  >
 }
 
 export function TutorialLoadMoreGrid({

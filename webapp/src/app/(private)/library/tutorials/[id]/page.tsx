@@ -83,18 +83,7 @@ export default async function LibraryTutorialDetailPage({
   const fileSize = tutorial.media?.fileSize
     ? formatFileSize(tutorial.media.fileSize)
     : "—"
-
-  // Contextual Resources mock based on mapped resource IDs if any
-  const hasResources = tutorial.resourceIds && tutorial.resourceIds.length > 0
-  // This array simulates resolving the linked resourceIds. In a real scenario, this would use a batch fetch.
-  const attachedResources = hasResources
-    ? tutorial.resourceIds!.map((rid, idx) => ({
-        id: rid,
-        title: `Supplemental Resource ${idx + 1}`,
-        type: idx % 2 === 0 ? "PDF Document" : "Source Code",
-        size: "2.4 MB",
-      }))
-    : []
+  const linkedResourceCount = tutorial.resourceIds?.length ?? 0
 
   return (
     <section className="bg-background text-foreground">
@@ -261,61 +250,20 @@ export default async function LibraryTutorialDetailPage({
                       </p>
                     </div>
 
-                    {hasResources ? (
-                      <div className="space-y-4">
-                        {attachedResources.map((res) => (
-                          <div
-                            key={res.id}
-                            className="flex flex-col gap-3 rounded-2xl border border-white/5 bg-card/50 p-4 transition-colors hover:bg-card/80"
-                          >
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <p className="line-clamp-1 text-sm font-semibold">
-                                  {res.title}
-                                </p>
-                                <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                                  <span>{res.type}</span>
-                                  <span className="size-1 rounded-full bg-border" />
-                                  <span>{res.size}</span>
-                                </p>
-                              </div>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="group/btn w-full justify-between gap-2 bg-white/5 text-xs font-semibold transition-colors hover:bg-accent/20 hover:text-accent-foreground"
-                            >
-                              <span>Download File</span>
-                              <Download className="size-3.5 opacity-50 transition-opacity group-hover/btn:opacity-100" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-card/20 p-8 text-center">
-                        <Info className="mb-3 size-8 text-muted-foreground/30" />
-                        <p className="text-sm font-medium text-muted-foreground">
-                          No resources attached
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground/60">
-                          This tutorial does not have any downloadable
-                          materials.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {hasResources ? (
-                    <div className="relative z-10 mt-8 border-t border-white/5 pt-6">
-                      <Button
-                        variant="outline"
-                        className="w-full gap-2 rounded-xl border-white/10 transition-all hover:bg-accent hover:text-accent-foreground"
-                      >
-                        <span>Download All (.zip)</span>
-                        <Download className="size-4" />
-                      </Button>
+                    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-card/20 p-8 text-center">
+                      <Info className="mb-3 size-8 text-muted-foreground/30" />
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {linkedResourceCount > 0
+                          ? `${linkedResourceCount} linked resource${linkedResourceCount === 1 ? "" : "s"}`
+                          : "No resources attached"}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground/60">
+                        {linkedResourceCount > 0
+                          ? "Linked resources will appear here when the library API returns their details."
+                          : "This tutorial does not have any downloadable materials."}
+                      </p>
                     </div>
-                  ) : null}
+                  </div>
                 </div>
               </aside>
             </div>

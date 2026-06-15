@@ -24,10 +24,10 @@ export default function DeleteCareerDialog({
     }
     try {
       await deleteCareer(id).unwrap()
-      toast.success("Career deleted successfully")
+      toast.success("Career deleted.")
       onOpenChange(false)
     } catch {
-      toast.error("Failed to delete career")
+      toast.error("We could not delete this career.")
     }
   }
 

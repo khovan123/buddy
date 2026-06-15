@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import type { TutorialAttachedResource } from "@/features/library/data/library-assets"
+import type { TutorialAttachedResource } from "@/features/library/types"
 import { cn } from "@/lib/utils"
 
 type TutorialAttachedResourcesProps = {

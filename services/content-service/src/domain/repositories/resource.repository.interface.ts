@@ -32,6 +32,9 @@ export interface ResourceListQueryParams {
   userId?: string;
   semester?: number;
   majorId?: string;
+  price?: 'free' | 'paid';
+  verified?: boolean;
+  sort?: 'newest' | 'popular' | 'rating';
 }
 
 /** Interface representing data constraints for  resource query meta. */

@@ -26,6 +26,8 @@ import {
 } from "@/features/content/services/content-api"
 import { cn } from "@/lib/utils"
 
+import { getFriendlyModerationReason } from "../../utils/user-facing-content"
+
 interface ContentModerationStatusBadgeProps {
   status: string
   moderationStatus?: string
@@ -39,7 +41,7 @@ export function ContentModerationStatusBadge({
     return (
       <Badge variant="destructive" className="uppercase">
         <ShieldAlert className="size-3" />
-        Rejected
+        Needs changes
       </Badge>
     )
   }
@@ -48,7 +50,7 @@ export function ContentModerationStatusBadge({
     return (
       <Badge variant="destructive" className="uppercase">
         <AlertTriangle className="size-3" />
-        Failed
+        Try again
       </Badge>
     )
   }
@@ -69,7 +71,7 @@ export function ContentModerationStatusBadge({
     return (
       <Badge variant="secondary" className="uppercase">
         <Clock3 className="size-3" />
-        Processing
+        Checking
       </Badge>
     )
   }
@@ -78,7 +80,7 @@ export function ContentModerationStatusBadge({
     return (
       <Badge variant="default" className="uppercase">
         <CheckCircle2 className="size-3" />
-        Approved
+        Ready
       </Badge>
     )
   }
@@ -111,6 +113,64 @@ function isPlaceholderModerationReason(reason: string) {
   )
 }
 
+function getModerationSummary({
+  status,
+  moderationStatus,
+}: Pick<ContentModerationChecklistProps, "status" | "moderationStatus">) {
+  const contentStatus = normalizeStatus(status)
+  const moderation = normalizeStatus(moderationStatus)
+
+  if (contentStatus === "FAILED" || moderation === "ERROR") {
+    return {
+      title: "We could not finish checking this",
+      description:
+        "This is usually caused by a file we cannot read or a temporary issue. You can try again.",
+      tone: "danger" as const,
+    }
+  }
+
+  if (contentStatus === "BANNED" || moderation === "REJECTED") {
+    return {
+      title: "Please review this content",
+      description:
+        "This file may not be suitable to share yet. Edit it or replace it before making it available.",
+      tone: "danger" as const,
+    }
+  }
+
+  if (moderation === "NEEDS_REVIEW") {
+    return {
+      title: "Needs a closer look",
+      description:
+        "We could not clearly approve this content. Please review it before making it available.",
+      tone: "warning" as const,
+    }
+  }
+
+  if (contentStatus === "PROCESSING" || moderation === "PENDING") {
+    return {
+      title: "Checking your content",
+      description:
+        "We are reading the file and checking whether learners can see it.",
+      tone: "neutral" as const,
+    }
+  }
+
+  if (
+    contentStatus === "AVAILABLE" ||
+    moderation === "APPROVED" ||
+    moderation === "READY"
+  ) {
+    return {
+      title: "Ready for learners",
+      description: "We read the file and it passed the content check.",
+      tone: "success" as const,
+    }
+  }
+
+  return null
+}
+
 function getChecklistState({
   status,
   moderationStatus,
@@ -132,7 +192,7 @@ function getChecklistState({
 
   return [
     {
-      label: "Upload completed",
+      label: "Upload done",
       state:
         contentStatus === "PENDING"
           ? "pending"
@@ -141,15 +201,15 @@ function getChecklistState({
             : "complete",
     },
     {
-      label: "Moderation queued",
+      label: "Checking started",
       state: processing ? "active" : "complete",
     },
     {
-      label: "Safety checklist",
+      label: "Sharing check",
       state: rejected || failed ? "failed" : approved ? "complete" : "active",
     },
     {
-      label: "Ready to publish",
+      label: "Ready for learners",
       state: approved
         ? "complete"
         : rejected || failed
@@ -194,6 +254,7 @@ export function ContentModerationChecklist({
     (reason) => reason.trim() && !isPlaceholderModerationReason(reason)
   )
   const hasReasons = violationReasons.length > 0
+  const summary = getModerationSummary({ status, moderationStatus })
 
   return (
     <div
@@ -202,6 +263,24 @@ export function ContentModerationChecklist({
         compact ? "mt-2 p-2" : "p-3"
       )}
     >
+      {summary ? (
+        <div
+          className={cn(
+            "mb-3 rounded-md border px-3 py-2 text-xs",
+            summary.tone === "danger" &&
+              "border-destructive/30 bg-destructive/8 text-destructive",
+            summary.tone === "warning" &&
+              "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200",
+            summary.tone === "success" &&
+              "border-primary/30 bg-primary/8 text-primary",
+            summary.tone === "neutral" &&
+              "border-border bg-muted/40 text-muted-foreground"
+          )}
+        >
+          <p className="font-semibold">{summary.title}</p>
+          <p className="mt-1 leading-5">{summary.description}</p>
+        </div>
+      ) : null}
       <div
         className={cn(
           "grid gap-2",
@@ -221,7 +300,7 @@ export function ContentModerationChecklist({
       {hasReasons ? (
         <div className="mt-2 border-t border-border/60 pt-2">
           <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-destructive">
-            <span>Violation rules</span>
+            <span>What happened</span>
             {ruleVersion ? (
               <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px]">
                 {ruleVersion}
@@ -232,7 +311,9 @@ export function ContentModerationChecklist({
             {violationReasons.slice(0, 3).map((reason) => (
               <li key={reason} className="flex gap-2">
                 <AlertTriangle className="mt-0.5 size-3 shrink-0" />
-                <span className="line-clamp-2">{reason}</span>
+                <span className="line-clamp-2">
+                  {getFriendlyModerationReason(reason)}
+                </span>
               </li>
             ))}
           </ul>
@@ -265,10 +346,12 @@ export function ManualModerationCheckButton({
       } else {
         await recheckTutorial({ tutorialId: contentId }).unwrap()
       }
-      toast.success("Moderation check completed")
+      toast.success("Content check finished")
       router.refresh()
     } catch {
-      toast.error("Moderation check failed")
+      toast.error(
+        "We could not check this content right now. Please try again."
+      )
     }
   }
 
@@ -286,7 +369,7 @@ export function ManualModerationCheckButton({
       ) : (
         <RefreshCw className="size-4" />
       )}
-      Check moderation
+      Check again
     </Button>
   )
 }
@@ -321,8 +404,8 @@ export function DeleteContentButton({
     } catch {
       toast.error(
         contentType === "resource"
-          ? "Failed to delete resource"
-          : "Failed to delete tutorial"
+          ? "We could not delete this resource"
+          : "We could not delete this tutorial"
       )
     }
   }
@@ -338,7 +421,7 @@ export function DeleteContentButton({
       variant="error"
       icon={<Trash2 />}
       title={`Delete this ${contentType}?`}
-      description={`This ${contentType} will be removed from your content list. This action cannot be undone.`}
+      description={`This ${contentType} will be removed from your content list. You cannot undo this.`}
       confirmLabel="Delete"
       loading={isLoading}
       onConfirm={handleDelete}
@@ -359,7 +442,7 @@ export function DeleteContentButton({
         </Button>
       }
     >
-      This removes the content metadata and disconnects it from creator views.
+      This removes the item from your creator pages.
     </ConfirmDialog>
   )
 }

@@ -30,7 +30,7 @@ import {
   type LibraryAsset,
 } from "@/features/library/components/library-asset-card"
 import { LibraryRequestCard } from "@/features/library/components/library-request-card"
-import type { LibraryCatalog } from "@/features/library/data/library-assets"
+import type { LibraryCatalog } from "@/features/library/types"
 import { cn } from "@/lib/utils"
 
 type LibraryTab = "all" | "learning" | "resources" | "collections"
@@ -80,9 +80,9 @@ const workspaceTabs: Array<{
   label: string
   icon: ComponentType<{ className?: string }>
 }> = [
-  { key: "all", label: "Workspace", icon: Grid2x2 },
-  { key: "learning", label: "Learn", icon: PlayCircle },
-  { key: "resources", label: "Resources", icon: FileText },
+  { key: "all", label: "Continue", icon: Grid2x2 },
+  { key: "learning", label: "Lessons", icon: PlayCircle },
+  { key: "resources", label: "Files", icon: FileText },
   { key: "collections", label: "Collections", icon: FolderKanban },
 ]
 
@@ -482,7 +482,7 @@ export default function LibraryBrowser({
             </Badge>
             <Badge className="rounded-md bg-primary/10 text-primary shadow-none hover:bg-primary/10">
               <Sparkles className="size-3" />
-              Workspace
+              Study space
             </Badge>
           </div>
           <div className="max-w-3xl space-y-2">
@@ -516,7 +516,7 @@ export default function LibraryBrowser({
           <div className="rounded-lg border border-border bg-card p-3">
             <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold">
               <Library className="size-4 text-primary" />
-              Library
+              My learning
             </div>
             <div className="grid gap-2">
               {workspaceTabs.map((tab) => {
@@ -558,7 +558,7 @@ export default function LibraryBrowser({
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <SlidersHorizontal className="size-4 text-primary" />
-                Sort
+                Order
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -588,14 +588,14 @@ export default function LibraryBrowser({
               <Search className="size-4 shrink-0 text-muted-foreground" />
               <Field className="min-w-0 flex-1 gap-0">
                 <FieldLabel htmlFor="library-search" className="sr-only">
-                  Search library
+                  Search your library
                 </FieldLabel>
                 <Input
                   id="library-search"
                   type="text"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search library"
+                  placeholder="Search your library"
                   className="h-7 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
                 />
               </Field>
@@ -605,12 +605,15 @@ export default function LibraryBrowser({
             </div>
           </div>
 
-          <WorkspacePreview item={selectedItem} onNavigate={persistBrowserState} />
+          <WorkspacePreview
+            item={selectedItem}
+            onNavigate={persistBrowserState}
+          />
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold">Content</h2>
+                <h2 className="text-lg font-semibold">Saved items</h2>
                 <p className="text-sm text-muted-foreground">
                   {formatCount(visibleItems.length, "result", "results")}
                 </p>
@@ -629,9 +632,9 @@ export default function LibraryBrowser({
                 </div>
               ) : (
                 <div className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
-                  <p className="text-sm font-medium">No matching content</p>
+                  <p className="text-sm font-medium">Nothing matched</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Try another search or category.
+                    Try another search, or explore more learning items to save.
                   </p>
                 </div>
               )}
@@ -639,28 +642,35 @@ export default function LibraryBrowser({
 
             <div className="space-y-4">
               <div className="rounded-lg border border-border bg-card p-4">
-                <h2 className="text-lg font-semibold">Learning Queue</h2>
+                <h2 className="text-lg font-semibold">Continue next</h2>
                 <div className="mt-4 space-y-3">
-                  {allItems.slice(0, 4).map((item, index) => (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      onClick={persistBrowserState}
-                      className="flex items-center gap-3 rounded-md border border-border bg-background p-2 transition-colors hover:bg-muted"
-                    >
-                      <span className="flex size-7 shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-bold text-primary">
-                        {index + 1}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-foreground">
-                          {item.title}
+                  {allItems.length > 0 ? (
+                    allItems.slice(0, 4).map((item, index) => (
+                      <Link
+                        key={item.id}
+                        href={item.href}
+                        onClick={persistBrowserState}
+                        className="flex items-center gap-3 rounded-md border border-border bg-background p-2 transition-colors hover:bg-muted"
+                      >
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded bg-primary/10 text-xs font-bold text-primary">
+                          {index + 1}
                         </span>
-                        <span className="block truncate text-xs text-muted-foreground">
-                          {item.source}
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-foreground">
+                            {item.title}
+                          </span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {item.source}
+                          </span>
                         </span>
-                      </span>
-                    </Link>
-                  ))}
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="rounded-md border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                      Saved lessons, files you bought, and collections you
+                      follow will appear here.
+                    </div>
+                  )}
                 </div>
               </div>
               <LibraryRequestCard />

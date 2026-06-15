@@ -1,21 +1,19 @@
 import type { Metadata } from "next"
 
-import { RecommendationSection } from "@/features/content"
-import {
-  mapCollectionToLibraryCard,
-  mapResourceToLibraryAsset,
-  mapTutorialToLibraryAsset,
-} from "@/features/content"
-import {
-  getLibraryResourceCollections,
-  getLibraryResources,
-  getLibraryTutorialCollections,
-  getLibraryTutorials,
-} from "@/features/content"
 import type {
   CollectionQueryItem,
   ResourceQueryItem,
   TutorialQueryItem,
+} from "@/features/content"
+import {
+  RecommendationSection,
+  getLibraryResourceCollections,
+  getLibraryResources,
+  getLibraryTutorialCollections,
+  getLibraryTutorials,
+  mapCollectionToLibraryCard,
+  mapResourceToLibraryAsset,
+  mapTutorialToLibraryAsset,
 } from "@/features/content"
 import LibraryBrowser from "@/features/library/components/library-browser"
 import {
@@ -47,8 +45,6 @@ export async function generateMetadata(): Promise<Metadata> {
     },
   }
 }
-
-
 
 export default async function LibraryPage() {
   const seo = await getSeoContent("library")
@@ -106,7 +102,7 @@ export default async function LibraryPage() {
         seoDescription={seo.description}
       />
       <div className="mt-10">
-        <RecommendationSection pageSize={6} />
+        <RecommendationSection pageSize={3} />
       </div>
     </>
   )

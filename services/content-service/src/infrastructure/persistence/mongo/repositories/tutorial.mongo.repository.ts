@@ -599,9 +599,16 @@ export class TutorialMongoRepository implements ITutorialRepository {
       collectionId?: null | { $ne: null };
     },
   ): Promise<TutorialQueryResult> {
-    const { page, limit, search, userId, collectionId, semester, majorId } = params;
+    const { page, limit, search, userId, collectionId, semester, majorId, price, verified, sort } =
+      params;
     const safeLimit = Math.max(limit, 1);
     const skip = (page - 1) * safeLimit;
+    const sortBy =
+      sort === 'rating'
+        ? { isVerified: -1 as const, updatedAt: -1 as const }
+        : sort === 'popular'
+          ? { updatedAt: -1 as const }
+          : { createdAt: -1 as const };
 
     const filter: Record<string, unknown> = {
       status: TutorialStatus.AVAILABLE,
@@ -614,6 +621,16 @@ export class TutorialMongoRepository implements ITutorialRepository {
 
     if (majorId) {
       filter.majorId = new Types.ObjectId(majorId);
+    }
+
+    if (price === 'free') {
+      filter.price = 0;
+    } else if (price === 'paid') {
+      filter.price = { $gt: 0 };
+    }
+
+    if (verified) {
+      filter.isVerified = true;
     }
 
     if (collectionId) {
@@ -644,7 +661,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
         .populate<Pick<TutorialQueryWithPopulate, 'resourceIds'>>('resourceIds')
         .populate('major')
         .populate('course')
-        .sort({ createdAt: -1 })
+        .sort(sortBy)
         .skip(skip)
         .limit(safeLimit)
         .lean<TutorialQueryWithPopulate[]>()

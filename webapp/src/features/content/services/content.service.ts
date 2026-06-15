@@ -94,6 +94,15 @@ export const getTutorials = async (
   if (params.majorId) {
     qs.set("majorId", params.majorId)
   }
+  if (params.price) {
+    qs.set("price", params.price)
+  }
+  if (typeof params.verified === "boolean") {
+    qs.set("verified", String(params.verified))
+  }
+  if (params.sort) {
+    qs.set("sort", params.sort)
+  }
 
   const queryString = qs.toString()
   const path = `/tutorials${queryString ? "?" + queryString : ""}`
@@ -344,6 +353,15 @@ export const getResources = async (
   }
   if (params.majorId) {
     qs.set("majorId", params.majorId)
+  }
+  if (params.price) {
+    qs.set("price", params.price)
+  }
+  if (typeof params.verified === "boolean") {
+    qs.set("verified", String(params.verified))
+  }
+  if (params.sort) {
+    qs.set("sort", params.sort)
   }
 
   const queryString = qs.toString()

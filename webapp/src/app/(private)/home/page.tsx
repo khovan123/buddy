@@ -99,9 +99,43 @@ export default async function HomePage() {
 
       <section className="space-y-5 rounded-2xl border border-border/80 bg-card/40 p-6">
         <SectionHeading
+          badge="Start Here"
+          title="Create your first learning item"
+          description="Follow these steps when you are not sure where to begin."
+        />
+        <div className="grid auto-rows-fr items-stretch gap-4 md:grid-cols-4">
+          <FeatureCard
+            chip="1"
+            title="Upload a resource"
+            description="Add a PDF, document, or slide deck that learners can preview."
+            href="/home/resources/create"
+          />
+          <FeatureCard
+            chip="2"
+            title="Group related content"
+            description="Create a collection so learners can follow a clear path."
+            href="/home/collections/create"
+          />
+          <FeatureCard
+            chip="3"
+            title="Check the preview"
+            description="Open the resource page and make sure the preview is useful."
+            href="/content"
+          />
+          <FeatureCard
+            chip="4"
+            title="Follow the result"
+            description="Use Content to see whether your upload is ready for learners."
+            href="/content"
+          />
+        </div>
+      </section>
+
+      <section className="space-y-5 rounded-2xl border border-border/80 bg-card/40 p-6">
+        <SectionHeading
           badge="Quick Picks"
           title="Today's Highlights"
-          description="Quickly access content streams with the highest engagement."
+          description="Jump into learning items people are opening most today."
         />
         <div className="grid auto-rows-fr items-stretch gap-4 md:grid-cols-3">
           <FeatureCard

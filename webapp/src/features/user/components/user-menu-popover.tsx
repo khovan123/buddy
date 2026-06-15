@@ -18,6 +18,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { clearAuthCookies } from "@/features/auth/actions"
 import type { UserProfile } from "@/features/user/services/user-api"
+import { useI18n } from "@/i18n/language-provider"
 
 /* ── Types ──────────────────────────────────────────────────── */
 
@@ -73,6 +74,7 @@ export function UserMenuPopover({ user, onEditProfile }: UserMenuPopoverProps) {
   const email = user?.email ?? ""
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [logoutOpen, setLogoutOpen] = useState(false)
+  const { t } = useI18n()
 
   return (
     <>
@@ -81,7 +83,7 @@ export function UserMenuPopover({ user, onEditProfile }: UserMenuPopoverProps) {
           <button
             type="button"
             className="rounded-full ring-offset-background transition-opacity outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            aria-label="User menu"
+            aria-label={t("user.menu")}
             id="user-menu-trigger"
           >
             <UserAvatar
@@ -110,14 +112,18 @@ export function UserMenuPopover({ user, onEditProfile }: UserMenuPopoverProps) {
           <Separator className="my-1" />
 
           {/* ── Menu items ──────────────────────────────── */}
-          <nav className="flex flex-col" aria-label="User menu">
-            <MenuItem icon={User} label="My Profile" href="/profile" />
+          <nav className="flex flex-col" aria-label={t("user.menu")}>
+            <MenuItem icon={User} label={t("user.myProfile")} href="/profile" />
             <MenuItem
               icon={Pencil}
-              label="Edit Profile"
+              label={t("user.editProfile")}
               onClick={onEditProfile}
             />
-            <MenuItem icon={Settings} label="Settings" href="/settings" />
+            <MenuItem
+              icon={Settings}
+              label={t("user.settings")}
+              href="/settings"
+            />
           </nav>
 
           <Separator className="my-1" />
@@ -131,7 +137,7 @@ export function UserMenuPopover({ user, onEditProfile }: UserMenuPopoverProps) {
             }}
           >
             <LogOut className="size-4 shrink-0 text-destructive/70" />
-            Sign Out
+            {t("user.signOut")}
           </button>
         </PopoverContent>
       </Popover>
@@ -139,9 +145,9 @@ export function UserMenuPopover({ user, onEditProfile }: UserMenuPopoverProps) {
         open={logoutOpen}
         onOpenChange={setLogoutOpen}
         variant="warning"
-        title="Sign out?"
-        description="You will need to log in again before managing your content, billing, and account settings."
-        confirmLabel="Sign out"
+        title={t("user.signOutTitle")}
+        description={t("user.signOutDescription")}
+        confirmLabel={t("user.signOut")}
         onConfirm={async () => {
           await clearAuthCookies()
           signOut({ callbackUrl: "/" })

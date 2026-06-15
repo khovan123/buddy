@@ -120,9 +120,9 @@ export class ResourceController {
   @Version('1')
   @HttpCode(HttpStatus.OK)
   async getResources(@Query() query: QueryDto) {
-    const { page, limit, search, userId, semester, majorId } = query;
+    const { page, limit, search, userId, semester, majorId, price, verified, sort } = query;
     const result = await this.queryBus.execute(
-      new GetResourcesQuery(page, limit, search, userId, semester, majorId),
+      new GetResourcesQuery(page, limit, search, userId, semester, majorId, price, verified, sort),
     );
     return successResponse(result, 'Get resources successful', getCorrelationId());
   }

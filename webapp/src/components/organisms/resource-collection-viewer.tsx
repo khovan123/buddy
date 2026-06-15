@@ -137,8 +137,8 @@ export function ResourceCollectionViewer({
             <div className="mb-6 flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm">
               <FileText className="size-4 text-primary" />
               <p>
-                Document preview is rendered directly from the real library
-                source file.
+                Document preview is rendered from the file URL returned by the
+                library.
               </p>
             </div>
 
@@ -154,7 +154,7 @@ export function ResourceCollectionViewer({
               format={selectedFileType.toUpperCase()}
               layout="column"
               highlights={[
-                "Loaded from a real file under public/library-sources.",
+                "Loaded from the file URL returned by the library.",
                 `Current file type: ${selectedFileType.toUpperCase()}.`,
                 "Download uses the same source file the reader displays.",
               ]}

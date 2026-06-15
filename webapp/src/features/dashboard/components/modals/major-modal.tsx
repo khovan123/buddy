@@ -74,14 +74,14 @@ export default function MajorModal({
     try {
       if (isEditing && major) {
         await updateMajor({ id: major.id, body: data }).unwrap()
-        toast.success("Major updated successfully")
+        toast.success("Major updated.")
       } else {
         await createMajor(data).unwrap()
-        toast.success("Major created successfully")
+        toast.success("Major created.")
       }
       onOpenChange(false)
     } catch (error) {
-      toast.error("Failed to save major")
+      toast.error("We could not save this major.")
     }
   }
 

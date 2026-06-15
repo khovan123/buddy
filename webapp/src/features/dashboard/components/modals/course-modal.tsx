@@ -80,14 +80,14 @@ export default function CourseModal({
     try {
       if (isEditing && course) {
         await updateCourse({ id: course.id, body: data }).unwrap()
-        toast.success("Course updated successfully")
+        toast.success("Course updated.")
       } else {
         await createCourse(data).unwrap()
-        toast.success("Course created successfully")
+        toast.success("Course created.")
       }
       onOpenChange(false)
     } catch (error) {
-      toast.error("Failed to save course")
+      toast.error("We could not save this course.")
     }
   }
 

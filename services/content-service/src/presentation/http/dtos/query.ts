@@ -1,6 +1,8 @@
 import { Transform } from 'class-transformer';
 import {
   IsInt,
+  IsIn,
+  IsBoolean,
   IsMongoId,
   IsNumber,
   IsOptional,
@@ -58,4 +60,17 @@ export class QueryDto {
   @IsOptional()
   @IsMongoId()
   majorId?: string;
+
+  @IsOptional()
+  @IsIn(['free', 'paid'])
+  price?: 'free' | 'paid';
+
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  verified?: boolean;
+
+  @IsOptional()
+  @IsIn(['newest', 'popular', 'rating'])
+  sort?: 'newest' | 'popular' | 'rating';
 }

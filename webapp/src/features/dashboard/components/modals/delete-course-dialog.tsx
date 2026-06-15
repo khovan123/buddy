@@ -23,10 +23,10 @@ export default function DeleteCourseDialog({
     }
     try {
       await deleteCourse(id).unwrap()
-      toast.success("Course deleted successfully")
+      toast.success("Course deleted.")
       onOpenChange(false)
     } catch (error) {
-      toast.error("Failed to delete course")
+      toast.error("We could not delete this course.")
     }
   }
 

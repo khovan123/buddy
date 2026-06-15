@@ -61,8 +61,18 @@ function getBuyLabel(price?: string) {
 
   const numericPrice = Number(normalized.replace(/[^\d.-]/g, ""))
   return Number.isFinite(numericPrice) && numericPrice > 0
-    ? "Discovery now"
+    ? "See preview"
     : "Learn now"
+}
+
+function isPaid(price?: string) {
+  const normalized = price?.trim().toLowerCase()
+  if (!normalized || normalized === "free") {
+    return false
+  }
+
+  const numericPrice = Number(normalized.replace(/[^\d.-]/g, ""))
+  return Number.isFinite(numericPrice) && numericPrice > 0
 }
 
 function ResourceCardInner({
@@ -74,6 +84,7 @@ function ResourceCardInner({
     resource?.href && resource.purchaseType
       ? buildCheckoutHref(resource.href, resource.id, resource.purchaseType)
       : undefined
+  const paid = isPaid(resource?.price)
 
   return (
     <LearningCardShell className="group/resource p-2">
@@ -135,6 +146,12 @@ function ResourceCardInner({
 
         <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
           {resource?.author?.name || "Buddy Expert"}
+        </p>
+
+        <p className="line-clamp-1 text-xs text-muted-foreground">
+          {paid
+            ? "Preview first · Full file after purchase"
+            : "Free to learn · Open anytime"}
         </p>
 
         <div className="mt-1 flex items-center gap-1.5">

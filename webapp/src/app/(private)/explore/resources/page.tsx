@@ -44,6 +44,15 @@ export default async function ExploreResourcesPage({
   const majorId =
     typeof params.majorId === "string" ? params.majorId : undefined
   const search = typeof params.search === "string" ? params.search : undefined
+  const price =
+    params.price === "free" || params.price === "paid"
+      ? params.price
+      : undefined
+  const verified = params.verified === "true" ? true : undefined
+  const sort =
+    params.sort === "popular" || params.sort === "rating"
+      ? params.sort
+      : undefined
 
   const [seo, result, topItems] = await Promise.all([
     seoPromise,
@@ -53,6 +62,9 @@ export default async function ExploreResourcesPage({
       semester,
       majorId,
       search,
+      price,
+      verified,
+      sort,
     }),
     getTopResources(6, search, semester, majorId),
   ])
@@ -170,7 +182,7 @@ export default async function ExploreResourcesPage({
         <ResourceLoadMoreGrid
           initialItems={resources}
           initialMeta={result.meta}
-          filters={{ semester, majorId, search }}
+          filters={{ semester, majorId, search, price, verified, sort }}
         />
       </section>
     </section>

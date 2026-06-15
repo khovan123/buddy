@@ -23,7 +23,7 @@ import type {
   TutorialDiscussionItem,
   TutorialInstructor,
   TutorialResourceItem,
-} from "@/features/library/data/library-assets"
+} from "@/features/library/types"
 import { downloadFilesSequentially } from "@/lib/download-utils"
 import { cn } from "@/lib/utils"
 
@@ -152,7 +152,7 @@ export function TutorialCollectionPlayer({
             )}
           </div>
 
-          <Card className="border-border/40 bg-card/40 backdrop-blur-md shadow-sm rounded-3xl overflow-hidden">
+          <Card className="overflow-hidden rounded-3xl border-border/40 bg-card/40 shadow-sm backdrop-blur-md">
             <CardContent className="space-y-8 p-6 md:p-8">
               <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
                 <div className="space-y-5 md:col-span-2">
@@ -215,7 +215,7 @@ export function TutorialCollectionPlayer({
                   </div>
                 </div>
 
-                <Card className="border-border/40 h-fit bg-background/60 shadow-xs backdrop-blur rounded-2xl">
+                <Card className="h-fit rounded-2xl border-border/40 bg-background/60 shadow-xs backdrop-blur">
                   <CardContent className="space-y-4 p-5">
                     <div className="flex items-center gap-3">
                       <Image
@@ -398,11 +398,11 @@ export function TutorialCollectionPlayer({
         </div>
 
         <aside className="space-y-6 lg:col-span-3">
-          <Card className="border-border/40 sticky top-24 h-[calc(100vh-140px)] overflow-hidden bg-background/50 backdrop-blur-xl shadow-lg md:rounded-3xl">
+          <Card className="sticky top-24 h-[calc(100vh-140px)] overflow-hidden border-border/40 bg-background/50 shadow-lg backdrop-blur-xl md:rounded-3xl">
             <CardContent className="flex h-full flex-col p-0">
-              <div className="border-border/40 space-y-4 border-b p-5 bg-card/30">
+              <div className="space-y-4 border-b border-border/40 bg-card/30 p-5">
                 <div className="flex items-center justify-between">
-                  <h2 className="font-bold tracking-tight text-foreground text-lg">
+                  <h2 className="text-lg font-bold tracking-tight text-foreground">
                     Tutorials
                   </h2>
                   <p className="text-xs font-medium text-muted-foreground">
@@ -416,7 +416,7 @@ export function TutorialCollectionPlayer({
                   <input
                     type="text"
                     placeholder="Search tutorials..."
-                    className="h-10 w-full rounded-full border border-border/50 bg-background/60 pl-10 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/40 transition-shadow shadow-xs placeholder:text-muted-foreground/60"
+                    className="h-10 w-full rounded-full border border-border/50 bg-background/60 pl-10 text-sm shadow-xs transition-shadow outline-none placeholder:text-muted-foreground/60 focus-visible:ring-2 focus-visible:ring-primary/40"
                   />
                 </div>
               </div>
@@ -482,7 +482,7 @@ export function TutorialCollectionPlayer({
                 </div>
               </div>
 
-              <div className="border-border/40 border-t bg-card/40 backdrop-blur p-5">
+              <div className="border-t border-border/40 bg-card/40 p-5 backdrop-blur">
                 <Button
                   className="w-full font-semibold"
                   size="lg"

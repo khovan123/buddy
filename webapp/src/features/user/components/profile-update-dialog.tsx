@@ -170,7 +170,7 @@ export function ProfileUpdateDialog({
       }
 
       await updateMe(payload).unwrap()
-      toast.success("Profile updated successfully!")
+      toast.success("Profile updated.")
       onOpenChange(false)
     } catch (err: unknown) {
       handleError(err)

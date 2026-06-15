@@ -421,7 +421,8 @@ export function Notifications() {
       return
     }
 
-    const events = new EventSource("/api/notifications/stream")
+    let events: EventSource | null = null
+    let retryTimer: ReturnType<typeof setTimeout> | null = null
 
     const refreshNotifications = () => {
       dispatch(
@@ -429,11 +430,25 @@ export function Notifications() {
       )
     }
 
-    events.addEventListener("notification", refreshNotifications)
+    const connect = () => {
+      events?.close()
+      events = new EventSource("/api/notifications/stream")
+      events.addEventListener("notification", refreshNotifications)
+      events.onerror = () => {
+        events?.close()
+        events = null
+        retryTimer = setTimeout(connect, 30_000)
+      }
+    }
+
+    connect()
 
     return () => {
-      events.removeEventListener("notification", refreshNotifications)
-      events.close()
+      if (retryTimer) {
+        clearTimeout(retryTimer)
+      }
+      events?.removeEventListener("notification", refreshNotifications)
+      events?.close()
     }
   }, [dispatch, sessionStatus])
 

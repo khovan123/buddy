@@ -2,7 +2,7 @@
 
 import { type KeyboardEvent, type RefObject, useEffect, useState } from "react"
 
-import { AtSign, X } from "lucide-react"
+import { AtSign, Loader2, SearchX, WifiOff, X } from "lucide-react"
 
 import { UserAvatar } from "@/components/atoms/user-avatar"
 import { Badge } from "@/components/ui/badge"
@@ -33,6 +33,7 @@ export function ForumMentionTextarea({
 }) {
   const [candidates, setCandidates] = useState<ForumMentionCandidate[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [searchFailed, setSearchFailed] = useState(false)
   const mentionQuery = getMentionQuery(value)
   const visibleCandidates = mentionQuery === null ? [] : candidates
 
@@ -44,17 +45,23 @@ export function ForumMentionTextarea({
     const controller = new AbortController()
     const timer = globalThis.setTimeout(() => {
       setIsSearching(true)
+      setSearchFailed(false)
       fetch(`/api/users/search?q=${encodeURIComponent(mentionQuery)}`, {
         signal: controller.signal,
       })
         .then(async (response) => {
           if (!response.ok) {
+            setSearchFailed(true)
             return { data: [] }
           }
           return (await response.json()) as { data?: ForumMentionCandidate[] }
         })
         .then((payload) => setCandidates(payload.data ?? []))
-        .catch(() => undefined)
+        .catch(() => {
+          if (!controller.signal.aborted) {
+            setSearchFailed(true)
+          }
+        })
         .finally(() => setIsSearching(false))
     }, 180)
 
@@ -100,13 +107,34 @@ export function ForumMentionTextarea({
         <AtSign className="pointer-events-none absolute top-3 right-3 size-4 text-muted-foreground" />
         {mentionQuery !== null ? (
           <div className="absolute right-0 bottom-full z-20 mb-2 w-full rounded-xl border border-border bg-popover p-2 shadow-lg">
-            <div className="mb-2 px-2 text-xs text-muted-foreground">
-              {isSearching ? "Searching..." : "Mention people"}
+            <div className="mb-2 flex items-center gap-2 px-2 text-xs text-muted-foreground">
+              {isSearching ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <AtSign className="size-3" />
+              )}
+              {isSearching
+                ? "Looking for people..."
+                : mentionQuery
+                  ? "People you can mention"
+                  : "Type a name to mention someone"}
             </div>
             <div className="max-h-56 space-y-1 overflow-y-auto">
-              {visibleCandidates.length === 0 && !isSearching ? (
-                <div className="px-2 py-2 text-xs text-muted-foreground">
-                  No matching people.
+              {searchFailed && !isSearching ? (
+                <div className="flex items-start gap-2 rounded-lg px-2 py-2 text-xs text-muted-foreground">
+                  <WifiOff className="mt-0.5 size-3.5 shrink-0" />
+                  <span>
+                    We could not search people right now. Please try again.
+                  </span>
+                </div>
+              ) : null}
+              {visibleCandidates.length === 0 &&
+              !isSearching &&
+              !searchFailed &&
+              mentionQuery ? (
+                <div className="flex items-start gap-2 rounded-lg px-2 py-2 text-xs text-muted-foreground">
+                  <SearchX className="mt-0.5 size-3.5 shrink-0" />
+                  <span>No matching people found.</span>
                 </div>
               ) : null}
               {visibleCandidates.map((candidate) => (

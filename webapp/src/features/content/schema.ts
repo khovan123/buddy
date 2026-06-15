@@ -7,24 +7,21 @@ export const collectionSchema = z
   .object({
     title: z
       .string()
-      .min(3, "Title must be at least 3 characters")
-      .max(128, "Title is too long"),
-    description: z
-      .string()
-      .min(10, "Description must be at least 10 characters")
-      .max(500),
+      .min(3, "Please enter a title with at least 3 characters.")
+      .max(128, "Please use a shorter title."),
+    description: z.string().min(10, "Please add a short description.").max(500),
     hightlights: z
       .array(
         z.object({
-          value: z.string().min(10, "Highlight must be at least 10 characters"),
+          value: z.string().min(10, "Please write a little more detail."),
         })
       )
-      .min(1, "At least one highlight is required")
+      .min(1, "Please add at least one highlight.")
       .max(10),
-    majorId: z.string().min(1, "Major is required"),
-    courseId: z.string().min(1, "Course is required"),
+    majorId: z.string().min(1, "Please choose a major."),
+    courseId: z.string().min(1, "Please choose a course."),
     type: z.nativeEnum(CollectionType, {
-      message: "Collection type is required",
+      message: "Please choose what this collection is for.",
     }),
     discount: z.number().min(0).max(100),
     resourceIds: z.array(z.string()).optional(),
@@ -33,7 +30,8 @@ export const collectionSchema = z
     thumbnailFile: z
       .any()
       .refine(
-        (file) => !file || (file instanceof File && file.size <= 2 * 1024 * 1024),
+        (file) =>
+          !file || (file instanceof File && file.size <= 2 * 1024 * 1024),
         "Kích thước ảnh không được vượt quá 2MB"
       )
       .optional(),
@@ -41,7 +39,7 @@ export const collectionSchema = z
       .array(
         z.object({
           id: z.string().optional(),
-          phaseTitle: z.string().min(1, "Phase title is required"),
+          phaseTitle: z.string().min(1, "Please name this section."),
           learningGoal: z.string(),
           items: z.array(
             z.object({
@@ -59,7 +57,7 @@ export const collectionSchema = z
     if (!data.phases || data.phases.length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Collection must contain at least one phase (section)",
+        message: "Please add at least one section to this collection.",
         path: ["phases"],
       })
       return
@@ -67,20 +65,24 @@ export const collectionSchema = z
 
     // ── RESOURCE Collection constraints ──
     if (data.type === CollectionType.RESOURCE) {
-      const hasResource = data.phases.some((p) => p.items.some((i) => i.itemType === "RESOURCE"))
+      const hasResource = data.phases.some((p) =>
+        p.items.some((i) => i.itemType === "RESOURCE")
+      )
       if (!hasResource) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Resource collection must contain at least one resource",
+          message: "Please add at least one resource to this collection.",
           path: ["phases"],
         })
       }
 
-      const hasInvalidItem = data.phases.some((p) => p.items.some((i) => i.itemType !== "RESOURCE"))
+      const hasInvalidItem = data.phases.some((p) =>
+        p.items.some((i) => i.itemType !== "RESOURCE")
+      )
       if (hasInvalidItem) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Resource collection phases cannot contain tutorials",
+          message: "This resource collection can only include resources.",
           path: ["phases"],
         })
       }
@@ -88,20 +90,24 @@ export const collectionSchema = z
 
     // ── TUTORIAL Collection constraints ──
     if (data.type === CollectionType.TUTORIAL) {
-      const hasTutorial = data.phases.some((p) => p.items.some((i) => i.itemType === "TUTORIAL"))
+      const hasTutorial = data.phases.some((p) =>
+        p.items.some((i) => i.itemType === "TUTORIAL")
+      )
       if (!hasTutorial) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Tutorial roadmap must contain at least one tutorial",
+          message: "Please add at least one tutorial to this collection.",
           path: ["phases"],
         })
       }
 
-      const hasInvalidItem = data.phases.some((p) => p.items.some((i) => i.itemType !== "TUTORIAL"))
+      const hasInvalidItem = data.phases.some((p) =>
+        p.items.some((i) => i.itemType !== "TUTORIAL")
+      )
       if (hasInvalidItem) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "Tutorial roadmap cannot contain direct resources",
+          message: "This tutorial collection can only include tutorials.",
           path: ["phases"],
         })
       }
@@ -112,32 +118,29 @@ export type CollectionFormValues = z.infer<typeof collectionSchema>
 
 // --- Validation Schema (khớp với CreateResourceDto) ---
 const fileSchema = z.object({
-  fileName: z.string().min(1, "File name is required"),
-  fileSizeBytes: z.number().positive("File size must be positive"),
+  fileName: z.string().min(1, "Please choose a file."),
+  fileSizeBytes: z.number().positive("Please choose a file with content."),
   mimeType: z.string().optional(),
 })
 
 export const resourceSchema = z.object({
   title: z
     .string()
-    .min(3, "Title must be at least 3 characters")
-    .max(128, "Title is too long"),
-  summary: z
-    .string()
-    .min(10, "Summary must be at least 10 characters")
-    .max(256),
+    .min(3, "Please enter a title with at least 3 characters.")
+    .max(128, "Please use a shorter title."),
+  summary: z.string().min(10, "Please add a short summary.").max(256),
   hightlights: z
     .array(
       z.object({
-        value: z.string().min(10, "Highlight must be at least 10 characters"),
+        value: z.string().min(10, "Please write a little more detail."),
       })
     )
-    .min(1, "At least one highlight is required")
+    .min(1, "Please add at least one highlight.")
     .max(10),
-  majorId: z.string().min(1, "Major is required"),
-  courseId: z.string().min(1, "Course is required"),
-  price: z.number().min(0, "Price must be positive"),
-  files: z.array(fileSchema).min(1, "At least one file is required"),
+  majorId: z.string().min(1, "Please choose a major."),
+  courseId: z.string().min(1, "Please choose a course."),
+  price: z.number().min(0, "Price cannot be negative."),
+  files: z.array(fileSchema).min(1, "Please add at least one file."),
   collectionId: z.string().optional(),
   thumbnailBase64: z.string().optional(),
   thumbnailFile: z
@@ -155,25 +158,25 @@ export type ResourceFormValues = z.infer<typeof resourceSchema>
 export const tutorialSchema = z.object({
   title: z
     .string()
-    .min(8, "Title must be at least 8 characters")
-    .max(128, "Title is too long"),
+    .min(8, "Please enter a more descriptive title.")
+    .max(128, "Please use a shorter title."),
   description: z
     .string()
-    .min(50, "Description must be at least 50 characters")
+    .min(50, "Please describe what learners will get from this tutorial.")
     .max(500),
   hightlights: z
     .array(
       z.object({
-        value: z.string().min(10, "Highlight must be at least 10 characters"),
+        value: z.string().min(10, "Please write a little more detail."),
       })
     )
-    .min(1, "At least one highlight is required")
+    .min(1, "Please add at least one highlight.")
     .max(10),
-  majorId: z.string().min(1, "Major is required"),
-  courseId: z.string().min(1, "Course is required"),
-  price: z.number().min(0, "Price must be positive"),
+  majorId: z.string().min(1, "Please choose a major."),
+  courseId: z.string().min(1, "Please choose a course."),
+  price: z.number().min(0, "Price cannot be negative."),
   discountBundle: z.number().min(0).max(100),
-  fileName: z.string().min(1, "File name is required"),
+  fileName: z.string().min(1, "Please choose a video."),
   fileSizeBytes: z.number().positive(),
   videoDurationSeconds: z.number().positive(),
   // Resource attachment mode: "collection" uses a pre-built Resource Collection,
@@ -186,7 +189,7 @@ export const tutorialSchema = z.object({
     .array(
       z.object({
         id: z.string().optional(),
-        title: z.string().min(1, "Step title is required"),
+        title: z.string().min(1, "Please name this step."),
         resources: z.array(
           z.object({
             id: z.string().optional(),
@@ -202,11 +205,11 @@ export const tutorialSchema = z.object({
 export type TutorialFormValues = z.infer<typeof tutorialSchema>
 
 export const courseSchema = z.object({
-  code: z.string().min(1, "Code is required"),
-  name: z.string().min(1, "Name is required"),
-  majorId: z.string().min(1, "Major is required"),
-  credits: z.number().min(1, "Credits must be a positive number"),
-  semester: z.number().min(1, "Semester must be a positive number"),
+  code: z.string().min(1, "Please enter a course code."),
+  name: z.string().min(1, "Please enter a course name."),
+  majorId: z.string().min(1, "Please choose a major."),
+  credits: z.number().min(1, "Credits must be at least 1."),
+  semester: z.number().min(1, "Semester must be at least 1."),
   isCompulsory: z.boolean(),
   status: z.nativeEnum(CourseStatus).optional(),
 })
