@@ -1,3 +1,5 @@
+import type { LearningFit } from '../../domain/entities/learning-fit';
+
 export class UpdateTutorialCommand {
   constructor(
     public readonly tutorialId: string,
@@ -15,5 +17,6 @@ export class UpdateTutorialCommand {
       resources: Array<{ resourceId: string; instructionNote: string }>;
     }>,
     public readonly correlationId?: string,
+    public readonly learningFit?: LearningFit,
   ) {}
 }

@@ -16,6 +16,7 @@ from qdrant_client.models import (
     FieldCondition,
     Filter,
     MatchValue,
+    PayloadSchemaType,
     PointStruct,
     VectorParams,
 )
@@ -71,6 +72,25 @@ class VectorStore:
             logger.info(f"Created Qdrant collection: {self._collection}")
         else:
             logger.info(f"Qdrant collection exists: {self._collection}")
+
+        self._ensure_payload_indexes()
+
+    def _ensure_payload_indexes(self) -> None:
+        """Ensure keyword indexes required for filtered Qdrant Cloud search."""
+        for field_name in ("major_id", "course_id", "item_type"):
+            try:
+                self._client.create_payload_index(
+                    collection_name=self._collection,
+                    field_name=field_name,
+                    field_schema=PayloadSchemaType.KEYWORD,
+                )
+                logger.info("Ensured Qdrant payload index: %s", field_name)
+            except Exception as e:
+                logger.warning(
+                    "Qdrant payload index ensure skipped for %s: %s",
+                    field_name,
+                    e,
+                )
 
     def upsert_chunks(self, chunks: list[Chunk], embeddings: np.ndarray) -> int:
         """Batch upsert chunks with their embeddings.

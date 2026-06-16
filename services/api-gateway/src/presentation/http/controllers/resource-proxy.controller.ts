@@ -1,6 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { JwtAuthGuard, Public } from '@libs/common';
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
 
@@ -192,6 +203,16 @@ export class ResourceProxyController {
       service: 'content',
       path: `/v1/resources/${id}`,
       method: 'DELETE',
+    });
+  }
+
+  @Put(':id')
+  updateResource(@Param('id') id: string, @Body() body: unknown, @Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'content',
+      path: `/v1/resources/${id}`,
+      method: 'PUT',
+      body,
     });
   }
 

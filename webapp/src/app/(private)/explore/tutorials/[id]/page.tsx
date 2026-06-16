@@ -30,13 +30,21 @@ import { Card } from "@/components/ui/card"
 import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Toggle } from "@/components/ui/toggle"
 import { PurchaseButton } from "@/features/billing"
-import { TutorialResourcePreviewDialog } from "@/features/content"
-import { TutorialVideoPlayer } from "@/features/content"
 import {
+  ContentReceipt,
+  FitAnalytics,
+  getFitAwareFreeLabel,
+  getFitAwarePurchaseLabel,
   getResourcePreview,
   getTutorialBySlug,
+  HonestFitCard,
+  TutorialResourcePreviewDialog,
+  TutorialVideoPlayer,
 } from "@/features/content"
-import { ItemInteractionControls, TrackContentView } from "@/features/interaction"
+import {
+  ItemInteractionControls,
+  TrackContentView,
+} from "@/features/interaction"
 
 type PageParams = Promise<{ id: string }>
 
@@ -113,6 +121,10 @@ export default async function ExploreTutorialDetailPage({
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
   const canonical = `/explore/tutorials/${id}`
+  const purchaseLabel = getFitAwarePurchaseLabel({
+    contentType: "tutorial",
+    fit: tutorial.learningFit,
+  })
 
   const courseJsonLd = {
     "@context": "https://schema.org",
@@ -177,6 +189,16 @@ export default async function ExploreTutorialDetailPage({
         majorId={tutorial.majorId}
         courseId={tutorial.courseId}
         semester={tutorial.course?.semester}
+      />
+      <FitAnalytics
+        event="fit_card_viewed"
+        enabled={Boolean(tutorial.learningFit)}
+        onceKey={`TUTORIAL:${tutorial.id}`}
+        payload={{
+          itemId: tutorial.id,
+          itemType: "TUTORIAL",
+          fitStatus: tutorial.learningFit?.fitStatus,
+        }}
       />
       <script
         type="application/ld+json"
@@ -314,6 +336,37 @@ export default async function ExploreTutorialDetailPage({
               Follow
             </Button>
           </div>
+
+          <HonestFitCard
+            fit={tutorial.learningFit}
+            contentType="tutorial"
+            analyticsPayload={{
+              itemId: tutorial.id,
+              itemType: "TUTORIAL",
+              contentType: "tutorial",
+            }}
+          />
+
+          {tutorial.learningFit?.learningOutcomes?.length ? (
+            <div className="space-y-4 rounded-xl border border-border/30 bg-card p-5 shadow-sm">
+              <h3 className="text-xl font-bold text-foreground">
+                What you will master
+              </h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                {tutorial.learningFit.learningOutcomes.map((outcome) => (
+                  <Alert
+                    key={outcome}
+                    className="border-primary/20 bg-primary/5 py-2"
+                  >
+                    <CheckCircle2 className="size-5 text-primary" />
+                    <AlertDescription className="text-foreground">
+                      {outcome}
+                    </AlertDescription>
+                  </Alert>
+                ))}
+              </div>
+            </div>
+          ) : null}
 
           {/* ── About + Highlights ── */}
           <div className="space-y-6 text-muted-foreground">
@@ -513,7 +566,15 @@ export default async function ExploreTutorialDetailPage({
                 <PurchaseButton
                   itemId={tutorial.id}
                   itemType="TUTORIAL_BUNDLE"
+                  label={purchaseLabel}
+                  freeLabel={getFitAwareFreeLabel("tutorial")}
                   className="font-headline w-full py-4 font-bold shadow-lg"
+                  price={tutorial.price}
+                  trackingEventName="fit_cta_clicked"
+                  trackingPayload={{
+                    fitStatus: tutorial.learningFit?.fitStatus,
+                    contentType: "tutorial",
+                  }}
                 />
                 <Button
                   variant="secondary"
@@ -558,6 +619,12 @@ export default async function ExploreTutorialDetailPage({
                   </span>
                 </div>
               </div>
+
+              <ContentReceipt
+                fit={tutorial.learningFit}
+                fileCount={tutorial._count.tutorialMedia}
+                updatedAt={tutorial.updatedAt}
+              />
 
               <div className="flex justify-center gap-4 pt-2">
                 <Button

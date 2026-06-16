@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from rag.config_rag import EMBEDDING_MODEL, EMBEDDING_DIM
+from rag.config_rag import EMBEDDING_MODEL, EMBEDDING_DIM, EMBEDDING_DEVICE
 
 if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
@@ -56,8 +56,15 @@ def _load_model() -> SentenceTransformer:
 
         from sentence_transformers import SentenceTransformer
 
-        logger.info(f"Loading embedding model: {EMBEDDING_MODEL} (cache={_CACHE_FOLDER})")
-        _model = SentenceTransformer(EMBEDDING_MODEL, cache_folder=_CACHE_FOLDER)
+        logger.info(
+            f"Loading embedding model: {EMBEDDING_MODEL} "
+            f"(cache={_CACHE_FOLDER}, device={EMBEDDING_DEVICE})"
+        )
+        _model = SentenceTransformer(
+            EMBEDDING_MODEL,
+            cache_folder=_CACHE_FOLDER,
+            device=EMBEDDING_DEVICE,
+        )
         logger.info(f"Embedding model loaded (dim={EMBEDDING_DIM})")
         return _model
 

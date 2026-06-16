@@ -64,9 +64,15 @@ import {
   useUploadStore,
   type UploadBatch,
 } from "../store/upload-store"
+import {
+  toLearningFitFormValues,
+  toLearningFitPayload,
+} from "../utils/learning-fit"
+import { trackLearningFitEvent } from "../utils/learning-fit-events"
 import { getFriendlyContentError } from "../utils/user-facing-content"
 
 import { CollectionPicker } from "./collection-picker"
+import { FitEditor } from "./fit-editor"
 import { ResourceExplorer } from "./resource-explorer"
 import { TutorialStepBuilder, type TutorialStep } from "./tutorial-step-builder"
 
@@ -124,6 +130,7 @@ const FIELD_TAB_MAP: Record<string, string> = {
   resourceAttachmentMode: "packaging",
   collectionId: "packaging",
   steps: "packaging",
+  learningFit: "metadata",
 }
 
 export function CreateTutorialForm() {
@@ -183,6 +190,7 @@ export function CreateTutorialForm() {
       resourceAttachmentMode: "manual",
       collectionId: undefined,
       steps: [],
+      learningFit: toLearningFitFormValues(),
     },
   })
 
@@ -206,6 +214,9 @@ export function CreateTutorialForm() {
     name: "resourceAttachmentMode",
   })
   const selectedCollectionId = useWatch({ control, name: "collectionId" })
+  const watchedTitle = useWatch({ control, name: "title" })
+  const watchedDescription = useWatch({ control, name: "description" })
+  const watchedHighlights = useWatch({ control, name: "hightlights" }) || []
 
   // Watch for File Metadata
   const watchFileName = useWatch({ control, name: "fileName" })
@@ -255,6 +266,7 @@ export function CreateTutorialForm() {
             instructionNote: resource.instructionNote,
           })),
         })) ?? [],
+      learningFit: toLearningFitFormValues(tutorial.learningFit),
     })
   }, [editingTutorialResponse, form])
 
@@ -377,6 +389,7 @@ export function CreateTutorialForm() {
                   })),
                 }))
               : undefined
+          const learningFit = toLearningFitPayload(restData.learningFit)
 
           await updateTutorial({
             id: editId,
@@ -388,8 +401,16 @@ export function CreateTutorialForm() {
                   ? data.collectionId
                   : undefined,
               steps: stepsPayload,
+              learningFit,
             },
           }).unwrap()
+          if (learningFit) {
+            trackLearningFitEvent("fit_editor_completed", {
+              contentType: "tutorial",
+              mode: "update",
+              fitStatus: learningFit.fitStatus,
+            })
+          }
           toast.success("Tutorial updated.")
           router.refresh()
         } catch (error: unknown) {
@@ -420,6 +441,7 @@ export function CreateTutorialForm() {
                 })),
               }))
             : undefined
+        const learningFit = toLearningFitPayload(restData.learningFit)
 
         const payload = {
           ...restData,
@@ -429,10 +451,18 @@ export function CreateTutorialForm() {
               ? data.collectionId
               : undefined,
           steps: stepsPayload,
+          learningFit,
         }
 
         const result = await createTutorial(payload).unwrap()
         const response = result.data
+        if (learningFit) {
+          trackLearningFitEvent("fit_editor_completed", {
+            contentType: "tutorial",
+            mode: "create",
+            fitStatus: learningFit.fitStatus,
+          })
+        }
 
         const selectedFile = selectedFileRef.current
         const batch: UploadBatch = {
@@ -979,6 +1009,23 @@ export function CreateTutorialForm() {
                 </h3>
                 {metadataSection}
               </div>
+              <FitEditor
+                control={control}
+                register={form.register}
+                setValue={form.setValue}
+                draftContext={{
+                  contentType: "TUTORIAL",
+                  title: watchedTitle,
+                  description: watchedDescription,
+                  hightlights: watchedHighlights.map((item) => item.value),
+                  steps: steps.map((step) => ({
+                    title: step.title,
+                    resources: step.resources,
+                  })),
+                  majorId: selectedMajorId,
+                  courseId: selectedCourseId,
+                }}
+              />
               <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
@@ -1018,6 +1065,23 @@ export function CreateTutorialForm() {
                 className="mt-0 animate-in space-y-6 fade-in slide-in-from-bottom-2"
               >
                 {metadataSection}
+                <FitEditor
+                  control={control}
+                  register={form.register}
+                  setValue={form.setValue}
+                  draftContext={{
+                    contentType: "TUTORIAL",
+                    title: watchedTitle,
+                    description: watchedDescription,
+                    hightlights: watchedHighlights.map((item) => item.value),
+                    steps: steps.map((step) => ({
+                      title: step.title,
+                      resources: step.resources,
+                    })),
+                    majorId: selectedMajorId,
+                    courseId: selectedCourseId,
+                  }}
+                />
               </TabsContent>
 
               <TabsContent

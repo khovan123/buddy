@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { InferSchemaType, Model, Types } from 'mongoose';
 
 import { Collection } from '../../../../domain/entities/collection.entity';
+import type { LearningFit } from '../../../../domain/entities/learning-fit';
 import {
   CollectionListQueryParams,
   CollectionQueryItem,
@@ -39,6 +40,7 @@ type CollectionLean = CollectionSchemaShape & {
     learningGoal?: string;
     items?: Array<{ itemId: Types.ObjectId | string; itemType: CollectionPhaseItemType }>;
   }>;
+  learningFit?: LearningFit | null;
 };
 
 type CollectionLeanWithItems = CollectionLean & {
@@ -70,6 +72,7 @@ type CollectionWritePayload = {
     learningGoal: string;
     items: Array<{ itemId: string; itemType: CollectionPhaseItemType }>;
   }>;
+  learningFit?: LearningFit | null;
 };
 
 type CollectionSearchClause =
@@ -388,6 +391,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
             type: details.type,
             discount: details.discount,
             phases: details.phases ?? [],
+            learningFit: details.learningFit ?? null,
             updatedAt: new Date(),
           },
         },
@@ -436,6 +440,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
           itemType: item.itemType,
         })),
       })),
+      learningFit: row.learningFit ?? null,
     });
   }
 
@@ -494,6 +499,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
           itemType: item.itemType,
         })),
       })),
+      learningFit: row.learningFit ?? null,
     };
   }
 
@@ -519,6 +525,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
       status: collection.status,
       createdAt: collection.createdAt ?? new Date(),
       updatedAt: collection.updatedAt ?? new Date(),
+      learningFit: collection.learningFit ?? null,
     };
 
     if (collection.deletedAt) {

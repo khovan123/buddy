@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 
 import { ResourceStatus } from '../../infrastructure/persistence/mongo/schemas/resource.schema';
+import type { LearningFit } from './learning-fit';
 import { ResourceCreatedDomainEvent } from '../events/resource-created.domain-event';
 
 export type ResourceMeta = {
@@ -34,6 +35,7 @@ export interface ResourceProps {
   primaryS3Key?: string;
   tutorialId?: string;
   collectionId?: string;
+  learningFit?: LearningFit | null;
 }
 
 /** Represents the  resource component. */
@@ -64,6 +66,7 @@ export class Resource {
     meta: ResourceMetaInput[];
     thumbnailUrl?: string;
     collectionId?: string;
+    learningFit?: LearningFit;
   }): Resource {
     const now = new Date();
     const { meta, ...rest } = params;
@@ -264,5 +267,13 @@ export class Resource {
 
   set primaryS3Key(value: string | undefined) {
     this.props.primaryS3Key = value;
+  }
+
+  get learningFit(): LearningFit | null | undefined {
+    return this.props.learningFit;
+  }
+
+  set learningFit(value: LearningFit | null | undefined) {
+    this.props.learningFit = value;
   }
 }

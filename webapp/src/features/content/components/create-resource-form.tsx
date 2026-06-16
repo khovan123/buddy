@@ -64,9 +64,15 @@ import type {
   CreateResourceResponse,
   PresignedUrlItem,
 } from "../types"
+import {
+  toLearningFitFormValues,
+  toLearningFitPayload,
+} from "../utils/learning-fit"
+import { trackLearningFitEvent } from "../utils/learning-fit-events"
 import { getFriendlyContentError } from "../utils/user-facing-content"
 
 import { CollectionPicker } from "./collection-picker"
+import { FitEditor } from "./fit-editor"
 import { ThumbnailPicker } from "./thumbnail-picker"
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -93,6 +99,7 @@ const FIELD_TAB_MAP: Record<string, string> = {
   courseId: "taxonomy",
   price: "taxonomy",
   collectionId: "taxonomy",
+  learningFit: "metadata",
 }
 
 type ResourceSubmitStage =
@@ -178,6 +185,7 @@ export function CreateResourceForm() {
         },
       ],
       collectionId: "",
+      learningFit: toLearningFitFormValues(),
     },
   })
 
@@ -212,6 +220,9 @@ export function CreateResourceForm() {
   const selectedCollectionId = useWatch({ name: "collectionId", control })
   const thumbnailBase64 = useWatch({ name: "thumbnailBase64", control })
   const watchedFiles = useWatch({ name: "files", control }) || []
+  const watchedTitle = useWatch({ name: "title", control })
+  const watchedSummary = useWatch({ name: "summary", control })
+  const watchedHighlights = useWatch({ name: "hightlights", control }) || []
 
   // RTK Query: GET Content Metadata (Majors)
   const { data: metaData, isLoading: isLoadingMajors } =
@@ -251,6 +262,7 @@ export function CreateResourceForm() {
           mimeType: "",
         },
       ],
+      learningFit: toLearningFitFormValues(resource.learningFit),
     })
   }, [editingResourceResponse, form])
 
@@ -342,14 +354,23 @@ export function CreateResourceForm() {
     if (isEditMode && editId) {
       try {
         const { thumbnailFile: _, files: __, ...restData } = data
+        const learningFit = toLearningFitPayload(restData.learningFit)
         await updateResource({
           id: editId,
           body: {
             ...restData,
             hightlights: restData.hightlights.map((h) => h.value),
             collectionId: restData.collectionId || undefined,
+            learningFit,
           },
         }).unwrap()
+        if (learningFit) {
+          trackLearningFitEvent("fit_editor_completed", {
+            contentType: "resource",
+            mode: "update",
+            fitStatus: learningFit.fitStatus,
+          })
+        }
         toast.success("Resource updated.")
         router.refresh()
       } catch (error: unknown) {
@@ -380,14 +401,23 @@ export function CreateResourceForm() {
       setSubmitStage("preparing")
       // Exclude thumbnailFile from the request payload to prevent 400 Bad Request
       const { thumbnailFile: _, ...restData } = data
+      const learningFit = toLearningFitPayload(restData.learningFit)
       const payload = {
         ...restData,
         hightlights: restData.hightlights.map((h) => h.value),
         collectionId: restData.collectionId || undefined,
+        learningFit,
       }
 
       const result = await createResource(payload).unwrap()
       const response = result.data
+      if (learningFit) {
+        trackLearningFitEvent("fit_editor_completed", {
+          contentType: "resource",
+          mode: "create",
+          fitStatus: learningFit.fitStatus,
+        })
+      }
 
       // Build the upload batch from the presigned URLs + selected files
       const batch: UploadBatch = {
@@ -969,6 +999,19 @@ export function CreateResourceForm() {
                 </h3>
                 {metadataSection}
               </div>
+              <FitEditor
+                control={control}
+                register={form.register}
+                setValue={form.setValue}
+                draftContext={{
+                  contentType: "RESOURCE",
+                  title: watchedTitle,
+                  summary: watchedSummary,
+                  hightlights: watchedHighlights.map((item) => item.value),
+                  majorId: selectedMajorId,
+                  courseId: selectedCourseId,
+                }}
+              />
               <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
@@ -1008,6 +1051,19 @@ export function CreateResourceForm() {
                 className="mt-0 animate-in space-y-6 fade-in slide-in-from-bottom-2"
               >
                 {metadataSection}
+                <FitEditor
+                  control={control}
+                  register={form.register}
+                  setValue={form.setValue}
+                  draftContext={{
+                    contentType: "RESOURCE",
+                    title: watchedTitle,
+                    summary: watchedSummary,
+                    hightlights: watchedHighlights.map((item) => item.value),
+                    majorId: selectedMajorId,
+                    courseId: selectedCourseId,
+                  }}
+                />
               </TabsContent>
 
               <TabsContent

@@ -12,6 +12,7 @@ import {
   MinLength,
   ValidateNested,
 } from 'class-validator';
+import { LearningFitDto } from './learning-fit.dto';
 
 /** Data Transfer Object for  create resource file. */
 export class CreateResourceFileDto {
@@ -122,4 +123,9 @@ export class CreateResourceDto {
   @IsString()
   @Transform(({ value }) => value?.trim())
   collectionId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LearningFitDto)
+  learningFit?: LearningFitDto;
 }

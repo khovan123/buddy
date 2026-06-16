@@ -1,3 +1,5 @@
+import type { LearningFit } from '../../domain/entities/learning-fit';
+
 /**
  * CreateResourceCommand - CQRS Command để tạo Resource.
  *
@@ -24,5 +26,6 @@ export class CreateResourceCommand {
     public readonly thumbnailBase64?: string,
     public readonly collectionId?: string,
     public readonly correlationId?: string,
+    public readonly learningFit?: LearningFit,
   ) {}
 }

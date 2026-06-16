@@ -33,6 +33,7 @@ export class UpdateResourceHandler implements ICommandHandler<UpdateResourceComm
       courseId: command.courseId,
       price: command.price,
       collectionId: command.collectionId,
+      learningFit: command.learningFit,
     });
 
     if (command.thumbnailBase64) {

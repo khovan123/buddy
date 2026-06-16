@@ -1,6 +1,61 @@
 import z from "zod"
 
-import { CollectionType, CourseStatus } from "./types"
+import { CollectionType, CourseStatus, LearningFitDifficulty } from "./types"
+
+export const startHereStepSchema = z.object({
+  title: z.string().min(3, "Please name this step.").max(120),
+  description: z.string().max(240).optional(),
+  order: z.number().min(1).max(20),
+  targetType: z
+    .enum(["SECTION", "FILE", "VIDEO_STEP", "COLLECTION_PHASE", "AI_PROMPT"])
+    .optional(),
+  targetId: z.string().optional(),
+  aiPrompt: z.string().max(240).optional(),
+})
+
+export const fitEvidenceSchema = z.object({
+  claim: z.string().min(8).max(180),
+  sourceType: z.enum([
+    "METADATA",
+    "CONTENT_EXTRACTION",
+    "CREATOR_INPUT",
+    "AI_GENERATED",
+    "MODERATION",
+  ]),
+  sourceRef: z.string().max(128).optional(),
+  confidence: z.number().min(0).max(1).nullable().optional(),
+})
+
+export const learningFitSchema = z.object({
+  bestFor: z
+    .array(z.object({ value: z.string().min(8).max(160) }))
+    .max(5)
+    .optional(),
+  notFor: z
+    .array(z.object({ value: z.string().min(8).max(160) }))
+    .max(5)
+    .optional(),
+  startHere: z.array(startHereStepSchema).max(5).optional(),
+  coveredTopics: z
+    .array(z.object({ value: z.string().max(80) }))
+    .max(12)
+    .optional(),
+  notCoveredTopics: z
+    .array(z.object({ value: z.string().max(80) }))
+    .max(12)
+    .optional(),
+  learningOutcomes: z
+    .array(z.object({ value: z.string().max(160) }))
+    .max(8)
+    .optional(),
+  estimatedStudyTimeMinutes: z.number().min(1).max(10000).optional(),
+  difficulty: z.nativeEnum(LearningFitDifficulty).optional(),
+  fitEvidence: z.array(fitEvidenceSchema).max(8).optional(),
+  fitGeneratedAt: z.string().optional().nullable(),
+  fitVerifiedAt: z.string().optional().nullable(),
+})
+
+export type LearningFitFormValues = z.infer<typeof learningFitSchema>
 
 // --- Validation Schema (khớp với CreateCollectionDto) ---
 export const collectionSchema = z
@@ -51,6 +106,7 @@ export const collectionSchema = z
         })
       )
       .optional(),
+    learningFit: learningFitSchema.optional(),
   })
   .superRefine((data, ctx) => {
     // Both types require phases (Roadmap sections)
@@ -150,6 +206,7 @@ export const resourceSchema = z.object({
       "Kích thước ảnh không được vượt quá 2MB"
     )
     .optional(),
+  learningFit: learningFitSchema.optional(),
 })
 
 export type ResourceFormValues = z.infer<typeof resourceSchema>
@@ -200,6 +257,7 @@ export const tutorialSchema = z.object({
       })
     )
     .optional(),
+  learningFit: learningFitSchema.optional(),
 })
 
 export type TutorialFormValues = z.infer<typeof tutorialSchema>

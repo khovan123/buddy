@@ -43,6 +43,7 @@ import { CreateTutorialDto } from '../dtos/create-tutorial.dto';
 import { GetTopTutorialsQueryDto } from '../dtos/get-top-tutorials-query.dto';
 import { GetTutorialsByIdsDto } from '../dtos/get-tutorials-by-ids.dto';
 import { GetUncollectedTutorialsQueryDto } from '../dtos/get-uncollected-tutorials-query.dto';
+import { toLearningFit } from '../dtos/learning-fit.dto';
 import { QueryDto } from '../dtos/query';
 import { TutorialIdParamDto } from '../dtos/tutorial-id-param.dto';
 import { UpdateTutorialDto } from '../dtos/update-tutorial.dto';
@@ -94,6 +95,7 @@ export class TutorialController {
       resourceIds,
       collectionIds,
       steps,
+      learningFit,
     } = dto;
 
     const result = await this.commandBus.execute(
@@ -120,6 +122,7 @@ export class TutorialController {
           })),
         })),
         getCorrelationId(),
+        toLearningFit(learningFit),
       ),
     );
     return successResponse(result, 'Create tutorial successful', getCorrelationId());
@@ -282,6 +285,7 @@ export class TutorialController {
           })),
         })),
         correlationId,
+        toLearningFit(dto.learningFit),
       ),
     );
     return successResponse(result, 'Tutorial updated successfully', correlationId);

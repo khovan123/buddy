@@ -1,6 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 
+import { LearningFit, LearningFitSchema } from './learning-fit.schema';
+
 export enum CollectionType {
   RESOURCE = 'RESOURCE',
   TUTORIAL = 'TUTORIAL',
@@ -111,6 +113,9 @@ export class Collection {
 
   @Prop({ type: [CollectionPhaseSchema], default: undefined })
   phases?: CollectionPhase[];
+
+  @Prop({ type: LearningFitSchema, default: null })
+  learningFit?: LearningFit | null;
 }
 
 export type CollectionDocument = HydratedDocument<Collection>;

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, InferSchemaType, Model, SortOrder, Types } from 'mongoose';
 
+import type { LearningFit } from '../../../../domain/entities/learning-fit';
 import { Resource, ResourceMeta } from '../../../../domain/entities/resource.entity';
 import {
   ContentModerationPersistenceResult,
@@ -82,6 +83,7 @@ type ResourceWritePayload = {
   tutorialId?: string;
   collectionId?: string;
   meta: ResourceMetaSchemaShape[];
+  learningFit?: LearningFit | null;
 };
 
 type ResourceSearchClause =
@@ -359,6 +361,7 @@ export class ResourceMongoRepository implements IResourceRepository {
             courseId: details.courseId,
             price: details.price,
             collectionId: details.collectionId || null,
+            learningFit: details.learningFit ?? null,
             updatedAt: new Date(),
           },
         },
@@ -724,6 +727,7 @@ export class ResourceMongoRepository implements IResourceRepository {
       deletedAt: row.deletedAt ?? undefined,
       tutorialId: this.toPersistenceOptionalStringId(row.tutorialId),
       collectionId: this.toPersistenceOptionalStringId(row.collectionId),
+      learningFit: row.learningFit ?? null,
       meta: row.meta.map((meta) => this.toDomainMeta(meta)),
     });
   }
@@ -771,6 +775,7 @@ export class ResourceMongoRepository implements IResourceRepository {
       collection: this.toQueryCollectionDetails(row.collectionId),
       primaryS3Key: row.primaryS3Key ?? null,
       primaryFileExtension: row.meta[0]?.extension ?? null,
+      learningFit: row.learningFit ?? null,
       major: row.major
         ? {
             id: row.major._id.toString(),
@@ -826,6 +831,7 @@ export class ResourceMongoRepository implements IResourceRepository {
         fileSize: meta.fileSize,
         extension: meta.extension,
       })),
+      learningFit: resource.learningFit ?? null,
     };
 
     if (resource.deletedAt) {

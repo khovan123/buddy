@@ -12,6 +12,8 @@ import type {
   CreateResourceResponse,
   CreateTutorialPayload,
   CreateTutorialResponse,
+  GenerateLearningFitDraftPayload,
+  GenerateLearningFitDraftResponse,
   Major,
   PaginatedResult,
   ResourceQueryItem,
@@ -46,6 +48,16 @@ export const contentApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: ["Tutorial"],
+    }),
+    generateLearningFitDraft: builder.mutation<
+      GenerateLearningFitDraftResponse,
+      GenerateLearningFitDraftPayload
+    >({
+      query: (body) => ({
+        url: "/v1/recommendations/rag/fit-draft",
+        method: "POST",
+        body,
+      }),
     }),
     createCollection: builder.mutation<
       ApiResponse<unknown>,
@@ -305,33 +317,39 @@ export const contentApi = baseApi.injectEndpoints({
         { type: "Resource", id: arg.resourceId },
       ],
     }),
-    deleteResource: builder.mutation<ApiResponse<{ success: boolean }>, string>({
-      query: (resourceId) => ({
-        url: `/v1/resources/${resourceId}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Resource"],
-      async onQueryStarted(resourceId, { dispatch, queryFulfilled }) {
-        const patch = dispatch(
-          contentApi.util.updateQueryData("getMyResources", undefined, (draft) => {
-            const beforeCount = draft.data.data.length
-            draft.data.data = draft.data.data.filter(
-              (resource) => resource.id !== resourceId
+    deleteResource: builder.mutation<ApiResponse<{ success: boolean }>, string>(
+      {
+        query: (resourceId) => ({
+          url: `/v1/resources/${resourceId}`,
+          method: "DELETE",
+        }),
+        invalidatesTags: ["Resource"],
+        async onQueryStarted(resourceId, { dispatch, queryFulfilled }) {
+          const patch = dispatch(
+            contentApi.util.updateQueryData(
+              "getMyResources",
+              undefined,
+              (draft) => {
+                const beforeCount = draft.data.data.length
+                draft.data.data = draft.data.data.filter(
+                  (resource) => resource.id !== resourceId
+                )
+
+                if (draft.data.data.length !== beforeCount) {
+                  draft.data.meta.total = Math.max(0, draft.data.meta.total - 1)
+                }
+              }
             )
+          )
 
-            if (draft.data.data.length !== beforeCount) {
-              draft.data.meta.total = Math.max(0, draft.data.meta.total - 1)
-            }
-          })
-        )
-
-        try {
-          await queryFulfilled
-        } catch {
-          patch.undo()
-        }
-      },
-    }),
+          try {
+            await queryFulfilled
+          } catch {
+            patch.undo()
+          }
+        },
+      }
+    ),
     recheckTutorialModeration: builder.mutation<
       ApiResponse<unknown>,
       { tutorialId: string }
@@ -345,38 +363,45 @@ export const contentApi = baseApi.injectEndpoints({
         { type: "Tutorial", id: arg.tutorialId },
       ],
     }),
-    deleteTutorial: builder.mutation<ApiResponse<{ success: boolean }>, string>({
-      query: (tutorialId) => ({
-        url: `/v1/tutorials/${tutorialId}`,
-        method: "DELETE",
-      }),
-      invalidatesTags: ["Tutorial"],
-      async onQueryStarted(tutorialId, { dispatch, queryFulfilled }) {
-        const patch = dispatch(
-          contentApi.util.updateQueryData("getMyTutorials", undefined, (draft) => {
-            const beforeCount = draft.data.data.length
-            draft.data.data = draft.data.data.filter(
-              (tutorial) => tutorial.id !== tutorialId
+    deleteTutorial: builder.mutation<ApiResponse<{ success: boolean }>, string>(
+      {
+        query: (tutorialId) => ({
+          url: `/v1/tutorials/${tutorialId}`,
+          method: "DELETE",
+        }),
+        invalidatesTags: ["Tutorial"],
+        async onQueryStarted(tutorialId, { dispatch, queryFulfilled }) {
+          const patch = dispatch(
+            contentApi.util.updateQueryData(
+              "getMyTutorials",
+              undefined,
+              (draft) => {
+                const beforeCount = draft.data.data.length
+                draft.data.data = draft.data.data.filter(
+                  (tutorial) => tutorial.id !== tutorialId
+                )
+
+                if (draft.data.data.length !== beforeCount) {
+                  draft.data.meta.total = Math.max(0, draft.data.meta.total - 1)
+                }
+              }
             )
+          )
 
-            if (draft.data.data.length !== beforeCount) {
-              draft.data.meta.total = Math.max(0, draft.data.meta.total - 1)
-            }
-          })
-        )
-
-        try {
-          await queryFulfilled
-        } catch {
-          patch.undo()
-        }
-      },
-    }),
+          try {
+            await queryFulfilled
+          } catch {
+            patch.undo()
+          }
+        },
+      }
+    ),
   }),
 })
 
 export const {
   useCreateTutorialMutation,
+  useGenerateLearningFitDraftMutation,
   useCreateCollectionMutation,
   useGetCollectionByIdQuery,
   useUpdateCollectionMutation,

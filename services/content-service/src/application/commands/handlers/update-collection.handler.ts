@@ -34,6 +34,7 @@ export class UpdateCollectionHandler implements ICommandHandler<UpdateCollection
       type: command.type,
       discount: command.discount,
       phases: command.phases,
+      learningFit: command.learningFit,
     });
 
     if (command.thumbnailBase64) {

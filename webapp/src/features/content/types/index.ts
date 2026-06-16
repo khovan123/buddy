@@ -70,6 +70,64 @@ export enum CollectionStatus {
   DELETED = "DELETED",
 }
 
+export enum FitStatus {
+  DRAFT = "DRAFT",
+  NEEDS_EVIDENCE = "NEEDS_EVIDENCE",
+  VERIFIED = "VERIFIED",
+  EXPIRED = "EXPIRED",
+}
+
+export enum LearningFitDifficulty {
+  BEGINNER = "BEGINNER",
+  INTERMEDIATE = "INTERMEDIATE",
+  ADVANCED = "ADVANCED",
+}
+
+export type StartHereTargetType =
+  | "SECTION"
+  | "FILE"
+  | "VIDEO_STEP"
+  | "COLLECTION_PHASE"
+  | "AI_PROMPT"
+
+export type FitEvidenceSourceType =
+  | "METADATA"
+  | "CONTENT_EXTRACTION"
+  | "CREATOR_INPUT"
+  | "AI_GENERATED"
+  | "MODERATION"
+
+export interface StartHereStep {
+  title: string
+  description?: string
+  order: number
+  targetType?: StartHereTargetType
+  targetId?: string
+  aiPrompt?: string
+}
+
+export interface FitEvidence {
+  claim: string
+  sourceType: FitEvidenceSourceType
+  sourceRef?: string
+  confidence?: number | null
+}
+
+export interface LearningFit {
+  bestFor: string[]
+  notFor: string[]
+  startHere: StartHereStep[]
+  coveredTopics?: string[]
+  notCoveredTopics?: string[]
+  learningOutcomes?: string[]
+  estimatedStudyTimeMinutes?: number | null
+  difficulty?: LearningFitDifficulty | null
+  fitStatus: FitStatus
+  fitEvidence?: FitEvidence[]
+  fitGeneratedAt?: string | null
+  fitVerifiedAt?: string | null
+}
+
 // ── Major (major.schema.ts) ─────────────────────────────────
 
 export interface Major {
@@ -140,6 +198,7 @@ export interface Resource {
   // Virtuals (populated)
   major?: Major
   course?: Course
+  learningFit?: LearningFit | null
 }
 
 // ── Resource Query Types (resource.repository.interface.ts) ─
@@ -208,6 +267,7 @@ export interface ResourceQueryItem {
   tutorialId?: string | null
   collectionId?: string | null
   collection?: ResourceCollectionDetails | null
+  learningFit?: LearningFit | null
   _count: ResourceQueryCount
   uploader?: UserProfileRpcResponse
   major?: CollectionQueryMajor
@@ -256,6 +316,7 @@ export interface Tutorial {
   // Virtuals (populated)
   major?: Major
   course?: Course
+  learningFit?: LearningFit | null
 }
 
 // ── Tutorial Query Types (tutorial.repository.interface.ts) ─
@@ -342,6 +403,7 @@ export interface TutorialQueryItem {
       }
     }>
   }>
+  learningFit?: LearningFit | null
   _count: TutorialQueryCount
   uploader?: UserProfileRpcResponse
   major?: CollectionQueryMajor
@@ -386,6 +448,7 @@ export interface Collection {
   // Virtuals (populated)
   major?: Major
   course?: Course
+  learningFit?: LearningFit | null
 }
 
 // ── Collection Query Types (collection.repository.interface.ts)
@@ -437,6 +500,7 @@ export interface CollectionQueryItem {
   _count: CollectionQueryCount
   uploader?: UserProfileRpcResponse
   phases?: CollectionPhase[]
+  learningFit?: LearningFit | null
   major?: CollectionQueryMajor
   course?: CollectionQueryCourse
 }
@@ -462,11 +526,16 @@ export interface CreateTutorialPayload {
     title: string
     resources: Array<{ resourceId: string; instructionNote: string }>
   }>
+  learningFit?: LearningFit
 }
 
 export type UpdateTutorialPayload = Omit<
   CreateTutorialPayload,
-  "fileName" | "fileSizeBytes" | "videoDurationSeconds" | "resourceIds" | "collectionIds"
+  | "fileName"
+  | "fileSizeBytes"
+  | "videoDurationSeconds"
+  | "resourceIds"
+  | "collectionIds"
 >
 
 /** create-resource.dto.ts → CreateResourceFileDto */
@@ -487,6 +556,7 @@ export interface CreateResourcePayload {
   files: CreateResourceFilePayload[]
   collectionId?: string
   thumbnailBase64?: string
+  learningFit?: LearningFit
 }
 
 export type UpdateResourcePayload = Omit<CreateResourcePayload, "files">
@@ -507,9 +577,40 @@ export interface CreateCollectionPayload {
     learningGoal: string
     items: Array<{ itemId: string; itemType: "RESOURCE" | "TUTORIAL" }>
   }>
+  learningFit?: LearningFit
 }
 
 export type UpdateCollectionPayload = CreateCollectionPayload
+
+export interface GenerateLearningFitDraftPayload {
+  contentType: "COLLECTION" | "RESOURCE" | "TUTORIAL"
+  title: string
+  summary?: string
+  description?: string
+  hightlights?: string[]
+  steps?: Array<Record<string, unknown>>
+  phases?: Array<Record<string, unknown>>
+  majorId?: string
+  courseId?: string
+  topK?: number
+}
+
+export interface GenerateLearningFitDraftResponse {
+  learningFit: LearningFit
+  sources: Array<{
+    itemId?: string | null
+    slug: string
+    itemType: string
+    title: string
+    score: number
+    chunkText: string
+  }>
+  model: string
+  tokensUsed: number
+  retrievalTimeMs: number
+  generationTimeMs: number
+  fallbackUsed: boolean
+}
 
 // ── Major & Course Admin Payloads ───────────────────────────
 
@@ -609,7 +710,12 @@ export interface ContentListParams {
 
 export interface RecommendationItem {
   itemId: string
-  itemType: "RESOURCE" | "TUTORIAL" | "RESOURCE_COLLECTION" | "TUTORIAL_COLLECTION" | "COLLECTION"
+  itemType:
+    | "RESOURCE"
+    | "TUTORIAL"
+    | "RESOURCE_COLLECTION"
+    | "TUTORIAL_COLLECTION"
+    | "COLLECTION"
   score: number
   reasons: string[]
   display?: {
@@ -632,7 +738,12 @@ export interface RecommendationResponse {
 
 export interface TrendingItem {
   itemId: string
-  itemType: "RESOURCE" | "TUTORIAL" | "RESOURCE_COLLECTION" | "TUTORIAL_COLLECTION" | "COLLECTION"
+  itemType:
+    | "RESOURCE"
+    | "TUTORIAL"
+    | "RESOURCE_COLLECTION"
+    | "TUTORIAL_COLLECTION"
+    | "COLLECTION"
   totalInteractions: number
   avgRating: number
   display?: {

@@ -1,6 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 
+import { LearningFit, LearningFitSchema } from './learning-fit.schema';
+
 export enum ResourceStatus {
   PENDING = 'PENDING',
   PROCESSING = 'PROCESSING',
@@ -118,6 +120,9 @@ export class Resource {
   // Caches meta[0].s3Key from upload-service for direct preview lookup (no extra DB round-trip)
   @Prop({ type: String, required: false, default: null })
   primaryS3Key?: string;
+
+  @Prop({ type: LearningFitSchema, default: null })
+  learningFit?: LearningFit | null;
 
   @Prop({ type: Date, default: null })
   deletedAt?: Date;

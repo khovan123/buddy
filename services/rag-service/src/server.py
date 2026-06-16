@@ -31,6 +31,7 @@ from rag.indexer import RAGIndexer
 from rag.pipeline import RAGPipeline
 from rag.retriever import Retriever
 from rag.vector_store import VectorStore
+from rag.fit_generator import fallback_fit_draft, generate_fit_draft
 from stores.catalog_store import CatalogStore
 
 logging.basicConfig(level=logging.INFO)
@@ -101,6 +102,61 @@ class RAGHistoryTurn(BaseModel):
 
 class RAGHistoryResponse(BaseModel):
     history: list[RAGHistoryTurn]
+
+
+class FitDraftStep(BaseModel):
+    title: str
+    description: str | None = None
+    order: int
+    targetType: str | None = None
+    targetId: str | None = None
+    aiPrompt: str | None = None
+
+
+class FitDraftEvidence(BaseModel):
+    claim: str
+    sourceType: str
+    sourceRef: str | None = None
+    confidence: float | None = None
+
+
+class FitDraftLearningFit(BaseModel):
+    bestFor: list[str]
+    notFor: list[str]
+    startHere: list[FitDraftStep]
+    coveredTopics: list[str]
+    notCoveredTopics: list[str]
+    learningOutcomes: list[str]
+    estimatedStudyTimeMinutes: int | None = None
+    difficulty: str | None = None
+    fitStatus: str
+    fitEvidence: list[FitDraftEvidence] = Field(default_factory=list)
+    fitGeneratedAt: str | None = None
+    fitVerifiedAt: str | None = None
+
+
+class FitDraftRequest(BaseModel):
+    contentType: str
+    title: str
+    summary: str | None = None
+    description: str | None = None
+    hightlights: list[str] = Field(default_factory=list)
+    steps: list[dict] = Field(default_factory=list)
+    phases: list[dict] = Field(default_factory=list)
+    majorId: str | None = None
+    courseId: str | None = None
+    userId: str | None = None
+    topK: int = Field(default=5, ge=1, le=10)
+
+
+class FitDraftResponse(BaseModel):
+    learningFit: FitDraftLearningFit
+    sources: list[RAGSource] = Field(default_factory=list)
+    model: str
+    tokensUsed: int
+    retrievalTimeMs: float
+    generationTimeMs: float
+    fallbackUsed: bool = False
 
 
 def _rag_module_ready() -> bool:
@@ -434,6 +490,87 @@ async def rag_retrieve(body: RAGRequest):
     return result
 
 
+@rag_router.post("/fit-draft", response_model=FitDraftResponse)
+async def rag_fit_draft(body: FitDraftRequest):
+    embedding_ready = await _run_blocking_with_timeout(
+        "RAG embedding init",
+        _ensure_embedding_ready,
+        timeout=RAG_EMBEDDING_INIT_TIMEOUT_SECONDS,
+    )
+    if isinstance(embedding_ready, JSONResponse):
+        logger.warning("Fit draft continuing without retrieval: embedding init unavailable")
+        embedding_ready = False
+
+    query = _fit_query_from_request(body)
+    filters = _filters_from_request(body)
+    retrieved = {"sources": [], "retrievalTimeMs": 0}
+    if embedding_ready:
+        module = await _run_blocking_with_timeout(
+            "RAG module init",
+            get_rag_module,
+            timeout=RAG_STATS_TIMEOUT_SECONDS,
+        )
+        if isinstance(module, JSONResponse):
+            logger.warning("Fit draft continuing without retrieval: RAG module unavailable")
+        else:
+            pipeline, _, _ = module
+            try:
+                retrieve_result = await _run_blocking_with_timeout(
+                    "RAG fit retrieve",
+                    pipeline.retrieve_only,
+                    query=query,
+                    filters=filters or None,
+                    top_k=body.topK,
+                    timeout=RAG_ASK_TIMEOUT_SECONDS,
+                )
+                if isinstance(retrieve_result, JSONResponse):
+                    logger.warning("Fit draft continuing without retrieval: retrieve unavailable")
+                else:
+                    retrieved = retrieve_result
+            except Exception as e:
+                logger.warning("Fit draft continuing without retrieval: retrieve failed: %s", e)
+
+    content = body.model_dump() if hasattr(body, "model_dump") else body.dict()
+    sources = retrieved.get("sources", [])
+
+    t0 = datetime.now(timezone.utc)
+    fallback_used = False
+    try:
+        generation = await _run_blocking_with_timeout(
+            "RAG fit generation",
+            generate_fit_draft,
+            content,
+            sources,
+            timeout=RAG_ASK_TIMEOUT_SECONDS,
+        )
+        if isinstance(generation, JSONResponse):
+            fallback_used = True
+            learning_fit = fallback_fit_draft(content, sources)
+            model = ""
+            tokens_used = 0
+        else:
+            learning_fit = generation.learning_fit
+            model = generation.model
+            tokens_used = generation.tokens_used
+    except Exception as e:
+        logger.warning("Fit draft generation failed, using fallback: %s", e)
+        fallback_used = True
+        learning_fit = fallback_fit_draft(content, sources)
+        model = ""
+        tokens_used = 0
+
+    generation_ms = (datetime.now(timezone.utc) - t0).total_seconds() * 1000
+    return {
+        "learningFit": learning_fit,
+        "sources": sources,
+        "model": model,
+        "tokensUsed": tokens_used,
+        "retrievalTimeMs": retrieved.get("retrievalTimeMs", 0),
+        "generationTimeMs": round(generation_ms, 2),
+        "fallbackUsed": fallback_used,
+    }
+
+
 @rag_router.get("/history", response_model=RAGHistoryResponse)
 async def rag_history(userId: str):
     module = await _run_blocking_with_timeout(
@@ -527,6 +664,17 @@ def _filters_from_request(body: RAGRequest) -> dict:
     if body.courseId:
         filters["courseId"] = body.courseId
     return filters
+
+
+def _fit_query_from_request(body: FitDraftRequest) -> str:
+    parts = [body.title]
+    if body.summary:
+        parts.append(body.summary)
+    if body.description:
+        parts.append(body.description)
+    if body.hightlights:
+        parts.append("; ".join(body.hightlights))
+    return "\n".join(part for part in parts if part)
 
 
 app.include_router(rag_router)

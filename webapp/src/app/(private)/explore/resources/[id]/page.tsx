@@ -21,8 +21,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { PurchaseButton } from "@/features/billing"
 import {
+  ContentReceipt,
+  FitAnalytics,
+  getFitAwareFreeLabel,
+  getFitAwarePurchaseLabel,
   getResourceBySlug,
   getResourcePreview,
+  HonestFitCard,
   ResourceDocumentPreview,
 } from "@/features/content"
 import {
@@ -83,6 +88,10 @@ export default async function ExploreResourceDetailPage({
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
   const canonical = `/explore/resources/${id}`
+  const purchaseLabel = getFitAwarePurchaseLabel({
+    contentType: "resource",
+    fit: resource.learningFit,
+  })
 
   const productJsonLd = {
     "@context": "https://schema.org",
@@ -137,6 +146,16 @@ export default async function ExploreResourceDetailPage({
         majorId={resource.majorId}
         courseId={resource.courseId}
         semester={resource.course?.semester}
+      />
+      <FitAnalytics
+        event="fit_card_viewed"
+        enabled={Boolean(resource.learningFit)}
+        onceKey={`RESOURCE:${resource.id}`}
+        payload={{
+          itemId: resource.id,
+          itemType: "RESOURCE",
+          fitStatus: resource.learningFit?.fitStatus,
+        }}
       />
       <script
         type="application/ld+json"
@@ -258,6 +277,16 @@ export default async function ExploreResourceDetailPage({
             </Button>
           </div>
 
+          <HonestFitCard
+            fit={resource.learningFit}
+            contentType="resource"
+            analyticsPayload={{
+              itemId: resource.id,
+              itemType: "RESOURCE",
+              contentType: "resource",
+            }}
+          />
+
           <div className="space-y-6 text-muted-foreground">
             <h3 className="text-2xl font-bold text-foreground">
               About this Resource
@@ -352,11 +381,24 @@ export default async function ExploreResourceDetailPage({
                 </div>
               </div>
 
+              <ContentReceipt
+                fit={resource.learningFit}
+                fileCount={resource._count.resourceMeta}
+                updatedAt={resource.updatedAt}
+              />
+
               <PurchaseButton
                 itemId={resource.id}
                 itemType="RESOURCE"
+                label={purchaseLabel}
+                freeLabel={getFitAwareFreeLabel("resource")}
                 className="mb-4 w-full text-base font-bold"
                 price={resource.price || 0}
+                trackingEventName="fit_cta_clicked"
+                trackingPayload={{
+                  fitStatus: resource.learningFit?.fitStatus,
+                  contentType: "resource",
+                }}
               />
               <div className="flex justify-center">
                 <Item

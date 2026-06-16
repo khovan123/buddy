@@ -3,6 +3,7 @@ import {
   ResourceStatus,
 } from '../../infrastructure/persistence/mongo/schemas/resource.schema';
 import { CourseStatus } from '../entities/course.entity';
+import type { LearningFit } from '../entities/learning-fit';
 import { MajorStatus } from '../entities/major.entity';
 import { Resource, ResourceMeta } from '../entities/resource.entity';
 
@@ -95,6 +96,7 @@ export interface ResourceQueryItem {
   collection?: ResourceCollectionDetails | null;
   primaryS3Key?: string | null;
   primaryFileExtension?: string | null;
+  learningFit?: LearningFit | null;
   _count: ResourceQueryCount;
   uploader?: UserProfileRpcResponseDto;
   major?: ResourceQueryMajor;
@@ -122,6 +124,7 @@ export interface ResourceUpdateDetails {
   courseId: string;
   price: number;
   collectionId?: string;
+  learningFit?: LearningFit;
 }
 
 /** Interface representing data constraints for  i resource repository. */

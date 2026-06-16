@@ -3,6 +3,7 @@ import {
   TutorialStatus,
 } from '../../infrastructure/persistence/mongo/schemas/tutorial.schema';
 import { CourseStatus } from '../entities/course.entity';
+import type { LearningFit } from '../entities/learning-fit';
 import { MajorStatus } from '../entities/major.entity';
 import { Tutorial, TutorialMedia } from '../entities/tutorial.entity';
 
@@ -124,6 +125,7 @@ export interface TutorialQueryItem {
       };
     }>;
   }>;
+  learningFit?: LearningFit | null;
   trailerUrl?: string | null;
   thumbnailUrl?: string | null;
   _count: TutorialQueryCount;
@@ -158,6 +160,7 @@ export interface TutorialUpdateDetails {
     title: string;
     resources: Array<{ resourceId: string; instructionNote: string }>;
   }>;
+  learningFit?: LearningFit;
 }
 
 /** Interface representing data constraints for  i tutorial repository. */

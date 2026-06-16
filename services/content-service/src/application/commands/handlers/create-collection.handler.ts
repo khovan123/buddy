@@ -173,6 +173,7 @@ export class CreateCollectionHandler implements ICommandHandler<CreateCollection
           itemType: item.itemType,
         })),
       })),
+      learningFit: command.learningFit,
     });
 
     await this.collectionRepository.save(collection);

@@ -2,6 +2,7 @@ import {
   CollectionPhaseItemType,
   CollectionType,
 } from '../../infrastructure/persistence/mongo/schemas/collection.schema';
+import type { LearningFit } from '../../domain/entities/learning-fit';
 
 export interface UpdateCollectionPhase {
   phaseTitle: string;
@@ -23,5 +24,6 @@ export class UpdateCollectionCommand {
     public readonly phases?: UpdateCollectionPhase[],
     public readonly thumbnailBase64?: string,
     public readonly correlationId?: string,
+    public readonly learningFit?: LearningFit,
   ) {}
 }

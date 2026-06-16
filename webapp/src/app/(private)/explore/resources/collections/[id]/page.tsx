@@ -24,8 +24,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { PurchaseButton } from "@/features/billing"
-import { getResourceCollectionBySlug } from "@/features/content"
-import { ItemInteractionControls, TrackContentView } from "@/features/interaction"
+import {
+  ContentReceipt,
+  FitAnalytics,
+  getFitAwareFreeLabel,
+  getFitAwarePurchaseLabel,
+  getResourceCollectionBySlug,
+  HonestFitCard,
+  LearningPathOverview,
+} from "@/features/content"
+import {
+  ItemInteractionControls,
+  TrackContentView,
+} from "@/features/interaction"
 
 type PageParams = Promise<{ id: string }>
 
@@ -83,6 +94,10 @@ export default async function ExploreCollectionResourceDetailPage({
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
   const canonical = `/explore/resources/collections/${id}`
+  const purchaseLabel = getFitAwarePurchaseLabel({
+    contentType: "collection",
+    fit: collection.learningFit,
+  })
 
   const collectionJsonLd = {
     "@context": "https://schema.org",
@@ -137,6 +152,16 @@ export default async function ExploreCollectionResourceDetailPage({
         majorId={collection.majorId}
         courseId={collection.courseId}
         semester={collection.course?.semester}
+      />
+      <FitAnalytics
+        event="fit_card_viewed"
+        enabled={Boolean(collection.learningFit)}
+        onceKey={`RESOURCE_COLLECTION:${collection.id}`}
+        payload={{
+          itemId: collection.id,
+          itemType: "RESOURCE_COLLECTION",
+          fitStatus: collection.learningFit?.fitStatus,
+        }}
       />
       <script
         type="application/ld+json"
@@ -286,6 +311,23 @@ export default async function ExploreCollectionResourceDetailPage({
               Follow
             </Button>
           </div>
+
+          <HonestFitCard
+            fit={collection.learningFit}
+            contentType="collection"
+            analyticsPayload={{
+              itemId: collection.id,
+              itemType: "RESOURCE_COLLECTION",
+              contentType: "collection",
+            }}
+          />
+
+          <LearningPathOverview
+            phases={collection.phases}
+            fit={collection.learningFit}
+            resourceCount={collection._count.resources}
+            tutorialCount={collection._count.tutorials}
+          />
 
           {/* ── About + Highlights ── */}
           <div className="space-y-6 text-muted-foreground">
@@ -479,11 +521,26 @@ export default async function ExploreCollectionResourceDetailPage({
                 </div>
               </div>
 
+              <ContentReceipt
+                fit={collection.learningFit}
+                fileCount={
+                  collection._count.resources + collection._count.tutorials
+                }
+                updatedAt={collection.updatedAt}
+              />
+
               <PurchaseButton
                 itemId={collection.id}
                 itemType="RESOURCE_COLLECTION"
-                label="Buy Entire Collection"
+                label={purchaseLabel}
+                freeLabel={getFitAwareFreeLabel("collection")}
                 className="mb-4 w-full text-base font-bold"
+                price={collection.discount > 0 ? collection.discount : 0}
+                trackingEventName="fit_cta_clicked"
+                trackingPayload={{
+                  fitStatus: collection.learningFit?.fitStatus,
+                  contentType: "collection",
+                }}
               />
               <div className="flex justify-center">
                 <Item

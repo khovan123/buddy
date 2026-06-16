@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { JwtAuthGuard, Public } from '@libs/common';
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
 
@@ -133,6 +133,16 @@ export class CollectionProxyController {
       query,
       timeoutMs: 2_500,
       skipRetry: true,
+    });
+  }
+
+  @Put(':id')
+  updateCollection(@Param('id') id: string, @Body() body: unknown, @Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'content',
+      path: `/v1/collections/${id}`,
+      method: 'PUT',
+      body,
     });
   }
 

@@ -14,6 +14,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { LearningFitDto } from './learning-fit.dto';
 
 export class TutorialStepResourceDto {
   @IsMongoId()
@@ -82,6 +83,11 @@ export class CreateTutorialDto {
   @ValidateNested({ each: true })
   @Type(() => TutorialStepDto)
   steps?: TutorialStepDto[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LearningFitDto)
+  learningFit?: LearningFitDto;
 
   @IsString()
   @IsNotEmpty()

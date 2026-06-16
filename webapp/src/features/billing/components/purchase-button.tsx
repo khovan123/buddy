@@ -30,16 +30,22 @@ interface PurchaseButtonProps {
   itemId: string
   itemType: PurchasableContentType
   label?: string
+  freeLabel?: string
   className?: string
   price?: number
+  trackingEventName?: string
+  trackingPayload?: Record<string, boolean | number | string | null | undefined>
 }
 
 export function PurchaseButton({
   itemId,
   itemType,
   label = "Buy Now",
+  freeLabel = "Learn now",
   className,
   price,
+  trackingEventName,
+  trackingPayload,
 }: PurchaseButtonProps) {
   const router = useRouter()
   const hasResumed = useRef(false)
@@ -53,6 +59,21 @@ export function PurchaseButton({
 
   const prepareCheckout = useCallback(async () => {
     try {
+      if (trackingEventName && typeof globalThis.window !== "undefined") {
+        globalThis.window.dispatchEvent(
+          new CustomEvent("buddy:analytics", {
+            detail: {
+              event: trackingEventName,
+              payload: {
+                itemId,
+                itemType,
+                ...trackingPayload,
+              },
+            },
+          })
+        )
+      }
+
       const [quoteResponse, balanceResponse] = await Promise.all([
         getQuote({ itemId, itemType }).unwrap(),
         refetchBalance().unwrap(),
@@ -69,7 +90,14 @@ export function PurchaseButton({
     } catch (error) {
       toast.error(extractApiError(error))
     }
-  }, [getQuote, itemId, itemType, refetchBalance])
+  }, [
+    getQuote,
+    itemId,
+    itemType,
+    refetchBalance,
+    trackingEventName,
+    trackingPayload,
+  ])
 
   useEffect(() => {
     const searchParams = new URLSearchParams(globalThis.location.search)
@@ -122,7 +150,7 @@ export function PurchaseButton({
         disabled={isQuoting}
       >
         {isQuoting ? <Loader2 className="size-4 animate-spin" /> : null}
-        {price && price > 0 ? label : "Learn now"}
+        {price && price > 0 ? label : freeLabel}
       </Button>
 
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>

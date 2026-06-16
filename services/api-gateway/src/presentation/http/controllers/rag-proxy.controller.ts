@@ -57,6 +57,21 @@ export class RagProxyController {
     });
   }
 
+  @Post('fit-draft')
+  @UseGuards(JwtAuthGuard, PoliciesGuard)
+  @RequirePolicy(SubscriptionRequiredPolicy, SearchResultLimitPolicy)
+  generateFitDraft(@Body() body: unknown, @Req() req: FastifyRequest) {
+    const userId = this.getAuthUserId(req);
+    return this.proxy.forward(req, {
+      service: 'rag',
+      resilienceKey: 'recommendation-rag',
+      path: '/v1/rag/fit-draft',
+      method: 'POST',
+      body: this.withAuthUserId(body, userId),
+      timeoutMs: 100_000,
+    });
+  }
+
   @Get('history')
   @UseGuards(JwtAuthGuard)
   history(@Req() req: FastifyRequest) {

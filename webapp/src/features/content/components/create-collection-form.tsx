@@ -58,6 +58,11 @@ import {
 import { extractApiError } from "@/types/api"
 
 import { CollectionFormValues, collectionSchema } from "../schema"
+import {
+  toLearningFitFormValues,
+  toLearningFitPayload,
+} from "../utils/learning-fit"
+import { trackLearningFitEvent } from "../utils/learning-fit-events"
 import { getFriendlyContentError } from "../utils/user-facing-content"
 
 import {
@@ -65,6 +70,7 @@ import {
   type PhaseItem,
   type RoadmapPhase,
 } from "./collection-roadmap-builder"
+import { FitEditor } from "./fit-editor"
 import { ResourceExplorer } from "./resource-explorer"
 import { ThumbnailPicker } from "./thumbnail-picker"
 
@@ -82,6 +88,7 @@ const FIELD_TAB_MAP: Record<string, string> = {
   majorId: "pricing",
   courseId: "pricing",
   discount: "pricing",
+  learningFit: "info",
 }
 
 // ── Main Form ────────────────────────────────────────────────────
@@ -134,6 +141,7 @@ export function CreateCollectionForm() {
       resourceIds: [],
       tutorialIds: [],
       phases: [],
+      learningFit: toLearningFitFormValues(),
     },
   })
 
@@ -154,6 +162,9 @@ export function CreateCollectionForm() {
   const selectedCourseId = useWatch({ name: "courseId", control })
   const selectedType = useWatch({ name: "type", control })
   const thumbnailBase64 = useWatch({ name: "thumbnailBase64", control })
+  const watchedTitle = useWatch({ name: "title", control })
+  const watchedDescription = useWatch({ name: "description", control })
+  const watchedHighlights = useWatch({ name: "hightlights", control }) || []
 
   // RTK Query: Majors & Courses
   const { data: metaData, isLoading: isLoadingMajors } =
@@ -197,6 +208,7 @@ export function CreateCollectionForm() {
       resourceIds: [],
       tutorialIds: [],
       thumbnailBase64: "",
+      learningFit: toLearningFitFormValues(collection.learningFit),
       phases: phases.map((phase) => ({
         id: phase.id,
         phaseTitle: phase.phaseTitle,
@@ -320,9 +332,11 @@ export function CreateCollectionForm() {
     try {
       // Exclude thumbnailFile from backend request payload
       const { thumbnailFile: _, ...restData } = data
+      const learningFit = toLearningFitPayload(restData.learningFit)
       const payload = {
         ...restData,
         hightlights: restData.hightlights.map((h) => h.value),
+        learningFit,
         // Backend derives resourceIds and tutorialIds natively from phases
         resourceIds: undefined,
         tutorialIds: undefined,
@@ -340,10 +354,24 @@ export function CreateCollectionForm() {
 
       if (isEditMode && editId) {
         await updateCollection({ id: editId, body: payload }).unwrap()
+        if (learningFit) {
+          trackLearningFitEvent("fit_editor_completed", {
+            contentType: "collection",
+            mode: "update",
+            fitStatus: learningFit.fitStatus,
+          })
+        }
         toast.success("Collection updated.")
         router.refresh()
       } else {
         await createCollection(payload).unwrap()
+        if (learningFit) {
+          trackLearningFitEvent("fit_editor_completed", {
+            contentType: "collection",
+            mode: "create",
+            fitStatus: learningFit.fitStatus,
+          })
+        }
         toast.success("Collection created.")
         form.reset()
         setRoadmapPhases([])
@@ -741,6 +769,24 @@ export function CreateCollectionForm() {
                 </h3>
                 {infoSection}
               </div>
+              <FitEditor
+                control={control}
+                register={form.register}
+                setValue={form.setValue}
+                draftContext={{
+                  contentType: "COLLECTION",
+                  title: watchedTitle,
+                  description: watchedDescription,
+                  hightlights: watchedHighlights.map((item) => item.value),
+                  phases: roadmapPhases.map((phase) => ({
+                    phaseTitle: phase.phaseTitle,
+                    learningGoal: phase.learningGoal,
+                    items: phase.items,
+                  })),
+                  majorId: selectedMajorId,
+                  courseId: selectedCourseId,
+                }}
+              />
               <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
@@ -780,6 +826,24 @@ export function CreateCollectionForm() {
                 className="mt-0 animate-in space-y-6 fade-in slide-in-from-bottom-2"
               >
                 {infoSection}
+                <FitEditor
+                  control={control}
+                  register={form.register}
+                  setValue={form.setValue}
+                  draftContext={{
+                    contentType: "COLLECTION",
+                    title: watchedTitle,
+                    description: watchedDescription,
+                    hightlights: watchedHighlights.map((item) => item.value),
+                    phases: roadmapPhases.map((phase) => ({
+                      phaseTitle: phase.phaseTitle,
+                      learningGoal: phase.learningGoal,
+                      items: phase.items,
+                    })),
+                    majorId: selectedMajorId,
+                    courseId: selectedCourseId,
+                  }}
+                />
               </TabsContent>
 
               <TabsContent

@@ -29,8 +29,19 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { PurchaseButton } from "@/features/billing"
-import { getTutorialCollectionBySlug } from "@/features/content"
-import { ItemInteractionControls, TrackContentView } from "@/features/interaction"
+import {
+  ContentReceipt,
+  FitAnalytics,
+  getFitAwareFreeLabel,
+  getFitAwarePurchaseLabel,
+  getTutorialCollectionBySlug,
+  HonestFitCard,
+  LearningPathOverview,
+} from "@/features/content"
+import {
+  ItemInteractionControls,
+  TrackContentView,
+} from "@/features/interaction"
 
 type PageParams = Promise<{ id: string }>
 
@@ -88,6 +99,10 @@ export default async function ExploreCollectionTutorialDetailPage({
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
   const canonical = `/explore/tutorials/collections/${id}`
+  const purchaseLabel = getFitAwarePurchaseLabel({
+    contentType: "collection",
+    fit: collection.learningFit,
+  })
 
   const courseJsonLd = {
     "@context": "https://schema.org",
@@ -159,6 +174,16 @@ export default async function ExploreCollectionTutorialDetailPage({
         majorId={collection.majorId}
         courseId={collection.courseId}
         semester={collection.course?.semester}
+      />
+      <FitAnalytics
+        event="fit_card_viewed"
+        enabled={Boolean(collection.learningFit)}
+        onceKey={`TUTORIAL_COLLECTION:${collection.id}`}
+        payload={{
+          itemId: collection.id,
+          itemType: "TUTORIAL_COLLECTION",
+          fitStatus: collection.learningFit?.fitStatus,
+        }}
       />
       <script
         type="application/ld+json"
@@ -263,6 +288,23 @@ export default async function ExploreCollectionTutorialDetailPage({
             </div>
           </div>
 
+          <HonestFitCard
+            fit={collection.learningFit}
+            contentType="collection"
+            analyticsPayload={{
+              itemId: collection.id,
+              itemType: "TUTORIAL_COLLECTION",
+              contentType: "collection",
+            }}
+          />
+
+          <LearningPathOverview
+            phases={collection.phases}
+            fit={collection.learningFit}
+            resourceCount={collection._count.resources}
+            tutorialCount={collection._count.tutorials}
+          />
+
           <section className="space-y-6">
             <h2 className="text-2xl font-bold tracking-tight text-foreground">
               About this Collection
@@ -301,11 +343,26 @@ export default async function ExploreCollectionTutorialDetailPage({
                   </span>
                 </div>
 
+                <ContentReceipt
+                  fit={collection.learningFit}
+                  fileCount={
+                    collection._count.resources + collection._count.tutorials
+                  }
+                  updatedAt={collection.updatedAt}
+                />
+
                 <PurchaseButton
                   itemId={collection.id}
                   itemType="TUTORIAL_BUNDLE_COLLECTION"
-                  label="Unlock Collection"
+                  label={purchaseLabel}
+                  freeLabel={getFitAwareFreeLabel("collection")}
                   className="h-12 w-full text-base font-bold"
+                  price={collection.discount > 0 ? collection.discount : 0}
+                  trackingEventName="fit_cta_clicked"
+                  trackingPayload={{
+                    fitStatus: collection.learningFit?.fitStatus,
+                    contentType: "collection",
+                  }}
                 />
 
                 <div className="space-y-3 border-t border-border/30 pt-4 text-sm">

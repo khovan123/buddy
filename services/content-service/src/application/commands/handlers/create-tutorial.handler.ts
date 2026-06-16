@@ -157,6 +157,7 @@ export class CreateTutorialHanlder implements ICommandHandler<CreateTutorialComm
       resourceIds: finalResourceIds,
       collectionIds,
       steps,
+      learningFit: command.learningFit,
       status: TutorialStatus.PENDING,
     });
 

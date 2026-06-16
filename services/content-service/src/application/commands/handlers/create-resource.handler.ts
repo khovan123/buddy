@@ -65,6 +65,7 @@ export class CreateResourceHanlder implements ICommandHandler<CreateResourceComm
       files,
       thumbnailBase64,
       collectionId,
+      learningFit,
     } = command;
 
     if (!files || files.length === 0) {
@@ -115,6 +116,7 @@ export class CreateResourceHanlder implements ICommandHandler<CreateResourceComm
         extension: this.resolveExtension(file.fileName),
       })),
       collectionId,
+      learningFit,
     });
 
     // Lưu resource vào DB

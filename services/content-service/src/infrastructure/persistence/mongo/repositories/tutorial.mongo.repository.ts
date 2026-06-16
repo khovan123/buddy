@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, InferSchemaType, Model, SortOrder, Types } from 'mongoose';
 
+import type { LearningFit } from '../../../../domain/entities/learning-fit';
 import { Tutorial, TutorialMedia } from '../../../../domain/entities/tutorial.entity';
 import {
   ContentModerationPersistenceResult,
@@ -47,6 +48,7 @@ type TutorialPersistenceLean = TutorialSchemaShape & {
     title: string;
     resources: Array<{ resourceId: Types.ObjectId | string; instructionNote: string }>;
   }> | null;
+  learningFit?: LearningFit | null;
 };
 
 /**
@@ -104,6 +106,7 @@ type TutorialQueryWithPopulate = Omit<
       } | null;
     }>;
   }> | null;
+  learningFit?: LearningFit | null;
   major?: MajorLean | null;
   course?: CourseLean | null;
 };
@@ -132,6 +135,7 @@ type TutorialWritePayload = {
     title: string;
     resources: Array<{ resourceId: string; instructionNote: string }>;
   }>;
+  learningFit?: LearningFit | null;
 };
 
 type TutorialSearchClause =
@@ -422,6 +426,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
             discountBundle: details.discountBundle,
             collectionId: details.collectionId || null,
             steps: details.steps ?? [],
+            learningFit: details.learningFit ?? null,
             updatedAt: new Date(),
           },
         },
@@ -773,6 +778,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt ?? undefined,
+      learningFit: row.learningFit ?? null,
     });
   }
 
@@ -831,6 +837,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
           };
         }),
       })),
+      learningFit: row.learningFit ?? null,
       trailerUrl: row.media?.trailerUrl ?? null,
       thumbnailUrl: this.deriveCloudinaryThumbnail(row.media?.trailerUrl),
       major: row.major
@@ -891,6 +898,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
       discountBundle: tutorial.discountBundle,
       createdAt: tutorial.createdAt ?? new Date(),
       updatedAt: tutorial.updatedAt ?? new Date(),
+      learningFit: tutorial.learningFit ?? null,
     };
 
     if (tutorial.deletedAt) {
