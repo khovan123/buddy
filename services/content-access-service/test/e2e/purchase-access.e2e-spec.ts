@@ -44,8 +44,12 @@ jest.mock('../../src/infrastructure/persistence/prisma/prisma.service', () => ({
 }));
 
 import { GrantAccessHandler } from '../../src/application/commands/handlers/grant-access.handler';
-import { COMPENSATION_PUBLISHER } from '../../src/domain/repositories/tokens';
+import {
+  COMPENSATION_PUBLISHER,
+  CONTENT_ACCESS_REPOSITORY,
+} from '../../src/domain/repositories/tokens';
 import { AccessConsumer } from '../../src/infrastructure/messaging/consumers/access.consumer';
+import { ContentAccessPrismaRepository } from '../../src/infrastructure/persistence/prisma/repositories/content-access.prisma-repository';
 import { PrismaService } from '../../src/infrastructure/persistence/prisma/prisma.service';
 
 type GrantedAccessRecord = {
@@ -128,6 +132,8 @@ describe('Content Access Service E2E', () => {
       controllers: [AccessConsumer],
       providers: [
         GrantAccessHandler,
+        ContentAccessPrismaRepository,
+        { provide: CONTENT_ACCESS_REPOSITORY, useExisting: ContentAccessPrismaRepository },
         { provide: PrismaService, useValue: prismaMock },
         { provide: COMPENSATION_PUBLISHER, useValue: { publish: jest.fn() } },
       ],

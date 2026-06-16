@@ -1,20 +1,17 @@
+import { Inject } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
+import type { IContentAccessRepository } from '../../../domain/repositories/content-access.repository.interfaces';
+import { CONTENT_ACCESS_REPOSITORY } from '../../../domain/repositories/tokens';
 import { CheckAccessQuery } from '../check-access.query';
 
 @QueryHandler(CheckAccessQuery)
 export class CheckAccessHandler implements IQueryHandler<CheckAccessQuery> {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(CONTENT_ACCESS_REPOSITORY)
+    private readonly contentAccessRepository: IContentAccessRepository,
+  ) {}
 
   async execute(query: CheckAccessQuery): Promise<boolean> {
-    const access = await this.prisma.client.userResourceAccess.findFirst({
-      where: {
-        userId: query.userId,
-        resourceId: query.resourceId,
-        deletedAt: null,
-      },
-    });
-
-    return !!access;
+    return this.contentAccessRepository.hasAccess(query.userId, query.resourceId);
   }
 }

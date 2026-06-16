@@ -15,9 +15,12 @@ import {
 
 import { COMMAND_HANDLERS } from './application/commands/command.module';
 import { QUERY_HANDLERS } from './application/queries/query.module';
+import { CONTENT_ACCESS_REPOSITORY } from './domain/repositories/tokens';
 import { MESSAGE_COMPONENTS, MESSAGE_CONTROLLERS } from './infrastructure/messaging/message.module';
 import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module';
 import { PrismaService } from './infrastructure/persistence/prisma/prisma.service';
+import { ContentAccessPrismaRepository } from './infrastructure/persistence/prisma/repositories/content-access.prisma-repository';
+import { AccessController } from './presentation/http/controllers/access.controller';
 
 /** NestJS Module for  app. */
 @Module({
@@ -38,12 +41,13 @@ import { PrismaService } from './infrastructure/persistence/prisma/prisma.servic
     TerminusModule,
     MessagingModule,
   ],
-  controllers: [...MESSAGE_CONTROLLERS, HealthController],
+  controllers: [AccessController, ...MESSAGE_CONTROLLERS, HealthController],
   providers: [
     ...COMMAND_HANDLERS,
     ...QUERY_HANDLERS,
     ...MESSAGE_COMPONENTS,
     PrismaHealthIndicator,
+    { provide: CONTENT_ACCESS_REPOSITORY, useClass: ContentAccessPrismaRepository },
     {
       provide: PRISMA_CLIENT,
       useFactory: (ps: PrismaService) => ps.client,
