@@ -14,6 +14,7 @@ import {
   ResourceUpdateDetails,
 } from '../../../../domain/repositories/resource.repository.interface';
 import { CourseSchema } from '../schemas/course.schema';
+import { toDomainLearningFit } from '../schemas/learning-fit.schema';
 import { MajorSchema } from '../schemas/major.schema';
 import {
   ContentModerationStatus,
@@ -727,7 +728,7 @@ export class ResourceMongoRepository implements IResourceRepository {
       deletedAt: row.deletedAt ?? undefined,
       tutorialId: this.toPersistenceOptionalStringId(row.tutorialId),
       collectionId: this.toPersistenceOptionalStringId(row.collectionId),
-      learningFit: row.learningFit ?? null,
+      learningFit: toDomainLearningFit(row.learningFit),
       meta: row.meta.map((meta) => this.toDomainMeta(meta)),
     });
   }
@@ -775,7 +776,7 @@ export class ResourceMongoRepository implements IResourceRepository {
       collection: this.toQueryCollectionDetails(row.collectionId),
       primaryS3Key: row.primaryS3Key ?? null,
       primaryFileExtension: row.meta[0]?.extension ?? null,
-      learningFit: row.learningFit ?? null,
+      learningFit: toDomainLearningFit(row.learningFit),
       major: row.major
         ? {
             id: row.major._id.toString(),

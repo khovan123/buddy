@@ -15,6 +15,7 @@ import {
   TutorialUpdateDetails,
 } from '../../../../domain/repositories/tutorial.repository.interface';
 import { CourseSchema } from '../schemas/course.schema';
+import { toDomainLearningFit } from '../schemas/learning-fit.schema';
 import { MajorSchema } from '../schemas/major.schema';
 import {
   ContentModerationStatus,
@@ -778,7 +779,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt ?? undefined,
-      learningFit: row.learningFit ?? null,
+      learningFit: toDomainLearningFit(row.learningFit),
     });
   }
 
@@ -837,7 +838,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
           };
         }),
       })),
-      learningFit: row.learningFit ?? null,
+      learningFit: toDomainLearningFit(row.learningFit),
       trailerUrl: row.media?.trailerUrl ?? null,
       thumbnailUrl: this.deriveCloudinaryThumbnail(row.media?.trailerUrl),
       major: row.major

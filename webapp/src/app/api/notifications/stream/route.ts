@@ -1,22 +1,20 @@
 import { getServerApiBaseUrl } from "@/lib/api-gateway"
-import { getAccessToken } from "@/lib/server-session"
+import { getAuthHeaders } from "@/lib/server-session"
 
 const API_BASE = getServerApiBaseUrl()
 
 export const dynamic = "force-dynamic"
 
 export async function GET(request: Request) {
-  const accessToken = await getAccessToken()
+  const authHeaders = await getAuthHeaders()
 
-  if (!accessToken) {
+  if (!authHeaders.Authorization) {
     return new Response("Unauthorized", { status: 401 })
   }
 
   const upstream = await fetch(`${API_BASE}/v1/notifications/stream`, {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: authHeaders,
     cache: "no-store",
     signal: request.signal,
   })

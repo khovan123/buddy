@@ -22,9 +22,11 @@ class ModelScheduler:
         self._drift_monitor = drift_monitor
         self._timers: list[threading.Timer] = []
         self._retrain_lock = threading.Lock()
+        self._stopped = threading.Event()
 
     def start(self) -> None:
         """Start all scheduled jobs."""
+        self._stopped.clear()
         self._schedule_faiss_rebuild()
         if self._drift_monitor:
             self._schedule_drift_check()
@@ -36,14 +38,19 @@ class ModelScheduler:
 
     def stop(self) -> None:
         """Cancel all pending timers."""
+        self._stopped.set()
         for timer in self._timers:
             timer.cancel()
+            if timer.is_alive():
+                timer.join(timeout=2)
         self._timers.clear()
         logger.info("ModelScheduler stopped")
 
     # ─── FAISS Rebuild ──────────────────────────────────────────────────
 
     def _schedule_faiss_rebuild(self) -> None:
+        if self._stopped.is_set():
+            return
         interval = FAISS_REBUILD_INTERVAL_HOURS * 3600
         timer = threading.Timer(interval, self._run_faiss_rebuild)
         timer.daemon = True
@@ -52,6 +59,8 @@ class ModelScheduler:
 
     def _run_faiss_rebuild(self) -> None:
         try:
+            if self._stopped.is_set():
+                return
             if not self._catalog_store:
                 logger.warning("Scheduled FAISS rebuild skipped: catalog store is not configured")
                 return
@@ -64,11 +73,14 @@ class ModelScheduler:
             logger.error(f"Scheduled FAISS rebuild failed: {e}")
         finally:
             # Re-schedule
-            self._schedule_faiss_rebuild()
+            if not self._stopped.is_set():
+                self._schedule_faiss_rebuild()
 
     # ─── Drift Check + Retrain ──────────────────────────────────────────
 
     def _schedule_drift_check(self) -> None:
+        if self._stopped.is_set():
+            return
         interval = RETRAIN_INTERVAL_HOURS * 3600
         timer = threading.Timer(interval, self._run_drift_check)
         timer.daemon = True
@@ -77,6 +89,8 @@ class ModelScheduler:
 
     def _run_drift_check(self) -> None:
         try:
+            if self._stopped.is_set():
+                return
             if not self._drift_monitor:
                 return
 
@@ -95,5 +109,5 @@ class ModelScheduler:
         except Exception as e:
             logger.error(f"Drift check failed: {e}")
         finally:
-            self._schedule_drift_check()
-
+            if not self._stopped.is_set():
+                self._schedule_drift_check()

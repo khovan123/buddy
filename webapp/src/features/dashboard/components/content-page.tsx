@@ -59,7 +59,7 @@ export function ContentPage({
   tutorialCollections: CollectionQueryItem[]
 }) {
   const dispatch = useDispatch()
-  const { status: sessionStatus } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const { t } = useI18n()
   const { data: resourceResponse } = useGetMyResourcesQuery(undefined, {
     refetchOnFocus: true,
@@ -105,7 +105,7 @@ export function ContentPage({
   ]
 
   useEffect(() => {
-    if (sessionStatus !== "authenticated") {
+    if (sessionStatus !== "authenticated" || !session?.accessToken) {
       return
     }
 
@@ -138,7 +138,7 @@ export function ContentPage({
       events?.removeEventListener("notification", refreshContent)
       events?.close()
     }
-  }, [dispatch, sessionStatus])
+  }, [dispatch, session?.accessToken, sessionStatus])
 
   return (
     <section className="w-full space-y-6">

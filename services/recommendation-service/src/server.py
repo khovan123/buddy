@@ -16,7 +16,6 @@ import asyncio
 import json
 import logging
 import threading
-import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
@@ -51,6 +50,7 @@ logger = logging.getLogger(__name__)
 HEALTH_CHECK_TIMEOUT_SECONDS = 5
 RECOMMENDATION_TIMEOUT_SECONDS = 25
 BLOCKING_WORKER_LIMIT = 12
+SHUTDOWN_JOIN_TIMEOUT_SECONDS = 5
 
 blocking_executor = ThreadPoolExecutor(
     max_workers=BLOCKING_WORKER_LIMIT,
@@ -140,11 +140,27 @@ def _close_store_safely(store, label: str) -> None:
         logger.warning("%s close error ignored: %s", label, e)
 
 
+def _close_redis_safely(client: redis.Redis | None) -> None:
+    if not client:
+        return
+
+    try:
+        client.close()
+    except Exception as e:
+        logger.warning("Redis close error ignored: %s", e)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Start quickly for Cloud Run, initialize heavy dependencies in a background thread."""
     app.state.consumer = None
     app.state.scheduler = None
+    app.state.consumer_thread = None
+    app.state.init_thread = None
+    app.state.shutdown_event = threading.Event()
+
+    def _shutdown_requested() -> bool:
+        return app.state.shutdown_event.is_set()
 
     def _background_init() -> None:
         global catalog_store
@@ -154,16 +170,26 @@ async def lifespan(app: FastAPI):
         global redis_client
 
         try:
+            if _shutdown_requested():
+                return
+
             catalog_store = CatalogStore()
             catalog_store.ping()
+            if _shutdown_requested():
+                return
 
             user_store = UserProfileStore()
             popularity_store = ItemPopularityStore()
+            if _shutdown_requested():
+                return
+
             scoring_engine = ScoringEngine(
                 user_store,
                 popularity_store,
                 catalog_store,
             )
+            if _shutdown_requested():
+                return
 
             try:
                 redis_client = redis.from_url(
@@ -183,9 +209,11 @@ async def lifespan(app: FastAPI):
             if RECOMMENDATION_CONSUMER_ENABLED:
                 consumer_thread = threading.Thread(
                     target=_start_consumer,
-                    args=(app,),
+                    args=(app, app.state.shutdown_event),
                     name="rabbitmq-consumer",
+                    daemon=True,
                 )
+                app.state.consumer_thread = consumer_thread
                 consumer_thread.start()
             else:
                 logger.info("Recommendation RabbitMQ consumer disabled by environment")
@@ -201,7 +229,8 @@ async def lifespan(app: FastAPI):
                 drift_monitor=drift_monitor,
             )
             app.state.scheduler = scheduler
-            scheduler.start()
+            if not _shutdown_requested():
+                scheduler.start()
 
             logger.info("Background init complete")
 
@@ -223,11 +252,14 @@ async def lifespan(app: FastAPI):
         daemon=True,
         name="recommendation-background-init",
     )
+    app.state.init_thread = init_thread
     init_thread.start()
 
     logger.info("Recommendation service started; port binding is not blocked by init")
 
     yield
+
+    app.state.shutdown_event.set()
 
     scheduler = getattr(app.state, "scheduler", None)
     if scheduler:
@@ -243,6 +275,19 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.warning("Consumer close error ignored: %s", e)
 
+    consumer_thread = getattr(app.state, "consumer_thread", None)
+    if consumer_thread and consumer_thread.is_alive():
+        consumer_thread.join(timeout=SHUTDOWN_JOIN_TIMEOUT_SECONDS)
+        if consumer_thread.is_alive():
+            logger.warning("Consumer thread did not stop before shutdown timeout")
+
+    init_thread = getattr(app.state, "init_thread", None)
+    if init_thread and init_thread.is_alive():
+        init_thread.join(timeout=SHUTDOWN_JOIN_TIMEOUT_SECONDS)
+        if init_thread.is_alive():
+            logger.warning("Background init thread did not stop before shutdown timeout")
+
+    _close_redis_safely(redis_client)
     _close_store_safely(user_store, "UserProfileStore")
     _close_store_safely(popularity_store, "ItemPopularityStore")
     _close_store_safely(catalog_store, "CatalogStore")
@@ -251,14 +296,14 @@ async def lifespan(app: FastAPI):
     logger.info("Recommendation service shutdown")
 
 
-def _start_consumer(app: FastAPI) -> None:
+def _start_consumer(app: FastAPI, shutdown_event: threading.Event) -> None:
     """Run RabbitMQ consumer independently from HTTP readiness."""
     if not RECOMMENDATION_CONSUMER_ENABLED:
         return
 
     retry_delay = 5
 
-    while True:
+    while not shutdown_event.is_set():
         consumer = None
 
         try:
@@ -272,7 +317,7 @@ def _start_consumer(app: FastAPI) -> None:
                     "Recommendation runtime not ready. Retry consumer in %ss...",
                     retry_delay,
                 )
-                time.sleep(retry_delay)
+                shutdown_event.wait(timeout=retry_delay)
                 retry_delay = min(retry_delay * 2, 60)
                 continue
 
@@ -289,6 +334,8 @@ def _start_consumer(app: FastAPI) -> None:
             consumer.start_consuming()
 
         except Exception:
+            if shutdown_event.is_set():
+                break
             logger.exception(
                 "Consumer crashed. Restarting in %ss...",
                 retry_delay,
@@ -303,8 +350,10 @@ def _start_consumer(app: FastAPI) -> None:
                 except Exception:
                     pass
 
-        time.sleep(retry_delay)
+        shutdown_event.wait(timeout=retry_delay)
         retry_delay = min(retry_delay * 2, 60)
+
+    logger.info("Recommendation consumer loop stopped")
 
 
 app = FastAPI(

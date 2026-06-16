@@ -60,6 +60,8 @@ TIME_DECAY_LAMBDA = float(os.getenv("TIME_DECAY_LAMBDA", "0.05"))
 
 # ─── Model Artifacts ────────────────────────────────────────────────────────────
 ARTIFACTS_DIR = os.getenv("ARTIFACTS_DIR", "./artifacts")
+_model_load_default = "true" if os.getenv("NODE_ENV") == "production" else "false"
+MODEL_LOAD_ON_STARTUP = os.getenv("MODEL_LOAD_ON_STARTUP", _model_load_default).lower() == "true"
 MIN_HITRATE = float(os.getenv("MIN_HITRATE", "0.05"))
 MODEL_KEEP_VERSIONS = int(os.getenv("MODEL_KEEP_VERSIONS", "3"))
 

@@ -254,7 +254,7 @@ export function Notifications() {
   const [open, setOpen] = useState(false)
   const [readAllAt, setReadAllAt] = useState<string | null>(null)
   const dispatch = useDispatch()
-  const { status: sessionStatus } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const [markAllNotificationsRead] = useMarkAllNotificationsReadMutation()
   const {
     data: resourceResponse,
@@ -417,7 +417,7 @@ export function Notifications() {
   }, [])
 
   useEffect(() => {
-    if (sessionStatus !== "authenticated") {
+    if (sessionStatus !== "authenticated" || !session?.accessToken) {
       return
     }
 
@@ -450,7 +450,7 @@ export function Notifications() {
       events?.removeEventListener("notification", refreshNotifications)
       events?.close()
     }
-  }, [dispatch, sessionStatus])
+  }, [dispatch, session?.accessToken, sessionStatus])
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)

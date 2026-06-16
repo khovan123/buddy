@@ -3,6 +3,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import {
   FitEvidenceSourceType,
   FitStatus,
+  type LearningFit as DomainLearningFit,
   LearningFitDifficulty,
   StartHereTargetType,
 } from '../../../../domain/entities/learning-fit';
@@ -87,3 +88,38 @@ export class LearningFit {
 }
 
 export const LearningFitSchema = SchemaFactory.createForClass(LearningFit);
+
+export function toDomainLearningFit(
+  learningFit: LearningFit | null | undefined,
+): DomainLearningFit | null {
+  if (!learningFit) {
+    return null;
+  }
+
+  return {
+    bestFor: learningFit.bestFor ?? [],
+    notFor: learningFit.notFor ?? [],
+    startHere: (learningFit.startHere ?? []).map((step) => ({
+      title: step.title,
+      description: step.description ?? undefined,
+      order: step.order,
+      targetType: step.targetType ?? undefined,
+      targetId: step.targetId ?? undefined,
+      aiPrompt: step.aiPrompt ?? undefined,
+    })),
+    coveredTopics: learningFit.coveredTopics ?? [],
+    notCoveredTopics: learningFit.notCoveredTopics ?? [],
+    learningOutcomes: learningFit.learningOutcomes ?? [],
+    estimatedStudyTimeMinutes: learningFit.estimatedStudyTimeMinutes ?? null,
+    difficulty: learningFit.difficulty ?? null,
+    fitStatus: learningFit.fitStatus ?? FitStatus.DRAFT,
+    fitEvidence: (learningFit.fitEvidence ?? []).map((evidence) => ({
+      claim: evidence.claim,
+      sourceType: evidence.sourceType,
+      sourceRef: evidence.sourceRef ?? undefined,
+      confidence: evidence.confidence ?? null,
+    })),
+    fitGeneratedAt: learningFit.fitGeneratedAt ?? null,
+    fitVerifiedAt: learningFit.fitVerifiedAt ?? null,
+  };
+}

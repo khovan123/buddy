@@ -9,6 +9,7 @@ from config import (
     PHASE_BATCH_ML_THRESHOLD,
     PHASE_CONTINUOUS_THRESHOLD,
     TOP_K_CANDIDATES,
+    MODEL_LOAD_ON_STARTUP,
 )
 from scoring.behavioral import score_behavioral
 from scoring.profile_based import score_profile
@@ -50,10 +51,15 @@ class ScoringEngine:
 
         # ML model (lazy-loaded when trained model exists)
         self.model_manager = ModelManager()
-        self._try_load_model()
+        self._model_load_attempted = False
+        if MODEL_LOAD_ON_STARTUP:
+            self._try_load_model()
+        else:
+            logger.info("ML model startup preload disabled — using lazy/rule-based scoring")
 
     def _try_load_model(self) -> None:
         """Attempt to load the latest trained model. Non-blocking."""
+        self._model_load_attempted = True
         try:
             loaded = self.model_manager.load()
             if loaded:
@@ -62,6 +68,13 @@ class ScoringEngine:
                 logger.info("No trained ML model found — using rule-based scoring")
         except Exception as e:
             logger.warning(f"Failed to load ML model: {e}")
+
+    def _ensure_model_loaded(self) -> None:
+        """Lazy-load the ML model once before an ML-eligible recommendation path."""
+        if self.model_manager.is_loaded or self._model_load_attempted:
+            return
+
+        self._try_load_model()
 
     def reload_model(self) -> bool:
         """Hot-reload the latest model version (called after training completes)."""
@@ -255,6 +268,8 @@ class ScoringEngine:
         has_profile = bool(user_profile and user_profile.get("majorId"))
         tier = self.detect_user_tier(interaction_count, has_profile)
         phase = self.detect_phase()
+        if tier in ("full", "partial"):
+            self._ensure_model_loaded()
         use_ml = self.model_manager.is_loaded and tier in ("full", "partial")
 
         # 2. ML path: FAISS retrieval → popularity re-rank

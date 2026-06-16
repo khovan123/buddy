@@ -66,6 +66,7 @@ class EventConsumer:
         self._channel = None
         self._items_since_rebuild = 0
         self._rebuild_lock = threading.Lock()
+        self._rebuild_threads: list[threading.Thread] = []
         self._stopping = False
 
     def connect(self) -> None:
@@ -192,9 +193,25 @@ class EventConsumer:
                 if self._items_since_rebuild >= FAISS_REBUILD_THRESHOLD:
                     self._items_since_rebuild = 0
                     logger.info(f"FAISS rebuild threshold ({FAISS_REBUILD_THRESHOLD}) reached — triggering async rebuild")
-                    t = threading.Thread(target=self._model_manager.rebuild_index, daemon=True)
+                    t = threading.Thread(
+                        target=self._rebuild_index,
+                        daemon=True,
+                        name="consumer-faiss-rebuild",
+                    )
+                    self._rebuild_threads.append(t)
                     t.start()
 
+    def _rebuild_index(self) -> None:
+        """Rebuild the FAISS index unless shutdown has started."""
+        if self._stopping or not self._model_manager:
+            return
+
+        try:
+            items = self.catalog_store.get_all_items()
+            self._model_manager.rebuild_index(items)
+        except Exception as e:
+            if not self._stopping:
+                logger.error(f"Async FAISS rebuild failed: {e}")
 
 
     # ─── User Profile Sync Events (from user-service) ──────────────────
@@ -272,7 +289,10 @@ class EventConsumer:
         self._stopping = True
         try:
             if self._channel and self._channel.is_open:
-                self._channel.stop_consuming()
+                if self._connection and self._connection.is_open:
+                    self._connection.add_callback_threadsafe(self._channel.stop_consuming)
+                else:
+                    self._channel.stop_consuming()
         except Exception:
             pass
         try:
@@ -280,3 +300,7 @@ class EventConsumer:
                 self._connection.close()
         except Exception as e:
             logger.debug(f"Ignored error during consumer close: {e}")
+
+        for thread in list(self._rebuild_threads):
+            if thread.is_alive():
+                thread.join(timeout=2)

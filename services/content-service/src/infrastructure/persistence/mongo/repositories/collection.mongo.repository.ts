@@ -20,6 +20,7 @@ import {
   CollectionType,
 } from '../schemas/collection.schema';
 import { CourseSchema } from '../schemas/course.schema';
+import { toDomainLearningFit } from '../schemas/learning-fit.schema';
 import { MajorSchema } from '../schemas/major.schema';
 
 export type CollectionSchemaShape = InferSchemaType<typeof CollectionSchema>;
@@ -440,7 +441,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
           itemType: item.itemType,
         })),
       })),
-      learningFit: row.learningFit ?? null,
+      learningFit: toDomainLearningFit(row.learningFit),
     });
   }
 
@@ -499,7 +500,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
           itemType: item.itemType,
         })),
       })),
-      learningFit: row.learningFit ?? null,
+      learningFit: toDomainLearningFit(row.learningFit),
     };
   }
 
