@@ -55,3 +55,4 @@ awesome-claude-skills/
 awesome-codex-skills/
 .qoder/
 .env*
+stop-dev.sh

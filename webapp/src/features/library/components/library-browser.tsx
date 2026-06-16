@@ -29,7 +29,6 @@ import {
   LibraryAssetKind,
   type LibraryAsset,
 } from "@/features/library/components/library-asset-card"
-import { LibraryRequestCard } from "@/features/library/components/library-request-card"
 import type { LibraryCatalog } from "@/features/library/types"
 import { cn } from "@/lib/utils"
 
@@ -673,7 +672,7 @@ export default function LibraryBrowser({
                   )}
                 </div>
               </div>
-              <LibraryRequestCard />
+              {/* <LibraryRequestCard /> */}
             </div>
           </div>
         </div>
