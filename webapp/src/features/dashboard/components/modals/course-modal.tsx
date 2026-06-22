@@ -7,14 +7,6 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-  useComboboxAnchor,
-} from "@/components/ui/combobox"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -55,8 +47,6 @@ export default function CourseModal({
   const [createCourse, { isLoading: isCreating }] = useCreateCourseMutation()
   const [updateCourse, { isLoading: isUpdating }] = useUpdateCourseMutation()
   const isSaving = isCreating || isUpdating
-
-  const majorAnchor = useComboboxAnchor()
 
   const {
     register,
@@ -136,21 +126,22 @@ export default function CourseModal({
                 name="majorId"
                 control={control}
                 render={({ field }) => (
-                  <Combobox value={field.value} onValueChange={field.onChange}>
-                    <div ref={majorAnchor}>
-                      <ComboboxInput placeholder="Select Major..." />
-                    </div>
-                    <ComboboxContent anchor={majorAnchor} align="start">
-                      <ComboboxList>
-                        {/* <ComboboxEmpty>No major found.</ComboboxEmpty> */}
-                        {majors.map((m) => (
-                          <ComboboxItem key={m.id} value={m.id}>
-                            {m.name} ({m.code})
-                          </ComboboxItem>
-                        ))}
-                      </ComboboxList>
-                    </ComboboxContent>
-                  </Combobox>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    defaultValue={field.value}
+                  >
+                    <SelectTrigger id="majorId" className="w-full">
+                      <SelectValue placeholder="Select major" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {majors.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.name} ({m.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
               />
               {errors.majorId && (
