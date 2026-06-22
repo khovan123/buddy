@@ -3,9 +3,12 @@ import { OtpGeneratedEvent } from '@libs/contracts';
 import { BadRequestException, ConflictException, Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { User } from '../../../domain/entities/user.entity';
-import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
-import { USER_REPOSITORY, VERIFICATION_TOKEN_REPOSITORY } from '../../../domain/repositories/tokens';
+import {
+  USER_REPOSITORY,
+  VERIFICATION_TOKEN_REPOSITORY,
+} from '../../../domain/repositories/tokens';
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
 import { Otp } from '../../../domain/value-objects/otp.vo';
 import { Password } from '../../../domain/value-objects/password.vo';
 import { AuthEventPublisher } from '../../../infrastructure/messaging/publishers/auth-event.publisher';

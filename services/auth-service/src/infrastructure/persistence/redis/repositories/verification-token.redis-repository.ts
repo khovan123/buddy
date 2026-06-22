@@ -1,7 +1,10 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Cache } from 'cache-manager';
-import { IVerificationTokenRepository, VerificationTokenPurpose } from '../../../../domain/repositories/verification-token.repository.interface';
+import {
+  IVerificationTokenRepository,
+  VerificationTokenPurpose,
+} from '../../../../domain/repositories/verification-token.repository.interface';
 
 /** Repository interface/implementation for verification token redis data access. */
 @Injectable()
@@ -27,7 +30,12 @@ export class VerificationTokenRedisRepository implements IVerificationTokenRepos
    * @param purpose - The purpose parameter
    * @param ttlSeconds - The ttlSeconds parameter
    */
-  async save(email: string, token: string, purpose: VerificationTokenPurpose, ttlSeconds: number): Promise<void> {
+  async save(
+    email: string,
+    token: string,
+    purpose: VerificationTokenPurpose,
+    ttlSeconds: number,
+  ): Promise<void> {
     await this.cache.set(this.key(email, purpose), token, ttlSeconds * 1000);
   }
 

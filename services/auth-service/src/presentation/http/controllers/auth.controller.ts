@@ -4,6 +4,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -13,7 +14,6 @@ import {
   Res,
   UseGuards,
   Version,
-  Headers,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -306,13 +306,9 @@ export class AuthController {
     @Headers('x-app-url') appUrlHeader: string,
     @Req() req: FastifyRequest,
   ) {
-    const appUrl =
-      appUrlHeader ||
-      `${req.protocol}://${req.hostname}`;
+    const appUrl = appUrlHeader || `${req.protocol}://${req.hostname}`;
 
-    await this.commandBus.execute(
-      new ForgotPasswordCommand(dto.email, appUrl, getCorrelationId()),
-    );
+    await this.commandBus.execute(new ForgotPasswordCommand(dto.email, appUrl, getCorrelationId()));
 
     // Always return a generic message to prevent user enumeration
     return successResponse(

@@ -2,7 +2,6 @@ import { UserRegisteredEvent } from '@libs/contracts';
 import { BadRequestException, Inject, UnauthorizedException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { randomUUID as uuidv4 } from 'node:crypto';
-import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
 import type { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
 import {
   REFRESH_TOKEN_REPOSITORY,
@@ -11,6 +10,7 @@ import {
   VERIFICATION_TOKEN_REPOSITORY,
 } from '../../../domain/repositories/tokens';
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
 import type { ITokenService } from '../../../domain/services/token.service.interface';
 import { Otp } from '../../../domain/value-objects/otp.vo';
 import { AuthEventPublisher } from '../../../infrastructure/messaging/publishers/auth-event.publisher';
@@ -21,7 +21,8 @@ import { VerifyOtpCommand } from '../verify-otp.command';
 export class VerifyOtpHandler implements ICommandHandler<VerifyOtpCommand> {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
-    @Inject(VERIFICATION_TOKEN_REPOSITORY) private readonly verificationTokenRepository: IVerificationTokenRepository,
+    @Inject(VERIFICATION_TOKEN_REPOSITORY)
+    private readonly verificationTokenRepository: IVerificationTokenRepository,
     @Inject(REFRESH_TOKEN_REPOSITORY)
     private readonly refreshTokenRepository: IRefreshTokenRepository,
     @Inject(TOKEN_SERVICE)

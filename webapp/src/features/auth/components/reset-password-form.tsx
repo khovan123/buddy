@@ -1,8 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
+
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+
 import { zodResolver } from "@hookform/resolvers/zod"
 import { AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import { useForm } from "react-hook-form"
@@ -18,7 +20,10 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { resetPasswordSchema, type ResetPasswordFormValues } from "@/features/auth/schemas"
+import {
+  resetPasswordSchema,
+  type ResetPasswordFormValues,
+} from "@/features/auth/schemas"
 import { useResetPasswordMutation } from "@/features/auth/services/auth-api"
 import { useGlobalError } from "@/providers/error-provider"
 
@@ -28,14 +33,11 @@ export function ResetPasswordForm() {
   const token = searchParams.get("token")
   const { handleError, clearError } = useGlobalError()
   const [resetPassword, { isLoading }] = useResetPasswordMutation()
-  const [tokenError, setTokenError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
 
-  useEffect(() => {
-    if (!token) {
-      setTokenError("The password reset token is missing from the URL. Please request a new password reset link.")
-    }
-  }, [token])
+  const tokenError = token
+    ? null
+    : "The password reset token is missing from the URL. Please request a new password reset link."
 
   const {
     register,
@@ -58,10 +60,10 @@ export function ResetPasswordForm() {
         token,
         newPassword: data.password,
       }).unwrap()
-      
+
       setIsSuccess(true)
       toast.success("Password reset successfully!")
-      
+
       // Redirect to login after 3 seconds
       setTimeout(() => {
         router.push("/login")
@@ -81,15 +83,13 @@ export function ResetPasswordForm() {
           <h2 className="text-2xl font-bold tracking-tight text-foreground">
             Invalid Reset Link
           </h2>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+          <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
             {tokenError}
           </p>
         </div>
         <div className="pt-2">
           <Link href="/forgot-password">
-            <Button className="w-full h-11">
-              Request New Link
-            </Button>
+            <Button className="h-11 w-full">Request New Link</Button>
           </Link>
         </div>
       </section>
@@ -106,15 +106,14 @@ export function ResetPasswordForm() {
           <h2 className="text-2xl font-bold tracking-tight text-foreground">
             Password Reset
           </h2>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-            Your password has been successfully reset. Redirecting you to the login page...
+          <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Your password has been successfully reset. Redirecting you to the
+            login page...
           </p>
         </div>
         <div className="pt-2">
           <Link href="/login">
-            <Button className="w-full h-11">
-              Go to Log In
-            </Button>
+            <Button className="h-11 w-full">Go to Log In</Button>
           </Link>
         </div>
       </section>
@@ -151,7 +150,9 @@ export function ResetPasswordForm() {
               ) : null}
             </Field>
             <Field>
-              <FieldLabel htmlFor="confirmPassword">Confirm Password</FieldLabel>
+              <FieldLabel htmlFor="confirmPassword">
+                Confirm Password
+              </FieldLabel>
               <Input
                 id="confirmPassword"
                 type="password"

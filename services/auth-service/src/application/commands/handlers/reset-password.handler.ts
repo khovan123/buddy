@@ -1,9 +1,12 @@
 import { CryptoUtil } from '@libs/common';
 import { BadRequestException, Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
-import { USER_REPOSITORY, VERIFICATION_TOKEN_REPOSITORY } from '../../../domain/repositories/tokens';
+import {
+  USER_REPOSITORY,
+  VERIFICATION_TOKEN_REPOSITORY,
+} from '../../../domain/repositories/tokens';
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
 import { Password } from '../../../domain/value-objects/password.vo';
 import { ResetPasswordCommand } from '../reset-password.command';
 

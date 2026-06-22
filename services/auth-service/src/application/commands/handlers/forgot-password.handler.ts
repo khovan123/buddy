@@ -2,9 +2,12 @@ import { CryptoUtil } from '@libs/common';
 import { PasswordResetRequestedEvent } from '@libs/contracts';
 import { Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
-import { USER_REPOSITORY, VERIFICATION_TOKEN_REPOSITORY } from '../../../domain/repositories/tokens';
+import {
+  USER_REPOSITORY,
+  VERIFICATION_TOKEN_REPOSITORY,
+} from '../../../domain/repositories/tokens';
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
 import { AuthEventPublisher } from '../../../infrastructure/messaging/publishers/auth-event.publisher';
 import { ForgotPasswordCommand } from '../forgot-password.command';
 
@@ -42,7 +45,12 @@ export class ForgotPasswordHandler implements ICommandHandler<ForgotPasswordComm
     const rawToken = CryptoUtil.generateSecureToken(32);
     const emailEncoded = Buffer.from(email).toString('base64url');
     const compositeToken = `${emailEncoded}.${rawToken}`;
-    await this.verificationTokenRepository.save(email, rawToken, 'PASSWORD_RESET', RESET_TOKEN_TTL_SECONDS);
+    await this.verificationTokenRepository.save(
+      email,
+      rawToken,
+      'PASSWORD_RESET',
+      RESET_TOKEN_TTL_SECONDS,
+    );
 
     const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_SECONDS * 1000);
     const resetLink = `${appUrl}/reset-password?token=${encodeURIComponent(compositeToken)}`;

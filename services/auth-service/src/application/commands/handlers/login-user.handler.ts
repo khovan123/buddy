@@ -3,7 +3,6 @@ import { OtpGeneratedEvent, UserLoggedInEvent } from '@libs/contracts';
 import { Inject, UnauthorizedException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { randomUUID as uuidv4 } from 'node:crypto';
-import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
 import type { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
 import {
   REFRESH_TOKEN_REPOSITORY,
@@ -12,6 +11,7 @@ import {
   VERIFICATION_TOKEN_REPOSITORY,
 } from '../../../domain/repositories/tokens';
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
 import type { ITokenService } from '../../../domain/services/token.service.interface';
 import { Otp } from '../../../domain/value-objects/otp.vo';
 import { AuthEventPublisher } from '../../../infrastructure/messaging/publishers/auth-event.publisher';
@@ -61,7 +61,12 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
     if (!user.emailVerified) {
       // Generate OTP for email verification
       const otp = Otp.generate();
-      await this.verificationTokenRepository.save(email, otp, 'EMAIL_VERIFICATION', Otp.TTL_SECONDS);
+      await this.verificationTokenRepository.save(
+        email,
+        otp,
+        'EMAIL_VERIFICATION',
+        Otp.TTL_SECONDS,
+      );
 
       // 4.5. publish OTP event
       await this.publisher.publish(

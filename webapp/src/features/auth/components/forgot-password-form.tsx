@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
+
 import Link from "next/link"
+
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2, MailCheck } from "lucide-react"
 import { useForm } from "react-hook-form"
@@ -17,7 +19,10 @@ import {
   FieldSet,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { forgotPasswordSchema, type ForgotPasswordFormValues } from "@/features/auth/schemas"
+import {
+  forgotPasswordSchema,
+  type ForgotPasswordFormValues,
+} from "@/features/auth/schemas"
 import { useForgotPasswordMutation } from "@/features/auth/services/auth-api"
 import { useGlobalError } from "@/providers/error-provider"
 
@@ -58,17 +63,17 @@ export function ForgotPasswordForm() {
           <h2 className="text-2xl font-bold tracking-tight text-foreground">
             Check your email
           </h2>
-          <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+          <p className="mx-auto max-w-sm text-sm leading-relaxed text-muted-foreground">
             We have sent a secure password reset link to{" "}
-            <span className="font-semibold text-foreground">{submittedEmail}</span>.
-            Please check your inbox and click the link to reset your password.
+            <span className="font-semibold text-foreground">
+              {submittedEmail}
+            </span>
+            . Please check your inbox and click the link to reset your password.
           </p>
         </div>
         <div className="pt-2">
           <Link href="/login">
-            <Button className="w-full h-11">
-              Back to Log In
-            </Button>
+            <Button className="h-11 w-full">Back to Log In</Button>
           </Link>
         </div>
       </section>

@@ -1,9 +1,12 @@
 import { OtpGeneratedEvent } from '@libs/contracts';
 import { BadRequestException, Inject, NotFoundException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
-import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
-import { USER_REPOSITORY, VERIFICATION_TOKEN_REPOSITORY } from '../../../domain/repositories/tokens';
+import {
+  USER_REPOSITORY,
+  VERIFICATION_TOKEN_REPOSITORY,
+} from '../../../domain/repositories/tokens';
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
 import { Otp } from '../../../domain/value-objects/otp.vo';
 import { AuthEventPublisher } from '../../../infrastructure/messaging/publishers/auth-event.publisher';
 import { ResendOtpCommand } from '../resend-otp.command';
@@ -13,7 +16,8 @@ import { ResendOtpCommand } from '../resend-otp.command';
 export class ResendOtpHandler implements ICommandHandler<ResendOtpCommand> {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
-    @Inject(VERIFICATION_TOKEN_REPOSITORY) private readonly verificationTokenRepository: IVerificationTokenRepository,
+    @Inject(VERIFICATION_TOKEN_REPOSITORY)
+    private readonly verificationTokenRepository: IVerificationTokenRepository,
     private readonly publisher: AuthEventPublisher,
   ) {}
 
