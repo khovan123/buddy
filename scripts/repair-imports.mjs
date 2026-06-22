@@ -27,6 +27,7 @@ function traverse(dir) {
   }
 }
 
-traverse('e:/codes/production/unibuddy-distributed/unibuddy-ms/services');
-traverse('e:/codes/production/unibuddy-distributed/unibuddy-ms/libs');
+const workspaceRoot = process.cwd();
+traverse(path.join(workspaceRoot, 'services'));
+traverse(path.join(workspaceRoot, 'libs'));
 console.log('Fixed backslashes!');

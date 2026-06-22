@@ -27,9 +27,11 @@ const fontMono = Geist_Mono({
 
 function getMetadataBase() {
   try {
-    return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app")
+    return new URL(
+      process.env.NEXT_PUBLIC_SITE_URL ?? "https://platform-buddy.vercel.app"
+    )
   } catch {
-    return new URL("https://unibuddy.app")
+    return new URL("https://platform-buddy.vercel.app")
   }
 }
 

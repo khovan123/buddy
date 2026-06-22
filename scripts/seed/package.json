@@ -1,5 +1,5 @@
 {
-  "name": "unibuddy-seed",
+  "name": "buddy-seed",
   "private": true,
   "scripts": {
     "seed": "npx tsx seed-all.ts",

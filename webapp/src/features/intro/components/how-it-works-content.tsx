@@ -69,7 +69,7 @@ export function HowItWorksContent({ data: rawData }: HowItWorksContentProps) {
 
           <MotionHero delay={0.3}>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
-              Unibuddy seamlessly connects your study sessions with monetization
+              Buddy seamlessly connects your study sessions with monetization
               opportunities. Discover how you can master your courses and earn
               from your expertise.
             </p>

@@ -53,7 +53,7 @@ export async function askRAG(
       if (fallback) {
         return {
           answer:
-            "I found relevant Unibuddy content, but the answer generator is temporarily unavailable. Please review the sources below or try again.",
+            "I found relevant Buddy content, but the answer generator is temporarily unavailable. Please review the sources below or try again.",
           sources: fallback.sources,
           model: "",
           tokensUsed: 0,

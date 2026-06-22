@@ -41,7 +41,7 @@ export default async function ExploreResourceCollectionsPage() {
     mapCollectionToCard(c, "resource")
   )
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://buddy.app"
 
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",

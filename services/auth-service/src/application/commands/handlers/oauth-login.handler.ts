@@ -13,12 +13,30 @@ import {
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import type { ITokenService } from '../../../domain/services/token.service.interface';
 import { AuthEventPublisher } from '../../../infrastructure/messaging/publishers/auth-event.publisher';
+import { BillingSubscriptionPlanPublisher } from '../../../infrastructure/messaging/publishers/billing-subscription-plan.rpc';
 import type { OAuthProvider } from '../oauth-login.command';
 import { OAuthLoginCommand } from '../oauth-login.command';
 
 import { OAuth2Client } from 'google-auth-library';
 
 const googleClient = new OAuth2Client();
+
+function getGoogleClientAudiences(): string | string[] | undefined {
+  const configured = [
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_IDS,
+    process.env.NEXT_GOOGLE_CLIENT_ID,
+  ]
+    .flatMap((value) => (value ? value.split(',') : []))
+    .map((value) => value.trim())
+    .filter((value, index, values) => value.length > 0 && values.indexOf(value) === index);
+
+  if (configured.length === 0) {
+    return undefined;
+  }
+
+  return configured.length === 1 ? configured[0] : configured;
+}
 
 /** Verified profile from an OAuth provider. */
 interface OAuthProfile {
@@ -37,6 +55,7 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
     @Inject(TOKEN_SERVICE)
     private readonly tokenService: ITokenService,
     private readonly publisher: AuthEventPublisher,
+    private readonly billingSubscriptionPlanPublisher: BillingSubscriptionPlanPublisher,
   ) {}
 
   async execute(command: OAuthLoginCommand) {
@@ -86,11 +105,21 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
     user.recordLogin();
     await this.userRepository.update(user);
 
-    // 5. Generate tokens
-    const { accessToken, refreshToken, refreshTokenHash, accessExpiresIn } =
-      await this.tokenService.generateTokenPair(user);
+    // 5. Resolve plan details from billing-service via RabbitMQ RPC.
+    // Keep this response shape in sync with LoginUserHandler so every auth path
+    // hydrates the same NextAuth/session claims.
+    const subscriptionPlanDetails =
+      await this.billingSubscriptionPlanPublisher.resolveUserPlanDetails(
+        user.id,
+        user.subscriptionPlan,
+      );
+    const subscriptionPlan = subscriptionPlanDetails?.code ?? user.subscriptionPlan;
 
-    // 6. Persist refresh token
+    // 6. Generate tokens
+    const { accessToken, refreshToken, refreshTokenHash, accessExpiresIn } =
+      await this.tokenService.generateTokenPair(user, { subscriptionPlanDetails });
+
+    // 7. Persist refresh token
     await this.refreshTokenRepository.save({
       id: uuidv4(),
       userId: user.id,
@@ -101,7 +130,7 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
       userAgent,
     });
 
-    // 7. Publish login event
+    // 8. Publish login event
     await this.publisher.publish(
       new UserLoggedInEvent(
         {
@@ -121,7 +150,8 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
         nickname: user.nickname,
         role: user.roles[0] ?? 'user',
         roles: user.roles,
-        subscriptionPlan: user.subscriptionPlan,
+        subscriptionPlan,
+        subscriptionPlanDetails,
       },
       accessToken,
       refreshToken,
@@ -147,7 +177,7 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
     try {
       const ticket = await googleClient.verifyIdToken({
         idToken,
-        audience: process.env.GOOGLE_CLIENT_ID,
+        audience: getGoogleClientAudiences(),
       });
       const payload = ticket.getPayload();
       if (!payload?.email) throw new UnauthorizedException('Google token missing email');

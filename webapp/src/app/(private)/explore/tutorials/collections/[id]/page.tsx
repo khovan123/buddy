@@ -118,7 +118,7 @@ export default async function ExploreCollectionTutorialDetailPage({
       collection.discount > 0 ? formatPrice(collectionFinalPrice) : undefined,
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://buddy.app"
   const canonical = `/explore/tutorials/collections/${id}`
 
   const courseJsonLd = {
@@ -289,7 +289,7 @@ export default async function ExploreCollectionTutorialDetailPage({
                 </div>
 
                 <p className="max-w-3xl leading-relaxed text-muted-foreground">
-                  Creator on Unibuddy Platform.
+                  Creator on Buddy Platform.
                 </p>
               </div>
             </div>
@@ -426,7 +426,7 @@ export default async function ExploreCollectionTutorialDetailPage({
                 Verified Learning Path
               </AlertTitle>
               <AlertDescription className="text-xs text-muted-foreground">
-                This collection has been reviewed by the Unibuddy academic team
+                This collection has been reviewed by the Buddy academic team
                 for structure, clarity, and learning value.
               </AlertDescription>
               <div className="col-start-2 mt-3">

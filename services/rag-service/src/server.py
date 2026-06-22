@@ -355,7 +355,7 @@ async def lifespan(app: FastAPI):
     logger.info("RAG service shutdown")
 
 
-app = FastAPI(title="Unibuddy RAG Service", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Buddy RAG Service", version="1.0.0", lifespan=lifespan)
 
 
 class CorrelationIdMiddleware(BaseHTTPMiddleware):

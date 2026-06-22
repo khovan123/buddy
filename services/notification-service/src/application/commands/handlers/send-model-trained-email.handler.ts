@@ -31,7 +31,7 @@ export class SendModelTrainedEmailHandler implements ICommandHandler<SendModelTr
       type: 'email',
       channel: 'model-trained',
       recipient: command.email,
-      subject: `[UniBuddy ML] ${statusLabel} — ${command.version}`,
+      subject: `[Buddy ML] ${statusLabel} — ${command.version}`,
       templateId: 'model-trained',
       templateData: {
         status: command.status,

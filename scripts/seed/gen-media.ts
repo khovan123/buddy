@@ -19,7 +19,7 @@ export const SUPABASE_URL =
   process.env.SUPABASE_PUBLIC_URL ||
   process.env.SUPABASE_URL ||
   'https://ijguebmaaetfredcztnx.supabase.co';
-export const DEFAULT_BUCKET = process.env.SUPABASE_RESOURCE_BUCKET || 'unibuddy-content';
+export const DEFAULT_BUCKET = process.env.SUPABASE_RESOURCE_BUCKET || 'buddy-content';
 
 /** Export mapping so s3-uploader knows what extensions to use */
 export const resourceExtMapping: Record<string, string> = {};

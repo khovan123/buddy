@@ -22,9 +22,9 @@ export class SendOtpEmailHandler implements ICommandHandler<SendOtpEmailCommand>
 
     let subject = 'Your Verification Code';
     if (purpose === 'EMAIL_VERIFICATION') {
-      subject = 'Please Verify Your Unibuddy Account';
+      subject = 'Please Verify Your Buddy Account';
     } else if (purpose === 'PASSWORD_RESET') {
-      subject = 'Your Unibuddy Password Reset Code';
+      subject = 'Your Buddy Password Reset Code';
     }
 
     try {

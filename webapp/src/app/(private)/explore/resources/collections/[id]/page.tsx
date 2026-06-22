@@ -113,7 +113,7 @@ export default async function ExploreCollectionResourceDetailPage({
       collection.discount > 0 ? formatPrice(collectionFinalPrice) : undefined,
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://buddy.app"
   const canonical = `/explore/resources/collections/${id}`
 
   const collectionJsonLd = {
@@ -596,7 +596,7 @@ export default async function ExploreCollectionResourceDetailPage({
                 </ItemTitle>
               </Item>
               <p className="text-xs text-muted-foreground">
-                This collection has been reviewed by the Unibuddy Academic Board
+                This collection has been reviewed by the Buddy Academic Board
                 for accuracy and curriculum alignment.
               </p>
             </Card>

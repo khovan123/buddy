@@ -1,9 +1,11 @@
+import * as path from 'path';
 import { Project } from 'ts-morph';
 
+const workspaceRoot = process.cwd().replace(/\\/g, '/');
 const project = new Project();
 project.addSourceFilesAtPaths([
-  'e:/codes/production/unibuddy-distributed/unibuddy-ms/services/*/src/**/*.ts',
-  'e:/codes/production/unibuddy-distributed/unibuddy-ms/libs/*/src/**/*.ts',
+  path.posix.join(workspaceRoot, 'services/*/src/**/*.ts'),
+  path.posix.join(workspaceRoot, 'libs/*/src/**/*.ts'),
 ]);
 
 function camelToSentence(text: string): string {

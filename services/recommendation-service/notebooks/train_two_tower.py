@@ -8,7 +8,7 @@
 
 # %% [markdown]
 # # 🏗️ Two-Tower Recommendation Model — Training
-# **Unibuddy Distributed** | Self-contained Colab training pipeline
+# **Buddy Distributed** | Self-contained Colab training pipeline
 #
 # This notebook generates synthetic university data and trains a Two-Tower
 # embedding model for user↔item recommendation.

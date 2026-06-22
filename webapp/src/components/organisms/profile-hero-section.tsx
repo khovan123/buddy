@@ -36,7 +36,7 @@ export function ProfileHeroSection({
   const profileName = me?.profile?.nickname || me?.nickname || "Buddy"
   const bio =
     me?.profile?.bio ||
-    "Bridging the gap between theoretical human-computer interaction and practical product design. Currently pursuing a Ph.D. in Cognitive Psychology while mentoring 500+ students on Unibuddy. Resources focus on accessibility, ethical AI, and design systems that scale."
+    "Bridging the gap between theoretical human-computer interaction and practical product design. Currently pursuing a Ph.D. in Cognitive Psychology while mentoring 500+ students on Buddy. Resources focus on accessibility, ethical AI, and design systems that scale."
 
   const followers = stats?.followers ?? 0
   const totalResources = stats?.totalResources ?? 0

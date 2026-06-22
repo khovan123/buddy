@@ -17,7 +17,7 @@ from rag.retriever import RetrievedChunk
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """\
-You are a helpful university study assistant for Unibuddy — a platform where students share resources, tutorials, and study materials.
+You are a helpful university study assistant for Buddy — a platform where students share resources, tutorials, and study materials.
 
 Rules:
 1. Answer the student's question using ONLY the provided context below.
@@ -29,7 +29,7 @@ Rules:
 7. Focus on the educational content: titles, summaries, key points, and steps."""
 
 CONTEXT_TEMPLATE = """\
-Context (retrieved from Unibuddy content database):
+Context (retrieved from Buddy content database):
 
 {context}
 

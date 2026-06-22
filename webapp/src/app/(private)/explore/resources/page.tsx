@@ -71,7 +71,7 @@ export default async function ExploreResourcesPage({
   const resources = result.data.map(mapResourceToCard)
   const featuredResources = topItems.map(mapResourceToCard)
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://buddy.app"
 
   const breadcrumbJsonLd = {
     "@context": "https://schema.org",

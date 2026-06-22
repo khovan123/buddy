@@ -41,7 +41,7 @@ import { baseApi } from "./base-api"
 // ─────────────────────────────────────────────────────────────
 
 const persistConfig = {
-  key: "unibuddy",
+  key: "buddy",
   storage,
   whitelist: ["appData"],
 }

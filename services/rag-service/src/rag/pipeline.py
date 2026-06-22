@@ -143,7 +143,7 @@ class RAGPipeline:
                 e,
             )
             answer = (
-                "I found relevant Unibuddy content, but the answer generator is "
+                "I found relevant Buddy content, but the answer generator is "
                 "temporarily unavailable. Please review the sources below or try again."
             )
             model = ""
@@ -226,7 +226,7 @@ class RAGPipeline:
     def _empty_response(self, retrieval_ms: float) -> dict:
         """Return a response when no relevant chunks are found."""
         return {
-            "answer": "I couldn't find any relevant content in the Unibuddy library for your question. Try rephrasing or being more specific about the topic, major, or course.",
+            "answer": "I couldn't find any relevant content in the Buddy library for your question. Try rephrasing or being more specific about the topic, major, or course.",
             "sources": [],
             "model": "",
             "tokensUsed": 0,

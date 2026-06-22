@@ -55,7 +55,7 @@ export function FaqContent({ data }: FaqContentProps) {
 
           <MotionHero delay={0.3}>
             <p className="mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
-              Find answers to common questions about using Unibuddy, from
+              Find answers to common questions about using Buddy, from
               getting started with an account to earning money as a creator.
             </p>
           </MotionHero>

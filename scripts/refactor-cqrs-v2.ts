@@ -2,15 +2,16 @@ import * as path from 'path';
 import { Project } from 'ts-morph';
 
 async function main() {
+  const workspaceRoot = process.cwd().replace(/\\/g, '/');
   const project = new Project({
-    tsConfigFilePath: 'e:/codes/production/unibuddy-distributed/unibuddy-ms/tsconfig.base.json',
+    tsConfigFilePath: path.posix.join(workspaceRoot, 'tsconfig.base.json'),
     skipAddingFilesFromTsConfig: true,
   });
 
   console.log('Loading source files...');
   project.addSourceFilesAtPaths([
-    'e:/codes/production/unibuddy-distributed/unibuddy-ms/services/*/src/**/*.ts',
-    'e:/codes/production/unibuddy-distributed/unibuddy-ms/libs/**/*.ts',
+    path.posix.join(workspaceRoot, 'services/*/src/**/*.ts'),
+    path.posix.join(workspaceRoot, 'libs/**/*.ts'),
   ]);
 
   const sourceFiles = project.getSourceFiles();
@@ -80,7 +81,7 @@ async function main() {
     let parentDirPath = '';
     if (isCommon) {
       // Move to root /contracts/src/...
-      parentDirPath = `e:/codes/production/unibuddy-distributed/unibuddy-ms/libs/contracts/src/${typeName}s`;
+      parentDirPath = path.posix.join(workspaceRoot, 'libs/contracts/src', `${typeName}s`);
       console.log(
         `[COMMON] Moving ${className} to contracts (${Array.from(usingServices).join(', ')})`,
       );
@@ -181,10 +182,10 @@ async function main() {
   // Final cleanup passes are disabled for speed
   console.log('Saving all changes...');
   const contractsIndex = project.getSourceFile(
-    'e:/codes/production/unibuddy-distributed/unibuddy-ms/libs/contracts/src/index.ts',
+    path.posix.join(workspaceRoot, 'libs/contracts/src/index.ts'),
   );
   if (contractsIndex) {
-    const commonDir = 'e:/codes/production/unibuddy-distributed/unibuddy-ms/libs/contracts/src';
+    const commonDir = path.posix.join(workspaceRoot, 'libs/contracts/src');
     const addedFiles = project
       .getSourceFiles()
       .filter(

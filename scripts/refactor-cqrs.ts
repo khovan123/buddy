@@ -2,15 +2,16 @@ import * as path from 'path';
 import { Project } from 'ts-morph';
 
 async function main() {
+  const workspaceRoot = process.cwd().replace(/\\/g, '/');
   const project = new Project({
-    tsConfigFilePath: 'e:/codes/production/unibuddy-distributed/unibuddy-ms/tsconfig.base.json',
+    tsConfigFilePath: path.posix.join(workspaceRoot, 'tsconfig.base.json'),
     skipAddingFilesFromTsConfig: true,
   });
 
   console.log('Loading source files...');
   project.addSourceFilesAtPaths([
-    'e:/codes/production/unibuddy-distributed/unibuddy-ms/services/*/src/**/*.ts',
-    'e:/codes/production/unibuddy-distributed/unibuddy-ms/libs/**/*.ts',
+    path.posix.join(workspaceRoot, 'services/*/src/**/*.ts'),
+    path.posix.join(workspaceRoot, 'libs/**/*.ts'),
   ]);
 
   const sourceFiles = project.getSourceFiles();

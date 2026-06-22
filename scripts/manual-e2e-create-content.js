@@ -1,7 +1,7 @@
 const { chromium } = require("playwright")
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3024"
-const EMAIL = process.env.E2E_EMAIL || "minh0@unibuddy.dev"
+const EMAIL = process.env.E2E_EMAIL || "minh0@buddy.dev"
 const PASSWORD = process.env.E2E_PASSWORD || "Minh@1234567"
 
 async function snapshot(page, name) {

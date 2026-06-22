@@ -28,7 +28,7 @@ graph TB
 
 ## 1. HttpProxyService — Reverse Proxy + Resilience Stack
 
-📄 [http-proxy.service.ts](file:///home/minh_dev/workspaces/unibuddy-distributed/unibuddy-ms/services/api-gateway/src/infrastructure/http/http-proxy.service.ts)
+📄 [http-proxy.service.ts](../services/api-gateway/src/infrastructure/http/http-proxy.service.ts)
 
 ### Pattern: API Gateway + Resilience Patterns
 
@@ -131,7 +131,7 @@ Các chi tiết quan trọng:
 
 ## 2. ApiComposerService — API Composition Pattern
 
-📄 [api-composer.service.ts](file:///home/minh_dev/workspaces/unibuddy-distributed/unibuddy-ms/services/api-gateway/src/infrastructure/http/api-composer.service.ts)
+📄 [api-composer.service.ts](../services/api-gateway/src/infrastructure/http/api-composer.service.ts)
 
 ### Pattern: API Composition (Data Aggregation)
 

@@ -142,7 +142,7 @@ export default async function ExploreTutorialDetailPage({
       tutorial.discountBundle > 0 ? formatPrice(tutorialFinalPrice) : undefined,
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://buddy.app"
   const canonical = `/explore/tutorials/${id}`
 
   const courseJsonLd = {
@@ -663,7 +663,7 @@ export default async function ExploreTutorialDetailPage({
                 </ItemTitle>
               </Item>
               <p className="text-xs text-muted-foreground">
-                This tutorial has been reviewed by the Unibuddy Academic Board
+                This tutorial has been reviewed by the Buddy Academic Board
                 for accuracy and curriculum alignment.
               </p>
             </Card>
@@ -681,7 +681,7 @@ export default async function ExploreTutorialDetailPage({
                     href="/explore"
                     className="text-xs font-bold text-primary hover:underline"
                   >
-                    Get Unibuddy for Teams
+                    Get Buddy for Teams
                   </Link>
                 </ItemContent>
               </Item>

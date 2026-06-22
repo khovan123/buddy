@@ -131,7 +131,7 @@ function TutorialCardInner({
         </h3>
 
         <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-          {tutorial?.author?.name || "Unibuddy Expert"}
+          {tutorial?.author?.name || "Buddy Expert"}
         </p>
 
         <p className="line-clamp-1 text-xs text-muted-foreground">

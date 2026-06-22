@@ -1,6 +1,6 @@
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-  "https://unibuddy.app"
+  "https://buddy.app"
 const SITE_NAME = "Buddy"
 
 /**

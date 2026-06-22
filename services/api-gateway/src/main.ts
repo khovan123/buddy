@@ -149,8 +149,8 @@ async function bootstrap() {
   const { apiReference } = await import('@scalar/nestjs-api-reference');
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Unibuddy API Gateway')
-    .setDescription('API documentation for Unibuddy Microservices')
+    .setTitle('Buddy API Gateway')
+    .setDescription('API documentation for Buddy Microservices')
     .setVersion('1.0')
     .addBearerAuth()
     .build();

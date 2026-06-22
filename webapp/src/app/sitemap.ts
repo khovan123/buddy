@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next"
 
 function getBaseUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
+  return process.env.NEXT_PUBLIC_SITE_URL ?? "https://buddy.app"
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {

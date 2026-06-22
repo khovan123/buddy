@@ -91,7 +91,7 @@ export default async function ExploreResourceDetailPage({
 
   const resourceTitle = resource.title
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://buddy.app"
   const canonical = `/explore/resources/${id}`
 
   const productJsonLd = {
@@ -413,7 +413,7 @@ export default async function ExploreResourceDetailPage({
                 </ItemTitle>
               </Item>
               <p className="text-xs text-muted-foreground">
-                This document has been reviewed by the Unibuddy Academic Board
+                This document has been reviewed by the Buddy Academic Board
                 for accuracy and curriculum alignment.
               </p>
             </Card>

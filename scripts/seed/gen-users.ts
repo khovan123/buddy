@@ -72,7 +72,7 @@ function usernameFromEmail(email: string) {
 export async function genAuthUsers() {
   const hash = await bcrypt.hash(PASSWORD, 10);
   return authUserIds.map((id, i) => {
-    const email = `${FIRST_NAMES[i].toLowerCase()}${i}@unibuddy.dev`;
+    const email = `${FIRST_NAMES[i].toLowerCase()}${i}@buddy.dev`;
     return {
       id,
       email,
@@ -97,7 +97,7 @@ export function genUserProfiles() {
     const course = pick(courses);
     const careerIdx = i % 8;
     const skills = skillsByCareer(careerIdx);
-    const email = `${FIRST_NAMES[i].toLowerCase()}${i}@unibuddy.dev`;
+    const email = `${FIRST_NAMES[i].toLowerCase()}${i}@buddy.dev`;
 
     return {
       userId,

@@ -183,7 +183,7 @@ class TestJwtAuthGuard implements CanActivate {
     const customUserId = request.headers['x-user-id'];
     request.user = {
       sub: customUserId || 'test-user-id',
-      email: 'test@unibuddy.dev',
+      email: 'test@buddy.dev',
       roles: ['student'],
     };
     return true;

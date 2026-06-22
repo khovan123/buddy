@@ -20,12 +20,12 @@ const NOTIFICATION_TEMPLATES = [
   {
     channel: 'welcome',
     type: 'email',
-    subject: 'Welcome to UniBuddy!',
+    subject: 'Welcome to Buddy!',
     templateId: 'welcome',
     templateDataFn: (nickname: string, email: string) => ({
       nickname,
       email,
-      loginUrl: 'https://unibuddy.dev/login',
+      loginUrl: 'https://buddy.dev/login',
     }),
   },
   {
@@ -131,7 +131,7 @@ export function genNotifications(count = 200) {
     const userIdx = randInt(0, USER_COUNT - 1);
     const userId = authUserIds[userIdx];
     const nickname = FIRST_NAMES[userIdx];
-    const email = `${nickname.toLowerCase()}${userIdx}@unibuddy.dev`;
+    const email = `${nickname.toLowerCase()}${userIdx}@buddy.dev`;
     const template = NOTIFICATION_TEMPLATES[i % NOTIFICATION_TEMPLATES.length];
 
     // Status distribution: 70% delivered, 15% sent, 10% pending, 5% failed

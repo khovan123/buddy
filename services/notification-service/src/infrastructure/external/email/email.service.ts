@@ -58,7 +58,7 @@ export class EmailService implements OnModuleInit {
 
     const html = compiledTemplate(options.context);
 
-    const from = `"${this.config.get('EMAIL_FROM_NAME', 'UniBuddy MS')}" <${this.config.get('EMAIL_FROM', 'noreply@unibuddy-ms.com')}>`;
+    const from = `"${this.config.get('EMAIL_FROM_NAME', 'Buddy MS')}" <${this.config.get('EMAIL_FROM', 'noreply@buddy-ms.com')}>`;
 
     try {
       await this.transporter.sendMail({

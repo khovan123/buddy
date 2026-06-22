@@ -10,7 +10,7 @@ import os
 # ─── Vector Database (Qdrant Cloud) ─────────────────────────────────────────
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
-QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "unibuddy_content")
+QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "buddy_content")
 
 # ─── Embedding Model ────────────────────────────────────────────────────────
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")

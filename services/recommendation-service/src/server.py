@@ -357,7 +357,7 @@ def _start_consumer(app: FastAPI, shutdown_event: threading.Event) -> None:
 
 
 app = FastAPI(
-    title="Unibuddy Recommendation Service",
+    title="Buddy Recommendation Service",
     version="1.0.0",
     lifespan=lifespan,
 )

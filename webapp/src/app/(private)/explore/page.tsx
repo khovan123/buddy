@@ -53,7 +53,7 @@ export default async function ExplorePage(props: {
   const majorId =
     typeof searchParams.majorId === "string" ? searchParams.majorId : undefined
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://buddy.app"
 
   const [seo, tutsData, resData, tutColsData, resColsData] = await Promise.all([
     seoPromise,
