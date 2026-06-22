@@ -517,15 +517,14 @@ describe('ContentExtractedConsumer', () => {
   });
 
   // ────────────────────────────────────────────────────────────────
-  // Tutorial moderation
+  // Tutorial processing
   // ────────────────────────────────────────────────────────────────
 
-  describe('Tutorial moderation (contentType=TUTORIAL)', () => {
-    it('should look up tutorial by media fileId, moderate, and sync on APPROVED', async () => {
+  describe('Tutorial processing (contentType=TUTORIAL)', () => {
+    it('should look up tutorial by media fileId, skip moderation, notify, and sync recommendation', async () => {
       const payload = makeTutorialPayload();
       const tutorial = makeTutorialQueryItem();
       mockTutorialRepository.findByMediaFileIdWithDetails.mockResolvedValue(tutorial);
-      mockContentModeration.moderate.mockResolvedValue(approvedResult());
 
       const result = await consumer.handleContentExtracted(
         { payload },
@@ -535,20 +534,12 @@ describe('ContentExtractedConsumer', () => {
       expect(result).toBeUndefined();
       // Key assertion: tutorial lookup uses files[0].fileId, NOT contentId
       expect(mockTutorialRepository.findByMediaFileIdWithDetails).toHaveBeenCalledWith('file-t1');
-      expect(mockContentModeration.moderate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          contentId: 'tut-001',
-          contentType: 'TUTORIAL',
-          title: 'Calculus Tutorial',
-          extractedText: 'Transcript of a calculus lecture',
-          mediaUrls: [],
-        }),
-      );
+      expect(mockContentModeration.moderate).not.toHaveBeenCalled();
       expect(mockTutorialRepository.applyModerationResult).toHaveBeenCalledWith('tut-001', {
         status: TutorialModerationStatus.APPROVED,
-        score: 0.95,
-        reasons: ['Content is safe and educational.'],
-        ruleVersion: 'v1',
+        score: null,
+        reasons: ['Tutorial moderation skipped by policy.'],
+        ruleVersion: 'tutorial-moderation-skipped',
       });
       expect(mockModerationNotification.send).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -558,6 +549,9 @@ describe('ContentExtractedConsumer', () => {
             ownerId: 'user-001',
             title: 'Calculus Tutorial',
             decision: 'APPROVED',
+            score: null,
+            reasons: ['Tutorial moderation skipped by policy.'],
+            ruleVersion: 'tutorial-moderation-skipped',
           }),
         }),
       );
@@ -570,22 +564,6 @@ describe('ContentExtractedConsumer', () => {
           steps: [{ title: 'Step 1' }],
         }),
       );
-    });
-
-    it('should moderate tutorial REJECTED without sync', async () => {
-      const payload = makeTutorialPayload();
-      mockTutorialRepository.findByMediaFileIdWithDetails.mockResolvedValue(
-        makeTutorialQueryItem(),
-      );
-      mockContentModeration.moderate.mockResolvedValue(rejectedResult());
-
-      await consumer.handleContentExtracted({ payload }, makeConsumeMessage() as any);
-
-      expect(mockTutorialRepository.applyModerationResult).toHaveBeenCalledWith(
-        'tut-001',
-        expect.objectContaining({ status: TutorialModerationStatus.REJECTED }),
-      );
-      expect(mockRecommendationSync.send).not.toHaveBeenCalled();
     });
 
     it('should skip moderation if files array is empty (no fileId)', async () => {
@@ -912,25 +890,22 @@ describe('ContentExtractedConsumer', () => {
       );
     });
 
-    it.each([
-      ['APPROVED', TutorialModerationStatus.APPROVED],
-      ['REJECTED', TutorialModerationStatus.REJECTED],
-      ['ERROR', TutorialModerationStatus.ERROR],
-      ['NEEDS_REVIEW', TutorialModerationStatus.NEEDS_REVIEW],
-    ] as const)('should map tutorial decision %s → %s', async (decision, expectedStatus) => {
+    it('should approve tutorials without calling moderation decision mapping', async () => {
       const payload = makeTutorialPayload();
       mockTutorialRepository.findByMediaFileIdWithDetails.mockResolvedValue(
         makeTutorialQueryItem(),
       );
-      mockContentModeration.moderate.mockResolvedValue(
-        approvedResult({ decision: decision as any }),
-      );
 
       await consumer.handleContentExtracted({ payload }, makeConsumeMessage() as any);
 
+      expect(mockContentModeration.moderate).not.toHaveBeenCalled();
       expect(mockTutorialRepository.applyModerationResult).toHaveBeenCalledWith(
         'tut-001',
-        expect.objectContaining({ status: expectedStatus }),
+        expect.objectContaining({
+          status: TutorialModerationStatus.APPROVED,
+          score: null,
+          ruleVersion: 'tutorial-moderation-skipped',
+        }),
       );
     });
 
