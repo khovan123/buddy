@@ -22,6 +22,9 @@ import { CollectionType } from '../../../infrastructure/persistence/mongo/schema
 import { TutorialStatus } from '../../../infrastructure/persistence/mongo/schemas/tutorial.schema';
 import { CreateTutorialCommand } from '../create-tutorial.command';
 
+const TUTORIAL_ALLOWED_FILE_EXTENSION = '.mp4';
+const TUTORIAL_ALLOWED_FILE_TYPES_MESSAGE = 'Tutorial videos must be .mp4 files';
+
 /**
  * CreateTutorialHandler - Xử lý tạo Tutorial.
  *
@@ -69,6 +72,10 @@ export class CreateTutorialHanlder implements ICommandHandler<CreateTutorialComm
       collectionIds,
       steps,
     } = command;
+
+    if (!this.isAllowedTutorialFileName(fileName)) {
+      throw new BadRequestException(TUTORIAL_ALLOWED_FILE_TYPES_MESSAGE);
+    }
 
     let finalResourceIds = resourceIds;
     if (steps && steps.length > 0) {
@@ -157,7 +164,6 @@ export class CreateTutorialHanlder implements ICommandHandler<CreateTutorialComm
       resourceIds: finalResourceIds,
       collectionIds,
       steps,
-      learningFit: command.learningFit,
       status: TutorialStatus.PENDING,
     });
 
@@ -220,5 +226,9 @@ export class CreateTutorialHanlder implements ICommandHandler<CreateTutorialComm
       fileName,
       fileSizeBytes,
     };
+  }
+
+  private isAllowedTutorialFileName(fileName: string): boolean {
+    return fileName.trim().toLowerCase().endsWith(TUTORIAL_ALLOWED_FILE_EXTENSION);
   }
 }

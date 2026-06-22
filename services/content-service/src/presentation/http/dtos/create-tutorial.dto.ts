@@ -8,13 +8,16 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  Matches,
   MaxLength,
   Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { LearningFitDto } from './learning-fit.dto';
+
+const TUTORIAL_ALLOWED_FILE_TYPES_MESSAGE = 'Tutorial videos must be .mp4 files';
+const TUTORIAL_ALLOWED_FILE_NAME_PATTERN = /\.mp4$/i;
 
 export class TutorialStepResourceDto {
   @IsMongoId()
@@ -84,11 +87,6 @@ export class CreateTutorialDto {
   @Type(() => TutorialStepDto)
   steps?: TutorialStepDto[];
 
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => LearningFitDto)
-  learningFit?: LearningFitDto;
-
   @IsString()
   @IsNotEmpty()
   @MinLength(8)
@@ -133,6 +131,9 @@ export class CreateTutorialDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(256)
+  @Matches(TUTORIAL_ALLOWED_FILE_NAME_PATTERN, {
+    message: TUTORIAL_ALLOWED_FILE_TYPES_MESSAGE,
+  })
   fileName!: string;
 
   /**

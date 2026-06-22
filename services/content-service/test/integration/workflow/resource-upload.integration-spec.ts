@@ -207,7 +207,7 @@ describe('Resource Multi-files Upload Integration', () => {
         originalFilename: row.originalFilename,
         uploadedBy: row.uploadedBy,
         fileSizeBytes: row.fileSizeBytes,
-        mimeType: 'application/pdf',
+        mimeType: 'text/plain',
         status: row.status,
       };
     }),
@@ -368,9 +368,9 @@ describe('Resource Multi-files Upload Integration', () => {
       summary: 'Summary for integration test with multiple files and outbox validation.',
       price: '49000',
       files: [
-        { fileName: 'a.pdf', fileSizeBytes: 1024 * 1024 },
+        { fileName: 'a.txt', fileSizeBytes: 1024 * 1024 },
         { fileName: 'b.docx', fileSizeBytes: 2 * 1024 * 1024 },
-        { fileName: 'c.pptx', fileSizeBytes: 3 * 1024 * 1024 },
+        { fileName: 'c.md', fileSizeBytes: 3 * 1024 * 1024 },
       ],
     };
 
@@ -437,9 +437,9 @@ describe('Resource Multi-files Upload Integration', () => {
       summary: 'Negative test for missing uploaded files in confirm endpoint validation.',
       price: '39000',
       files: [
-        { fileName: 'x.pdf', fileSizeBytes: 1024 * 1024 },
-        { fileName: 'y.pdf', fileSizeBytes: 1024 * 1024 },
-        { fileName: 'z.pdf', fileSizeBytes: 1024 * 1024 },
+        { fileName: 'x.txt', fileSizeBytes: 1024 * 1024 },
+        { fileName: 'y.docx', fileSizeBytes: 1024 * 1024 },
+        { fileName: 'z.md', fileSizeBytes: 1024 * 1024 },
       ],
     };
 

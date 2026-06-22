@@ -426,7 +426,13 @@ export function Notifications() {
 
     const refreshNotifications = () => {
       dispatch(
-        baseApi.util.invalidateTags(["Notification", "Wallet", "Transaction"])
+        baseApi.util.invalidateTags([
+          "Notification",
+          "Wallet",
+          "Transaction",
+          "Resource",
+          "Tutorial",
+        ])
       )
     }
 

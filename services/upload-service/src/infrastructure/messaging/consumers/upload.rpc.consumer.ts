@@ -39,7 +39,7 @@ export class UploadUrlConsumer {
   @RabbitRPC({
     exchange: EXCHANGES.UPLOAD,
     routingKey: UPLOAD_ROUTINGKEYS.GET_PRESIGNED_URL,
-    queue: QUEUES.UPLOAD_RPC,
+    queue: QUEUES.UPLOAD_RPC_GET_PRESIGNED_URL,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -106,7 +106,7 @@ export class UploadUrlConsumer {
   @RabbitRPC({
     exchange: EXCHANGES.UPLOAD,
     routingKey: UPLOAD_ROUTINGKEYS.GET_PRESIGNED_URLS,
-    queue: QUEUES.UPLOAD_RPC,
+    queue: QUEUES.UPLOAD_RPC_GET_PRESIGNED_URLS,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -186,7 +186,7 @@ export class UploadUrlConsumer {
   @RabbitRPC({
     exchange: EXCHANGES.UPLOAD,
     routingKey: UPLOAD_ROUTINGKEYS.GET_UPLOAD_HISTORY_BY_CONTENT,
-    queue: QUEUES.UPLOAD_RPC,
+    queue: QUEUES.UPLOAD_RPC_GET_UPLOAD_HISTORY_BY_CONTENT,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -213,7 +213,7 @@ export class UploadUrlConsumer {
   @RabbitRPC({
     exchange: EXCHANGES.UPLOAD,
     routingKey: UPLOAD_ROUTINGKEYS.GET_PREVIEW_URL,
-    queue: QUEUES.UPLOAD_RPC,
+    queue: QUEUES.UPLOAD_RPC_GET_PREVIEW_URL,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },

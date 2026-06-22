@@ -42,7 +42,6 @@ import { CollectionSlugParamDto } from '../dtos/collection-slug-param.dto';
 import { CreateCollectionDto } from '../dtos/create-collection.dto';
 import { GetCollectionsByIdsDto } from '../dtos/get-collections-by-ids.dto';
 import { GetTopCollectionsQueryDto } from '../dtos/get-top-collections-query.dto';
-import { toLearningFit } from '../dtos/learning-fit.dto';
 import { QueryDto } from '../dtos/query';
 import { UpdateCollectionDto } from '../dtos/update-collection.dto';
 
@@ -113,7 +112,6 @@ export class CollectionController {
             itemType: item.itemType,
           })),
         })),
-        toLearningFit(dto.learningFit),
       ),
     );
     return successResponse(result, 'Create collection successful', getCorrelationId());
@@ -260,7 +258,6 @@ export class CollectionController {
         })),
         dto.thumbnailBase64,
         correlationId,
-        toLearningFit(dto.learningFit),
       ),
     );
     return successResponse(result, 'Collection updated successfully', correlationId);

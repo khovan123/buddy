@@ -10,6 +10,11 @@ import { FILE_METADATA_REPOSITORY, STORAGE_PROVIDER } from '../../../domain/repo
 import { ETACalculator } from '../../../domain/services/eta.calculator';
 import { GetUploadUrlQuery } from '../get-upload-url.query';
 
+const RESOURCE_ALLOWED_FILE_EXTENSIONS = new Set(['.txt', '.docx', '.md']);
+const RESOURCE_ALLOWED_FILE_TYPES_MESSAGE = 'Resource files must be .txt, .docx, or .md';
+const TUTORIAL_ALLOWED_FILE_EXTENSION = '.mp4';
+const TUTORIAL_ALLOWED_FILE_TYPES_MESSAGE = 'Tutorial videos must be .mp4 files';
+
 type StorageProvider = {
   generatePresignedUploadUrl(
     fileName: string,
@@ -65,6 +70,14 @@ export class GetUploadUrlHandler implements IQueryHandler<GetUploadUrlQuery> {
       contentType,
       keyPrefix,
     });
+
+    if (uploadType === UploadType.RESOURCE && !this.isAllowedResourceFileName(fileName)) {
+      throw new Error(RESOURCE_ALLOWED_FILE_TYPES_MESSAGE);
+    }
+    if (uploadType === UploadType.TUTORIAL && !this.isAllowedTutorialFileName(fileName)) {
+      throw new Error(TUTORIAL_ALLOWED_FILE_TYPES_MESSAGE);
+    }
+
     const presignStartedAt = Date.now();
     const {
       fileKey: s3Key,
@@ -132,5 +145,19 @@ export class GetUploadUrlHandler implements IQueryHandler<GetUploadUrlQuery> {
       uploadUrl,
       estimatedTime,
     };
+  }
+
+  private isAllowedResourceFileName(fileName: string): boolean {
+    return RESOURCE_ALLOWED_FILE_EXTENSIONS.has(this.resolveExtension(fileName));
+  }
+
+  private resolveExtension(fileName: string): string {
+    const normalized = fileName.trim();
+    const idx = normalized.lastIndexOf('.');
+    return idx >= 0 ? normalized.slice(idx).toLowerCase() : '';
+  }
+
+  private isAllowedTutorialFileName(fileName: string): boolean {
+    return this.resolveExtension(fileName) === TUTORIAL_ALLOWED_FILE_EXTENSION;
   }
 }

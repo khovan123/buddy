@@ -44,7 +44,6 @@ import { CreateResourceDto } from '../dtos/create-resource.dto';
 import { GetResourcesByIdsDto } from '../dtos/get-resources-by-ids.dto';
 import { GetTopResourcesQueryDto } from '../dtos/get-top-resources-query.dto';
 import { GetUncollectedResourcesQueryDto } from '../dtos/get-uncollected-resources-query.dto';
-import { toLearningFit } from '../dtos/learning-fit.dto';
 import { QueryDto } from '../dtos/query';
 import { ResourceIdParamDto } from '../dtos/resource-id-param.dto';
 import { ResourceSlugParamDto } from '../dtos/resource-slug-param.dto';
@@ -91,7 +90,6 @@ export class ResourceController {
       price,
       files,
       thumbnailBase64,
-      learningFit,
     } = dto;
 
     const result = await this.commandBus.execute(
@@ -107,7 +105,6 @@ export class ResourceController {
         thumbnailBase64,
         collectionId,
         getCorrelationId(),
-        toLearningFit(learningFit),
       ),
     );
     return successResponse(result, 'Create resource successful', getCorrelationId());
@@ -265,7 +262,6 @@ export class ResourceController {
         dto.collectionId,
         dto.thumbnailBase64,
         correlationId,
-        toLearningFit(dto.learningFit),
       ),
     );
     return successResponse(result, 'Resource updated successfully', correlationId);

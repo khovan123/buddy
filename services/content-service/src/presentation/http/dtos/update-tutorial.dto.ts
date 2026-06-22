@@ -13,7 +13,6 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { TutorialStepDto } from './create-tutorial.dto';
-import { LearningFitDto } from './learning-fit.dto';
 
 export class UpdateTutorialDto {
   @IsString()
@@ -65,9 +64,4 @@ export class UpdateTutorialDto {
   @ValidateNested({ each: true })
   @Type(() => TutorialStepDto)
   steps?: TutorialStepDto[];
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => LearningFitDto)
-  learningFit?: LearningFitDto;
 }

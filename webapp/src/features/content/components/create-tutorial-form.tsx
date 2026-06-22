@@ -65,21 +65,20 @@ import {
   type UploadBatch,
 } from "../store/upload-store"
 import {
-  toLearningFitFormValues,
-  toLearningFitPayload,
-} from "../utils/learning-fit"
-import { trackLearningFitEvent } from "../utils/learning-fit-events"
+  TUTORIAL_ALLOWED_FILE_TYPE_COPY,
+  TUTORIAL_FILE_ACCEPT,
+  isAllowedTutorialFileName,
+} from "../utils/tutorial-file-validation"
 import { getFriendlyContentError } from "../utils/user-facing-content"
 
 import { CollectionPicker } from "./collection-picker"
-import { FitEditor } from "./fit-editor"
 import { ResourceExplorer } from "./resource-explorer"
 import { TutorialStepBuilder, type TutorialStep } from "./tutorial-step-builder"
 
 // ── Helpers ──────────────────────────────────────────────────
 
 /** Format bytes to human-readable size */
-function formatFileSize(bytes: number): string {
+function _formatFileSize(bytes: number): string {
   if (bytes === 0) {
     return "0 B"
   }
@@ -130,7 +129,6 @@ const FIELD_TAB_MAP: Record<string, string> = {
   resourceAttachmentMode: "packaging",
   collectionId: "packaging",
   steps: "packaging",
-  learningFit: "metadata",
 }
 
 export function CreateTutorialForm() {
@@ -190,7 +188,6 @@ export function CreateTutorialForm() {
       resourceAttachmentMode: "manual",
       collectionId: undefined,
       steps: [],
-      learningFit: toLearningFitFormValues(),
     },
   })
 
@@ -214,13 +211,10 @@ export function CreateTutorialForm() {
     name: "resourceAttachmentMode",
   })
   const selectedCollectionId = useWatch({ control, name: "collectionId" })
-  const watchedTitle = useWatch({ control, name: "title" })
-  const watchedDescription = useWatch({ control, name: "description" })
-  const watchedHighlights = useWatch({ control, name: "hightlights" }) || []
 
   // Watch for File Metadata
   const watchFileName = useWatch({ control, name: "fileName" })
-  const watchFileSizeBytes = useWatch({ control, name: "fileSizeBytes" })
+  // const _watchFileSizeBytes = useWatch({ control, name: "fileSizeBytes" })
 
   // RTK Query: GET Content Metadata (Majors)
   const { data: metaData, isLoading: isLoadingMajors } =
@@ -251,7 +245,7 @@ export function CreateTutorialForm() {
       courseId: tutorial.courseId,
       price: tutorial.price,
       discountBundle: tutorial.discountBundle,
-      fileName: "Existing uploaded video",
+      fileName: "Existing uploaded video.mp4",
       fileSizeBytes: 1,
       videoDurationSeconds: 1,
       resourceAttachmentMode: tutorial.collectionId ? "collection" : "manual",
@@ -266,7 +260,6 @@ export function CreateTutorialForm() {
             instructionNote: resource.instructionNote,
           })),
         })) ?? [],
-      learningFit: toLearningFitFormValues(tutorial.learningFit),
     })
   }, [editingTutorialResponse, form])
 
@@ -346,6 +339,18 @@ export function CreateTutorialForm() {
       return
     }
 
+    if (!isAllowedTutorialFileName(file.name)) {
+      e.target.value = ""
+      selectedFileRef.current = null
+      setValue("fileName", "", { shouldValidate: true })
+      setValue("fileSizeBytes", 0, { shouldValidate: true })
+      setValue("videoDurationSeconds", 0, { shouldValidate: true })
+      toast.error(
+        `Tutorial videos must be ${TUTORIAL_ALLOWED_FILE_TYPE_COPY} files.`
+      )
+      return
+    }
+
     // Store the actual File object for later upload
     selectedFileRef.current = file
 
@@ -389,8 +394,6 @@ export function CreateTutorialForm() {
                   })),
                 }))
               : undefined
-          const learningFit = toLearningFitPayload(restData.learningFit)
-
           await updateTutorial({
             id: editId,
             body: {
@@ -401,16 +404,8 @@ export function CreateTutorialForm() {
                   ? data.collectionId
                   : undefined,
               steps: stepsPayload,
-              learningFit,
             },
           }).unwrap()
-          if (learningFit) {
-            trackLearningFitEvent("fit_editor_completed", {
-              contentType: "tutorial",
-              mode: "update",
-              fitStatus: learningFit.fitStatus,
-            })
-          }
           toast.success("Tutorial updated.")
           router.refresh()
         } catch (error: unknown) {
@@ -441,8 +436,6 @@ export function CreateTutorialForm() {
                 })),
               }))
             : undefined
-        const learningFit = toLearningFitPayload(restData.learningFit)
-
         const payload = {
           ...restData,
           hightlights: hightlights.map((h) => h.value),
@@ -451,18 +444,10 @@ export function CreateTutorialForm() {
               ? data.collectionId
               : undefined,
           steps: stepsPayload,
-          learningFit,
         }
 
         const result = await createTutorial(payload).unwrap()
         const response = result.data
-        if (learningFit) {
-          trackLearningFitEvent("fit_editor_completed", {
-            contentType: "tutorial",
-            mode: "create",
-            fitStatus: learningFit.fitStatus,
-          })
-        }
 
         const selectedFile = selectedFileRef.current
         const batch: UploadBatch = {
@@ -721,7 +706,7 @@ export function CreateTutorialForm() {
       <p className="text-sm text-muted-foreground">
         {isEditMode
           ? "Your uploaded video will stay the same while you edit the details."
-          : "Select a video file. We will fill in the length, file name, and size for you."}
+          : `Select a ${TUTORIAL_ALLOWED_FILE_TYPE_COPY} video file. We will fill in the length, file name, and size for you.`}
       </p>
 
       <div className="flex gap-6 rounded-2xl border bg-muted/20 p-6">
@@ -771,11 +756,12 @@ export function CreateTutorialForm() {
 
         {!isEditMode ? (
           <Field>
+            <Label htmlFor="videoDurationSeconds">Choose Video</Label>
             <Input
               ref={fileInputRef}
               id="video-picker"
               type="file"
-              accept="video/*"
+              accept={TUTORIAL_FILE_ACCEPT}
               className="hidden"
               onChange={handleVideoSelect}
             />
@@ -789,11 +775,11 @@ export function CreateTutorialForm() {
                 <FileUp className="size-6" />
                 {watchFileName ? "Change Video File" : "Choose Video File"}
               </Button>
-              {watchFileName && (
+              {/* {watchFileName && (
                 <span className="text-xs text-muted-foreground">
                   {watchFileName} · {formatFileSize(watchFileSizeBytes)}
                 </span>
-              )}
+              )} */}
             </div>
           </Field>
         ) : null}
@@ -978,7 +964,7 @@ export function CreateTutorialForm() {
             <CardDescription>
               {isEditMode
                 ? "Update the details, price, course, and linked resources."
-                : "Upload your video lesson. Linked resources must use the same major and course."}
+                : `Upload your ${TUTORIAL_ALLOWED_FILE_TYPE_COPY} video lesson. Linked resources must use the same major and course.`}
             </CardDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -1009,24 +995,6 @@ export function CreateTutorialForm() {
                 </h3>
                 {metadataSection}
               </div>
-              <FitEditor
-                control={control}
-                register={form.register}
-                setValue={form.setValue}
-                draftContext={{
-                  contentType: "TUTORIAL",
-                  title: watchedTitle,
-                  description: watchedDescription,
-                  hightlights: watchedHighlights.map((item) => item.value),
-                  steps: steps.map((step) => ({
-                    title: step.title,
-                    resources: step.resources,
-                  })),
-                  majorId: selectedMajorId,
-                  courseId: selectedCourseId,
-                }}
-              />
-              <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
                   Video
@@ -1065,23 +1033,6 @@ export function CreateTutorialForm() {
                 className="mt-0 animate-in space-y-6 fade-in slide-in-from-bottom-2"
               >
                 {metadataSection}
-                <FitEditor
-                  control={control}
-                  register={form.register}
-                  setValue={form.setValue}
-                  draftContext={{
-                    contentType: "TUTORIAL",
-                    title: watchedTitle,
-                    description: watchedDescription,
-                    hightlights: watchedHighlights.map((item) => item.value),
-                    steps: steps.map((step) => ({
-                      title: step.title,
-                      resources: step.resources,
-                    })),
-                    majorId: selectedMajorId,
-                    courseId: selectedCourseId,
-                  }}
-                />
               </TabsContent>
 
               <TabsContent

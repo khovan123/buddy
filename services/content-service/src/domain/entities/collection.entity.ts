@@ -1,5 +1,4 @@
 import { Types } from 'mongoose';
-import type { LearningFit } from './learning-fit';
 import {
   CollectionPhaseItemType,
   CollectionStatus,
@@ -35,7 +34,6 @@ export interface CollectionProps {
   status: CollectionStatus;
   thumbnailUrl?: string;
   phases?: CollectionPhaseProps[];
-  learningFit?: LearningFit | null;
   createdAt?: Date;
   updatedAt?: Date;
   deletedAt?: Date;
@@ -68,7 +66,6 @@ export class Collection {
     discount: number;
     thumbnailUrl?: string;
     phases?: CollectionPhaseProps[];
-    learningFit?: LearningFit;
     status?: CollectionStatus;
     createdAt?: Date;
     updatedAt?: Date;
@@ -228,13 +225,5 @@ export class Collection {
 
   set phases(value: CollectionPhaseProps[] | undefined) {
     this.props.phases = value;
-  }
-
-  get learningFit(): LearningFit | null | undefined {
-    return this.props.learningFit;
-  }
-
-  set learningFit(value: LearningFit | null | undefined) {
-    this.props.learningFit = value;
   }
 }

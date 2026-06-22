@@ -1,61 +1,14 @@
 import z from "zod"
 
-import { CollectionType, CourseStatus, LearningFitDifficulty } from "./types"
-
-export const startHereStepSchema = z.object({
-  title: z.string().min(3, "Please name this step.").max(120),
-  description: z.string().max(240).optional(),
-  order: z.number().min(1).max(20),
-  targetType: z
-    .enum(["SECTION", "FILE", "VIDEO_STEP", "COLLECTION_PHASE", "AI_PROMPT"])
-    .optional(),
-  targetId: z.string().optional(),
-  aiPrompt: z.string().max(240).optional(),
-})
-
-export const fitEvidenceSchema = z.object({
-  claim: z.string().min(8).max(180),
-  sourceType: z.enum([
-    "METADATA",
-    "CONTENT_EXTRACTION",
-    "CREATOR_INPUT",
-    "AI_GENERATED",
-    "MODERATION",
-  ]),
-  sourceRef: z.string().max(128).optional(),
-  confidence: z.number().min(0).max(1).nullable().optional(),
-})
-
-export const learningFitSchema = z.object({
-  bestFor: z
-    .array(z.object({ value: z.string().min(8).max(160) }))
-    .max(5)
-    .optional(),
-  notFor: z
-    .array(z.object({ value: z.string().min(8).max(160) }))
-    .max(5)
-    .optional(),
-  startHere: z.array(startHereStepSchema).max(5).optional(),
-  coveredTopics: z
-    .array(z.object({ value: z.string().max(80) }))
-    .max(12)
-    .optional(),
-  notCoveredTopics: z
-    .array(z.object({ value: z.string().max(80) }))
-    .max(12)
-    .optional(),
-  learningOutcomes: z
-    .array(z.object({ value: z.string().max(160) }))
-    .max(8)
-    .optional(),
-  estimatedStudyTimeMinutes: z.number().min(1).max(10000).optional(),
-  difficulty: z.nativeEnum(LearningFitDifficulty).optional(),
-  fitEvidence: z.array(fitEvidenceSchema).max(8).optional(),
-  fitGeneratedAt: z.string().optional().nullable(),
-  fitVerifiedAt: z.string().optional().nullable(),
-})
-
-export type LearningFitFormValues = z.infer<typeof learningFitSchema>
+import { CollectionType, CourseStatus } from "./types"
+import {
+  RESOURCE_ALLOWED_FILE_TYPES_COPY,
+  isAllowedResourceFileName,
+} from "./utils/resource-file-validation"
+import {
+  TUTORIAL_ALLOWED_FILE_TYPE_COPY,
+  isAllowedTutorialFileName,
+} from "./utils/tutorial-file-validation"
 
 // --- Validation Schema (khớp với CreateCollectionDto) ---
 export const collectionSchema = z
@@ -106,7 +59,6 @@ export const collectionSchema = z
         })
       )
       .optional(),
-    learningFit: learningFitSchema.optional(),
   })
   .superRefine((data, ctx) => {
     // Both types require phases (Roadmap sections)
@@ -174,7 +126,13 @@ export type CollectionFormValues = z.infer<typeof collectionSchema>
 
 // --- Validation Schema (khớp với CreateResourceDto) ---
 const fileSchema = z.object({
-  fileName: z.string().min(1, "Please choose a file."),
+  fileName: z
+    .string()
+    .min(1, "Please choose a file.")
+    .refine(
+      isAllowedResourceFileName,
+      `Resources only support ${RESOURCE_ALLOWED_FILE_TYPES_COPY} files.`
+    ),
   fileSizeBytes: z.number().positive("Please choose a file with content."),
   mimeType: z.string().optional(),
 })
@@ -206,7 +164,6 @@ export const resourceSchema = z.object({
       "Kích thước ảnh không được vượt quá 2MB"
     )
     .optional(),
-  learningFit: learningFitSchema.optional(),
 })
 
 export type ResourceFormValues = z.infer<typeof resourceSchema>
@@ -233,7 +190,13 @@ export const tutorialSchema = z.object({
   courseId: z.string().min(1, "Please choose a course."),
   price: z.number().min(0, "Price cannot be negative."),
   discountBundle: z.number().min(0).max(100),
-  fileName: z.string().min(1, "Please choose a video."),
+  fileName: z
+    .string()
+    .min(1, "Please choose a video.")
+    .refine(
+      isAllowedTutorialFileName,
+      `Tutorial videos must be ${TUTORIAL_ALLOWED_FILE_TYPE_COPY} files.`
+    ),
   fileSizeBytes: z.number().positive(),
   videoDurationSeconds: z.number().positive(),
   // Resource attachment mode: "collection" uses a pre-built Resource Collection,
@@ -257,7 +220,6 @@ export const tutorialSchema = z.object({
       })
     )
     .optional(),
-  learningFit: learningFitSchema.optional(),
 })
 
 export type TutorialFormValues = z.infer<typeof tutorialSchema>

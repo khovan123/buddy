@@ -1,3 +1,4 @@
+import { UserRegisteredEvent } from '@libs/contracts';
 import { BadRequestException, Inject, UnauthorizedException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { randomUUID as uuidv4 } from 'node:crypto';
@@ -12,6 +13,7 @@ import {
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import type { ITokenService } from '../../../domain/services/token.service.interface';
 import { Otp } from '../../../domain/value-objects/otp.vo';
+import { AuthEventPublisher } from '../../../infrastructure/messaging/publishers/auth-event.publisher';
 import { VerifyOtpCommand } from '../verify-otp.command';
 
 /** CQRS Handler to execute  verify otp. */
@@ -24,6 +26,7 @@ export class VerifyOtpHandler implements ICommandHandler<VerifyOtpCommand> {
     private readonly refreshTokenRepository: IRefreshTokenRepository,
     @Inject(TOKEN_SERVICE)
     private readonly tokenService: ITokenService,
+    private readonly publisher: AuthEventPublisher,
   ) {}
 
   /**
@@ -32,7 +35,7 @@ export class VerifyOtpHandler implements ICommandHandler<VerifyOtpCommand> {
    * @param command - The command parameter
    */
   async execute(command: VerifyOtpCommand) {
-    const { email, otp, ipAddress, userAgent } = command;
+    const { email, otp, ipAddress, userAgent, correlationId } = command;
 
     if (!Otp.validate(otp)) {
       throw new BadRequestException('OTP must be a 6-digit code');
@@ -64,11 +67,24 @@ export class VerifyOtpHandler implements ICommandHandler<VerifyOtpCommand> {
     // 5. Clean up OTP
     await this.otpRepository.delete(email, 'EMAIL_VERIFICATION');
 
-    // 6. Generate tokens
+    // 6. Publish domain event
+    await this.publisher.publish(
+      new UserRegisteredEvent(
+        {
+          userId: user.id,
+          email: user.email.value,
+          nickname: user.nickname,
+          registeredAt: user.createdAt,
+        },
+        correlationId,
+      ),
+    );
+
+    // 7. Generate tokens
     const { accessToken, refreshToken, refreshTokenHash, accessExpiresIn } =
       await this.tokenService.generateTokenPair(user);
 
-    // 7. Persist refresh token
+    // 8. Persist refresh token
     await this.refreshTokenRepository.save({
       id: uuidv4(),
       userId: user.id,

@@ -33,6 +33,19 @@ function formatViews(item: ViewCountSource) {
   return compactFormat.format(item.totalViews ?? item.viewCount ?? item.views ?? 0)
 }
 
+function formatPrice(price: number) {
+  return price === 0 ? "Free" : vndFormat.format(price)
+}
+
+function applyDiscount(price: number, discount: number) {
+  const safeDiscount = Math.min(Math.max(discount || 0, 0), 100)
+  return Math.max(0, Math.round(price * (1 - safeDiscount / 100)))
+}
+
+function formatDiscountLabel(discount: number) {
+  return discount > 0 ? `${discount}% OFF` : undefined
+}
+
 function initialStats(
   item: ViewCountSource,
   purchaseCount = 0,
@@ -54,7 +67,10 @@ export function mapResourceToCard(
     title: item.title,
     rating: "—",
     reviews: String(item._count?.resourceOrders ?? 0),
-    price: vndFormat.format(item.price),
+    price: formatPrice(item.price),
+    pricing: {
+      originalPrice: formatPrice(item.price),
+    },
     views: formatViews(item),
     href: `/explore/resources/${item.slug}`,
     interactionType: "RESOURCE",
@@ -80,11 +96,17 @@ export function mapTutorialToCard(
     level: "—",
     rating: "—",
     reviews: String(item._count?.tutorialOrders ?? 0),
-    price: vndFormat.format(item.price),
+    price: formatPrice(item.price),
+    pricing: {
+      originalPrice: formatPrice(item.price),
+      discountLabel: formatDiscountLabel(item.discountBundle),
+      finalPrice:
+        item.discountBundle > 0
+          ? formatPrice(applyDiscount(item.price, item.discountBundle))
+          : undefined,
+    },
     views: formatViews(item),
-    discount: item.discountBundle
-      ? `${item.discountBundle}% OFF`
-      : undefined,
+    discount: formatDiscountLabel(item.discountBundle),
     href: `/explore/tutorials/${item.slug}`,
     interactionType: "TUTORIAL",
     initialStats: initialStats(item, item._count?.tutorialOrders ?? 0),
@@ -110,9 +132,17 @@ export function mapCollectionToCard(
       : `${item._count?.tutorials ?? 0} Lessons`,
     rating: "—",
     reviews: "—",
-    price: "—",
+    price: formatPrice(item.originalPrice ?? 0),
+    pricing: {
+      originalPrice: formatPrice(item.originalPrice ?? 0),
+      discountLabel: formatDiscountLabel(item.discount),
+      finalPrice:
+        item.discount > 0
+          ? formatPrice(item.discountedPrice ?? applyDiscount(item.originalPrice ?? 0, item.discount))
+          : undefined,
+    },
     views: formatViews(item),
-    discount: item.discount ? `${item.discount}% OFF` : undefined,
+    discount: formatDiscountLabel(item.discount),
     href: isResource
       ? `/explore/resources/collections/${item.slug}`
       : `/explore/tutorials/collections/${item.slug}`,
@@ -243,8 +273,16 @@ export function mapCollectionToLibraryCard(
     count: `${itemCount} ${isResource ? "Files" : "Lessons"}`,
     rating: "5.0",
     reviews: "0",
-    price: item.discount === 100 ? "Free" : "—",
-    discount: item.discount ? `${item.discount}% OFF` : undefined,
+    price: formatPrice(item.originalPrice ?? 0),
+    pricing: {
+      originalPrice: formatPrice(item.originalPrice ?? 0),
+      discountLabel: formatDiscountLabel(item.discount),
+      finalPrice:
+        item.discount > 0
+          ? formatPrice(item.discountedPrice ?? applyDiscount(item.originalPrice ?? 0, item.discount))
+          : undefined,
+    },
+    discount: formatDiscountLabel(item.discount),
     href: isResource
       ? `/library/resources/collections/${item.slug}`
       : `/library/tutorials/collections/${item.slug}`,

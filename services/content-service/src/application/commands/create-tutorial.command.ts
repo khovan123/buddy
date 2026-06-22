@@ -1,5 +1,3 @@
-import type { LearningFit } from '../../domain/entities/learning-fit';
-
 /**
  * CreateTutorialCommand - CQRS Command để tạo Tutorial.
  *
@@ -30,6 +28,5 @@ export class CreateTutorialCommand {
       resources: Array<{ resourceId: string; instructionNote: string }>;
     }>,
     public readonly correlationId?: string,
-    public readonly learningFit?: LearningFit,
   ) {}
 }

@@ -16,6 +16,8 @@ import { ItemInteractionControls } from "@/features/interaction"
 import type { WithSkeletonLinkProps } from "@/hoc/with-skeleton-link"
 import { cn } from "@/lib/utils"
 
+import type { CardPriceData } from "./card-price"
+import { CardPrice } from "./card-price"
 import { LearningCardShell, LearningOrbit } from "./learning-card-shell"
 
 export type ResourceCardData = {
@@ -25,6 +27,7 @@ export type ResourceCardData = {
   rating: string
   reviews: string
   price: string
+  pricing?: CardPriceData
   views?: string
   href: string
   interactionType?: InteractionContentType
@@ -134,9 +137,7 @@ function ResourceCardInner({
             {resource?.category || "Category"}
           </span>
           {!resource?.owned ? (
-            <span className="rounded-full border border-border/70 bg-background/50 px-2 py-0.5 tracking-normal text-foreground">
-              {resource?.price || "—"}
-            </span>
+            <CardPrice price={resource?.price} pricing={resource?.pricing} compact />
           ) : null}
         </div>
 

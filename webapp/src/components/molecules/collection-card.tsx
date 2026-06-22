@@ -16,6 +16,8 @@ import type {
 import type { WithSkeletonLinkProps } from "@/hoc/with-skeleton-link"
 import { cn } from "@/lib/utils"
 
+import type { CardPriceData } from "./card-price"
+import { CardPrice } from "./card-price"
 import { LearningCardShell, LearningOrbit } from "./learning-card-shell"
 
 export type CollectionCardData = {
@@ -26,6 +28,7 @@ export type CollectionCardData = {
   rating: string
   reviews: string
   price: string
+  pricing?: CardPriceData
   views?: string
   discount?: string
   href: string
@@ -88,7 +91,7 @@ function CollectionCardInner({
           collection.purchaseType
         )
       : undefined
-  const paid = isPaid(collection?.price)
+  const paid = isPaid(collection?.pricing?.finalPrice ?? collection?.price)
 
   return (
     <LearningCardShell className="group/collection p-2">
@@ -126,9 +129,7 @@ function CollectionCardInner({
       <div className="relative z-10 flex w-full flex-1 flex-col gap-2 px-2 pt-4 pb-3">
         <div className="text-3xs flex items-center justify-between gap-3 font-bold tracking-[0.16em] text-muted-foreground uppercase">
           <span>Collection</span>
-          <span className="rounded-full border border-border/70 bg-background/50 px-2 py-0.5 tracking-normal text-foreground">
-            {collection?.discount || collection?.price || "—"}
-          </span>
+          <CardPrice price={collection?.price} pricing={collection?.pricing} compact />
         </div>
 
         <h3 className="text-body line-clamp-2 leading-tight font-bold tracking-tight text-foreground transition-colors group-hover/collection:text-primary">
@@ -168,11 +169,6 @@ function CollectionCardInner({
 
         <div className="relative z-30 mt-auto flex flex-col gap-2 pt-3">
           <div className="min-w-0">
-            {collection?.discount ? (
-              <span className="text-caption text-muted-foreground line-through">
-                {collection.price}
-              </span>
-            ) : null}
             <div className="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
               <div className="h-full w-[72%] animate-[pulse_3.2s_ease-in-out_infinite] rounded-full bg-primary/65" />
             </div>
@@ -188,7 +184,7 @@ function CollectionCardInner({
               itemType={collection.interactionType}
               initialStats={collection.initialStats}
               buyHref={checkoutHref}
-              buyLabel={getBuyLabel(collection.price)}
+              buyLabel={getBuyLabel(collection.pricing?.finalPrice ?? collection.price)}
               compact
             />
           ) : null}

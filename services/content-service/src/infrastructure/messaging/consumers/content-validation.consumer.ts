@@ -50,7 +50,7 @@ export class ContentValidationConsumer {
   @RabbitRPC({
     exchange: EXCHANGES.CONTENT,
     routingKey: CONTENT_ROUTINGKEYS.VALIDATE_CONTENT_STATUS,
-    queue: QUEUES.CONTENT_COMMANDS,
+    queue: QUEUES.CONTENT_RPC_VALIDATE_CONTENT_STATUS,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },

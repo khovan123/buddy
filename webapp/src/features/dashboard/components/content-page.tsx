@@ -1,13 +1,10 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
+import { useMemo } from "react"
 
 import Link from "next/link"
 
-import { useSession } from "next-auth/react"
-
 import { CheckCircle2, Eye, FolderKanban, UploadCloud } from "lucide-react"
-import { useDispatch } from "react-redux"
 
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -28,7 +25,6 @@ import type {
   ContentTutorialItem,
 } from "@/features/content/types/creator-content.types"
 import { useI18n } from "@/i18n/language-provider"
-import { baseApi } from "@/lib/redux/base-api"
 
 function normalizeResource(item: ResourceQueryItem): ContentResourceItem {
   return {
@@ -58,8 +54,6 @@ export function ContentPage({
   resourceCollections: CollectionQueryItem[]
   tutorialCollections: CollectionQueryItem[]
 }) {
-  const dispatch = useDispatch()
-  const { data: session, status: sessionStatus } = useSession()
   const { t } = useI18n()
   const { data: resourceResponse } = useGetMyResourcesQuery(undefined, {
     refetchOnFocus: true,
@@ -103,42 +97,6 @@ export function ContentPage({
       icon: Eye,
     },
   ]
-
-  useEffect(() => {
-    if (sessionStatus !== "authenticated" || !session?.accessToken) {
-      return
-    }
-
-    let events: EventSource | null = null
-    let retryTimer: ReturnType<typeof setTimeout> | null = null
-
-    const refreshContent = () => {
-      dispatch(
-        baseApi.util.invalidateTags(["Notification", "Resource", "Tutorial"])
-      )
-    }
-
-    const connect = () => {
-      events?.close()
-      events = new EventSource("/api/notifications/stream")
-      events.addEventListener("notification", refreshContent)
-      events.onerror = () => {
-        events?.close()
-        events = null
-        retryTimer = setTimeout(connect, 30_000)
-      }
-    }
-
-    connect()
-
-    return () => {
-      if (retryTimer) {
-        clearTimeout(retryTimer)
-      }
-      events?.removeEventListener("notification", refreshContent)
-      events?.close()
-    }
-  }, [dispatch, session?.accessToken, sessionStatus])
 
   return (
     <section className="w-full space-y-6">

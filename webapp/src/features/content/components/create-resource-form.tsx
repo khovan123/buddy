@@ -65,14 +65,13 @@ import type {
   PresignedUrlItem,
 } from "../types"
 import {
-  toLearningFitFormValues,
-  toLearningFitPayload,
-} from "../utils/learning-fit"
-import { trackLearningFitEvent } from "../utils/learning-fit-events"
+  RESOURCE_ALLOWED_FILE_TYPES_COPY,
+  RESOURCE_FILE_ACCEPT,
+  isAllowedResourceFileName,
+} from "../utils/resource-file-validation"
 import { getFriendlyContentError } from "../utils/user-facing-content"
 
 import { CollectionPicker } from "./collection-picker"
-import { FitEditor } from "./fit-editor"
 import { ThumbnailPicker } from "./thumbnail-picker"
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -99,7 +98,6 @@ const FIELD_TAB_MAP: Record<string, string> = {
   courseId: "taxonomy",
   price: "taxonomy",
   collectionId: "taxonomy",
-  learningFit: "metadata",
 }
 
 type ResourceSubmitStage =
@@ -185,7 +183,6 @@ export function CreateResourceForm() {
         },
       ],
       collectionId: "",
-      learningFit: toLearningFitFormValues(),
     },
   })
 
@@ -220,9 +217,6 @@ export function CreateResourceForm() {
   const selectedCollectionId = useWatch({ name: "collectionId", control })
   const thumbnailBase64 = useWatch({ name: "thumbnailBase64", control })
   const watchedFiles = useWatch({ name: "files", control }) || []
-  const watchedTitle = useWatch({ name: "title", control })
-  const watchedSummary = useWatch({ name: "summary", control })
-  const watchedHighlights = useWatch({ name: "hightlights", control }) || []
 
   // RTK Query: GET Content Metadata (Majors)
   const { data: metaData, isLoading: isLoadingMajors } =
@@ -262,7 +256,6 @@ export function CreateResourceForm() {
           mimeType: "",
         },
       ],
-      learningFit: toLearningFitFormValues(resource.learningFit),
     })
   }, [editingResourceResponse, form])
 
@@ -336,6 +329,20 @@ export function CreateResourceForm() {
       return
     }
 
+    if (!isAllowedResourceFileName(file.name)) {
+      e.target.value = ""
+      selectedFilesRef.current.delete(index)
+      setValue(`files.${index}.fileName`, "", { shouldValidate: true })
+      setValue(`files.${index}.fileSizeBytes`, 0, {
+        shouldValidate: true,
+      })
+      setValue(`files.${index}.mimeType`, "", {
+        shouldValidate: true,
+      })
+      toast.error(`Resources only support ${RESOURCE_ALLOWED_FILE_TYPES_COPY} files.`)
+      return
+    }
+
     // Store the actual File object for later upload
     selectedFilesRef.current.set(index, file)
 
@@ -354,23 +361,14 @@ export function CreateResourceForm() {
     if (isEditMode && editId) {
       try {
         const { thumbnailFile: _, files: __, ...restData } = data
-        const learningFit = toLearningFitPayload(restData.learningFit)
         await updateResource({
           id: editId,
           body: {
             ...restData,
             hightlights: restData.hightlights.map((h) => h.value),
             collectionId: restData.collectionId || undefined,
-            learningFit,
           },
         }).unwrap()
-        if (learningFit) {
-          trackLearningFitEvent("fit_editor_completed", {
-            contentType: "resource",
-            mode: "update",
-            fitStatus: learningFit.fitStatus,
-          })
-        }
         toast.success("Resource updated.")
         router.refresh()
       } catch (error: unknown) {
@@ -401,23 +399,14 @@ export function CreateResourceForm() {
       setSubmitStage("preparing")
       // Exclude thumbnailFile from the request payload to prevent 400 Bad Request
       const { thumbnailFile: _, ...restData } = data
-      const learningFit = toLearningFitPayload(restData.learningFit)
       const payload = {
         ...restData,
         hightlights: restData.hightlights.map((h) => h.value),
         collectionId: restData.collectionId || undefined,
-        learningFit,
       }
 
       const result = await createResource(payload).unwrap()
       const response = result.data
-      if (learningFit) {
-        trackLearningFitEvent("fit_editor_completed", {
-          contentType: "resource",
-          mode: "create",
-          fitStatus: learningFit.fitStatus,
-        })
-      }
 
       // Build the upload batch from the presigned URLs + selected files
       const batch: UploadBatch = {
@@ -707,14 +696,14 @@ export function CreateResourceForm() {
       <p className="text-sm text-muted-foreground">
         {isEditMode
           ? "Your uploaded files will stay the same while you edit the details."
-          : "Add a PDF, DOCX, PPTX, or similar study file. After upload, we will read and check it before learners can see it."}
+          : `Add a ${RESOURCE_ALLOWED_FILE_TYPES_COPY} study file. After upload, we will read and check it before learners can see it.`}
       </p>
 
       {!isEditMode &&
         fileFields.map((field, index) => (
           <div
             key={field.id}
-            className="flex items-start gap-3 rounded-xl border bg-muted/20 p-4"
+            className="flex items-center gap-3 rounded-xl border bg-muted/20 p-4"
           >
             <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-4">
               <Field>
@@ -722,7 +711,7 @@ export function CreateResourceForm() {
                 <Input
                   id={`file-name-${index}`}
                   {...form.register(`files.${index}.fileName` as const)}
-                  placeholder="lecture-notes.pdf"
+                  placeholder="lecture-notes.md"
                   readOnly
                   className="cursor-default rounded-xl bg-muted/50"
                 />
@@ -757,28 +746,32 @@ export function CreateResourceForm() {
                 <Input
                   id={`file-mime-${index}`}
                   {...form.register(`files.${index}.mimeType` as const)}
-                  placeholder="application/pdf"
+                  placeholder="text/markdown"
                   readOnly
                   className="cursor-default rounded-xl bg-muted/50"
                 />
               </Field>
 
-              {/* File Picker — spans full row below the detail inputs */}
               <Field>
+                <Label htmlFor={`file-mime-${index}`}>
+                  Choose File {index + 1}
+                </Label>
                 <Input
                   ref={(el) => {
                     fileInputRefs.current[index] = el
                   }}
                   id={`file-picker-${index}`}
                   type="file"
+                  accept={RESOURCE_FILE_ACCEPT}
                   className="hidden"
                   onChange={(e) => handleFileSelect(index, e)}
                 />
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex min-h-10 items-center">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
+                    className="w-full justify-center whitespace-nowrap md:w-auto"
                     onClick={() => fileInputRefs.current[index]?.click()}
                   >
                     <FileUp className="size-5" />
@@ -800,7 +793,7 @@ export function CreateResourceForm() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="mt-6"
+                className="shrink-0"
                 onClick={() => {
                   selectedFilesRef.current.delete(index)
                   removeFile(index)
@@ -968,7 +961,7 @@ export function CreateResourceForm() {
             <CardDescription>
               {isEditMode
                 ? "Update the details, price, course, and cover image."
-                : "Add study materials such as PDFs, documents, or slide decks. We will upload and check them after you submit."}
+                : `Add ${RESOURCE_ALLOWED_FILE_TYPES_COPY} study materials. We will upload and check them after you submit.`}
             </CardDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -999,20 +992,6 @@ export function CreateResourceForm() {
                 </h3>
                 {metadataSection}
               </div>
-              <FitEditor
-                control={control}
-                register={form.register}
-                setValue={form.setValue}
-                draftContext={{
-                  contentType: "RESOURCE",
-                  title: watchedTitle,
-                  summary: watchedSummary,
-                  hightlights: watchedHighlights.map((item) => item.value),
-                  majorId: selectedMajorId,
-                  courseId: selectedCourseId,
-                }}
-              />
-              <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
                   Files
@@ -1051,19 +1030,6 @@ export function CreateResourceForm() {
                 className="mt-0 animate-in space-y-6 fade-in slide-in-from-bottom-2"
               >
                 {metadataSection}
-                <FitEditor
-                  control={control}
-                  register={form.register}
-                  setValue={form.setValue}
-                  draftContext={{
-                    contentType: "RESOURCE",
-                    title: watchedTitle,
-                    summary: watchedSummary,
-                    hightlights: watchedHighlights.map((item) => item.value),
-                    majorId: selectedMajorId,
-                    courseId: selectedCourseId,
-                  }}
-                />
               </TabsContent>
 
               <TabsContent

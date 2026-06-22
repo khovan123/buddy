@@ -4,7 +4,6 @@ import {
   CollectionType,
 } from '../../infrastructure/persistence/mongo/schemas/collection.schema';
 import { Collection } from '../entities/collection.entity';
-import type { LearningFit } from '../entities/learning-fit';
 
 /** Interface representing data constraints for  collection list query params. */
 export interface CollectionListQueryParams {
@@ -77,6 +76,8 @@ export interface CollectionQueryItem {
   courseId: string;
   type: CollectionType;
   discount: number;
+  originalPrice: number;
+  discountedPrice: number;
   status: CollectionStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -87,7 +88,6 @@ export interface CollectionQueryItem {
   major?: CollectionQueryMajor;
   course?: CollectionQueryCourse;
   phases?: CollectionQueryPhase[];
-  learningFit?: LearningFit | null;
 }
 
 /** Interface representing data constraints for  collection query result. */
@@ -109,7 +109,6 @@ export interface CollectionUpdateDetails {
     learningGoal: string;
     items: Array<{ itemId: string; itemType: CollectionPhaseItemType }>;
   }>;
-  learningFit?: LearningFit;
 }
 
 /** Interface representing data constraints for  i collection repository. */

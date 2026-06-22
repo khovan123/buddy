@@ -1,4 +1,4 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsArray,
   IsMongoId,
@@ -9,9 +9,7 @@ import {
   MaxLength,
   Min,
   MinLength,
-  ValidateNested,
 } from 'class-validator';
-import { LearningFitDto } from './learning-fit.dto';
 
 export class UpdateResourceDto {
   @IsString()
@@ -56,9 +54,4 @@ export class UpdateResourceDto {
   @IsString()
   @Transform(({ value }) => value?.trim() || undefined)
   collectionId?: string;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => LearningFitDto)
-  learningFit?: LearningFitDto;
 }

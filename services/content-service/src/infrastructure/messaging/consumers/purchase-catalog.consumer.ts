@@ -69,7 +69,7 @@ export class PurchaseCatalogConsumer {
   @RabbitRPC({
     exchange: EXCHANGES.CONTENT,
     routingKey: CONTENT_ROUTINGKEYS.GET_PURCHASE_CATALOG,
-    queue: QUEUES.CONTENT_COMMANDS,
+    queue: QUEUES.CONTENT_RPC_GET_PURCHASE_CATALOG,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },

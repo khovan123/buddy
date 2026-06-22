@@ -23,6 +23,9 @@ import { CollectionType } from '../../../infrastructure/persistence/mongo/schema
 import { ResourceStatus } from '../../../infrastructure/persistence/mongo/schemas/resource.schema';
 import { CreateResourceCommand } from '../create-resource.command';
 
+const RESOURCE_ALLOWED_FILE_EXTENSIONS = new Set(['.txt', '.docx', '.md']);
+const RESOURCE_ALLOWED_FILE_TYPES_MESSAGE = 'Resource files must be .txt, .docx, or .md';
+
 /**
  * CreateResourceHandler - Xử lý tạo Resource.
  *
@@ -65,12 +68,12 @@ export class CreateResourceHanlder implements ICommandHandler<CreateResourceComm
       files,
       thumbnailBase64,
       collectionId,
-      learningFit,
     } = command;
 
     if (!files || files.length === 0) {
       throw new BadRequestException('files is required');
     }
+    this.validateResourceFiles(files);
 
     // 1. Validate majorId và courseId tồn tại
     await this.contentValidationService.validateMajorExists(majorId);
@@ -116,7 +119,6 @@ export class CreateResourceHanlder implements ICommandHandler<CreateResourceComm
         extension: this.resolveExtension(file.fileName),
       })),
       collectionId,
-      learningFit,
     });
 
     // Lưu resource vào DB
@@ -204,5 +206,18 @@ export class CreateResourceHanlder implements ICommandHandler<CreateResourceComm
     if (!fileName) return '';
     const idx = fileName.lastIndexOf('.');
     return idx >= 0 ? fileName.slice(idx).toLowerCase() : '';
+  }
+
+  private validateResourceFiles(files: Array<{ fileName: string }>): void {
+    const invalidFiles = files.filter(
+      (file) => !RESOURCE_ALLOWED_FILE_EXTENSIONS.has(this.resolveExtension(file.fileName)),
+    );
+
+    if (invalidFiles.length > 0) {
+      throw new BadRequestException({
+        message: RESOURCE_ALLOWED_FILE_TYPES_MESSAGE,
+        invalidFiles: invalidFiles.map((file) => file.fileName),
+      });
+    }
   }
 }

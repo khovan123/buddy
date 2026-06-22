@@ -78,7 +78,7 @@ export function getFriendlyModerationReason(reason: string) {
     normalized.includes("extract") ||
     normalized.includes("empty content")
   ) {
-    return "We could not read enough text from this file. Please try another PDF, DOCX, or PPTX."
+    return "We could not read enough text from this file. Please try another .txt, .docx, or .md file."
   }
 
   if (

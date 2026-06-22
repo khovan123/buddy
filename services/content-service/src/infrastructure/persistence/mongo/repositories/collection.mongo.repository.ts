@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { InferSchemaType, Model, Types } from 'mongoose';
 
 import { Collection } from '../../../../domain/entities/collection.entity';
-import type { LearningFit } from '../../../../domain/entities/learning-fit';
 import {
   CollectionListQueryParams,
   CollectionQueryItem,
@@ -20,7 +19,6 @@ import {
   CollectionType,
 } from '../schemas/collection.schema';
 import { CourseSchema } from '../schemas/course.schema';
-import { toDomainLearningFit } from '../schemas/learning-fit.schema';
 import { MajorSchema } from '../schemas/major.schema';
 
 export type CollectionSchemaShape = InferSchemaType<typeof CollectionSchema>;
@@ -41,12 +39,11 @@ type CollectionLean = CollectionSchemaShape & {
     learningGoal?: string;
     items?: Array<{ itemId: Types.ObjectId | string; itemType: CollectionPhaseItemType }>;
   }>;
-  learningFit?: LearningFit | null;
 };
 
 type CollectionLeanWithItems = CollectionLean & {
-  tutorials?: Array<unknown>;
-  resources?: Array<unknown>;
+  tutorials?: Array<{ price?: number | null }>;
+  resources?: Array<{ price?: number | null }>;
   major?: MajorLean | null;
   course?: CourseLean | null;
 };
@@ -73,7 +70,6 @@ type CollectionWritePayload = {
     learningGoal: string;
     items: Array<{ itemId: string; itemType: CollectionPhaseItemType }>;
   }>;
-  learningFit?: LearningFit | null;
 };
 
 type CollectionSearchClause =
@@ -198,8 +194,8 @@ export class CollectionMongoRepository implements ICollectionRepository {
       .findOne({ _id: id, deletedAt: null })
       .populate('major')
       .populate('course')
-      .populate('tutorials', '_id')
-      .populate('resources', '_id')
+      .populate('tutorials', '_id price')
+      .populate('resources', '_id price')
       .lean<CollectionLeanWithItems>()
       .exec();
 
@@ -218,8 +214,8 @@ export class CollectionMongoRepository implements ICollectionRepository {
       .find({ _id: { $in: ids }, deletedAt: null })
       .populate('major')
       .populate('course')
-      .populate('tutorials', '_id')
-      .populate('resources', '_id')
+      .populate('tutorials', '_id price')
+      .populate('resources', '_id price')
       .lean<CollectionLeanWithItems[]>()
       .exec();
 
@@ -237,8 +233,8 @@ export class CollectionMongoRepository implements ICollectionRepository {
       .findOne({ slug, deletedAt: null })
       .populate('major')
       .populate('course')
-      .populate('tutorials', '_id')
-      .populate('resources', '_id')
+      .populate('tutorials', '_id price')
+      .populate('resources', '_id price')
       .lean<CollectionLeanWithItems>()
       .exec();
 
@@ -290,8 +286,8 @@ export class CollectionMongoRepository implements ICollectionRepository {
         .find(filter)
         .populate('major')
         .populate('course')
-        .populate('tutorials', '_id')
-        .populate('resources', '_id')
+        .populate('tutorials', '_id price')
+        .populate('resources', '_id price')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(safeLimit)
@@ -356,8 +352,8 @@ export class CollectionMongoRepository implements ICollectionRepository {
       .find(filter)
       .populate('major')
       .populate('course')
-      .populate('tutorials', '_id')
-      .populate('resources', '_id')
+      .populate('tutorials', '_id price')
+      .populate('resources', '_id price')
       .sort({ createdAt: -1 })
       .limit(safeLimit)
       .lean<CollectionLeanWithItems[]>()
@@ -392,7 +388,6 @@ export class CollectionMongoRepository implements ICollectionRepository {
             type: details.type,
             discount: details.discount,
             phases: details.phases ?? [],
-            learningFit: details.learningFit ?? null,
             updatedAt: new Date(),
           },
         },
@@ -441,7 +436,6 @@ export class CollectionMongoRepository implements ICollectionRepository {
           itemType: item.itemType,
         })),
       })),
-      learningFit: toDomainLearningFit(row.learningFit),
     });
   }
 
@@ -452,6 +446,9 @@ export class CollectionMongoRepository implements ICollectionRepository {
    * @returns Result of type CollectionQueryItem
    */
   private toQueryItem(row: CollectionLeanWithItems): CollectionQueryItem {
+    const originalPrice = this.resolveOriginalPrice(row);
+    const discountedPrice = this.applyDiscount(originalPrice, row.discount);
+
     return {
       id: row._id.toString(),
       userId: row.userId,
@@ -463,6 +460,8 @@ export class CollectionMongoRepository implements ICollectionRepository {
       courseId: row.courseId?.toString() ?? '',
       type: row.type,
       discount: row.discount,
+      originalPrice,
+      discountedPrice,
       status: row.status,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -500,8 +499,22 @@ export class CollectionMongoRepository implements ICollectionRepository {
           itemType: item.itemType,
         })),
       })),
-      learningFit: toDomainLearningFit(row.learningFit),
     };
+  }
+
+  private resolveOriginalPrice(row: CollectionLeanWithItems): number {
+    const items = row.type === CollectionType.RESOURCE ? row.resources : row.tutorials;
+    return (items ?? []).reduce((sum, item) => sum + this.normalizePrice(item?.price), 0);
+  }
+
+  private normalizePrice(value: unknown): number {
+    const price = typeof value === 'number' ? value : Number(value ?? 0);
+    return Number.isFinite(price) && price > 0 ? price : 0;
+  }
+
+  private applyDiscount(originalPrice: number, discount: number): number {
+    const safeDiscount = Math.min(Math.max(Number(discount) || 0, 0), 100);
+    return Math.max(0, Math.round(originalPrice * (1 - safeDiscount / 100)));
   }
 
   /**
@@ -526,7 +539,6 @@ export class CollectionMongoRepository implements ICollectionRepository {
       status: collection.status,
       createdAt: collection.createdAt ?? new Date(),
       updatedAt: collection.updatedAt ?? new Date(),
-      learningFit: collection.learningFit ?? null,
     };
 
     if (collection.deletedAt) {

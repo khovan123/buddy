@@ -2,7 +2,6 @@ import {
   CollectionPhaseItemType,
   CollectionType,
 } from '../../infrastructure/persistence/mongo/schemas/collection.schema';
-import type { LearningFit } from '../../domain/entities/learning-fit';
 
 export interface CommandPhaseItem {
   itemId: string;
@@ -31,6 +30,5 @@ export class CreateCollectionCommand {
     public readonly tutorialIds?: string[],
     public readonly correlationId?: string,
     public readonly phases?: CommandPhase[],
-    public readonly learningFit?: LearningFit,
   ) {}
 }

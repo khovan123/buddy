@@ -39,7 +39,7 @@ export class PurchaseConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.BILLING,
     routingKey: BILLING_ROUTINGKEYS.PURCHASE_COMPLETED,
-    queue: QUEUES.CONTENT_COMMANDS,
+    queue: QUEUES.CONTENT_PURCHASE_COMPLETED_EVENTS,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },

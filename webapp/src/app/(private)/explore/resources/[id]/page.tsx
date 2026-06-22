@@ -15,19 +15,15 @@ import {
 
 import { MetaChip } from "@/components/atoms/meta-chip"
 import { UserAvatar } from "@/components/atoms/user-avatar"
+import { CardPrice } from "@/components/molecules/card-price"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { PurchaseButton } from "@/features/billing"
 import {
-  ContentReceipt,
-  FitAnalytics,
-  getFitAwareFreeLabel,
-  getFitAwarePurchaseLabel,
   getResourceBySlug,
   getResourcePreview,
-  HonestFitCard,
   ResourceDocumentPreview,
 } from "@/features/content"
 import {
@@ -36,6 +32,15 @@ import {
 } from "@/features/interaction"
 
 type PageParams = Promise<{ id: string }>
+
+const vndFormat = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+})
+
+function formatPrice(price: number) {
+  return price === 0 ? "Free" : vndFormat.format(price)
+}
 
 export async function generateMetadata({
   params,
@@ -88,10 +93,6 @@ export default async function ExploreResourceDetailPage({
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
   const canonical = `/explore/resources/${id}`
-  const purchaseLabel = getFitAwarePurchaseLabel({
-    contentType: "resource",
-    fit: resource.learningFit,
-  })
 
   const productJsonLd = {
     "@context": "https://schema.org",
@@ -146,16 +147,6 @@ export default async function ExploreResourceDetailPage({
         majorId={resource.majorId}
         courseId={resource.courseId}
         semester={resource.course?.semester}
-      />
-      <FitAnalytics
-        event="fit_card_viewed"
-        enabled={Boolean(resource.learningFit)}
-        onceKey={`RESOURCE:${resource.id}`}
-        payload={{
-          itemId: resource.id,
-          itemType: "RESOURCE",
-          fitStatus: resource.learningFit?.fitStatus,
-        }}
       />
       <script
         type="application/ld+json"
@@ -277,16 +268,6 @@ export default async function ExploreResourceDetailPage({
             </Button>
           </div>
 
-          <HonestFitCard
-            fit={resource.learningFit}
-            contentType="resource"
-            analyticsPayload={{
-              itemId: resource.id,
-              itemType: "RESOURCE",
-              contentType: "resource",
-            }}
-          />
-
           <div className="space-y-6 text-muted-foreground">
             <h3 className="text-2xl font-bold text-foreground">
               About this Resource
@@ -322,13 +303,14 @@ export default async function ExploreResourceDetailPage({
         <aside className="lg:col-span-4">
           <div className="sticky top-24 space-y-6">
             <Card className="rounded-2xl border border-border/20 bg-card p-8 shadow-sm">
-              <div className="mb-6 flex items-baseline gap-2">
-                <span className="text-4xl font-extrabold text-foreground">
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  }).format(resource.price || 0)}
-                </span>
+              <div className="mb-6">
+                <CardPrice
+                  price={formatPrice(resource.price || 0)}
+                  pricing={{
+                    originalPrice: formatPrice(resource.price || 0),
+                  }}
+                  align="start"
+                />
               </div>
 
               <div className="mb-8 space-y-4">
@@ -381,24 +363,13 @@ export default async function ExploreResourceDetailPage({
                 </div>
               </div>
 
-              <ContentReceipt
-                fit={resource.learningFit}
-                fileCount={resource._count.resourceMeta}
-                updatedAt={resource.updatedAt}
-              />
-
               <PurchaseButton
                 itemId={resource.id}
                 itemType="RESOURCE"
-                label={purchaseLabel}
-                freeLabel={getFitAwareFreeLabel("resource")}
+                label="Buy resource"
+                freeLabel="Get resource"
                 className="mb-4 w-full text-base font-bold"
                 price={resource.price || 0}
-                trackingEventName="fit_cta_clicked"
-                trackingPayload={{
-                  fitStatus: resource.learningFit?.fitStatus,
-                  contentType: "resource",
-                }}
               />
               <div className="flex justify-center">
                 <Item

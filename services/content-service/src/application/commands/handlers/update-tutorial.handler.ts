@@ -32,7 +32,6 @@ export class UpdateTutorialHandler implements ICommandHandler<UpdateTutorialComm
       discountBundle: command.discountBundle,
       collectionId: command.collectionId,
       steps: command.steps,
-      learningFit: command.learningFit,
     });
 
     return { success: true };

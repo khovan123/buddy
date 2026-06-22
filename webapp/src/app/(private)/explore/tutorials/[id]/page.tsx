@@ -24,6 +24,7 @@ import {
 
 import { MetaChip } from "@/components/atoms/meta-chip"
 import { UserAvatar } from "@/components/atoms/user-avatar"
+import { CardPrice } from "@/components/molecules/card-price"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -31,13 +32,8 @@ import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Toggle } from "@/components/ui/toggle"
 import { PurchaseButton } from "@/features/billing"
 import {
-  ContentReceipt,
-  FitAnalytics,
-  getFitAwareFreeLabel,
-  getFitAwarePurchaseLabel,
   getResourcePreview,
   getTutorialBySlug,
-  HonestFitCard,
   TutorialResourcePreviewDialog,
   TutorialVideoPlayer,
 } from "@/features/content"
@@ -47,6 +43,20 @@ import {
 } from "@/features/interaction"
 
 type PageParams = Promise<{ id: string }>
+
+const vndFormat = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+})
+
+function formatPrice(price: number) {
+  return price === 0 ? "Free" : vndFormat.format(price)
+}
+
+function applyDiscount(price: number, discount: number) {
+  const safeDiscount = Math.min(Math.max(discount || 0, 0), 100)
+  return Math.max(0, Math.round(price * (1 - safeDiscount / 100)))
+}
 
 export async function generateMetadata({
   params,
@@ -118,13 +128,22 @@ export default async function ExploreTutorialDetailPage({
     : null
 
   const courseTitle = tutorial.title
+  const tutorialFinalPrice = applyDiscount(
+    tutorial.price,
+    tutorial.discountBundle
+  )
+  const tutorialPricing = {
+    originalPrice: formatPrice(tutorial.price),
+    discountLabel:
+      tutorial.discountBundle > 0
+        ? `${tutorial.discountBundle}% OFF`
+        : undefined,
+    finalPrice:
+      tutorial.discountBundle > 0 ? formatPrice(tutorialFinalPrice) : undefined,
+  }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
   const canonical = `/explore/tutorials/${id}`
-  const purchaseLabel = getFitAwarePurchaseLabel({
-    contentType: "tutorial",
-    fit: tutorial.learningFit,
-  })
 
   const courseJsonLd = {
     "@context": "https://schema.org",
@@ -190,16 +209,6 @@ export default async function ExploreTutorialDetailPage({
         courseId={tutorial.courseId}
         semester={tutorial.course?.semester}
       />
-      <FitAnalytics
-        event="fit_card_viewed"
-        enabled={Boolean(tutorial.learningFit)}
-        onceKey={`TUTORIAL:${tutorial.id}`}
-        payload={{
-          itemId: tutorial.id,
-          itemType: "TUTORIAL",
-          fitStatus: tutorial.learningFit?.fitStatus,
-        }}
-      />
       <script
         type="application/ld+json"
         // react-doctor-ignore
@@ -235,7 +244,7 @@ export default async function ExploreTutorialDetailPage({
               title={courseTitle}
             />
 
-            <div className="absolute right-0 bottom-0 left-0 flex items-center justify-between border-t border-muted/20 bg-card/80 px-8 py-6 backdrop-blur-md">
+            <div className="flex items-center justify-between border-t border-muted/20 bg-card/80 px-8 py-6 backdrop-blur-md">
               <Item
                 variant="default"
                 size="sm"
@@ -336,37 +345,6 @@ export default async function ExploreTutorialDetailPage({
               Follow
             </Button>
           </div>
-
-          <HonestFitCard
-            fit={tutorial.learningFit}
-            contentType="tutorial"
-            analyticsPayload={{
-              itemId: tutorial.id,
-              itemType: "TUTORIAL",
-              contentType: "tutorial",
-            }}
-          />
-
-          {tutorial.learningFit?.learningOutcomes?.length ? (
-            <div className="space-y-4 rounded-xl border border-border/30 bg-card p-5 shadow-sm">
-              <h3 className="text-xl font-bold text-foreground">
-                What you will master
-              </h3>
-              <div className="grid gap-3 md:grid-cols-2">
-                {tutorial.learningFit.learningOutcomes.map((outcome) => (
-                  <Alert
-                    key={outcome}
-                    className="border-primary/20 bg-primary/5 py-2"
-                  >
-                    <CheckCircle2 className="size-5 text-primary" />
-                    <AlertDescription className="text-foreground">
-                      {outcome}
-                    </AlertDescription>
-                  </Alert>
-                ))}
-              </div>
-            </div>
-          ) : null}
 
           {/* ── About + Highlights ── */}
           <div className="space-y-6 text-muted-foreground">
@@ -548,33 +526,22 @@ export default async function ExploreTutorialDetailPage({
         <aside className="lg:col-span-4">
           <div className="sticky top-24 space-y-6">
             <Card className="rounded-2xl border border-border/20 bg-card p-8 shadow-sm">
-              <div className="mb-6 flex items-baseline gap-2">
-                <span className="text-4xl font-extrabold text-foreground">
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  }).format(tutorial.price)}
-                </span>
-                {tutorial.discountBundle > 0 && (
-                  <span className="ml-auto rounded bg-destructive/10 px-2 py-1 text-xs font-bold text-destructive">
-                    {tutorial.discountBundle}% OFF Bundle
-                  </span>
-                )}
+              <div className="mb-6">
+                <CardPrice
+                  price={formatPrice(tutorial.price)}
+                  pricing={tutorialPricing}
+                  align="start"
+                />
               </div>
 
               <div className="mb-8 space-y-3">
                 <PurchaseButton
                   itemId={tutorial.id}
                   itemType="TUTORIAL_BUNDLE"
-                  label={purchaseLabel}
-                  freeLabel={getFitAwareFreeLabel("tutorial")}
+                  label="Buy tutorial"
+                  freeLabel="Start tutorial"
                   className="font-headline w-full py-4 font-bold shadow-lg"
-                  price={tutorial.price}
-                  trackingEventName="fit_cta_clicked"
-                  trackingPayload={{
-                    fitStatus: tutorial.learningFit?.fitStatus,
-                    contentType: "tutorial",
-                  }}
+                  price={tutorialFinalPrice}
                 />
                 <Button
                   variant="secondary"
@@ -619,12 +586,6 @@ export default async function ExploreTutorialDetailPage({
                   </span>
                 </div>
               </div>
-
-              <ContentReceipt
-                fit={tutorial.learningFit}
-                fileCount={tutorial._count.tutorialMedia}
-                updatedAt={tutorial.updatedAt}
-              />
 
               <div className="flex justify-center gap-4 pt-2">
                 <Button

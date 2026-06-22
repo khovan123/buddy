@@ -19,18 +19,14 @@ import {
 
 import { MetaChip } from "@/components/atoms/meta-chip"
 import { UserAvatar } from "@/components/atoms/user-avatar"
+import { CardPrice } from "@/components/molecules/card-price"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { PurchaseButton } from "@/features/billing"
 import {
-  ContentReceipt,
-  FitAnalytics,
-  getFitAwareFreeLabel,
-  getFitAwarePurchaseLabel,
   getResourceCollectionBySlug,
-  HonestFitCard,
   LearningPathOverview,
 } from "@/features/content"
 import {
@@ -39,6 +35,20 @@ import {
 } from "@/features/interaction"
 
 type PageParams = Promise<{ id: string }>
+
+const vndFormat = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+})
+
+function formatPrice(price: number) {
+  return price === 0 ? "Free" : vndFormat.format(price)
+}
+
+function applyDiscount(price: number, discount: number) {
+  const safeDiscount = Math.min(Math.max(discount || 0, 0), 100)
+  return Math.max(0, Math.round(price * (1 - safeDiscount / 100)))
+}
 
 export async function generateMetadata({
   params,
@@ -91,13 +101,20 @@ export default async function ExploreCollectionResourceDetailPage({
   }
 
   const collectionTitle = collection.title
+  const collectionOriginalPrice = collection.originalPrice ?? 0
+  const collectionFinalPrice =
+    collection.discountedPrice ??
+    applyDiscount(collectionOriginalPrice, collection.discount)
+  const collectionPricing = {
+    originalPrice: formatPrice(collectionOriginalPrice),
+    discountLabel:
+      collection.discount > 0 ? `${collection.discount}% OFF` : undefined,
+    finalPrice:
+      collection.discount > 0 ? formatPrice(collectionFinalPrice) : undefined,
+  }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
   const canonical = `/explore/resources/collections/${id}`
-  const purchaseLabel = getFitAwarePurchaseLabel({
-    contentType: "collection",
-    fit: collection.learningFit,
-  })
 
   const collectionJsonLd = {
     "@context": "https://schema.org",
@@ -108,7 +125,7 @@ export default async function ExploreCollectionResourceDetailPage({
     category: "Educational Resource Collection",
     offers: {
       "@type": "Offer",
-      price: collection.discount.toString(),
+      price: collectionFinalPrice.toString(),
       priceCurrency: "VND",
       availability: "https://schema.org/InStock",
     },
@@ -152,16 +169,6 @@ export default async function ExploreCollectionResourceDetailPage({
         majorId={collection.majorId}
         courseId={collection.courseId}
         semester={collection.course?.semester}
-      />
-      <FitAnalytics
-        event="fit_card_viewed"
-        enabled={Boolean(collection.learningFit)}
-        onceKey={`RESOURCE_COLLECTION:${collection.id}`}
-        payload={{
-          itemId: collection.id,
-          itemType: "RESOURCE_COLLECTION",
-          fitStatus: collection.learningFit?.fitStatus,
-        }}
       />
       <script
         type="application/ld+json"
@@ -312,19 +319,8 @@ export default async function ExploreCollectionResourceDetailPage({
             </Button>
           </div>
 
-          <HonestFitCard
-            fit={collection.learningFit}
-            contentType="collection"
-            analyticsPayload={{
-              itemId: collection.id,
-              itemType: "RESOURCE_COLLECTION",
-              contentType: "collection",
-            }}
-          />
-
           <LearningPathOverview
             phases={collection.phases}
-            fit={collection.learningFit}
             resourceCount={collection._count.resources}
             tutorialCount={collection._count.tutorials}
           />
@@ -461,12 +457,12 @@ export default async function ExploreCollectionResourceDetailPage({
         <aside className="lg:col-span-4">
           <div className="sticky top-24 space-y-6">
             <Card className="rounded-2xl border border-border/20 bg-card p-8 shadow-sm">
-              <div className="mb-6 flex items-baseline gap-2">
-                <span className="text-4xl font-extrabold text-foreground">
-                  {collection.discount > 0
-                    ? `${collection.discount}% OFF`
-                    : "Free"}
-                </span>
+              <div className="mb-6">
+                <CardPrice
+                  price={formatPrice(collectionOriginalPrice)}
+                  pricing={collectionPricing}
+                  align="start"
+                />
               </div>
 
               <div className="mb-8 space-y-4">
@@ -521,26 +517,13 @@ export default async function ExploreCollectionResourceDetailPage({
                 </div>
               </div>
 
-              <ContentReceipt
-                fit={collection.learningFit}
-                fileCount={
-                  collection._count.resources + collection._count.tutorials
-                }
-                updatedAt={collection.updatedAt}
-              />
-
               <PurchaseButton
                 itemId={collection.id}
                 itemType="RESOURCE_COLLECTION"
-                label={purchaseLabel}
-                freeLabel={getFitAwareFreeLabel("collection")}
+                label="Buy collection"
+                freeLabel="Get collection"
                 className="mb-4 w-full text-base font-bold"
-                price={collection.discount > 0 ? collection.discount : 0}
-                trackingEventName="fit_cta_clicked"
-                trackingPayload={{
-                  fitStatus: collection.learningFit?.fitStatus,
-                  contentType: "collection",
-                }}
+                price={collectionFinalPrice}
               />
               <div className="flex justify-center">
                 <Item

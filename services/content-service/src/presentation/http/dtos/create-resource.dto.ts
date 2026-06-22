@@ -8,17 +8,23 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
   ValidateNested,
 } from 'class-validator';
-import { LearningFitDto } from './learning-fit.dto';
+
+const RESOURCE_ALLOWED_FILE_TYPES_MESSAGE = 'Resource files must be .txt, .docx, or .md';
+const RESOURCE_ALLOWED_FILE_NAME_PATTERN = /\.(txt|docx|md)$/i;
 
 /** Data Transfer Object for  create resource file. */
 export class CreateResourceFileDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(256)
+  @Matches(RESOURCE_ALLOWED_FILE_NAME_PATTERN, {
+    message: RESOURCE_ALLOWED_FILE_TYPES_MESSAGE,
+  })
   @Transform(({ value }) => value?.trim())
   fileName!: string;
 
@@ -123,9 +129,4 @@ export class CreateResourceDto {
   @IsString()
   @Transform(({ value }) => value?.trim())
   collectionId?: string;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => LearningFitDto)
-  learningFit?: LearningFitDto;
 }

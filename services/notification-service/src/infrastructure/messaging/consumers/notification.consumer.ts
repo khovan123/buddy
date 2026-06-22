@@ -1,3 +1,4 @@
+import { Nack, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   CORRELATION_ID_HEADER,
@@ -16,22 +17,26 @@ import {
   INTERACTION_ROUTINGKEYS,
   PurchaseCompletedEvent,
   RECOMMENDATION_ROUTINGKEYS,
+  extractRmqPayload,
 } from '@libs/contracts';
-import { Injectable, Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
-import { RabbitSubscribe, Nack } from '@golevelup/nestjs-rabbitmq';
 import type { ConsumeMessage } from 'amqplib';
-import { NotificationStreamService } from '../../../application/notifications/notification-stream.service';
+import { SendModelTrainedEmailCommand } from '../../../application/commands/send-model-trained-email.command';
+import { SendOtpEmailCommand } from '../../../application/commands/send-otp-email.command';
 import { SendPasswordResetEmailCommand } from '../../../application/commands/send-password-reset-email.command';
 import { SendWelcomeEmailCommand } from '../../../application/commands/send-welcome-email.command';
-import { NotificationEventPublisher } from '../publishers/notification-event.publisher';
-import { SendOtpEmailCommand } from '../../../application/commands/send-otp-email.command';
-import { SendModelTrainedEmailCommand } from '../../../application/commands/send-model-trained-email.command';
+import { NotificationStreamService } from '../../../application/notifications/notification-stream.service';
 import { Notification } from '../../../domain/entities/notification.entity';
 import type { INotificationRepository } from '../../../domain/repositories/notification.repository.interface';
 import { NOTIFICATION_REPOSITORY } from '../../../domain/repositories/tokens';
+import { NotificationEventPublisher } from '../publishers/notification-event.publisher';
 
 type EventEnvelope<T extends object> = {
+  data?: {
+    payload?: T;
+    correlationId?: string;
+  };
   payload?: T;
   correlationId?: string;
 } & Partial<T>;
@@ -69,8 +74,8 @@ export class NotificationConsumer {
     private readonly notificationRepository: INotificationRepository,
   ) {}
 
-  private getPayload<T extends object>(data: EventEnvelope<T>): T | undefined {
-    return data.payload ?? (data as T);
+  private getPayload<T extends object>(event: EventEnvelope<T>): T | undefined {
+    return extractRmqPayload<T>(event, []);
   }
 
   private isNonEmptyString(value: unknown): value is string {
@@ -89,7 +94,7 @@ export class NotificationConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.BILLING,
     routingKey: BILLING_ROUTINGKEYS.PURCHASE_COMPLETED,
-    queue: QUEUES.NOTIFICATION_IN_APP,
+    queue: QUEUES.NOTIFICATION_IN_APP_PURCHASE_COMPLETED,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -158,7 +163,7 @@ export class NotificationConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.CONTENT,
     routingKey: CONTENT_ROUTINGKEYS.MODERATION_COMPLETED,
-    queue: QUEUES.NOTIFICATION_IN_APP,
+    queue: QUEUES.NOTIFICATION_IN_APP_CONTENT_MODERATION,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -219,7 +224,7 @@ export class NotificationConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.INTERACTION,
     routingKey: INTERACTION_ROUTINGKEYS.FORUM_MENTION_CREATED,
-    queue: QUEUES.NOTIFICATION_IN_APP,
+    queue: QUEUES.NOTIFICATION_IN_APP_FORUM_MENTION,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -324,7 +329,7 @@ export class NotificationConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.AUTH,
     routingKey: AUTH_ROUTINGKEYS.USER_REGISTERED,
-    queue: QUEUES.NOTIFICATION_EMAIL,
+    queue: QUEUES.NOTIFICATION_EMAIL_USER_REGISTERED,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -398,7 +403,7 @@ export class NotificationConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.AUTH,
     routingKey: AUTH_ROUTINGKEYS.PASSWORD_RESET_REQUESTED,
-    queue: QUEUES.NOTIFICATION_EMAIL,
+    queue: QUEUES.NOTIFICATION_EMAIL_PASSWORD_RESET,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
@@ -483,7 +488,7 @@ export class NotificationConsumer {
   @RabbitSubscribe({
     exchange: EXCHANGES.AUTH,
     routingKey: AUTH_ROUTINGKEYS.OTP_GENERATED,
-    queue: QUEUES.NOTIFICATION_EMAIL,
+    queue: QUEUES.NOTIFICATION_EMAIL_OTP,
     queueOptions: {
       durable: true,
       arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },

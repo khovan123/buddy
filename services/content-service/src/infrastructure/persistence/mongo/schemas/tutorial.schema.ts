@@ -1,8 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 
-import { LearningFit, LearningFitSchema } from './learning-fit.schema';
-
 export enum TutorialStatus {
   PENDING = 'PENDING',
   PROCESSING = 'PROCESSING',
@@ -165,9 +163,6 @@ export class Tutorial {
 
   @Prop({ type: [TutorialStepSchema], default: [] })
   steps?: TutorialStep[];
-
-  @Prop({ type: LearningFitSchema, default: null })
-  learningFit?: LearningFit | null;
 
   @Prop({ type: Date, default: null })
   deletedAt?: Date;

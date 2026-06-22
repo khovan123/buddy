@@ -83,7 +83,7 @@ export class ContentExtractedConsumer {
           if (contentType === 'RESOURCE') {
             await this.moderateResource(payload, correlationId);
           } else {
-            await this.moderateTutorial(payload, correlationId);
+            await this.approveTutorialWithoutModeration(payload, correlationId);
           }
         },
       );
@@ -106,7 +106,7 @@ export class ContentExtractedConsumer {
       const willRetry = retryCount < RETRY_OPTIONS.MAX_RETRIES;
 
       this.logger[willRetry ? 'warn' : 'error'](
-        `Failed to moderate extracted ${contentType} content ${payload.contentId}` +
+        `Failed to process extracted ${contentType} content ${payload.contentId}` +
           ` (attempt ${retryCount + 1}/${RETRY_OPTIONS.MAX_RETRIES + 1})` +
           (willRetry ? ' — republishing for retry' : ' — sending to DLQ'),
         String(error),
@@ -213,7 +213,7 @@ export class ContentExtractedConsumer {
     }
   }
 
-  private async moderateTutorial(
+  private async approveTutorialWithoutModeration(
     payload: ContentExtractedEvent['payload'],
     correlationId: string,
   ): Promise<void> {
@@ -230,33 +230,14 @@ export class ContentExtractedConsumer {
     }
 
     this.logger.log(
-      `[handleContentExtracted] Starting moderation for TUTORIAL ${tutorial.id} (${tutorial.title}); files=${payload.files.length}, extractionStatus=${this.resolveExtractionStatus(payload)}`,
-    );
-
-    const result = await this.contentModeration.moderate({
-      contentId: tutorial.id,
-      contentType: 'TUTORIAL',
-      title: tutorial.title,
-      body: tutorial.description,
-      hightlights: tutorial.hightlights,
-      major: tutorial.major?.name,
-      course: tutorial.course?.name,
-      extractedText: this.joinExtractedText(payload),
-      mediaUrls: [],
-      files: this.resolveModerationFiles(payload),
-      extractionStatus: this.resolveExtractionStatus(payload),
-      extractionError: this.joinExtractionErrors(payload),
-    });
-
-    this.logger.log(
-      `[handleContentExtracted] Moderation result for TUTORIAL ${tutorial.id}: decision=${result.decision}, score=${result.score}, ruleVersion=${result.ruleVersion}, reasons=${result.reasons.length}`,
+      `[handleContentExtracted] Skipping moderation for TUTORIAL ${tutorial.id} (${tutorial.title}); marking available`,
     );
 
     await this.tutorialRepository.applyModerationResult(tutorial.id, {
-      status: this.toTutorialStatus(result.decision),
-      score: result.score,
-      reasons: result.reasons,
-      ruleVersion: result.ruleVersion,
+      status: TutorialModerationStatus.APPROVED,
+      score: null,
+      reasons: ['Tutorial moderation skipped by policy.'],
+      ruleVersion: 'tutorial-moderation-skipped',
     });
 
     await this.moderationNotification.send(
@@ -267,33 +248,28 @@ export class ContentExtractedConsumer {
           ownerId: tutorial.userId,
           title: tutorial.title,
           slug: tutorial.slug,
-          decision: this.toModerationDecision(result.decision),
-          score: result.score,
-          reasons: result.reasons,
-          ruleVersion: result.ruleVersion,
+          decision: 'APPROVED',
+          score: null,
+          reasons: ['Tutorial moderation skipped by policy.'],
+          ruleVersion: 'tutorial-moderation-skipped',
           moderatedAt: new Date().toISOString(),
         },
         correlationId,
       ),
     );
 
-    if (result.decision === 'APPROVED') {
-      this.logger.log(
-        `[handleContentExtracted] TUTORIAL ${tutorial.id} approved; publishing recommendation sync`,
-      );
-      await this.recommendationSync.send({
-        type: 'ITEM_UPSERT',
-        itemId: tutorial.id,
-        itemType: 'TUTORIAL',
-        majorId: tutorial.majorId,
-        courseId: tutorial.courseId,
-        title: tutorial.title,
-        slug: tutorial.slug,
-        description: tutorial.description,
-        hightlights: tutorial.hightlights,
-        steps: tutorial.steps?.map((s) => ({ title: s.title })),
-      });
-    }
+    await this.recommendationSync.send({
+      type: 'ITEM_UPSERT',
+      itemId: tutorial.id,
+      itemType: 'TUTORIAL',
+      majorId: tutorial.majorId,
+      courseId: tutorial.courseId,
+      title: tutorial.title,
+      slug: tutorial.slug,
+      description: tutorial.description,
+      hightlights: tutorial.hightlights,
+      steps: tutorial.steps?.map((s) => ({ title: s.title })),
+    });
   }
 
   private joinExtractedText(payload: ContentExtractedEvent['payload']): string {
@@ -333,13 +309,6 @@ export class ContentExtractedConsumer {
     if (decision === 'REJECTED') return ResourceModerationStatus.REJECTED;
     if (decision === 'ERROR') return ResourceModerationStatus.ERROR;
     return ResourceModerationStatus.NEEDS_REVIEW;
-  }
-
-  private toTutorialStatus(decision: string): TutorialModerationStatus {
-    if (decision === 'APPROVED') return TutorialModerationStatus.APPROVED;
-    if (decision === 'REJECTED') return TutorialModerationStatus.REJECTED;
-    if (decision === 'ERROR') return TutorialModerationStatus.ERROR;
-    return TutorialModerationStatus.NEEDS_REVIEW;
   }
 
   private toModerationDecision(

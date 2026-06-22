@@ -1,5 +1,4 @@
 import { Types } from 'mongoose';
-import type { LearningFit } from './learning-fit';
 import { TutorialStatus } from '../../infrastructure/persistence/mongo/schemas/tutorial.schema';
 
 /** Interface representing data constraints for  tutorial media. */
@@ -50,7 +49,6 @@ export interface TutorialProps {
   resourceIds?: string[];
   collectionIds?: string[];
   steps?: TutorialStep[];
-  learningFit?: LearningFit | null;
   createdAt?: Date;
   updatedAt?: Date;
   deletedAt?: Date;
@@ -87,7 +85,6 @@ export class Tutorial {
     resourceIds?: string[];
     collectionIds?: string[];
     steps?: TutorialStep[];
-    learningFit?: LearningFit;
     createdAt?: Date;
     updatedAt?: Date;
     deletedAt?: Date;
@@ -247,14 +244,6 @@ export class Tutorial {
 
   set steps(value: TutorialStep[] | undefined) {
     this.props.steps = value;
-  }
-
-  get learningFit(): LearningFit | null | undefined {
-    return this.props.learningFit;
-  }
-
-  set learningFit(value: LearningFit | null | undefined) {
-    this.props.learningFit = value;
   }
 
   get createdAt(): Date | undefined {

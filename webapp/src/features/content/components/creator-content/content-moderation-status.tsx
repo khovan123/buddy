@@ -297,7 +297,7 @@ export function ContentModerationChecklist({
           </div>
         ))}
       </div>
-      {hasReasons ? (
+      {hasReasons && !isPlaceholderModerationReason ? (
         <div className="mt-2 border-t border-border/60 pt-2">
           <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-destructive">
             <span>What happened</span>

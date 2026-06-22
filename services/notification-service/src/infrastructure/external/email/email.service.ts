@@ -85,11 +85,34 @@ export class EmailService implements OnModuleInit {
     let compiled = this.templateCache.get(templateName);
     if (compiled) return compiled;
 
-    // Load from file system
-    const templatePath = path.join(__dirname, 'templates', `${templateName}.hbs`);
+    const templateFile = `${templateName}.hbs`;
+    const templatePath = [
+      path.join(__dirname, 'templates', templateFile),
+      path.join(
+        __dirname,
+        '..',
+        '..',
+        '..',
+        '..',
+        'infrastructure',
+        'external',
+        'email',
+        'templates',
+        templateFile,
+      ),
+      path.join(
+        process.cwd(),
+        'src',
+        'infrastructure',
+        'external',
+        'email',
+        'templates',
+        templateFile,
+      ),
+    ].find((candidate) => fs.existsSync(candidate));
 
-    if (!fs.existsSync(templatePath)) {
-      this.logger.error(`Email template "${templateName}" not found at ${templatePath}`);
+    if (!templatePath) {
+      this.logger.error(`Email template "${templateName}" not found`);
       throw new Error(`Email template "${templateName}" not found`);
     }
 

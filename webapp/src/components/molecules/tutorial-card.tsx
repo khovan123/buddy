@@ -15,6 +15,8 @@ import type {
 import type { WithSkeletonLinkProps } from "@/hoc/with-skeleton-link"
 import { cn } from "@/lib/utils"
 
+import type { CardPriceData } from "./card-price"
+import { CardPrice } from "./card-price"
 import { LearningCardShell, LearningOrbit } from "./learning-card-shell"
 
 export type TutorialCardData = {
@@ -26,6 +28,7 @@ export type TutorialCardData = {
   rating: string
   reviews: string
   price: string
+  pricing?: CardPriceData
   views?: string
   discount?: string
   href: string
@@ -84,7 +87,7 @@ function TutorialCardInner({
     tutorial?.href && tutorial.purchaseType
       ? buildCheckoutHref(tutorial.href, tutorial.id, tutorial.purchaseType)
       : undefined
-  const paid = isPaid(tutorial?.price)
+  const paid = isPaid(tutorial?.pricing?.finalPrice ?? tutorial?.price)
 
   return (
     <LearningCardShell className="group/tutorial p-2">
@@ -120,16 +123,7 @@ function TutorialCardInner({
           <span className="line-clamp-1">
             {tutorial?.category || "Category"}
           </span>
-          <div className="flex flex-col items-end gap-0.5">
-            <span className="rounded-full border border-border/70 bg-background/50 px-2 py-0.5 tracking-normal text-foreground">
-              {tutorial?.discount || tutorial?.price || "—"}
-            </span>
-            {tutorial?.discount ? (
-              <span className="text-3xs leading-none text-muted-foreground line-through">
-                {tutorial.price}
-              </span>
-            ) : null}
-          </div>
+          <CardPrice price={tutorial?.price} pricing={tutorial?.pricing} compact />
         </div>
 
         <h3 className="text-body line-clamp-2 leading-tight font-bold tracking-tight text-foreground transition-colors group-hover/tutorial:text-primary">
@@ -180,7 +174,7 @@ function TutorialCardInner({
               itemType={tutorial.interactionType}
               initialStats={tutorial.initialStats}
               buyHref={checkoutHref}
-              buyLabel={getBuyLabel(tutorial.price)}
+              buyLabel={getBuyLabel(tutorial.pricing?.finalPrice ?? tutorial.price)}
               compact
             />
           ) : (

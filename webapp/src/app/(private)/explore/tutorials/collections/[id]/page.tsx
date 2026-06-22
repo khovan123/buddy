@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 
 import { MetaChip } from "@/components/atoms/meta-chip"
+import { CardPrice } from "@/components/molecules/card-price"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,12 +31,7 @@ import {
 } from "@/components/ui/item"
 import { PurchaseButton } from "@/features/billing"
 import {
-  ContentReceipt,
-  FitAnalytics,
-  getFitAwareFreeLabel,
-  getFitAwarePurchaseLabel,
   getTutorialCollectionBySlug,
-  HonestFitCard,
   LearningPathOverview,
 } from "@/features/content"
 import {
@@ -44,6 +40,20 @@ import {
 } from "@/features/interaction"
 
 type PageParams = Promise<{ id: string }>
+
+const vndFormat = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+})
+
+function formatPrice(price: number) {
+  return price === 0 ? "Free" : vndFormat.format(price)
+}
+
+function applyDiscount(price: number, discount: number) {
+  const safeDiscount = Math.min(Math.max(discount || 0, 0), 100)
+  return Math.max(0, Math.round(price * (1 - safeDiscount / 100)))
+}
 
 export async function generateMetadata({
   params,
@@ -96,13 +106,20 @@ export default async function ExploreCollectionTutorialDetailPage({
   }
 
   const collectionTitle = collection.title
+  const collectionOriginalPrice = collection.originalPrice ?? 0
+  const collectionFinalPrice =
+    collection.discountedPrice ??
+    applyDiscount(collectionOriginalPrice, collection.discount)
+  const collectionPricing = {
+    originalPrice: formatPrice(collectionOriginalPrice),
+    discountLabel:
+      collection.discount > 0 ? `${collection.discount}% OFF` : undefined,
+    finalPrice:
+      collection.discount > 0 ? formatPrice(collectionFinalPrice) : undefined,
+  }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://unibuddy.app"
   const canonical = `/explore/tutorials/collections/${id}`
-  const purchaseLabel = getFitAwarePurchaseLabel({
-    contentType: "collection",
-    fit: collection.learningFit,
-  })
 
   const courseJsonLd = {
     "@context": "https://schema.org",
@@ -122,7 +139,7 @@ export default async function ExploreCollectionTutorialDetailPage({
     },
     offers: {
       "@type": "Offer",
-      price: collection.discount.toString(),
+      price: collectionFinalPrice.toString(),
       priceCurrency: "VND",
       availability: "https://schema.org/InStock",
     },
@@ -174,16 +191,6 @@ export default async function ExploreCollectionTutorialDetailPage({
         majorId={collection.majorId}
         courseId={collection.courseId}
         semester={collection.course?.semester}
-      />
-      <FitAnalytics
-        event="fit_card_viewed"
-        enabled={Boolean(collection.learningFit)}
-        onceKey={`TUTORIAL_COLLECTION:${collection.id}`}
-        payload={{
-          itemId: collection.id,
-          itemType: "TUTORIAL_COLLECTION",
-          fitStatus: collection.learningFit?.fitStatus,
-        }}
       />
       <script
         type="application/ld+json"
@@ -288,19 +295,8 @@ export default async function ExploreCollectionTutorialDetailPage({
             </div>
           </div>
 
-          <HonestFitCard
-            fit={collection.learningFit}
-            contentType="collection"
-            analyticsPayload={{
-              itemId: collection.id,
-              itemType: "TUTORIAL_COLLECTION",
-              contentType: "collection",
-            }}
-          />
-
           <LearningPathOverview
             phases={collection.phases}
-            fit={collection.learningFit}
             resourceCount={collection._count.resources}
             tutorialCount={collection._count.tutorials}
           />
@@ -335,34 +331,21 @@ export default async function ExploreCollectionTutorialDetailPage({
           <div className="sticky top-24 space-y-5">
             <Card className="overflow-hidden rounded-2xl border border-border/30 bg-card shadow-sm">
               <CardContent className="space-y-6 p-7">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-extrabold text-foreground">
-                    {collection.discount > 0
-                      ? `${collection.discount}% OFF`
-                      : "Free"}
-                  </span>
+                <div>
+                  <CardPrice
+                    price={formatPrice(collectionOriginalPrice)}
+                    pricing={collectionPricing}
+                    align="start"
+                  />
                 </div>
-
-                <ContentReceipt
-                  fit={collection.learningFit}
-                  fileCount={
-                    collection._count.resources + collection._count.tutorials
-                  }
-                  updatedAt={collection.updatedAt}
-                />
 
                 <PurchaseButton
                   itemId={collection.id}
                   itemType="TUTORIAL_BUNDLE_COLLECTION"
-                  label={purchaseLabel}
-                  freeLabel={getFitAwareFreeLabel("collection")}
+                  label="Buy collection"
+                  freeLabel="Start collection"
                   className="h-12 w-full text-base font-bold"
-                  price={collection.discount > 0 ? collection.discount : 0}
-                  trackingEventName="fit_cta_clicked"
-                  trackingPayload={{
-                    fitStatus: collection.learningFit?.fitStatus,
-                    contentType: "collection",
-                  }}
+                  price={collectionFinalPrice}
                 />
 
                 <div className="space-y-3 border-t border-border/30 pt-4 text-sm">

@@ -12,8 +12,6 @@ import type {
   CreateResourceResponse,
   CreateTutorialPayload,
   CreateTutorialResponse,
-  GenerateLearningFitDraftPayload,
-  GenerateLearningFitDraftResponse,
   Major,
   PaginatedResult,
   ResourceQueryItem,
@@ -48,16 +46,6 @@ export const contentApi = baseApi.injectEndpoints({
         body,
       }),
       invalidatesTags: ["Tutorial"],
-    }),
-    generateLearningFitDraft: builder.mutation<
-      GenerateLearningFitDraftResponse,
-      GenerateLearningFitDraftPayload
-    >({
-      query: (body) => ({
-        url: "/v1/recommendations/rag/fit-draft",
-        method: "POST",
-        body,
-      }),
     }),
     createCollection: builder.mutation<
       ApiResponse<unknown>,
@@ -401,7 +389,6 @@ export const contentApi = baseApi.injectEndpoints({
 
 export const {
   useCreateTutorialMutation,
-  useGenerateLearningFitDraftMutation,
   useCreateCollectionMutation,
   useGetCollectionByIdQuery,
   useUpdateCollectionMutation,

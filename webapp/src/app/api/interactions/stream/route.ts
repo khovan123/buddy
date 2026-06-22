@@ -12,12 +12,17 @@ export async function GET(request: Request) {
     return new Response("Unauthorized", { status: 401 })
   }
 
-  const upstream = await fetch(`${API_BASE}/v1/interactions/stream`, {
-    method: "GET",
-    headers: authHeaders,
-    cache: "no-store",
-    signal: request.signal,
-  })
+  let upstream: Response
+  try {
+    upstream = await fetch(`${API_BASE}/v1/interactions/stream`, {
+      method: "GET",
+      headers: authHeaders,
+      cache: "no-store",
+      signal: request.signal,
+    })
+  } catch {
+    return new Response("Interaction stream unavailable", { status: 502 })
+  }
 
   if (!upstream.ok || !upstream.body) {
     return new Response("Interaction stream unavailable", {

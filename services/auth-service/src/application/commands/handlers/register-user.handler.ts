@@ -1,5 +1,5 @@
 import { CryptoUtil } from '@libs/common';
-import { OtpGeneratedEvent, UserRegisteredEvent } from '@libs/contracts';
+import { OtpGeneratedEvent } from '@libs/contracts';
 import { BadRequestException, ConflictException, Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { User } from '../../../domain/entities/user.entity';
@@ -68,19 +68,6 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
     // 6. Generate OTP and store in Redis
     const otp = Otp.generate();
     await this.otpRepository.save(email, otp, 'EMAIL_VERIFICATION', Otp.TTL_SECONDS);
-
-    // 7. Publish domain event
-    await this.publisher.publish(
-      new UserRegisteredEvent(
-        {
-          userId: user.id,
-          email: user.email.value,
-          nickname: user.nickname,
-          registeredAt: user.createdAt,
-        },
-        correlationId,
-      ),
-    );
 
     // 7.5. Publish OTP event to notification-service for email delivery
     await this.publisher.publish(

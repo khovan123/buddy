@@ -17,7 +17,6 @@ import {
   CollectionPhaseItemType,
   CollectionType,
 } from '../../../infrastructure/persistence/mongo/schemas/collection.schema';
-import { LearningFitDto } from './learning-fit.dto';
 
 /** DTO for a single item inside a Collection Phase. */
 export class CollectionPhaseItemDto {
@@ -126,9 +125,4 @@ export class CreateCollectionDto {
   @ValidateNested({ each: true })
   @Type(() => CollectionPhaseDto)
   phases?: CollectionPhaseDto[];
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => LearningFitDto)
-  learningFit?: LearningFitDto;
 }
