@@ -63,6 +63,14 @@ export const buildRoleAccessInput = (
   input?: RoleAccessInput | null,
   accessToken?: string | null
 ): RoleAccessInput => {
+  if (!accessToken) {
+    return {
+      role: null,
+      roles: null,
+      subscriptionPlan: null,
+    }
+  }
+
   const claims = decodeAccessTokenClaims(accessToken)
 
   const role =
