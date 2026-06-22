@@ -46,6 +46,13 @@ async function refreshAccessToken(
   token: JWT,
   options: { force?: boolean } = {}
 ): Promise<JWT> {
+  if (!token.refreshToken) {
+    return {
+      ...token,
+      error: "[MISSING_REFRESH_TOKEN]",
+    }
+  }
+
   const dedupeKey = token.user?.id || token.refreshToken
   if (options.force) {
     refreshPromises.delete(dedupeKey)
@@ -271,6 +278,10 @@ export const authOptions: AuthOptions = {
               ? account.id_token
               : account.access_token
 
+          if (!providerToken) {
+            throw new Error(`${account.provider} did not return a provider token`)
+          }
+
           const response = await fetchApi(
             "POST",
             "/auth/oauth",
@@ -296,8 +307,11 @@ export const authOptions: AuthOptions = {
             LoginResponse & { isNewUser?: boolean }
           >
 
+          if (!response.ok) {
+            throw new Error(extractApiError(json))
+          }
+
           if (
-            response.ok &&
             !data.data.requiresVerification &&
             data.data.accessToken
           ) {
@@ -320,8 +334,14 @@ export const authOptions: AuthOptions = {
                 claims?.subscriptionPlan ?? data.data.user.subscriptionPlan ?? null,
             }
             token.isNewUser = data.data.isNewUser ?? false
+            token.error = undefined
+          } else {
+            throw new Error("OAuth login did not return backend access token")
           }
         } catch {
+          token.accessToken = ""
+          token.refreshToken = ""
+          token.expiresAt = 0
           token.error = `[${account.provider.toUpperCase()}_AUTH_ERROR]`
         }
 

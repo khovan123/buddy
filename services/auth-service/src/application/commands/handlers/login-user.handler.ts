@@ -104,17 +104,6 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
       );
     const subscriptionPlan = subscriptionPlanDetails?.code ?? user.subscriptionPlan;
 
-    this.logger.log('Login resolved subscription plan details', {
-      userId: user.id,
-      email: user.email.value,
-      correlationId,
-      fallbackPlan: user.subscriptionPlan,
-      subscriptionPlan,
-      hasSubscriptionPlanDetails: Boolean(subscriptionPlanDetails),
-      limits: subscriptionPlanDetails?.limits ?? null,
-      pbacKeys: subscriptionPlanDetails?.pbac ? Object.keys(subscriptionPlanDetails.pbac) : [],
-    });
-
     // 7. Generate tokens
     const { accessToken, refreshToken, refreshTokenHash, accessExpiresIn } =
       await this.tokenService.generateTokenPair(user, { subscriptionPlanDetails });
