@@ -143,6 +143,18 @@ const SEO_FALLBACK: Record<string, SeoContent> = {
       "Enter the OTP code to protect your account and continue using Buddy securely.",
     badge: "Security",
   },
+  "auth-forgot-password": {
+    title: "Reset Password",
+    description:
+      "Request a password reset link to recover access to your Buddy account.",
+    badge: "Security",
+  },
+  "auth-reset-password": {
+    title: "Set New Password",
+    description:
+      "Choose a new secure password for your Buddy account.",
+    badge: "Security",
+  },
   onboarding: {
     title: "Complete Your Profile",
     description:

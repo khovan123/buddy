@@ -13,10 +13,12 @@ import {
   Res,
   UseGuards,
   Version,
+  Headers,
 } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ChangePasswordCommand } from '../../../application/commands/change-password.command';
+import { ForgotPasswordCommand } from '../../../application/commands/forgot-password.command';
 import { LoginUserCommand } from '../../../application/commands/login-user.command';
 import { LogoutUserCommand } from '../../../application/commands/logout-user.command';
 import type { OAuthProvider } from '../../../application/commands/oauth-login.command';
@@ -24,14 +26,17 @@ import { OAuthLoginCommand } from '../../../application/commands/oauth-login.com
 import { RefreshTokenCommand } from '../../../application/commands/refresh-token.command';
 import { RegisterUserCommand } from '../../../application/commands/register-user.command';
 import { ResendOtpCommand } from '../../../application/commands/resend-otp.command';
+import { ResetPasswordCommand } from '../../../application/commands/reset-password.command';
 import { VerifyOtpCommand } from '../../../application/commands/verify-otp.command';
 import { GetMeQuery } from '../../../application/queries/get-me.query';
 import { GetUserVerificationQuery } from '../../../application/queries/get-user-verification.query';
 import { ChangePasswordDto } from '../dtos/change-password.dto';
+import { ForgotPasswordDto } from '../dtos/forgot-password.dto';
 import { LoginDto } from '../dtos/login.dto';
 import { OAuthLoginDto } from '../dtos/oauth-login.dto';
 import { RegisterDto } from '../dtos/register.dto';
 import { ResendOtpDto } from '../dtos/resend-otp.dto';
+import { ResetPasswordDto } from '../dtos/reset-password.dto';
 import { VerifyOtpDto } from '../dtos/verify-otp.dto';
 
 /** Controller handling incoming requests for Auth. */
@@ -284,5 +289,53 @@ export class AuthController {
     );
 
     return successResponse(null, 'Password changed successfully', getCorrelationId());
+  }
+
+  /**
+   * Executes the forgot password operation — sends a reset link to the given email.
+   *
+   * @param dto - The dto parameter
+   * @param req - The req parameter
+   */
+  @Post('forgot-password')
+  @Public()
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+    @Headers('x-app-url') appUrlHeader: string,
+    @Req() req: FastifyRequest,
+  ) {
+    const appUrl =
+      appUrlHeader ||
+      `${req.protocol}://${req.hostname}`;
+
+    await this.commandBus.execute(
+      new ForgotPasswordCommand(dto.email, appUrl, getCorrelationId()),
+    );
+
+    // Always return a generic message to prevent user enumeration
+    return successResponse(
+      null,
+      'If an account with that email exists, a reset link has been sent.',
+      getCorrelationId(),
+    );
+  }
+
+  /**
+   * Executes the reset password operation — validates token and sets new password.
+   *
+   * @param dto - The dto parameter
+   */
+  @Post('reset-password')
+  @Public()
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.commandBus.execute(
+      new ResetPasswordCommand(dto.token, dto.newPassword, getCorrelationId()),
+    );
+
+    return successResponse(null, 'Password reset successfully', getCorrelationId());
   }
 }

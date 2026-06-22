@@ -18,10 +18,10 @@ import { COMMAND_HANDLERS } from './application/commands/command.module';
 import { QUERY_HANDLERS } from './application/queries/query.module';
 
 import {
-  OTP_REPOSITORY,
   REFRESH_TOKEN_REPOSITORY,
   TOKEN_SERVICE,
   USER_REPOSITORY,
+  VERIFICATION_TOKEN_REPOSITORY,
 } from './domain/repositories/tokens';
 import { TokenService } from './infrastructure/services/token.service';
 import { AuthController } from './presentation/http/controllers/auth.controller';
@@ -31,7 +31,7 @@ import { PrismaModule } from './infrastructure/persistence/prisma/prisma.module'
 import { PrismaService } from './infrastructure/persistence/prisma/prisma.service';
 import { RefreshTokenPrismaRepository } from './infrastructure/persistence/prisma/repositories/refresh-token.prisma-repository';
 import { UserPrismaRepository } from './infrastructure/persistence/prisma/repositories/user.prisma-repository';
-import { OtpRedisRepository } from './infrastructure/persistence/redis/repositories/otp.redis-repository';
+import { VerificationTokenRedisRepository } from './infrastructure/persistence/redis/repositories/verification-token.redis-repository';
 
 /** NestJS Module for  app. */
 @Module({
@@ -61,7 +61,7 @@ import { OtpRedisRepository } from './infrastructure/persistence/redis/repositor
     { provide: TOKEN_SERVICE, useClass: TokenService },
     { provide: USER_REPOSITORY, useClass: UserPrismaRepository },
     { provide: REFRESH_TOKEN_REPOSITORY, useClass: RefreshTokenPrismaRepository },
-    { provide: OTP_REPOSITORY, useClass: OtpRedisRepository },
+    { provide: VERIFICATION_TOKEN_REPOSITORY, useClass: VerificationTokenRedisRepository },
     PrismaHealthIndicator,
     {
       provide: PRISMA_CLIENT,

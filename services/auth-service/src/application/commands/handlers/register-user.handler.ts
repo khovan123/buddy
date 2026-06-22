@@ -3,8 +3,8 @@ import { OtpGeneratedEvent } from '@libs/contracts';
 import { BadRequestException, ConflictException, Inject } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { User } from '../../../domain/entities/user.entity';
-import type { IOtpRepository } from '../../../domain/repositories/otp.repository.interface';
-import { OTP_REPOSITORY, USER_REPOSITORY } from '../../../domain/repositories/tokens';
+import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
+import { USER_REPOSITORY, VERIFICATION_TOKEN_REPOSITORY } from '../../../domain/repositories/tokens';
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import { Otp } from '../../../domain/value-objects/otp.vo';
 import { Password } from '../../../domain/value-objects/password.vo';
@@ -24,8 +24,8 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: IUserRepository,
-    @Inject(OTP_REPOSITORY)
-    private readonly otpRepository: IOtpRepository,
+    @Inject(VERIFICATION_TOKEN_REPOSITORY)
+    private readonly verificationTokenRepository: IVerificationTokenRepository,
     private readonly publisher: AuthEventPublisher,
   ) {}
 
@@ -67,7 +67,7 @@ export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand>
 
     // 6. Generate OTP and store in Redis
     const otp = Otp.generate();
-    await this.otpRepository.save(email, otp, 'EMAIL_VERIFICATION', Otp.TTL_SECONDS);
+    await this.verificationTokenRepository.save(email, otp, 'EMAIL_VERIFICATION', Otp.TTL_SECONDS);
 
     // 7.5. Publish OTP event to notification-service for email delivery
     await this.publisher.publish(

@@ -178,6 +178,44 @@ export class AuthProxyController {
   }
 
   /**
+   * Executes the forgot password operation.
+   *
+   * @param body - The body parameter
+   * @param req - The req parameter
+   */
+  @Post('forgot-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 3 } }) // 3 requests/min
+  forgotPassword(@Body() body: unknown, @Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'auth',
+      path: '/v1/auth/forgot-password',
+      method: 'POST',
+      body,
+    });
+  }
+
+  /**
+   * Executes the reset password operation.
+   *
+   * @param body - The body parameter
+   * @param req - The req parameter
+   */
+  @Post('reset-password')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60_000, limit: 5 } }) // 5 requests/min
+  resetPassword(@Body() body: unknown, @Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'auth',
+      path: '/v1/auth/reset-password',
+      method: 'POST',
+      body,
+    });
+  }
+
+  /**
    * Executes the refresh operation.
    *
    * @param req - The req parameter

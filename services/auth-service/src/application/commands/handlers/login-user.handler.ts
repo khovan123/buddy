@@ -3,13 +3,13 @@ import { OtpGeneratedEvent, UserLoggedInEvent } from '@libs/contracts';
 import { Inject, UnauthorizedException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { randomUUID as uuidv4 } from 'node:crypto';
-import type { IOtpRepository } from '../../../domain/repositories/otp.repository.interface';
+import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
 import type { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
 import {
-  OTP_REPOSITORY,
   REFRESH_TOKEN_REPOSITORY,
   TOKEN_SERVICE,
   USER_REPOSITORY,
+  VERIFICATION_TOKEN_REPOSITORY,
 } from '../../../domain/repositories/tokens';
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import type { ITokenService } from '../../../domain/services/token.service.interface';
@@ -28,8 +28,8 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
     private readonly userRepository: IUserRepository,
     @Inject(REFRESH_TOKEN_REPOSITORY)
     private readonly refreshTokenRepository: IRefreshTokenRepository,
-    @Inject(OTP_REPOSITORY)
-    private readonly otpRepository: IOtpRepository,
+    @Inject(VERIFICATION_TOKEN_REPOSITORY)
+    private readonly verificationTokenRepository: IVerificationTokenRepository,
     @Inject(TOKEN_SERVICE)
     private readonly tokenService: ITokenService,
     private readonly publisher: AuthEventPublisher,
@@ -61,7 +61,7 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
     if (!user.emailVerified) {
       // Generate OTP for email verification
       const otp = Otp.generate();
-      await this.otpRepository.save(email, otp, 'EMAIL_VERIFICATION', Otp.TTL_SECONDS);
+      await this.verificationTokenRepository.save(email, otp, 'EMAIL_VERIFICATION', Otp.TTL_SECONDS);
 
       // 4.5. publish OTP event
       await this.publisher.publish(

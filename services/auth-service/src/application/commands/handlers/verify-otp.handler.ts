@@ -2,13 +2,13 @@ import { UserRegisteredEvent } from '@libs/contracts';
 import { BadRequestException, Inject, UnauthorizedException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { randomUUID as uuidv4 } from 'node:crypto';
-import type { IOtpRepository } from '../../../domain/repositories/otp.repository.interface';
+import type { IVerificationTokenRepository } from '../../../domain/repositories/verification-token.repository.interface';
 import type { IRefreshTokenRepository } from '../../../domain/repositories/refresh-token.repository.interface';
 import {
-  OTP_REPOSITORY,
   REFRESH_TOKEN_REPOSITORY,
   TOKEN_SERVICE,
   USER_REPOSITORY,
+  VERIFICATION_TOKEN_REPOSITORY,
 } from '../../../domain/repositories/tokens';
 import type { IUserRepository } from '../../../domain/repositories/user.repository.interface';
 import type { ITokenService } from '../../../domain/services/token.service.interface';
@@ -21,7 +21,7 @@ import { VerifyOtpCommand } from '../verify-otp.command';
 export class VerifyOtpHandler implements ICommandHandler<VerifyOtpCommand> {
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepository: IUserRepository,
-    @Inject(OTP_REPOSITORY) private readonly otpRepository: IOtpRepository,
+    @Inject(VERIFICATION_TOKEN_REPOSITORY) private readonly verificationTokenRepository: IVerificationTokenRepository,
     @Inject(REFRESH_TOKEN_REPOSITORY)
     private readonly refreshTokenRepository: IRefreshTokenRepository,
     @Inject(TOKEN_SERVICE)
@@ -42,7 +42,7 @@ export class VerifyOtpHandler implements ICommandHandler<VerifyOtpCommand> {
     }
 
     // 1. Find stored OTP
-    const storedOtp = await this.otpRepository.find(email, 'EMAIL_VERIFICATION');
+    const storedOtp = await this.verificationTokenRepository.find(email, 'EMAIL_VERIFICATION');
     if (!storedOtp) {
       throw new UnauthorizedException('OTP expired or not found. Please request a new one.');
     }
@@ -65,7 +65,7 @@ export class VerifyOtpHandler implements ICommandHandler<VerifyOtpCommand> {
     }
 
     // 5. Clean up OTP
-    await this.otpRepository.delete(email, 'EMAIL_VERIFICATION');
+    await this.verificationTokenRepository.delete(email, 'EMAIL_VERIFICATION');
 
     // 6. Publish domain event
     await this.publisher.publish(

@@ -1,4 +1,4 @@
-export type OtpPurpose = 'EMAIL_VERIFICATION' | 'TWO_FA';
+export type OtpPurpose = 'EMAIL_VERIFICATION' | 'TWO_FA' | 'PASSWORD_RESET';
 
 /** Represents the  otp component. */
 export class Otp {
