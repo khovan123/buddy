@@ -191,33 +191,97 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
 
   /** Verify a GitHub OAuth access token via GitHub's user API. */
   private async verifyGitHubToken(accessToken: string): Promise<OAuthProfile> {
-    // Get user profile
-    const userRes = await fetch('https://api.github.com/user', {
-      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      throw new UnauthorizedException('GitHub OAuth credentials are not configured');
+    }
+
+    // Kiểm tra token có hợp lệ và thuộc đúng OAuth App hay không
+    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+    const tokenCheckRes = await fetch(`https://api.github.com/applications/${clientId}/token`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        Accept: 'application/vnd.github+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        access_token: accessToken,
+      }),
     });
-    if (!userRes.ok) throw new UnauthorizedException('Invalid GitHub token');
 
-    const user = (await userRes.json()) as { email?: string; name?: string; login?: string };
+    if (!tokenCheckRes.ok) {
+      throw new UnauthorizedException(
+        'Invalid GitHub token or token does not belong to this application',
+      );
+    }
 
-    // GitHub may not return email in user profile — fetch from /user/emails
+    const checkedToken = (await tokenCheckRes.json()) as {
+      app?: {
+        client_id?: string;
+      };
+      user?: {
+        login?: string;
+        name?: string;
+        email?: string;
+      };
+    };
+
+    if (checkedToken.app?.client_id !== clientId) {
+      throw new UnauthorizedException('GitHub token audience mismatch');
+    }
+
+    // Lấy profile mới nhất
+    const userRes = await fetch('https://api.github.com/user', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/vnd.github+json',
+      },
+    });
+
+    if (!userRes.ok) {
+      throw new UnauthorizedException('Invalid GitHub token');
+    }
+
+    const user = (await userRes.json()) as {
+      email?: string;
+      name?: string;
+      login?: string;
+    };
+
     let email = user.email;
+
     if (!email) {
       const emailsRes = await fetch('https://api.github.com/user/emails', {
-        headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/vnd.github+json',
+        },
       });
+
       if (emailsRes.ok) {
         const emails = (await emailsRes.json()) as Array<{
           email: string;
           primary: boolean;
           verified: boolean;
         }>;
-        const primary = emails.find((e) => e.primary && e.verified);
-        email = primary?.email;
+
+        email =
+          emails.find((item) => item.primary && item.verified)?.email ??
+          emails.find((item) => item.verified)?.email;
       }
     }
 
-    if (!email) throw new UnauthorizedException('GitHub token missing email');
+    if (!email) {
+      throw new UnauthorizedException('GitHub token missing verified email');
+    }
 
-    return { email: email.toLowerCase(), name: user.name || user.login };
+    return {
+      email: email.toLowerCase(),
+      name: user.name || user.login,
+    };
   }
 }
