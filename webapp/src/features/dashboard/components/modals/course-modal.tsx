@@ -1,5 +1,7 @@
 "use client"
 
+import { useMemo, useState } from "react"
+
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller, useForm } from "react-hook-form"
 import { toast } from "sonner"
@@ -58,6 +60,20 @@ export default function CourseModal({
 
   const majorAnchor = useComboboxAnchor()
 
+  const [majorSearch, setMajorSearch] = useState("")
+
+  const visibleMajors = useMemo(() => {
+    const query = majorSearch.trim().toLowerCase()
+    if (!query) {
+      return majors
+    }
+    return majors.filter(
+      (m) =>
+        m.name.toLowerCase().includes(query) ||
+        m.code.toLowerCase().includes(query)
+    )
+  }, [majors, majorSearch])
+
   const {
     register,
     control,
@@ -93,7 +109,21 @@ export default function CourseModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-106.25">
+      <DialogContent
+        className="sm:max-w-106.25"
+        onPointerDownOutside={(e) => {
+          const target = e.target as HTMLElement
+          if (target && target.closest('[data-slot="combobox-content"]')) {
+            e.preventDefault()
+          }
+        }}
+        onFocusOutside={(e) => {
+          const target = e.target as HTMLElement
+          if (target && target.closest('[data-slot="combobox-content"]')) {
+            e.preventDefault()
+          }
+        }}
+      >
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>
@@ -135,23 +165,58 @@ export default function CourseModal({
               <Controller
                 name="majorId"
                 control={control}
-                render={({ field }) => (
-                  <Combobox value={field.value} onValueChange={field.onChange}>
-                    <div ref={majorAnchor}>
-                      <ComboboxInput placeholder="Select Major..." />
-                    </div>
-                    <ComboboxContent anchor={majorAnchor} align="start">
-                      <ComboboxList>
-                        {/* <ComboboxEmpty>No major found.</ComboboxEmpty> */}
-                        {majors.map((m) => (
-                          <ComboboxItem key={m.id} value={m.id}>
-                            {m.name} ({m.code})
-                          </ComboboxItem>
-                        ))}
-                      </ComboboxList>
-                    </ComboboxContent>
-                  </Combobox>
-                )}
+                render={({ field }) => {
+                  const selectedMajor = majors.find((m) => m.id === field.value)
+                  const selectedMajorName = selectedMajor
+                    ? `${selectedMajor.name} (${selectedMajor.code})`
+                    : "Select Major..."
+
+                  return (
+                    <Combobox
+                      value={field.value}
+                      onValueChange={(val) => {
+                        field.onChange(val ?? "")
+                        setMajorSearch("")
+                      }}
+                      inputValue={majorSearch}
+                      onInputValueChange={(val, details) => {
+                        if (
+                          details?.reason === "input-change" ||
+                          details?.reason === "input-clear"
+                        ) {
+                          setMajorSearch(val)
+                        }
+                      }}
+                    >
+                      <div ref={majorAnchor}>
+                        <ComboboxInput
+                          placeholder={selectedMajorName}
+                          onBlur={() => setMajorSearch("")}
+                        />
+                      </div>
+                      <ComboboxContent
+                        anchor={majorAnchor}
+                        align="start"
+                        className="pointer-events-auto"
+                        style={{ pointerEvents: "auto" }}
+                      >
+                        <ComboboxList>
+                          {visibleMajors.length === 0 ? (
+                            <div className="py-6 text-center text-sm text-muted-foreground">
+                              No majors found
+                            </div>
+                          ) : (
+                            visibleMajors.map((m) => (
+                              <ComboboxItem key={m.id} value={m.id}>
+                                {m.name} ({m.code})
+                              </ComboboxItem>
+                            ))
+                          )}
+                        </ComboboxList>
+                      </ComboboxContent>
+                    </Combobox>
+                  )
+                }}
               />
               {errors.majorId && (
                 <p className="mt-1 text-sm text-destructive">
