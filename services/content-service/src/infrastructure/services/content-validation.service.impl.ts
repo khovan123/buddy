@@ -108,7 +108,7 @@ export class ContentValidationServiceImpl implements IContentValidationService {
     if (!course) {
       throw new BadRequestException(`Course with id=${courseId} not found`);
     }
-    if (course.majorId?.toString() !== majorId) {
+    if (!course.majorIds || !course.majorIds.includes(majorId)) {
       throw new BadRequestException(
         `Course "${course.name}" (${courseId}) does not belong to majorId=${majorId}`,
       );

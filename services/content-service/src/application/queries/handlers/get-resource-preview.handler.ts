@@ -36,21 +36,7 @@ export class GetResourcePreviewHandler implements IQueryHandler<GetResourcePrevi
 
     const extension = this.resolveFormat(resource);
 
-    // 2. Free resource → no preview needed (full access)
-    if (resource.price === 0) {
-      return {
-        previewUrl: null,
-        isReady: true,
-        isPreview: false, // Not a preview — full access
-        previewPercentage: 100,
-        status: PreviewStatus.AVAILABLE,
-        resourceTitle: resource.title,
-        resourceSlug: resource.slug,
-        format: extension,
-      };
-    }
-
-    // 3. Check for cached primaryS3Key
+    // 2. Check for cached primaryS3Key
     const primaryS3Key = resource.primaryS3Key;
 
     if (!primaryS3Key) {
@@ -65,13 +51,19 @@ export class GetResourcePreviewHandler implements IQueryHandler<GetResourcePrevi
       );
     }
 
-    // 4. Single RPC → upload-service (s3Key only, no upload-history round-trip)
+    // 3. Single RPC → upload-service (s3Key only, no upload-history round-trip)
     try {
-      const previewEvent = new GetPreviewUrlEvent({ s3Key: primaryS3Key });
+      const isFreeResource = resource.price === 0;
+      const previewEvent = new GetPreviewUrlEvent({
+        s3Key: primaryS3Key,
+        fullAccess: isFreeResource,
+      });
       const previewResponse = await this.storageBrokerPublisher.getPreviewUrl(previewEvent);
 
       return {
         ...previewResponse,
+        isPreview: isFreeResource ? false : previewResponse.isPreview,
+        previewPercentage: isFreeResource ? 100 : previewResponse.previewPercentage,
         resourceTitle: resource.title,
         resourceSlug: resource.slug,
         format: extension,

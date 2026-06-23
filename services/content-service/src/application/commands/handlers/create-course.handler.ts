@@ -20,10 +20,10 @@ export class CreateCourseHandler implements ICommandHandler<CreateCourseCommand>
     this.recommendationSync.send({
       type: 'COURSE_UPSERT',
       courseId: result.id,
-      majorId: command.dto.majorId,
-      semester: command.dto.semester,
-      code: command.dto.code,
-      name: command.dto.name,
+      majorId: result.majorIds && result.majorIds.length > 0 ? result.majorIds[0] : '',
+      semester: result.semester,
+      code: result.code,
+      name: result.name,
     });
 
     return result;

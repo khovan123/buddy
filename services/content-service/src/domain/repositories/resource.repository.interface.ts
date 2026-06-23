@@ -93,6 +93,7 @@ export interface ResourceQueryItem {
   tutorialId?: string | null;
   collectionId?: string | null;
   collection?: ResourceCollectionDetails | null;
+  meta: ResourceMeta[];
   primaryS3Key?: string | null;
   primaryFileExtension?: string | null;
   _count: ResourceQueryCount;

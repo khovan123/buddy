@@ -227,7 +227,7 @@ export type TutorialFormValues = z.infer<typeof tutorialSchema>
 export const courseSchema = z.object({
   code: z.string().min(1, "Please enter a course code."),
   name: z.string().min(1, "Please enter a course name."),
-  majorId: z.string().min(1, "Please choose a major."),
+  majorIds: z.array(z.string()).min(1, "Please choose at least one major."),
   credits: z.number().min(1, "Credits must be at least 1."),
   semester: z.number().min(1, "Semester must be at least 1."),
   isCompulsory: z.boolean(),

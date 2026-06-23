@@ -14,7 +14,7 @@ export interface CourseProps {
   credits: number;
   semester: number;
   isCompulsory: boolean;
-  majorId: string;
+  majorIds: string[];
   prerequisiteCourseIds: string[];
   status: CourseStatus;
   deletedAt?: Date;
@@ -40,9 +40,12 @@ export class CourseEntity {
     credits: number;
     semester: number;
     isCompulsory?: boolean;
-    majorId: string;
+    majorIds: string[];
     prerequisiteCourseIds?: string[];
   }): CourseEntity {
+    if (!params.majorIds || params.majorIds.length === 0) {
+      throw new Error('A course must be linked to at least one major.');
+    }
     return new CourseEntity({
       id: '',
       code: params.code,
@@ -50,7 +53,7 @@ export class CourseEntity {
       credits: params.credits,
       semester: params.semester,
       isCompulsory: params.isCompulsory ?? true,
-      majorId: params.majorId,
+      majorIds: Array.from(new Set(params.majorIds)),
       prerequisiteCourseIds: params.prerequisiteCourseIds ?? [],
       status: CourseStatus.ACTIVE,
     });
@@ -114,12 +117,12 @@ export class CourseEntity {
     this.props.isCompulsory = value;
   }
 
-  get majorId(): string {
-    return this.props.majorId;
+  get majorIds(): string[] {
+    return this.props.majorIds;
   }
 
-  set majorId(value: string) {
-    this.props.majorId = value;
+  set majorIds(value: string[]) {
+    this.props.majorIds = value;
   }
 
   get prerequisiteCourseIds(): string[] {

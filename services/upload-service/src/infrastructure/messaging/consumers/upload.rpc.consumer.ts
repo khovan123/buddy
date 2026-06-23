@@ -222,13 +222,15 @@ export class UploadUrlConsumer {
   async getPreviewUrl(data: {
     correlationId?: string;
     eventId?: string;
-    payload: { s3Key: string };
+    payload: { s3Key: string; fullAccess?: boolean };
   }) {
     const correlationId = ensureCorrelationId(data.correlationId, data.eventId);
 
     try {
       return await runWithCorrelationId(correlationId, () =>
-        this.queryBus.execute(new GetPreviewUrlQuery(data.payload.s3Key)),
+        this.queryBus.execute(
+          new GetPreviewUrlQuery(data.payload.s3Key, data.payload.fullAccess ?? false),
+        ),
       );
     } catch {
       return new Nack(false);

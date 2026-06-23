@@ -93,6 +93,7 @@ export interface Course {
   semester: number
   isCompulsory: boolean
   majorId: string
+  majorIds: string[]
   prerequisiteCourseIds: string[]
   status: CourseStatus
   createdAt: string
@@ -100,6 +101,7 @@ export interface Course {
   deletedAt?: string | null
   // Virtuals (populated)
   major?: Major
+  majors?: Major[]
   prerequisiteCourses?: Course[]
 }
 
@@ -208,6 +210,7 @@ export interface ResourceQueryItem {
   tutorialId?: string | null
   collectionId?: string | null
   collection?: ResourceCollectionDetails | null
+  meta?: ResourceMeta[]
   _count: ResourceQueryCount
   uploader?: UserProfileRpcResponse
   major?: CollectionQueryMajor
@@ -219,7 +222,7 @@ export interface ResourceQueryItem {
 /** tutorial.schema.ts → MediaMeta (embedded sub-document) */
 export interface TutorialMedia {
   fileId: string
-  videoUrl: string
+  videoUrl?: string | null
   streamingUrl?: string | null
   trailerUrl?: string | null
   duration: number
@@ -250,6 +253,8 @@ export interface Tutorial {
   collectionId?: string | null
   resourceIds?: string[] | null
   collectionIds?: string[]
+  thumbnailUrl?: string | null
+  trailerUrl?: string | null
   createdAt: string
   updatedAt: string
   deletedAt?: string | null
@@ -316,6 +321,7 @@ export interface TutorialQueryItem {
   moderatedAt?: string | null
   isVerified: boolean
   discountBundle: number
+  media?: TutorialMedia | null
   createdAt: string
   updatedAt: string
   deletedAt?: string | null
@@ -538,7 +544,8 @@ export interface CreateCoursePayload {
   credits: number
   semester: number
   isCompulsory?: boolean
-  majorId: string
+  majorId?: string
+  majorIds: string[]
   prerequisiteCourseIds?: string[]
 }
 
@@ -549,6 +556,7 @@ export interface UpdateCoursePayload {
   semester?: number
   isCompulsory?: boolean
   majorId?: string
+  majorIds?: string[]
   prerequisiteCourseIds?: string[]
   status?: CourseStatus
 }

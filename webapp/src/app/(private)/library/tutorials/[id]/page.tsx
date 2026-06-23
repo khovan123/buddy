@@ -9,7 +9,10 @@ import { MetaChip } from "@/components/atoms/meta-chip"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { getLibraryTutorialBySlug } from "@/features/content"
+import {
+  getLibraryTutorialBySlug,
+  LibraryTutorialVideoPlayer,
+} from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
 
 type PageParams = Promise<{ id: string }>
@@ -76,7 +79,11 @@ export default async function LibraryTutorialDetailPage({
     notFound()
   }
 
-  const videoUrl = tutorial.media?.videoUrl || tutorial.media?.streamingUrl
+  const videoUrl =
+    tutorial.media?.videoUrl ||
+    tutorial.media?.streamingUrl ||
+    tutorial.trailerUrl
+  const fallbackVideoUrl = tutorial.trailerUrl || tutorial.media?.trailerUrl
   const duration = tutorial.media?.duration
     ? formatDuration(tutorial.media.duration)
     : "—"
@@ -125,15 +132,11 @@ export default async function LibraryTutorialDetailPage({
                 {videoUrl ? (
                   <div className="group relative aspect-video w-full overflow-hidden rounded-3xl bg-black shadow-[0_20px_50px_rgba(0,0,0,0.5)] ring-1 ring-white/10">
                     <div className="absolute inset-x-0 -top-px h-px bg-linear-to-r from-transparent via-white/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                    <video
-                      src={videoUrl}
-                      controls
-                      preload="metadata"
-                      playsInline
-                      className="h-full w-full object-cover"
-                    >
-                      Your browser does not support HTML5 video playback.
-                    </video>
+                    <LibraryTutorialVideoPlayer
+                      key={videoUrl}
+                      sourceUrl={videoUrl}
+                      fallbackUrl={fallbackVideoUrl}
+                    />
                   </div>
                 ) : (
                   <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-3xl bg-card/50 shadow-2xl ring-1 ring-white/10 backdrop-blur-md">

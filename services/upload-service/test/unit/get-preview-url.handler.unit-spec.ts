@@ -20,6 +20,56 @@ describe('GetPreviewUrlHandler', () => {
     process.env.SERVICE_NAME ??= 'upload-service';
   });
 
+  it('serves the original file when full access is requested', async () => {
+    const prisma = {
+      client: {
+        mediaFile: {
+          findFirst: jest.fn(async () => ({
+            id: 'file-0',
+            previewS3Key: 'previews/30pct/resources/file.docx',
+            previewStatus: 'AVAILABLE',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            originalFilename: 'file.docx',
+            updatedAt: new Date(),
+          })),
+          update: jest.fn(),
+        },
+      },
+    } as unknown as PrismaService;
+    const s3Service = {
+      generatePreviewSignedUrl: jest.fn(async () => 'https://signed.example/original.docx'),
+    } as unknown as S3Service;
+    const previewProcessor = {
+      getPreviewMimeType: jest.fn(),
+      isSupported: jest.fn(),
+    } as unknown as PreviewProcessorContext;
+    const previewQueue = { add: jest.fn() };
+    const handler = new GetPreviewUrlHandler(
+      prisma,
+      s3Service,
+      previewProcessor,
+      previewQueue as never,
+    );
+
+    const result = await handler.execute(
+      new GetPreviewUrlQuery('resources/resource-1/file.docx', true),
+    );
+
+    expect(result).toEqual({
+      previewUrl: 'https://signed.example/original.docx',
+      isReady: true,
+      isPreview: false,
+      previewPercentage: 100,
+      status: PreviewStatus.AVAILABLE,
+    });
+    expect(s3Service.generatePreviewSignedUrl).toHaveBeenCalledWith(
+      'resources/resource-1/file.docx',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    expect(previewProcessor.getPreviewMimeType).not.toHaveBeenCalled();
+    expect(previewQueue.add).not.toHaveBeenCalled();
+  });
+
   it('signs available generated previews with the generated preview MIME type', async () => {
     const prisma = {
       client: {

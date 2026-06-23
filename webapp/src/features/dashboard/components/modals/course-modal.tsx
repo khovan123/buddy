@@ -11,10 +11,12 @@ import { Checkbox } from "@/components/ui/checkbox"
 import {
   Combobox,
   ComboboxContent,
-  ComboboxInput,
   ComboboxItem,
   ComboboxList,
   useComboboxAnchor,
+  ComboboxChips,
+  ComboboxChip,
+  ComboboxChipsInput,
 } from "@/components/ui/combobox"
 import {
   Dialog,
@@ -81,15 +83,25 @@ export default function CourseModal({
     formState: { errors },
   } = useForm<CourseFormValues>({
     resolver: zodResolver(courseSchema),
-    values: course || {
-      code: "",
-      name: "",
-      credits: 3,
-      semester: 1,
-      isCompulsory: true,
-      majorId: "",
-      status: CourseStatus.ACTIVE,
-    },
+    values: course
+      ? {
+          code: course.code,
+          name: course.name,
+          credits: course.credits,
+          semester: course.semester,
+          isCompulsory: course.isCompulsory,
+          majorIds: course.majorIds ?? (course.majorId ? [course.majorId] : []),
+          status: course.status,
+        }
+      : {
+          code: "",
+          name: "",
+          credits: 3,
+          semester: 1,
+          isCompulsory: true,
+          majorIds: [],
+          status: CourseStatus.ACTIVE,
+        },
   })
 
   const onSubmit = async (data: CourseFormValues) => {
@@ -161,21 +173,19 @@ export default function CourseModal({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="majorId">Major</FieldLabel>
+              <FieldLabel htmlFor="majorIds">Majors</FieldLabel>
               <Controller
-                name="majorId"
+                name="majorIds"
                 control={control}
                 render={({ field }) => {
-                  const selectedMajor = majors.find((m) => m.id === field.value)
-                  const selectedMajorName = selectedMajor
-                    ? `${selectedMajor.name} (${selectedMajor.code})`
-                    : "Select Major..."
+                  const currentValues = field.value || []
 
                   return (
                     <Combobox
-                      value={field.value}
+                      multiple
+                      value={currentValues}
                       onValueChange={(val) => {
-                        field.onChange(val ?? "")
+                        field.onChange(val)
                         setMajorSearch("")
                       }}
                       inputValue={majorSearch}
@@ -189,10 +199,21 @@ export default function CourseModal({
                       }}
                     >
                       <div ref={majorAnchor}>
-                        <ComboboxInput
-                          placeholder={selectedMajorName}
-                          onBlur={() => setMajorSearch("")}
-                        />
+                        <ComboboxChips>
+                          {currentValues.map((id) => {
+                            const m = majors.find((major) => major.id === id)
+                            return (
+                              <ComboboxChip key={id}>
+                                {m ? `${m.name} (${m.code})` : id}
+                              </ComboboxChip>
+                            )
+                          })}
+                          <ComboboxChipsInput
+                            id="majorIds"
+                            placeholder={currentValues.length === 0 ? "Select Majors..." : ""}
+                            onBlur={() => setMajorSearch("")}
+                          />
+                        </ComboboxChips>
                       </div>
                       <ComboboxContent
                         anchor={majorAnchor}
@@ -218,9 +239,9 @@ export default function CourseModal({
                   )
                 }}
               />
-              {errors.majorId && (
+              {errors.majorIds && (
                 <p className="mt-1 text-sm text-destructive">
-                  {errors.majorId.message}
+                  {errors.majorIds.message}
                 </p>
               )}
             </Field>

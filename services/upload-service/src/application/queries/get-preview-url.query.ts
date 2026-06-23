@@ -6,5 +6,8 @@
  * preview status and previewS3Key.
  */
 export class GetPreviewUrlQuery {
-  constructor(public readonly s3Key: string) {}
+  constructor(
+    public readonly s3Key: string,
+    public readonly fullAccess = false,
+  ) {}
 }

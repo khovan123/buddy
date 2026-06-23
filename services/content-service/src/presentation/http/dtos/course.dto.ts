@@ -32,9 +32,10 @@ export class CreateCourseDto {
   @IsOptional()
   isCompulsory?: boolean;
 
-  @IsString()
-  @IsNotEmpty()
-  majorId!: string;
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  majorIds!: string[];
 
   @IsArray()
   @IsString({ each: true })
@@ -73,9 +74,10 @@ export class UpdateCourseDto {
   isCompulsory?: boolean;
 
   @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  majorId?: string;
+  @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  majorIds?: string[];
 
   @IsOptional()
   @IsArray()

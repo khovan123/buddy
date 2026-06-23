@@ -60,6 +60,10 @@ export class GetPreviewUrlHandler implements IQueryHandler<GetPreviewUrlQuery> {
       return this.buildOriginalFilePreview(s3Key);
     }
 
+    if (query.fullAccess) {
+      return this.buildOriginalFilePreview(s3Key, mediaFile.mimeType, false, 100);
+    }
+
     // 2. If preview is already available → generate inline signed URL
     if (mediaFile.previewS3Key && mediaFile.previewStatus === 'AVAILABLE') {
       const previewUrl = await this.s3Service.generatePreviewSignedUrl(
@@ -113,14 +117,16 @@ export class GetPreviewUrlHandler implements IQueryHandler<GetPreviewUrlQuery> {
   private async buildOriginalFilePreview(
     s3Key: string,
     mimeType?: string,
+    isPreview = true,
+    previewPercentage = DEFAULT_PREVIEW_PERCENTAGE,
   ): Promise<PreviewUrlRpcResponse> {
     const previewUrl = await this.s3Service.generatePreviewSignedUrl(s3Key, mimeType);
 
     return {
       previewUrl,
       isReady: true,
-      isPreview: true,
-      previewPercentage: DEFAULT_PREVIEW_PERCENTAGE,
+      isPreview,
+      previewPercentage,
       status: PreviewStatus.AVAILABLE,
     };
   }

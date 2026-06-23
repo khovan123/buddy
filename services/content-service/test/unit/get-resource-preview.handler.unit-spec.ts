@@ -38,6 +38,41 @@ function makeResource(overrides: Record<string, unknown> = {}) {
 }
 
 describe('GetResourcePreviewHandler', () => {
+  it('returns a full-access document URL for free resources', async () => {
+    const resourceRepository = {
+      findBySlugWithDetails: jest.fn(async () => makeResource({ price: 0 })),
+    } as unknown as IResourceRepository;
+    const storageBroker = {
+      getPreviewUrl: jest.fn(async () => ({
+        previewUrl: 'https://signed.example/original.docx',
+        isReady: true,
+        isPreview: true,
+        previewPercentage: 30,
+        status: PreviewStatus.AVAILABLE,
+      })),
+    } as unknown as StorageBrokerPublisher;
+    const handler = new GetResourcePreviewHandler(resourceRepository, storageBroker);
+
+    const result = await handler.execute(new GetResourcePreviewQuery('system-design-notes'));
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        previewUrl: 'https://signed.example/original.docx',
+        isPreview: false,
+        previewPercentage: 100,
+        status: PreviewStatus.AVAILABLE,
+      }),
+    );
+    expect(storageBroker.getPreviewUrl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: {
+          s3Key: 'resources/resource-1/notes.docx',
+          fullAccess: true,
+        },
+      }),
+    );
+  });
+
   it('returns the primary file format from resource metadata', async () => {
     const resourceRepository = {
       findBySlugWithDetails: jest.fn(async () => makeResource()),

@@ -103,6 +103,7 @@ export interface TutorialQueryItem {
   moderatedAt?: Date | null;
   isVerified: boolean;
   discountBundle: number;
+  media: TutorialMedia;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date | null;

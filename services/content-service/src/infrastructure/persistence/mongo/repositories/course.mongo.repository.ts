@@ -33,6 +33,7 @@ type CoursePersistenceLean = InferSchemaType<typeof CourseSchema> & {
 
 type CourseQueryWithPopulate = CoursePersistenceLean & {
   major?: MajorLean | null;
+  majors?: MajorLean[] | null;
 };
 
 /** Repository interface/implementation for  course mongo data access. */
@@ -57,7 +58,7 @@ export class CourseMongoRepository implements ICourseRepository {
       credits: doc.credits,
       semester: doc.semester,
       isCompulsory: doc.isCompulsory,
-      majorId: doc.majorId.toString(),
+      majorIds: (doc.majorIds ?? []).map((id: any) => id.toString()),
       prerequisiteCourseIds: (doc.prerequisiteCourseIds ?? []).map((id: Types.ObjectId | string) =>
         id.toString(),
       ),
@@ -76,6 +77,7 @@ export class CourseMongoRepository implements ICourseRepository {
       .find({ deletedAt: null })
       .sort({ name: 1 })
       .populate('major')
+      .populate('majors')
       .lean<CourseQueryWithPopulate[]>()
       .exec();
     return rows.map((r) => this.toQueryItem(r));
@@ -114,9 +116,10 @@ export class CourseMongoRepository implements ICourseRepository {
    */
   async findByMajorId(majorId: string): Promise<CourseQueryItem[]> {
     const rows = await this.courseModel
-      .find({ majorId, deletedAt: null })
+      .find({ majorIds: majorId, deletedAt: null })
       .sort({ semester: 1, name: 1 })
       .populate('major')
+      .populate('majors')
       .lean<CourseQueryWithPopulate[]>()
       .exec();
     return rows.map((r) => this.toQueryItem(r));
@@ -173,7 +176,8 @@ export class CourseMongoRepository implements ICourseRepository {
       credits: doc.credits,
       semester: doc.semester,
       isCompulsory: doc.isCompulsory,
-      majorId: doc.majorId.toString(),
+      majorIds: (doc.majorIds ?? []).map((id: any) => id.toString()),
+      majorId: doc.majorIds && doc.majorIds.length > 0 ? doc.majorIds[0].toString() : '',
       major: doc.major
         ? {
             id: doc.major._id.toString(),
@@ -185,6 +189,18 @@ export class CourseMongoRepository implements ICourseRepository {
             updatedAt: doc.major.updatedAt,
             deletedAt: doc.major.deletedAt ?? null,
           }
+        : undefined,
+      majors: doc.majors
+        ? doc.majors.map((m) => ({
+            id: m._id.toString(),
+            code: m.code,
+            name: m.name,
+            description: m.description,
+            status: m.status,
+            createdAt: m.createdAt,
+            updatedAt: m.updatedAt,
+            deletedAt: m.deletedAt ?? null,
+          }))
         : undefined,
       prerequisiteCourseIds: (doc.prerequisiteCourseIds ?? []).map((id: Types.ObjectId | string) =>
         id.toString(),

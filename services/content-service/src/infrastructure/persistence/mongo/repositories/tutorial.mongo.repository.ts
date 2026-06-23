@@ -805,6 +805,7 @@ export class TutorialMongoRepository implements ITutorialRepository {
       moderatedAt: row.moderatedAt ?? null,
       isVerified: row.isVerified,
       discountBundle: row.discountBundle,
+      media: this.toDomainMedia(row.media),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt ?? null,

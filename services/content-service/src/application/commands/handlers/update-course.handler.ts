@@ -16,15 +16,17 @@ export class UpdateCourseHandler implements ICommandHandler<UpdateCourseCommand>
   async execute(command: UpdateCourseCommand) {
     const result = await this.courseRepository.update(command.id, command.dto);
 
-    // Sync to recommendation-service (fire-and-forget)
-    this.recommendationSync.send({
-      type: 'COURSE_UPSERT',
-      courseId: command.id,
-      majorId: command.dto.majorId,
-      semester: command.dto.semester,
-      code: command.dto.code,
-      name: command.dto.name,
-    });
+    if (result) {
+      // Sync to recommendation-service (fire-and-forget)
+      this.recommendationSync.send({
+        type: 'COURSE_UPSERT',
+        courseId: command.id,
+        majorId: result.majorIds && result.majorIds.length > 0 ? result.majorIds[0] : '',
+        semester: result.semester,
+        code: result.code,
+        name: result.name,
+      });
+    }
 
     return result;
   }

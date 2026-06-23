@@ -361,6 +361,8 @@ export class GetPreviewUrlEvent extends BaseEvent {
     public readonly payload: {
       /** The MediaFile S3 key for direct preview lookup */
       s3Key: string;
+      /** Return the original file URL instead of a partial preview. */
+      fullAccess?: boolean;
     },
     correlationId?: string,
   ) {

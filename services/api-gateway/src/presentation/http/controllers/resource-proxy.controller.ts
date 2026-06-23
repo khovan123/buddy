@@ -241,22 +241,6 @@ export class ResourceProxyController {
   }
 
   /**
-   * Executes the get resource by slug operation.
-   *
-   * @param slug - The slug parameter
-   * @param req - The req parameter
-   */
-  @Get(':slug')
-  @Public()
-  getResourceBySlug(@Param('slug') slug: string, @Req() req: FastifyRequest) {
-    return this.proxy.forward(req, {
-      service: 'content',
-      path: `/v1/resources/${slug}`,
-      method: 'GET',
-    });
-  }
-
-  /**
    * Executes the get resource preview operation.
    *
    * @param slug - The slug parameter
@@ -268,6 +252,22 @@ export class ResourceProxyController {
     return this.proxy.forward(req, {
       service: 'content',
       path: `/v1/resources/${slug}/preview`,
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Executes the get resource by slug operation.
+   *
+   * @param slug - The slug parameter
+   * @param req - The req parameter
+   */
+  @Get(':slug')
+  @Public()
+  getResourceBySlug(@Param('slug') slug: string, @Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'content',
+      path: `/v1/resources/${slug}`,
       method: 'GET',
     });
   }

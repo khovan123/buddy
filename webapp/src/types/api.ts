@@ -78,6 +78,28 @@ export function extractApiError(error: unknown): string {
     return error.message
   }
 
+  if (typeof error === "string") {
+    return error
+  }
+
+  if (typeof error === "object" && error !== null) {
+    if ("message" in error) {
+      const message = (error as { message: unknown }).message
+      if (typeof message === "string") {
+        return message
+      }
+      if (Array.isArray(message) && typeof message[0] === "string") {
+        return message[0]
+      }
+    }
+
+    try {
+      return JSON.stringify(error)
+    } catch {
+      return "An unexpected error occurred"
+    }
+  }
+
   return error?.toString() ?? "An unexpected error occurred"
 }
 

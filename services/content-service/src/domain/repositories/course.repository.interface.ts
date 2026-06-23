@@ -8,8 +8,10 @@ export interface CourseQueryItem {
   credits: number;
   semester: number;
   isCompulsory: boolean;
+  majorIds: string[];
   majorId: string;
   major?: MajorQueryItem;
+  majors?: MajorQueryItem[];
   prerequisiteCourseIds: string[];
   status: CourseStatus;
   createdAt?: Date;

@@ -22,11 +22,11 @@ export class Course {
   isCompulsory!: boolean; // Môn bắt buộc (true) hay tự chọn (false)
 
   @Prop({
-    type: MongooseSchema.Types.ObjectId,
-    ref: 'Major',
+    type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Major' }],
     required: true,
+    default: [],
   })
-  majorId!: string; // Liên kết phẳng trực tiếp tới Major
+  majorIds!: string[]; // Liên kết tới nhiều Major (một môn có thể thuộc nhiều ngành)
 
   @Prop({
     type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Course' }],
@@ -45,9 +45,18 @@ export type CourseDocument = HydratedDocument<Course>;
 export const CourseSchema = SchemaFactory.createForClass(Course);
 
 // Thiết lập Virtual Field để populate thông tin Major khi query Course
+CourseSchema.virtual('majors', {
+  ref: 'Major',
+  localField: 'majorIds',
+  foreignField: '_id',
+  justOne: false,
+});
+
+// Backward-compat: giữ alias `major` trỏ vào major đầu tiên để mọi nơi cũ
+// tham chiếu `course.major` không bị vỡ khi render danh sách đơn lẻ.
 CourseSchema.virtual('major', {
   ref: 'Major',
-  localField: 'majorId',
+  localField: 'majorIds',
   foreignField: '_id',
   justOne: true,
 });

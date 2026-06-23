@@ -1,7 +1,7 @@
 import {
   getCareers,
   getContentMeta,
-  getSkills
+  getSkills,
 } from "@/features/dashboard/services/dashboard.service"
 import {
   CareerItem,

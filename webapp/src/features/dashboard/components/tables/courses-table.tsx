@@ -77,9 +77,19 @@ export default function CoursesTable({ courses, majors }: CoursesTableProps) {
                     </td>
                     <td className="p-4 align-middle">{course.semester}</td>
                     <td className="p-4 align-middle">
-                      {course.major?.code ||
-                        majors.find((m) => m.id === course.majorId)?.code ||
-                        course.majorId}
+                      {course.majors && course.majors.length > 0
+                        ? course.majors.map((m) => m.code).join(", ")
+                        : course.majorIds && course.majorIds.length > 0
+                          ? course.majorIds
+                              .map(
+                                (id) =>
+                                  majors.find((m) => m.id === id)?.code || id
+                              )
+                              .join(", ")
+                          : course.major?.code ||
+                            majors.find((m) => m.id === course.majorId)?.code ||
+                            course.majorId ||
+                            "-"}
                     </td>
                     <td className="p-4 align-middle">
                       <Badge
