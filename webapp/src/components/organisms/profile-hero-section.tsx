@@ -1,5 +1,3 @@
-import Image from "next/image"
-
 import { Bell, Mail, Wallet } from "lucide-react"
 
 import { UserAvatar } from "@/components/atoms/user-avatar"
@@ -47,24 +45,13 @@ export function ProfileHeroSection({
 
   return (
     <section className="overflow-hidden rounded-3xl border border-border bg-card">
-      <div className="relative h-65 md:h-90">
-        <Image
-          fill
-          src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7kzGcStj8pKulNyoRYQxEHDjcTIjnWEiX0q7fZQ0sFAkjiF9s1td8EXtPNBeS_UjTG02Z_jpHvyFZOSKKR0EInvlhhfKokVXTb1gZyhXCGFP_WPPJSq9LKu2DLm0xKJzRjlix8NumHE0mqtfKujsa_YIzQxVRvCDUWrLlEgcMxknOVUMHfjXHyZYmHX_NJ58BbxG1VOJgWB0ZMOuRaEmRPua9XVaAs8Lzsbsx6P6zjDCFxbp-YLSu_L6QSuR80V8nFkZDc2YQtgmS"
-          alt="Creator cover"
-          className="object-cover"
-          sizes="100vw"
-        />
-        <div className="absolute inset-0 bg-linear-to-t from-background via-background/30 to-transparent" />
-      </div>
-
-      <div className="relative px-6 pb-8 md:px-10">
-        <div className="-mt-20 flex flex-col gap-6 md:-mt-24 md:flex-row md:items-end md:justify-between">
-          <div className="flex items-end gap-5">
+      <div className="px-6 py-8 md:px-10">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end">
             <div className="relative">
               <div>
                 <UserAvatar
-                  className="size-36 border-2 border-border md:size-44"
+                  className="size-32 border-2 border-border md:size-40"
                   src={me?.profile?.avatarUrl}
                   name={profileName}
                 />

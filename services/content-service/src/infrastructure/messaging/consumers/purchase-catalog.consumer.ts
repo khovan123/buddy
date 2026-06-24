@@ -82,25 +82,40 @@ export class PurchaseCatalogConsumer {
     const ownedResourceIds = this.toOwnedIdSet(payload.ownedResourceIds);
     const ownedTutorialIds = this.toOwnedIdSet(payload.ownedTutorialIds);
 
-    switch (payload.itemType) {
-      case 'RESOURCE':
-        return this.buildResourceQuote(payload.itemId);
-      case 'TUTORIAL':
-        return this.buildTutorialQuote(payload.itemId);
-      case 'RESOURCE_COLLECTION':
-        return this.buildResourceCollectionQuote(payload.itemId, ownedResourceIds);
-      case 'TUTORIAL_COLLECTION':
-        return this.buildTutorialCollectionQuote(payload.itemId, ownedTutorialIds);
-      case 'TUTORIAL_BUNDLE':
-        return this.buildTutorialBundleQuote(payload.itemId, ownedResourceIds, ownedTutorialIds);
-      case 'TUTORIAL_BUNDLE_COLLECTION':
-        return this.buildTutorialBundleCollectionQuote(
-          payload.itemId,
-          ownedResourceIds,
-          ownedTutorialIds,
+    try {
+      switch (payload.itemType) {
+        case 'RESOURCE':
+          return await this.buildResourceQuote(payload.itemId);
+        case 'TUTORIAL':
+          return await this.buildTutorialQuote(payload.itemId);
+        case 'RESOURCE_COLLECTION':
+          return await this.buildResourceCollectionQuote(payload.itemId, ownedResourceIds);
+        case 'TUTORIAL_COLLECTION':
+          return await this.buildTutorialCollectionQuote(payload.itemId, ownedTutorialIds);
+        case 'TUTORIAL_BUNDLE':
+          return await this.buildTutorialBundleQuote(
+            payload.itemId,
+            ownedResourceIds,
+            ownedTutorialIds,
+          );
+        case 'TUTORIAL_BUNDLE_COLLECTION':
+          return await this.buildTutorialBundleCollectionQuote(
+            payload.itemId,
+            ownedResourceIds,
+            ownedTutorialIds,
+          );
+        default:
+          return this.emptyQuote();
+      }
+    } catch (error) {
+      if (this.isNotFoundError(error)) {
+        this.logger.warn(
+          `Purchase catalog item not found; returning empty quote for ${payload.itemType} ${payload.itemId}`,
         );
-      default:
-        return { sellerId: '', priceInCents: '0', items: [] };
+        return this.emptyQuote();
+      }
+
+      throw error;
     }
   }
 
@@ -442,6 +457,14 @@ export class PurchaseCatalogConsumer {
     return new Set(
       (value || []).filter((item): item is string => typeof item === 'string' && item.length > 0),
     );
+  }
+
+  private emptyQuote(): PurchaseCatalogResponse {
+    return { sellerId: '', priceInCents: '0', items: [] };
+  }
+
+  private isNotFoundError(error: unknown): boolean {
+    return error instanceof Error && / was not found$/.test(error.message);
   }
 
   /**

@@ -63,6 +63,7 @@ class CatalogStore:
             {"$set": {
                 "itemId": item["itemId"],
                 "itemType": item.get("itemType", ""),
+                "ownerId": item.get("ownerId", item.get("userId", "")),
                 "majorId": item.get("majorId", ""),
                 "courseId": item.get("courseId", ""),
                 "title": item.get("title", ""),

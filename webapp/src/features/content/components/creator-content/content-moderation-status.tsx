@@ -37,6 +37,15 @@ export function ContentModerationStatusBadge({
   status,
   moderationStatus,
 }: ContentModerationStatusBadgeProps) {
+  if (status === "AVAILABLE") {
+    return (
+      <Badge variant="default" className="uppercase">
+        <CheckCircle2 className="size-3" />
+        Ready
+      </Badge>
+    )
+  }
+
   if (status === "BANNED" || moderationStatus === "REJECTED") {
     return (
       <Badge variant="destructive" className="uppercase">
@@ -120,7 +129,7 @@ function getModerationSummary({
   const contentStatus = normalizeStatus(status)
   const moderation = normalizeStatus(moderationStatus)
 
-  if (contentStatus === "FAILED" || moderation === "ERROR") {
+  if (contentStatus === "FAILED" || (moderation === "ERROR" && contentStatus !== "AVAILABLE")) {
     return {
       title: "We could not finish checking this",
       description:
@@ -182,7 +191,7 @@ function getChecklistState({
   const contentStatus = normalizeStatus(status)
   const moderation = normalizeStatus(moderationStatus)
   const rejected = contentStatus === "BANNED" || moderation === "REJECTED"
-  const failed = contentStatus === "FAILED" || moderation === "ERROR"
+  const failed = contentStatus === "FAILED" || (moderation === "ERROR" && contentStatus !== "AVAILABLE")
   const approved =
     contentStatus === "AVAILABLE" ||
     moderation === "APPROVED" ||

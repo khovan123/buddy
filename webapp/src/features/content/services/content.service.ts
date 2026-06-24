@@ -449,8 +449,7 @@ export const getResourceBySlug = async (
       `/resources/${slug}`,
       undefined,
       undefined,
-      false,
-      { next: { revalidate: 60, tags: ["resource", slug] } }
+      false
     )
 
     if (!res.ok) {
@@ -1200,14 +1199,17 @@ export const getRecommendations = async (
     if (contentType) {
       qs.set("contentType", contentType)
     }
+    const path = userId
+      ? `/recommendations?${qs.toString()}`
+      : `/recommendations/for-you?${qs.toString()}`
 
     const res = await fetchApi(
       "GET",
-      `/recommendations?${qs.toString()}`,
+      path,
       undefined,
       await getAuthHeaders(),
       false,
-      { next: { revalidate: 60, tags: ["recommendations"] } }
+      { cache: "no-store" }
     )
 
     if (!res.ok) {

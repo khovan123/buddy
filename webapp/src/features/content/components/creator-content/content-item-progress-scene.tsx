@@ -38,7 +38,7 @@ const getProgressState = ({
     contentStatus === "FAILED" ||
     contentStatus === "DELETED" ||
     moderation === "REJECTED" ||
-    moderation === "ERROR"
+    (moderation === "ERROR" && contentStatus !== "AVAILABLE")
   ) {
     return { color: 0xef4444, progress: 0.28, speed: 0.002 }
   }

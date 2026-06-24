@@ -8,11 +8,13 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Eye,
   FileText,
   FolderOpen,
   Heart,
   Lock,
   LockOpen,
+  PencilLine,
   Share2,
   ShieldCheck,
   Smartphone,
@@ -41,6 +43,7 @@ import {
   ItemInteractionControls,
   TrackContentView,
 } from "@/features/interaction"
+import { getCachedSession } from "@/lib/server-session"
 
 type PageParams = Promise<{ id: string }>
 
@@ -109,6 +112,9 @@ export default async function ExploreTutorialDetailPage({
   if (!tutorial) {
     notFound()
   }
+
+  const session = await getCachedSession()
+  const isOwner = session?.user?.id === tutorial.userId
 
   // Extract the slug of the first resource for preview fetching.
   // The preview endpoint requires a slug, not a MongoDB ObjectId.
@@ -337,13 +343,19 @@ export default async function ExploreTutorialDetailPage({
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              className="font-bold text-primary hover:bg-primary/5"
-            >
-              <UserPlus className="mr-2 size-4" />
-              Follow
-            </Button>
+            {isOwner ? (
+              <Button asChild variant="outline" className="font-bold">
+                <Link href="/content">Manage</Link>
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="font-bold text-primary hover:bg-primary/5"
+              >
+                <UserPlus className="mr-2 size-4" />
+                Follow
+              </Button>
+            )}
           </div>
 
           {/* ── About + Highlights ── */}
@@ -534,23 +546,56 @@ export default async function ExploreTutorialDetailPage({
                 />
               </div>
 
-              <div className="mb-8 space-y-3">
-                <PurchaseButton
-                  itemId={tutorial.id}
-                  itemType="TUTORIAL_BUNDLE"
-                  label="Buy tutorial"
-                  freeLabel="Start tutorial"
-                  className="font-headline w-full py-4 font-bold shadow-lg"
-                  price={tutorialFinalPrice}
-                />
-                <Button
-                  variant="secondary"
-                  className="font-headline w-full py-4 font-bold"
-                  size="lg"
-                >
-                  Add to Cart
-                </Button>
-              </div>
+              {isOwner ? (
+                <div className="mb-8 space-y-3">
+                  <Alert className="border-primary/30 bg-primary/8">
+                    <ShieldCheck className="size-4 text-primary" />
+                    <AlertDescription className="text-sm font-medium text-foreground">
+                      This is your tutorial. Students see checkout here, while
+                      you can manage or preview your published content.
+                    </AlertDescription>
+                  </Alert>
+                  <Button
+                    asChild
+                    className="font-headline w-full py-4 font-bold shadow-lg"
+                    size="lg"
+                  >
+                    <Link href="/content">
+                      <PencilLine className="size-4" />
+                      Manage in Content
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="secondary"
+                    className="font-headline w-full py-4 font-bold"
+                    size="lg"
+                  >
+                    <Link href={`/library/tutorials/${tutorial.slug}`}>
+                      <Eye className="size-4" />
+                      Open owner view
+                    </Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="mb-8 space-y-3">
+                  <PurchaseButton
+                    itemId={tutorial.id}
+                    itemType="TUTORIAL_BUNDLE"
+                    label="Buy tutorial"
+                    freeLabel="Start tutorial"
+                    className="font-headline w-full py-4 font-bold shadow-lg"
+                    price={tutorialFinalPrice}
+                  />
+                  <Button
+                    variant="secondary"
+                    className="font-headline w-full py-4 font-bold"
+                    size="lg"
+                  >
+                    Add to Cart
+                  </Button>
+                </div>
+              )}
 
               <div className="mb-8 space-y-4">
                 <div className="flex items-center justify-between border-b border-border py-2 text-sm">

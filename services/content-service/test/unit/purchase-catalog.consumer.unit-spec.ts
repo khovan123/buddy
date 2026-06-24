@@ -54,6 +54,22 @@ describe('PurchaseCatalogConsumer', () => {
     });
   });
 
+  it('returns an empty quote when a requested resource no longer exists', async () => {
+    resourceModel.findById.mockReturnValue(queryResult(null));
+
+    await expect(
+      consumer.handleGetPurchaseCatalog({
+        itemId: 'missing-resource',
+        itemType: 'RESOURCE',
+        userId: 'buyer-1',
+      }),
+    ).resolves.toEqual({
+      sellerId: '',
+      priceInCents: '0',
+      items: [],
+    });
+  });
+
   it('quotes a resource collection from its canonical resourceIds', async () => {
     collectionModel.findById.mockReturnValue(
       queryResult({

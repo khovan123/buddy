@@ -7,7 +7,9 @@ import {
   CalendarDays,
   CheckCircle2,
   Database,
+  Eye,
   FileText,
+  PencilLine,
   ShieldCheck,
   ShoppingCart,
   Star,
@@ -30,6 +32,7 @@ import {
   ItemInteractionControls,
   TrackContentView,
 } from "@/features/interaction"
+import { getCachedSession } from "@/lib/server-session"
 
 type PageParams = Promise<{ id: string }>
 
@@ -89,6 +92,8 @@ export default async function ExploreResourceDetailPage({
     notFound()
   }
 
+  const session = await getCachedSession()
+  const isOwner = session?.user?.id === resource.userId
   const resourceTitle = resource.title
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://buddy.app"
@@ -260,12 +265,18 @@ export default async function ExploreResourceDetailPage({
                 </p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              className="font-bold text-primary hover:bg-primary/5"
-            >
-              Follow
-            </Button>
+            {isOwner ? (
+              <Button asChild variant="outline" className="font-bold">
+                <Link href="/content">Manage</Link>
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="font-bold text-primary hover:bg-primary/5"
+              >
+                Follow
+              </Button>
+            )}
           </div>
 
           <div className="space-y-6 text-muted-foreground">
@@ -363,28 +374,56 @@ export default async function ExploreResourceDetailPage({
                 </div>
               </div>
 
-              <PurchaseButton
-                itemId={resource.id}
-                itemType="RESOURCE"
-                label="Buy resource"
-                freeLabel="Get resource"
-                className="mb-4 w-full text-base font-bold"
-                price={resource.price || 0}
-              />
-              <div className="flex justify-center">
-                <Item
-                  variant="default"
-                  size="xs"
-                  className="w-auto border-0 p-0 text-xs text-muted-foreground"
-                >
-                  <ItemMedia variant="icon">
-                    <ShieldCheck className="size-4" />
-                  </ItemMedia>
-                  <ItemTitle className="text-xs font-medium text-muted-foreground">
-                    Secure encrypted payment
-                  </ItemTitle>
-                </Item>
-              </div>
+              {isOwner ? (
+                <div className="space-y-3">
+                  <Alert className="border-primary/30 bg-primary/8">
+                    <ShieldCheck className="size-4 text-primary" />
+                    <AlertDescription className="text-sm font-medium text-foreground">
+                      This is your resource. Students see checkout here, while
+                      you can manage or preview the published file.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="grid gap-2">
+                    <Button asChild className="w-full text-base font-bold">
+                      <Link href="/content">
+                        <PencilLine className="size-4" />
+                        Manage in Content
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href={`/library/resources/${resource.slug}`}>
+                        <Eye className="size-4" />
+                        Open owner preview
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <PurchaseButton
+                    itemId={resource.id}
+                    itemType="RESOURCE"
+                    label="Buy resource"
+                    freeLabel="Get resource"
+                    className="mb-4 w-full text-base font-bold"
+                    price={resource.price || 0}
+                  />
+                  <div className="flex justify-center">
+                    <Item
+                      variant="default"
+                      size="xs"
+                      className="w-auto border-0 p-0 text-xs text-muted-foreground"
+                    >
+                      <ItemMedia variant="icon">
+                        <ShieldCheck className="size-4" />
+                      </ItemMedia>
+                      <ItemTitle className="text-xs font-medium text-muted-foreground">
+                        Secure encrypted payment
+                      </ItemTitle>
+                    </Item>
+                  </div>
+                </>
+              )}
 
               <CardContent className="mt-8 rounded-lg border border-primary/20 bg-primary/10 p-4">
                 <p className="text-sm leading-tight font-semibold text-foreground">

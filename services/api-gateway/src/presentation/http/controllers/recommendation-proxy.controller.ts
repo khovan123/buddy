@@ -8,7 +8,7 @@ import {
   SubscriptionRequiredPolicy,
   type JwtPayload,
 } from '@libs/common';
-import { Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import {
   ApiComposerService,
@@ -59,6 +59,12 @@ export class RecommendationProxyController {
     @Query('limit') limit?: string,
     @Query('contentType') contentType?: string,
   ) {
+    if (!userId) {
+      throw new BadRequestException(
+        'userId is required. Use /recommendations/for-you for the current user.',
+      );
+    }
+
     return this.getHydratedRecommendations(req, userId, limit, contentType);
   }
 

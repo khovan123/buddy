@@ -110,6 +110,7 @@ export class ContentMetaController {
             type: 'ITEM_UPSERT',
             itemId: item.id,
             itemType: 'RESOURCE',
+            ownerId: item.userId,
             majorId: item.majorId,
             courseId: item.courseId,
             title: item.title,
@@ -139,6 +140,7 @@ export class ContentMetaController {
             type: 'ITEM_UPSERT',
             itemId: item.id,
             itemType: 'TUTORIAL',
+            ownerId: item.userId,
             majorId: item.majorId,
             courseId: item.courseId,
             title: item.title,
@@ -176,6 +178,7 @@ export class ContentMetaController {
             itemId: item.id,
             itemType:
               item.type === CollectionType.RESOURCE ? 'RESOURCE_COLLECTION' : 'TUTORIAL_COLLECTION',
+            ownerId: item.userId,
             majorId: item.majorId,
             courseId: item.courseId,
             title: item.title,

@@ -226,6 +226,18 @@ export class ContentModerationService {
       });
 
       if (!response.ok) {
+        if (response.status === 503) {
+          this.logger.warn(
+            `Gemini unavailable for moderation (HTTP 503); auto-approving ${payload.contentType} ${payload.contentId}`,
+          );
+          return {
+            decision: 'APPROVED',
+            score: null,
+            reasons: ['Gemini unavailable; moderation auto-approved by fail-open policy.'],
+            ruleVersion,
+          };
+        }
+
         return {
           decision: 'ERROR',
           score: null,

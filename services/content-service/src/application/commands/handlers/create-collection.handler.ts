@@ -214,6 +214,7 @@ export class CreateCollectionHandler implements ICommandHandler<CreateCollection
       type: 'ITEM_UPSERT',
       itemId: collection.id,
       itemType: type === CollectionType.RESOURCE ? 'RESOURCE_COLLECTION' : 'TUTORIAL_COLLECTION',
+      ownerId: userId,
       majorId,
       courseId,
       title,

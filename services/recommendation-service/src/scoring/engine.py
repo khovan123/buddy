@@ -103,6 +103,7 @@ class ScoringEngine:
 
     def _recommend_ml(
         self,
+        user_id: str,
         user_profile: dict,
         user_interaction_profile: dict | None,
         content_type: str | None,
@@ -127,7 +128,7 @@ class ScoringEngine:
         if candidates is None:
             # Fallback: brute-force if FAISS unavailable
             return self._recommend_ml_bruteforce(
-                user_profile, user_interaction_profile, content_type, limit
+                user_id, user_profile, user_interaction_profile, content_type, limit
             )
 
         # 2. Filter by content type
@@ -141,6 +142,10 @@ class ScoringEngine:
             candidate_ids = [c["itemId"] for c in candidates]
             catalog_items = self.catalog_store.get_items_by_ids(candidate_ids)
 
+        candidates = [
+            c for c in candidates
+            if catalog_items.get(c["itemId"], {}).get("ownerId") != user_id
+        ]
         candidate_ids = [c["itemId"] for c in candidates]
         popularity_by_item = self.popularity_store.get_item_stats_many(candidate_ids)
 
@@ -186,6 +191,7 @@ class ScoringEngine:
 
     def _recommend_ml_bruteforce(
         self,
+        user_id: str,
         user_profile: dict,
         user_interaction_profile: dict | None,
         content_type: str | None,
@@ -195,6 +201,7 @@ class ScoringEngine:
         candidates = self.catalog_store.get_all_items()
         if content_type:
             candidates = [c for c in candidates if c["itemType"] == content_type]
+        candidates = [c for c in candidates if c.get("ownerId") != user_id]
 
         # Filter by major
         u_major = user_profile.get("majorId", "")
@@ -275,7 +282,7 @@ class ScoringEngine:
         # 2. ML path: FAISS retrieval → popularity re-rank
         if use_ml and user_profile:
             recommendations = self._recommend_ml(
-                user_profile, user_interaction_profile, content_type, limit
+                user_id, user_profile, user_interaction_profile, content_type, limit
             )
             return {
                 "userId": user_id,
@@ -292,6 +299,7 @@ class ScoringEngine:
         candidates = self.catalog_store.get_all_items()
         if content_type:
             candidates = [c for c in candidates if c["itemType"] == content_type]
+        candidates = [c for c in candidates if c.get("ownerId") != user_id]
 
         # Filter by user's major for non-cold users
         if tier in ("full", "partial", "profile_only") and user_profile:

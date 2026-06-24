@@ -79,11 +79,7 @@ export default async function LibraryTutorialDetailPage({
     notFound()
   }
 
-  const videoUrl =
-    tutorial.media?.videoUrl ||
-    tutorial.media?.streamingUrl ||
-    tutorial.trailerUrl
-  const fallbackVideoUrl = tutorial.trailerUrl || tutorial.media?.trailerUrl
+  const videoUrl = tutorial.media?.videoUrl || tutorial.media?.streamingUrl
   const duration = tutorial.media?.duration
     ? formatDuration(tutorial.media.duration)
     : "—"
@@ -135,7 +131,6 @@ export default async function LibraryTutorialDetailPage({
                     <LibraryTutorialVideoPlayer
                       key={videoUrl}
                       sourceUrl={videoUrl}
-                      fallbackUrl={fallbackVideoUrl}
                     />
                   </div>
                 ) : (

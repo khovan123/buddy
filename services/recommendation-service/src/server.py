@@ -487,6 +487,7 @@ def _with_catalog_display(items: list[dict]) -> list[dict]:
                     "title": catalog_item.get("title", ""),
                     "slug": catalog_item.get("slug", ""),
                     "itemType": catalog_item.get("itemType", item.get("itemType", "")),
+                    "ownerId": catalog_item.get("ownerId", ""),
                     "majorId": catalog_item.get("majorId", ""),
                     "courseId": catalog_item.get("courseId", ""),
                 },
@@ -513,6 +514,17 @@ async def _attach_catalog_display(items: list[dict]) -> list[dict]:
         return items
 
     return result
+
+
+def _filter_self_owned_items(items: list[dict], user_id: str) -> list[dict]:
+    """Remove content owned by the requesting user from recommendation results."""
+    if not items:
+        return items
+
+    return [
+        item for item in items
+        if item.get("display", {}).get("ownerId") != user_id
+    ]
 
 
 @rec_router.get("/recommend", response_model=RecommendResponse)
@@ -542,6 +554,10 @@ async def recommend(
                 result["recommendations"] = await _attach_catalog_display(
                     result.get("recommendations", []),
                 )
+                result["recommendations"] = _filter_self_owned_items(
+                    result.get("recommendations", []),
+                    userId,
+                )
                 return result
 
         except Exception as e:
@@ -561,6 +577,10 @@ async def recommend(
 
     result["recommendations"] = await _attach_catalog_display(
         result.get("recommendations", []),
+    )
+    result["recommendations"] = _filter_self_owned_items(
+        result.get("recommendations", []),
+        userId,
     )
 
     if cache:

@@ -1053,7 +1053,7 @@ export class ResourceMongoRepository implements IResourceRepository {
         : result.status === ContentModerationStatus.REJECTED
           ? ResourceStatus.BANNED
           : result.status === ContentModerationStatus.ERROR
-            ? ResourceStatus.FAILED
+            ? ResourceStatus.AVAILABLE
             : ResourceStatus.PROCESSING;
 
     const query = this.resourceModel.updateOne(
