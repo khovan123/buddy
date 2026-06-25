@@ -9,10 +9,13 @@ import { CreateResourceHanlder } from '../../src/application/commands/handlers/c
 
 describe('CreateResourceHanlder', () => {
   const makeHandler = () => {
+    const updateResource = jest.fn<Promise<void>, [resource: { meta: Array<{ extension: string }> }]>(
+      async () => undefined,
+    );
     const resourceRepository = {
       findBySlug: jest.fn(async () => null),
       save: jest.fn(async () => undefined),
-      update: jest.fn(async () => undefined),
+      update: updateResource,
       delete: jest.fn(async () => undefined),
     };
     const collectionRepository = {
@@ -87,7 +90,7 @@ describe('CreateResourceHanlder', () => {
         }),
       }),
     );
-    const updatedResource = resourceRepository.update.mock.calls[0]?.[0];
+    const updatedResource = resourceRepository.update.mock.calls[0][0];
     expect(updatedResource.meta[0].extension).toBe('.pdf');
   });
 
