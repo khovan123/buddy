@@ -21,6 +21,8 @@ export interface ItemSyncPayload {
     | typeof RECOMMENDATION_SYNC_TYPES.ITEM_DELETED;
   itemId: string;
   itemType?: string;
+  /** User ID that owns/published the content item. Used to avoid recommending a user's own content. */
+  ownerId?: string;
   majorId?: string;
   courseId?: string;
   title?: string;
