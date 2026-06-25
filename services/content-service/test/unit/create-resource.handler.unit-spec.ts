@@ -9,9 +9,10 @@ import { CreateResourceHanlder } from '../../src/application/commands/handlers/c
 
 describe('CreateResourceHanlder', () => {
   const makeHandler = () => {
-    const updateResource = jest.fn<Promise<void>, [resource: { meta: Array<{ extension: string }> }]>(
-      async () => undefined,
-    );
+    const updateResource = jest.fn<
+      Promise<void>,
+      [resource: { meta: Array<{ extension: string }> }]
+    >(async () => undefined);
     const resourceRepository = {
       findBySlug: jest.fn(async () => null),
       save: jest.fn(async () => undefined),
