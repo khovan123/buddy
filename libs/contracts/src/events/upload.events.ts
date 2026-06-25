@@ -15,6 +15,7 @@ export const UPLOAD_ROUTINGKEYS = {
   FILE_PROCESSING_FAILED: 'upload.file.processing_failed',
   RESOURCE_UPLOAD_COMPLETED: 'upload.resource.upload.completed',
   CONTENT_EXTRACTED: 'upload.content.extracted',
+  REEXTRACT_CONTENT: 'upload.content.reextract',
   VIDEO_UPLOAD_REQUEST: 'video.upload_request', // Thường dùng khi các service khác gửi request xử lý
   UPLOAD_THUMBNAIL: 'upload.upload_thumbnail', // Event: request thumbnail upload to Cloudinary
   THUMBNAIL_UPLOADED: 'upload.thumbnail.uploaded', // Event: thumbnail upload completed
@@ -262,6 +263,23 @@ export class ContentExtractedEvent extends BaseEvent {
   }
 }
 
+/** RPC request to re-extract content files directly from storage. */
+export class ReextractContentEvent extends BaseEvent {
+  get routingKey() {
+    return UPLOAD_ROUTINGKEYS.REEXTRACT_CONTENT;
+  }
+
+  constructor(
+    public readonly payload: {
+      contentId: string;
+      contentType?: 'RESOURCE' | 'TUTORIAL';
+    },
+    correlationId?: string,
+  ) {
+    super(correlationId);
+  }
+}
+
 // ─── RPC Responses ────────────────────────────────────────────────
 export class UploadHistoryItemRpcResponseDto {
   id!: string;
@@ -285,6 +303,8 @@ export class UploadHistoryItemRpcResponseDto {
 
 export class ResourceUploadHistoryRpcResponseDto extends UploadHistoryItemRpcResponseDto {}
 export class TutorialUploadHistoryRpcResponseDto extends UploadHistoryItemRpcResponseDto {}
+
+export type ContentExtractionRpcResponseDto = ContentExtractedEvent['payload'];
 
 // ─── Thumbnail Upload (Event-Driven) ──────────────────────────────
 

@@ -1,8 +1,8 @@
 import { AppLogger } from '@libs/common';
 import {
+  ContentExtractionRpcResponseDto,
   ContentModerationCompletedEvent,
-  GetUploadHistoryByContentEvent,
-  UploadHistoryItemRpcResponseDto,
+  ReextractContentEvent,
 } from '@libs/contracts';
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
@@ -13,7 +13,10 @@ import { ContentModerationNotificationPublisher } from '../../../infrastructure/
 import { RecommendationSyncPublisher } from '../../../infrastructure/messaging/publishers/recommendation-sync.publisher';
 import { StorageBrokerPublisher } from '../../../infrastructure/messaging/publishers/storage-broker.rpc';
 import { ContentModerationStatus } from '../../../infrastructure/persistence/mongo/schemas/resource.schema';
-import { ContentModerationService } from '../../../infrastructure/services/content-moderation.service';
+import {
+  ContentModerationService,
+  type ModerationResult,
+} from '../../../infrastructure/services/content-moderation.service';
 import { RecheckResourceModerationCommand } from '../recheck-resource-moderation.command';
 
 @CommandHandler(RecheckResourceModerationCommand)
@@ -39,21 +42,24 @@ export class RecheckResourceModerationHandler implements ICommandHandler<Recheck
       throw new ForbiddenException('You can only recheck your own resources');
     }
 
-    const histories = await this.fetchUploadHistory(resource.id);
-    const result = await this.contentModeration.moderate({
-      contentId: resource.id,
-      contentType: 'RESOURCE',
-      title: resource.title,
-      body: resource.summary,
-      hightlights: resource.hightlights,
-      major: resource.major?.name,
-      course: resource.course?.name,
-      extractedText: '',
-      mediaUrls: this.resolveMediaUrls(histories),
-      files: this.resolveModerationFiles(histories),
-      extractionStatus: this.resolveExtractionStatus(histories),
-      extractionError: this.resolveExtractionError(histories),
-    });
+    const extraction = await this.fetchContentExtraction(resource.id, command.correlationId);
+    const result: ModerationResult =
+      extraction && extraction.files.length > 0
+        ? await this.contentModeration.moderate({
+            contentId: resource.id,
+            contentType: 'RESOURCE',
+            title: resource.title,
+            body: resource.summary,
+            hightlights: resource.hightlights,
+            major: resource.major?.name,
+            course: resource.course?.name,
+            extractedText: this.joinExtractedText(extraction),
+            mediaUrls: this.resolveMediaUrls(extraction),
+            files: this.resolveModerationFiles(extraction),
+            extractionStatus: this.resolveExtractionStatus(extraction),
+            extractionError: this.resolveExtractionError(extraction),
+          })
+        : this.createExtractionUnavailableResult();
 
     await this.resourceRepository.applyModerationResult(resource.id, {
       status: this.toModerationStatus(result.decision),
@@ -104,52 +110,69 @@ export class RecheckResourceModerationHandler implements ICommandHandler<Recheck
     };
   }
 
-  private async fetchUploadHistory(contentId: string): Promise<UploadHistoryItemRpcResponseDto[]> {
+  private async fetchContentExtraction(
+    contentId: string,
+    correlationId?: string,
+  ): Promise<ContentExtractionRpcResponseDto | null> {
     try {
-      return await this.storageBrokerPublisher.getUploadHistoryByContent(
-        new GetUploadHistoryByContentEvent({ contentId }),
+      return await this.storageBrokerPublisher.reextractContent(
+        new ReextractContentEvent({ contentId, contentType: 'RESOURCE' }, correlationId),
       );
     } catch (error) {
       this.logger.warn(
-        `Manual resource moderation could not fetch upload history: ${
+        `Manual resource moderation could not re-extract content: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
-      return [];
+      return null;
     }
   }
 
-  private resolveMediaUrls(histories: UploadHistoryItemRpcResponseDto[]): string[] {
-    return histories
-      .flatMap((item) => [item.downloadUrl, item.streamingUrl, item.trailerUrl])
+  private createExtractionUnavailableResult(): ModerationResult {
+    return {
+      decision: 'NEEDS_REVIEW',
+      score: null,
+      reasons: [
+        'Could not re-extract uploaded file content from storage. Please retry moderation or review manually.',
+      ],
+      ruleVersion: 'manual-recheck-extraction-unavailable',
+    };
+  }
+
+  private joinExtractedText(extraction: ContentExtractionRpcResponseDto): string {
+    return extraction.files
+      .map((item) => item.extractedText)
+      .filter((text): text is string => Boolean(text && text.trim().length > 0))
+      .join('\n\n');
+  }
+
+  private resolveMediaUrls(extraction: ContentExtractionRpcResponseDto): string[] {
+    return extraction.files
+      .map((item) => item.downloadUrl)
       .filter((url): url is string => Boolean(url));
   }
 
   private resolveModerationFiles(
-    histories: UploadHistoryItemRpcResponseDto[],
+    extraction: ContentExtractionRpcResponseDto,
   ): Array<{ originalFilename?: string | null; mimeType?: string | null }> {
-    return histories.map((item) => ({
+    return extraction.files.map((item) => ({
       originalFilename: item.originalFilename,
       mimeType: item.mimeType,
     }));
   }
 
-  private resolveExtractionStatus(histories: UploadHistoryItemRpcResponseDto[]): string {
-    if (histories.length === 0) {
-      return 'MISSING_UPLOAD_HISTORY';
+  private resolveExtractionStatus(extraction: ContentExtractionRpcResponseDto): string {
+    const [firstFile] = extraction.files;
+    const firstStatus = firstFile?.extractionStatus;
+    if (firstStatus && extraction.files.every((item) => item.extractionStatus === firstStatus)) {
+      return firstStatus;
     }
-    if (histories.every((item) => item.status === 'AVAILABLE')) {
-      return 'AVAILABLE';
-    }
-    if (histories.some((item) => item.status === 'FAILED')) {
-      return 'FAILED';
-    }
-    return 'PROCESSING';
+    return 'PARTIAL';
   }
 
-  private resolveExtractionError(histories: UploadHistoryItemRpcResponseDto[]): string | null {
-    const errors = histories
-      .map((item) => item.processingError)
+  private resolveExtractionError(extraction: ContentExtractionRpcResponseDto): string | null {
+    const errors = extraction.files
+      .map((item) => item.extractionError)
       .filter((error): error is string => Boolean(error));
     return errors.length > 0 ? errors.join('; ') : null;
   }

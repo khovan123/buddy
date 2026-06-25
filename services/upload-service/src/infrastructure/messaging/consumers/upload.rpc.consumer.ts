@@ -7,6 +7,7 @@ import {
   runWithCorrelationId,
 } from '@libs/common';
 import {
+  ContentExtractionRpcResponseDto,
   PresignedUrlResult,
   PresignedUrlRpcResponse,
   PresignedUrlsRpcResponse,
@@ -18,18 +19,30 @@ import { QueryBus } from '@nestjs/cqrs';
 import { GetPreviewUrlQuery } from '../../../application/queries/get-preview-url.query';
 import { GetUploadHistoryByContentQuery } from '../../../application/queries/get-upload-history-by-content.query';
 import { GetUploadUrlQuery } from '../../../application/queries/get-upload-url.query';
+import type { FileMetadataEntity } from '../../../domain/entities/file-metadata.entity';
+import { ContentExtractionService } from '../../../domain/services/content-extraction.service';
+import { VideoTranscriptService } from '../../../domain/services/video-transcript.service';
 import {
   GetPresignedUrlRpcDto,
   GetPresignedUrlsRpcDto,
 } from '../../../presentation/events/dtos/rpc-presigned-url.dto';
-import { GetUploadHistoryByContentRpcDto } from '../../../presentation/events/dtos/rpc-upload-history.dto';
+import {
+  GetUploadHistoryByContentRpcDto,
+  ReextractContentRpcDto,
+} from '../../../presentation/events/dtos/rpc-upload-history.dto';
+import { S3Service } from '../../persistence/aws/s3.service';
 
 /** Controller handling incoming requests for UploadRpc. */
 @Injectable()
 export class UploadUrlConsumer {
   private readonly logger = new AppLogger(UploadUrlConsumer.name);
 
-  constructor(private readonly queryBus: QueryBus) {}
+  constructor(
+    private readonly queryBus: QueryBus,
+    private readonly s3Service: S3Service,
+    private readonly contentExtraction: ContentExtractionService,
+    private readonly videoTranscript: VideoTranscriptService,
+  ) {}
 
   /**
    * Handles a single presigned URL request from the content-service.
@@ -205,6 +218,113 @@ export class UploadUrlConsumer {
   }
 
   /**
+   * Re-extracts files for a content item directly from S3.
+   *
+   * This is used by content-service manual moderation rechecks, where upload
+   * history metadata alone is not enough to safely re-run moderation.
+   */
+  @RabbitRPC({
+    exchange: EXCHANGES.UPLOAD,
+    routingKey: UPLOAD_ROUTINGKEYS.REEXTRACT_CONTENT,
+    queue: QUEUES.UPLOAD_RPC_REEXTRACT_CONTENT,
+    queueOptions: {
+      durable: true,
+      arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
+    },
+  })
+  async reextractContent(
+    data: ReextractContentRpcDto,
+  ): Promise<ContentExtractionRpcResponseDto | Nack> {
+    const correlationId = ensureCorrelationId(data.correlationId, data.eventId);
+    const { contentId } = data.payload;
+    const contentType = this.normalizeContentType(data.payload.contentType);
+    const startedAt = Date.now();
+
+    try {
+      return await runWithCorrelationId(correlationId, async () => {
+        const files = (await this.queryBus.execute(
+          new GetUploadHistoryByContentQuery(contentId),
+        )) as FileMetadataEntity[];
+
+        const extractedFiles = await Promise.all(
+          files.map(async (file) => {
+            try {
+              const extraction = file.mimeType.startsWith('video/')
+                ? await this.videoTranscript.transcribe({
+                    fileId: file.id,
+                    s3Key: file.s3Key,
+                    signedUrl: await this.s3Service.generatePresignedDownloadUrl(file.s3Key),
+                    originalFilename: file.originalFilename,
+                    mimeType: file.mimeType,
+                    uploadedBy: file.uploadedBy,
+                  })
+                : await this.contentExtraction.extract(
+                    await this.s3Service.getObjectBuffer(file.s3Key),
+                    file.mimeType,
+                    file.originalFilename,
+                  );
+
+              return {
+                fileId: file.id,
+                s3Key: file.s3Key,
+                downloadUrl: file.downloadUrl,
+                mimeType: file.mimeType,
+                originalFilename: file.originalFilename,
+                extractedText: extraction.text,
+                extractionStatus: extraction.status,
+                extractionError: extraction.error ?? null,
+              };
+            } catch (error) {
+              const reason = error instanceof Error ? error.message : String(error);
+              this.logger.warn(
+                `Re-extraction failed for file ${file.id} (${file.originalFilename}): ${reason}`,
+              );
+              return {
+                fileId: file.id,
+                s3Key: file.s3Key,
+                downloadUrl: file.downloadUrl,
+                mimeType: file.mimeType,
+                originalFilename: file.originalFilename,
+                extractedText: null,
+                extractionStatus: 'FAILED' as const,
+                extractionError: reason,
+              };
+            }
+          }),
+        );
+
+        this.logger.log('Completed content re-extraction RPC', {
+          correlationId,
+          eventId: data.eventId,
+          contentId,
+          contentType,
+          fileCount: extractedFiles.length,
+          elapsedMs: Date.now() - startedAt,
+        });
+
+        return {
+          contentId,
+          contentType,
+          files: extractedFiles,
+          extractedAt: new Date().toISOString(),
+        };
+      });
+    } catch (error) {
+      this.logger.error(
+        'Failed content re-extraction RPC',
+        error instanceof Error ? error.stack : String(error),
+        {
+          correlationId,
+          eventId: data.eventId,
+          contentId,
+          elapsedMs: Date.now() - startedAt,
+        },
+      );
+      return new Nack(false);
+    }
+  }
+
+  /**
    * Handles a request to get a document preview URL.
    * Accepts s3Key directly — handler looks up MediaFile by s3Key.
    *
@@ -235,5 +355,9 @@ export class UploadUrlConsumer {
     } catch {
       return new Nack(false);
     }
+  }
+
+  private normalizeContentType(contentType?: string): 'RESOURCE' | 'TUTORIAL' {
+    return contentType?.trim().toUpperCase() === 'TUTORIAL' ? 'TUTORIAL' : 'RESOURCE';
   }
 }

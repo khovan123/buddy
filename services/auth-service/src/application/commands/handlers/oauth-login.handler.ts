@@ -1,5 +1,5 @@
 import { CryptoUtil } from '@libs/common';
-import { UserLoggedInEvent, UserRegisteredEvent } from '@libs/contracts';
+import { SubscriptionPlan, UserLoggedInEvent, UserRegisteredEvent } from '@libs/contracts';
 import { Inject, UnauthorizedException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { randomUUID as uuidv4 } from 'node:crypto';
@@ -104,6 +104,10 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
     // 4. Record login
     user.recordLogin();
     await this.userRepository.update(user);
+    const effectiveSubscriptionPlan = await this.ensureDefaultSubscriptionPlan(
+      user.id,
+      user.subscriptionPlan,
+    );
 
     // 5. Resolve plan details from billing-service via RabbitMQ RPC.
     // Keep this response shape in sync with LoginUserHandler so every auth path
@@ -111,9 +115,9 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
     const subscriptionPlanDetails =
       await this.billingSubscriptionPlanPublisher.resolveUserPlanDetails(
         user.id,
-        user.subscriptionPlan,
+        effectiveSubscriptionPlan,
       );
-    const subscriptionPlan = subscriptionPlanDetails?.code ?? user.subscriptionPlan;
+    const subscriptionPlan = subscriptionPlanDetails?.code ?? effectiveSubscriptionPlan;
 
     // 6. Generate tokens
     const { accessToken, refreshToken, refreshTokenHash, accessExpiresIn } =
@@ -158,6 +162,19 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
       accessExpiresIn,
       isNewUser,
     };
+  }
+
+  private async ensureDefaultSubscriptionPlan(
+    userId: string,
+    subscriptionPlan: string | null,
+  ): Promise<string> {
+    if (subscriptionPlan) {
+      return subscriptionPlan;
+    }
+
+    await this.userRepository.updateSubscriptionPlan(userId, SubscriptionPlan.STUDENT_FREE);
+
+    return SubscriptionPlan.STUDENT_FREE;
   }
 
   /** Verify token with the given OAuth provider and return the user's profile. */

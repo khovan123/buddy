@@ -1,5 +1,5 @@
 import { AppLogger, CryptoUtil } from '@libs/common';
-import { OtpGeneratedEvent, UserLoggedInEvent } from '@libs/contracts';
+import { OtpGeneratedEvent, SubscriptionPlan, UserLoggedInEvent } from '@libs/contracts';
 import { Inject, UnauthorizedException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { randomUUID as uuidv4 } from 'node:crypto';
@@ -59,6 +59,11 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
 
     // 4. Check if email is verified
     if (!user.emailVerified) {
+      const effectiveSubscriptionPlan = await this.ensureDefaultSubscriptionPlan(
+        user.id,
+        user.subscriptionPlan,
+      );
+
       // Generate OTP for email verification
       const otp = Otp.generate();
       await this.verificationTokenRepository.save(
@@ -92,7 +97,7 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
           nickname: user.nickname,
           role: user.roles[0] ?? 'user',
           roles: user.roles,
-          subscriptionPlan: user.subscriptionPlan,
+          subscriptionPlan: effectiveSubscriptionPlan,
         },
       };
     }
@@ -100,14 +105,18 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
     // 5. Record login
     user.recordLogin();
     await this.userRepository.update(user);
+    const effectiveSubscriptionPlan = await this.ensureDefaultSubscriptionPlan(
+      user.id,
+      user.subscriptionPlan,
+    );
 
     // 6. Resolve plan details from billing-service via RabbitMQ RPC
     const subscriptionPlanDetails =
       await this.billingSubscriptionPlanPublisher.resolveUserPlanDetails(
         user.id,
-        user.subscriptionPlan,
+        effectiveSubscriptionPlan,
       );
-    const subscriptionPlan = subscriptionPlanDetails?.code ?? user.subscriptionPlan;
+    const subscriptionPlan = subscriptionPlanDetails?.code ?? effectiveSubscriptionPlan;
 
     // 7. Generate tokens
     const { accessToken, refreshToken, refreshTokenHash, accessExpiresIn } =
@@ -151,5 +160,21 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
       refreshToken,
       accessExpiresIn,
     };
+  }
+
+  private async ensureDefaultSubscriptionPlan(
+    userId: string,
+    subscriptionPlan: string | null,
+  ): Promise<string> {
+    if (subscriptionPlan) {
+      return subscriptionPlan;
+    }
+
+    await this.userRepository.updateSubscriptionPlan(userId, SubscriptionPlan.STUDENT_FREE);
+    this.logger.log(`Defaulted missing subscription plan to ${SubscriptionPlan.STUDENT_FREE}`, {
+      userId,
+    });
+
+    return SubscriptionPlan.STUDENT_FREE;
   }
 }

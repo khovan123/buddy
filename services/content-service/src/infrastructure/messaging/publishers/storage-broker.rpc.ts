@@ -8,6 +8,7 @@ import {
   getCorrelationId,
 } from '@libs/common';
 import {
+  ContentExtractionRpcResponseDto,
   GetBatchUploadHistoryByContentEvent,
   GetPresignedUrlEvent,
   GetPresignedUrlsEvent,
@@ -16,6 +17,7 @@ import {
   PresignedUrlRpcResponse,
   PresignedUrlsRpcResponse,
   type PreviewUrlRpcResponse,
+  ReextractContentEvent,
   UploadHistoryItemRpcResponseDto,
   UploadThumbnailEvent,
 } from '@libs/contracts';
@@ -143,6 +145,29 @@ export class StorageBrokerPublisher {
   }
 
   /**
+   * Re-extract content files directly from upload-service storage metadata/S3.
+   */
+  async reextractContent(event: ReextractContentEvent): Promise<ContentExtractionRpcResponseDto> {
+    const routingKey = event.routingKey;
+    const messageData = this.toMessageData(event);
+
+    try {
+      return await this.amqpConnection.request<ContentExtractionRpcResponseDto>({
+        exchange: EXCHANGES.UPLOAD,
+        routingKey,
+        payload: messageData,
+        timeout: this.uploadRpcTimeoutMs,
+      });
+    } catch (error) {
+      this.logger.error(`RPC timeout or error [${routingKey}]`, String(error), {
+        contentId: event.payload.contentId,
+        timeoutMs: this.uploadRpcTimeoutMs,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Emit a thumbnail upload event (fire-and-forget) to upload-service.
    * The upload-service will process the image and emit a completion event back.
    *
@@ -202,6 +227,7 @@ export class StorageBrokerPublisher {
       | GetPresignedUrlsEvent
       | GetUploadHistoryByContentEvent
       | GetBatchUploadHistoryByContentEvent
+      | ReextractContentEvent
       | GetPreviewUrlEvent
       | UploadThumbnailEvent,
   ) {

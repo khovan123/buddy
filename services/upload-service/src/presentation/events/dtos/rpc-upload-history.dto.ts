@@ -26,6 +26,26 @@ export class GetUploadHistoryByContentRpcDto extends BaseRpcEnvelopeDto {
   payload!: GetUploadHistoryByContentPayloadDto;
 }
 
+// ─── Re-extract Content (upload.content.reextract) ─────────────────
+
+/** Payload for re-extracting content files from object storage. */
+export class ReextractContentPayloadDto {
+  @IsString()
+  @IsNotEmpty()
+  contentId!: string;
+
+  @IsString()
+  @IsOptional()
+  contentType?: string;
+}
+
+/** RPC envelope for `upload.content.reextract`. */
+export class ReextractContentRpcDto extends BaseRpcEnvelopeDto {
+  @ValidateNested()
+  @Type(() => ReextractContentPayloadDto)
+  payload!: ReextractContentPayloadDto;
+}
+
 // ─── Batch Upload History by Content (upload.get_batch_upload_history_by_content) ─
 
 /** Payload for fetching upload history of multiple content items. */

@@ -81,7 +81,16 @@ export function LoginForm() {
           dispatch(setToken(session.accessToken))
         }
 
-        router.push(isAdminAccess(session?.user) ? "/dashboard" : "/home")
+        if (isAdminAccess(session?.user)) {
+          router.push("/dashboard")
+        } else {
+          const callbackUrl =
+            new URL(globalThis.location.href).searchParams.get("callbackUrl") ||
+            "/home"
+          router.push(
+            `/auth/post-login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+          )
+        }
         router.refresh()
       }
     } catch (err: unknown) {

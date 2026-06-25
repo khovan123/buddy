@@ -65,7 +65,9 @@ export function OAuthButtons({ callbackUrl = "/home" }: OAuthButtonsProps) {
   const handleOAuth = async (provider: OAuthProvider) => {
     setLoadingProvider(provider)
     try {
-      await signIn(provider, { callbackUrl })
+      await signIn(provider, {
+        callbackUrl: `/auth/post-login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+      })
     } catch {
       setLoadingProvider(null)
     }

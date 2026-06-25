@@ -4,7 +4,6 @@ import type { Metadata } from "next"
 
 import { EducationUniverse } from "@/components/atoms/education-universe"
 import { SiteFooter } from "@/components/organisms/site-footer"
-import { RAGChatLauncher } from "@/features/rag"
 import { PrivateHeader } from "@/features/user/components/private-header-client"
 import { getMe } from "@/features/user/services/user.service"
 import { buildRoleAccessInput, isAdminAccess } from "@/lib/auth/role-access"
@@ -70,7 +69,7 @@ export default async function PrivateLayout({
       </main>
 
       {!isAdmin ? <SiteFooter /> : null}
-      {!isAdmin ? <RAGChatLauncher user={user} accessToken={accessToken} /> : null}
+      {/* {!isAdmin ? <RAGChatLauncher user={user} accessToken={accessToken} /> : null} */}
     </div>
   )
 }

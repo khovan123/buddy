@@ -23,8 +23,8 @@ import { CollectionType } from '../../../infrastructure/persistence/mongo/schema
 import { ResourceStatus } from '../../../infrastructure/persistence/mongo/schemas/resource.schema';
 import { CreateResourceCommand } from '../create-resource.command';
 
-const RESOURCE_ALLOWED_FILE_EXTENSIONS = new Set(['.txt', '.docx', '.md']);
-const RESOURCE_ALLOWED_FILE_TYPES_MESSAGE = 'Resource files must be .txt, .docx, or .md';
+const RESOURCE_ALLOWED_FILE_EXTENSIONS = new Set(['.txt', '.docx', '.md', '.pdf']);
+const RESOURCE_ALLOWED_FILE_TYPES_MESSAGE = 'Resource files must be .txt, .docx, .md, or .pdf';
 
 /**
  * CreateResourceHandler - Xử lý tạo Resource.

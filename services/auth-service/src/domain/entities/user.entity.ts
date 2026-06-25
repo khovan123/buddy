@@ -7,6 +7,8 @@ import { Password } from '../value-objects/password.vo';
 export type UserRole = 'admin' | 'user' | 'moderator';
 export type UserStatus = 'active' | 'inactive' | 'banned' | 'pending_verification';
 
+export const DEFAULT_SUBSCRIPTION_PLAN = 'STUDENT_FREE';
+
 /** Interface representing data constraints for  user props. */
 export interface UserProps {
   id: string;
@@ -43,7 +45,7 @@ export class User {
       password: Password.fromHashed(params.hashedPassword),
       nickname: params.nickname.trim(),
       roles: ['user'],
-      subscriptionPlan: null,
+      subscriptionPlan: DEFAULT_SUBSCRIPTION_PLAN,
       status: 'pending_verification',
       emailVerified: false,
       createdAt: now,

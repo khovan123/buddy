@@ -3,6 +3,7 @@
 import { AlertTriangle } from "lucide-react"
 
 import type { UserProfile } from "@/features/user/services/user-api"
+import { getMissingProfileFields } from "@/features/user/utils/profile-completion"
 
 /**
  * Persistent banner that checks profile completeness.
@@ -19,24 +20,7 @@ export function ProfileCompleteBanner({
   user,
   onUpdateClick,
 }: ProfileCompleteBannerProps) {
-  const profile = user?.profile
-  if (!profile) {
-    return null
-  }
-
-  const missing: string[] = []
-  if (!profile.careerId) {
-    missing.push("career goal")
-  }
-  if (!profile.majorId) {
-    missing.push("major")
-  }
-  if (!profile.courseId) {
-    missing.push("course")
-  }
-  if (!profile.skillIds || profile.skillIds.length === 0) {
-    missing.push("highlight skills")
-  }
+  const missing = getMissingProfileFields(user)
 
   if (missing.length === 0) {
     return null
@@ -48,7 +32,8 @@ export function ProfileCompleteBanner({
         <AlertTriangle className="size-4 shrink-0 text-destructive" />
         <p className="flex-1 text-sm text-foreground">
           <strong>Profile incomplete</strong> — Please update your{" "}
-          {missing.join(", ")} to get personalized recommendations.
+          {missing.map((field) => field.label).join(", ")} to get personalized
+          recommendations.
         </p>
         <button
           type="button"

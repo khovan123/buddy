@@ -21,7 +21,7 @@ model User {
   passwordHash     String     @map("password_hash")
   nickname         String     @map("nickname")
   roles            String[]   @default(["user"])
-  subscriptionPlan String?    @map("subscription_plan")
+  subscriptionPlan String?    @default("STUDENT_FREE") @map("subscription_plan")
   status           UserStatus @default(pending_verification)
   emailVerified    Boolean    @default(false) @map("email_verified")
   lastLoginAt      DateTime?  @map("last_login_at")

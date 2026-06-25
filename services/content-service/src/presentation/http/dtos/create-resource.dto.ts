@@ -14,8 +14,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-const RESOURCE_ALLOWED_FILE_TYPES_MESSAGE = 'Resource files must be .txt, .docx, or .md';
-const RESOURCE_ALLOWED_FILE_NAME_PATTERN = /\.(txt|docx|md)$/i;
+const RESOURCE_ALLOWED_FILE_TYPES_MESSAGE = 'Resource files must be .txt, .docx, .md, or .pdf';
+const RESOURCE_ALLOWED_FILE_NAME_PATTERN = /\.(txt|docx|md|pdf)$/i;
 
 /** Data Transfer Object for  create resource file. */
 export class CreateResourceFileDto {

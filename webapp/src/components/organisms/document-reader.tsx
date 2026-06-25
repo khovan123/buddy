@@ -59,12 +59,15 @@ function sanitizeSource(content: string) {
   return content.replace(/\r\n/g, "\n")
 }
 
-function getSourceKind(
+export function getSourceKind(
   sourceUrl: string,
   format?: string,
   isPreview?: boolean
 ): SourceKind {
-  const normalizedFormat = format?.toLowerCase()
+  const normalizedFormat = format
+    ?.trim()
+    .toLowerCase()
+    .replace(/^\./, "")
 
   if (
     isPreview &&
@@ -72,6 +75,13 @@ function getSourceKind(
     ["doc", "docx", "ppt", "pptx"].includes(normalizedFormat)
   ) {
     return "md"
+  }
+
+  if (
+    normalizedFormat &&
+    ["pdf", "docx", "pptx", "md"].includes(normalizedFormat)
+  ) {
+    return normalizedFormat as SourceKind
   }
 
   const cleanUrl = sourceUrl.split("?")[0].toLowerCase()
