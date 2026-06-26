@@ -10,8 +10,8 @@ import { FILE_METADATA_REPOSITORY, STORAGE_PROVIDER } from '../../../domain/repo
 import { ETACalculator } from '../../../domain/services/eta.calculator';
 import { GetUploadUrlQuery } from '../get-upload-url.query';
 
-const RESOURCE_ALLOWED_FILE_EXTENSIONS = new Set(['.txt', '.docx', '.md']);
-const RESOURCE_ALLOWED_FILE_TYPES_MESSAGE = 'Resource files must be .txt, .docx, or .md';
+const RESOURCE_ALLOWED_FILE_EXTENSIONS = new Set(['.txt', '.docx', '.md', '.pdf']);
+const RESOURCE_ALLOWED_FILE_TYPES_MESSAGE = 'Resource files must be .txt, .docx, .md, or .pdf';
 const TUTORIAL_ALLOWED_FILE_EXTENSION = '.mp4';
 const TUTORIAL_ALLOWED_FILE_TYPES_MESSAGE = 'Tutorial videos must be .mp4 files';
 

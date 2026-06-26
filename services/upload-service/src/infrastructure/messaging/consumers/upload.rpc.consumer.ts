@@ -15,7 +15,9 @@ import {
   UploadType,
 } from '@libs/contracts';
 import { Injectable } from '@nestjs/common';
-import { QueryBus } from '@nestjs/cqrs';
+import { GetPreviewUrlHandler } from '../../../application/queries/handlers/get-preview-url.handler';
+import { GetUploadHistoryByContentHandler } from '../../../application/queries/handlers/get-upload-history-by-content.handler';
+import { GetUploadUrlHandler } from '../../../application/queries/handlers/get-upload-url.handler';
 import { GetPreviewUrlQuery } from '../../../application/queries/get-preview-url.query';
 import { GetUploadHistoryByContentQuery } from '../../../application/queries/get-upload-history-by-content.query';
 import { GetUploadUrlQuery } from '../../../application/queries/get-upload-url.query';
@@ -38,7 +40,9 @@ export class UploadUrlConsumer {
   private readonly logger = new AppLogger(UploadUrlConsumer.name);
 
   constructor(
-    private readonly queryBus: QueryBus,
+    private readonly getUploadUrlHandler: GetUploadUrlHandler,
+    private readonly getUploadHistoryByContentHandler: GetUploadHistoryByContentHandler,
+    private readonly getPreviewUrlHandler: GetPreviewUrlHandler,
     private readonly s3Service: S3Service,
     private readonly contentExtraction: ContentExtractionService,
     private readonly videoTranscript: VideoTranscriptService,
@@ -75,7 +79,7 @@ export class UploadUrlConsumer {
         fileSizeBytes,
       });
       const result: PresignedUrlResult = await runWithCorrelationId(correlationId, () =>
-        this.queryBus.execute(
+        this.getUploadUrlHandler.execute(
           new GetUploadUrlQuery(
             fileName,
             fileSizeBytes,
@@ -140,7 +144,7 @@ export class UploadUrlConsumer {
       const result = await runWithCorrelationId(correlationId, async () => {
         const uploadUrls = await Promise.all(
           data.payload.files.map(async (file) => {
-            const presigned: PresignedUrlResult = await this.queryBus.execute(
+            const presigned: PresignedUrlResult = await this.getUploadUrlHandler.execute(
               new GetUploadUrlQuery(
                 file.fileName,
                 file.fileSizeBytes,
@@ -210,7 +214,9 @@ export class UploadUrlConsumer {
 
     try {
       return await runWithCorrelationId(correlationId, () =>
-        this.queryBus.execute(new GetUploadHistoryByContentQuery(data.payload.contentId)),
+        this.getUploadHistoryByContentHandler.execute(
+          new GetUploadHistoryByContentQuery(data.payload.contentId),
+        ),
       );
     } catch {
       return new Nack(false);
@@ -242,7 +248,7 @@ export class UploadUrlConsumer {
 
     try {
       return await runWithCorrelationId(correlationId, async () => {
-        const files = (await this.queryBus.execute(
+        const files = (await this.getUploadHistoryByContentHandler.execute(
           new GetUploadHistoryByContentQuery(contentId),
         )) as FileMetadataEntity[];
 
@@ -348,7 +354,7 @@ export class UploadUrlConsumer {
 
     try {
       return await runWithCorrelationId(correlationId, () =>
-        this.queryBus.execute(
+        this.getPreviewUrlHandler.execute(
           new GetPreviewUrlQuery(data.payload.s3Key, data.payload.fullAccess ?? false),
         ),
       );
