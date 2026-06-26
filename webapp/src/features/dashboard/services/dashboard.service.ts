@@ -1,6 +1,6 @@
 import type {
   ContentResourceItem,
-  ContentTutorialItem
+  ContentTutorialItem,
 } from "@/features/content/types"
 import { fetchApi } from "@/lib/fetch"
 import { getAuthHeaders } from "@/lib/server-session"
@@ -15,7 +15,7 @@ export type {
   TutorialUploadHistoryEntry,
   UploadHistoryItem,
   UploadHistoryMeta,
-  UploadHistoryResponse
+  UploadHistoryResponse,
 } from "@/features/content/types"
 
 export const getContentMeta = async (): Promise<ContentMetaResponse | null> => {
@@ -66,11 +66,14 @@ export const getCoursesByMajor = async (
   }
 }
 
-export const getCareers = async (): Promise<CareerItem[] | null> => {
+export const getCareers = async (
+  page = 1,
+  limit = 20
+): Promise<PaginatedResult<CareerItem> | null> => {
   try {
     const res = await fetchApi(
       "GET",
-      `/profile-metadata/careers`,
+      `/profile-metadata/careers?page=${page}&limit=${limit}`,
       undefined,
       undefined,
       false,
@@ -84,18 +87,21 @@ export const getCareers = async (): Promise<CareerItem[] | null> => {
     }
 
     const json = (await res.json()) as ApiResponse<PaginatedResult<CareerItem>>
-    return json.data?.data ?? null
+    return json.data ?? null
   } catch (error) {
     console.error(`Failed to fetch career:`, error)
     return null
   }
 }
 
-export const getSkills = async (): Promise<SkillItem[] | null> => {
+export const getSkills = async (
+  page = 1,
+  limit = 20
+): Promise<PaginatedResult<SkillItem> | null> => {
   try {
     const res = await fetchApi(
       "GET",
-      `/profile-metadata/skills`,
+      `/profile-metadata/skills?page=${page}&limit=${limit}`,
       undefined,
       undefined,
       false,
@@ -109,7 +115,7 @@ export const getSkills = async (): Promise<SkillItem[] | null> => {
     }
 
     const json = (await res.json()) as ApiResponse<PaginatedResult<SkillItem>>
-    return json.data?.data ?? null
+    return json.data ?? null
   } catch (error) {
     console.error(`Failed to fetch skill:`, error)
     return null
