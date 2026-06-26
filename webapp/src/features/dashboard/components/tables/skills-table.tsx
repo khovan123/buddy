@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 
-import { Edit2, Plus, Trash2 } from "lucide-react"
+import { Edit2, Loader2, Plus, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -17,19 +17,41 @@ import {
   type CareerItem,
   type SkillItem,
 } from "@/features/user/services/user-api"
+import { PaginatedResult } from "@/types/api"
 
+import { loadMoreSkillsAction } from "../../actions/career-skill-actions"
 import DeleteSkillDialog from "../modals/delete-skill-dialog"
 import SkillModal from "../modals/skill-modal"
 
 interface SkillsTableProps {
-  skills: SkillItem[]
+  initialData: PaginatedResult<SkillItem>
   careers: CareerItem[]
 }
 
-export default function SkillsTable({ skills, careers }: SkillsTableProps) {
+export default function SkillsTable({
+  initialData,
+  careers,
+}: SkillsTableProps) {
+  const [skills, setSkills] = useState<SkillItem[]>(initialData.data)
+  const [page, setPage] = useState(initialData.meta.page)
+  const [totalPages, setTotalPages] = useState(initialData.meta.totalPages)
   const [skillModalOpen, setSkillModalOpen] = useState(false)
   const [selectedSkill, setSelectedSkill] = useState<SkillItem | undefined>()
   const [deleteSkillId, setDeleteSkillId] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const hasNextPage = page < totalPages
+
+  const handleLoadMore = () => {
+    startTransition(async () => {
+      const nextPage = page + 1
+      const result = await loadMoreSkillsAction(nextPage)
+      if (result) {
+        setSkills((prev) => [...prev, ...result.data])
+        setPage(result.meta.page)
+        setTotalPages(result.meta.totalPages)
+      }
+    })
+  }
 
   return (
     <>
@@ -38,7 +60,8 @@ export default function SkillsTable({ skills, careers }: SkillsTableProps) {
           <div>
             <CardTitle>Skills List</CardTitle>
             <CardDescription>
-              Skills linked to careers. ({skills.length})
+              Skills linked to careers. ({skills.length}
+              {hasNextPage ? "+" : ""})
             </CardDescription>
           </div>
           <Button
@@ -121,6 +144,25 @@ export default function SkillsTable({ skills, careers }: SkillsTableProps) {
               </tbody>
             </table>
           </div>
+          {hasNextPage && (
+            <div className="mt-4 flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLoadMore}
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load more"
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
       <SkillModal

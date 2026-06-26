@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 
-import { Edit2, Plus, Trash2 } from "lucide-react"
+import { Edit2, Loader2, Plus, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -14,18 +14,37 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { type CareerItem } from "@/features/user/services/user-api"
+import { PaginatedResult } from "@/types/api"
 
+import { loadMoreCareersAction } from "../../actions/career-skill-actions"
 import CareerModal from "../modals/career-modal"
 import DeleteCareerDialog from "../modals/delete-career-dialog"
 
 interface CareersTableProps {
-  careers: CareerItem[]
+  initialData: PaginatedResult<CareerItem>
 }
 
-export default function CareersTable({ careers }: CareersTableProps) {
+export default function CareersTable({ initialData }: CareersTableProps) {
+  const [careers, setCareers] = useState<CareerItem[]>(initialData.data)
+  const [page, setPage] = useState(initialData.meta.page)
+  const [totalPages, setTotalPages] = useState(initialData.meta.totalPages)
   const [careerModalOpen, setCareerModalOpen] = useState(false)
   const [selectedCareer, setSelectedCareer] = useState<CareerItem | undefined>()
   const [deleteCareerId, setDeleteCareerId] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
+  const hasNextPage = page < totalPages
+
+  const handleLoadMore = () => {
+    startTransition(async () => {
+      const nextPage = page + 1
+      const result = await loadMoreCareersAction(nextPage)
+      if (result) {
+        setCareers((prev) => [...prev, ...result.data])
+        setPage(result.meta.page)
+        setTotalPages(result.meta.totalPages)
+      }
+    })
+  }
 
   return (
     <>
@@ -34,7 +53,8 @@ export default function CareersTable({ careers }: CareersTableProps) {
           <div>
             <CardTitle>Careers List</CardTitle>
             <CardDescription>
-              All career paths defined in the system. ({careers.length})
+              All career paths defined in the system. ({careers.length}
+              {hasNextPage ? "+" : ""})
             </CardDescription>
           </div>
           <Button
@@ -118,6 +138,25 @@ export default function CareersTable({ careers }: CareersTableProps) {
               </tbody>
             </table>
           </div>
+          {hasNextPage && (
+            <div className="mt-4 flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLoadMore}
+                disabled={isPending}
+              >
+                {isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load more"
+                )}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
       <CareerModal
