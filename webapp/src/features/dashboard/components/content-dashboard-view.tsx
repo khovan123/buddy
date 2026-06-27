@@ -10,6 +10,7 @@ import {
   SkillItem,
 } from "@/features/dashboard/types"
 import type { SeoContent } from "@/features/seo/services/seo-content"
+import { PaginatedResult } from "@/types/api"
 
 import CareersTable from "./tables/careers-table"
 import CoursesTable from "./tables/courses-table"
@@ -26,8 +27,8 @@ export default async function ContentDashboardView({
   const isContentPage = ["tutorials", "resources", "collections"].includes(slug)
   let majors: Major[] = []
   let courses: Course[] = []
-  let careers: CareerItem[] = []
-  let skills: SkillItem[] = []
+  let careersResult: PaginatedResult<CareerItem> | null = null
+  let skillsResult: PaginatedResult<SkillItem> | null = null
   // let tutorials: ContentTutorialItem[] = []
   // let resources: ContentResourceItem[] = []
 
@@ -39,8 +40,8 @@ export default async function ContentDashboardView({
     ])
     majors = metaRes?.majors || []
     courses = metaRes?.courses || []
-    careers = careersRes || []
-    skills = skillsRes || []
+    careersResult = careersRes
+    skillsResult = skillsRes
   } else {
     if (slug === "tutorials") {
       // const resp = await getMyTutorials()
@@ -72,8 +73,37 @@ export default async function ContentDashboardView({
         {slug === "courses" && (
           <CoursesTable courses={courses} majors={majors} />
         )}
-        {slug === "careers" && <CareersTable careers={careers} />}
-        {slug === "skills" && <SkillsTable skills={skills} careers={careers} />}
+        {slug === "careers" && (
+          <CareersTable
+            initialData={
+              careersResult ?? {
+                data: [],
+                meta: {
+                  total: 0,
+                  page: 1,
+                  limit: 20,
+                  totalPages: 0,
+                },
+              }
+            }
+          />
+        )}
+        {slug === "skills" && (
+          <SkillsTable
+            initialData={
+              skillsResult ?? {
+                data: [],
+                meta: {
+                  total: 0,
+                  page: 1,
+                  limit: 20,
+                  totalPages: 0,
+                },
+              }
+            }
+            careers={careersResult?.data ?? []}
+          />
+        )}
         {/* {slug === "tutorials" && (
           <CreatorTutorialsPanel tutorials={tutorials} />
         )}
