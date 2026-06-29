@@ -16,6 +16,7 @@ ENV NODE_ENV=production SERVICE_NAME=upload-service
 COPY --from=builder --chown=nestjs:nodejs /app/services/upload-service/dist ./dist
 COPY --from=builder --chown=nestjs:nodejs /app/libs ./libs
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/services/upload-service/node_modules ./node_modules
 EXPOSE 8080
 STOPSIGNAL SIGTERM
 CMD ["node", "dist/src/main.js"]
