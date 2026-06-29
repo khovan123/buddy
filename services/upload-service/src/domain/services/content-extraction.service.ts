@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import mammoth from 'mammoth';
+import pdfParse from 'pdf-parse';
 
 export type ContentExtractionStatus = 'AVAILABLE' | 'UNSUPPORTED' | 'FAILED';
 
@@ -68,7 +69,7 @@ export class ContentExtractionService {
       }
 
       if (normalizedMime === 'application/pdf' || normalizedName.endsWith('.pdf')) {
-        return this.available(this.truncate(this.extractPdfTextBestEffort(buffer)));
+        return this.available(this.truncate(await this.extractPdfText(buffer)));
       }
 
       if (
@@ -127,33 +128,8 @@ export class ContentExtractionService {
     return result.value.replace(/\s+/g, ' ').trim();
   }
 
-  private extractPdfTextBestEffort(buffer: Buffer): string {
-    const raw = buffer.toString('latin1');
-    const chunks: string[] = [];
-    const textOperatorPattern = /\(([^()]*)\)\s*Tj/g;
-    const arrayTextPattern = /\[((?:\([^()]*\)\s*)+)\]\s*TJ/g;
-
-    for (const match of raw.matchAll(textOperatorPattern)) {
-      chunks.push(this.decodePdfString(match[1] ?? ''));
-    }
-
-    for (const match of raw.matchAll(arrayTextPattern)) {
-      const inner = match[1] ?? '';
-      for (const part of inner.matchAll(/\(([^()]*)\)/g)) {
-        chunks.push(this.decodePdfString(part[1] ?? ''));
-      }
-    }
-
-    return chunks.join(' ').replace(/\s+/g, ' ').trim();
-  }
-
-  private decodePdfString(value: string): string {
-    return value
-      .replace(/\\n/g, '\n')
-      .replace(/\\r/g, '\r')
-      .replace(/\\t/g, '\t')
-      .replace(/\\\(/g, '(')
-      .replace(/\\\)/g, ')')
-      .replace(/\\\\/g, '\\');
+  private async extractPdfText(buffer: Buffer): Promise<string> {
+    const result = await pdfParse(buffer);
+    return result.text.replace(/\s+/g, ' ').trim();
   }
 }

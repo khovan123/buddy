@@ -40,4 +40,17 @@ describe('ContentExtractionService', () => {
     expect(result.text).toContain('Future<void> main()');
     expect(result.error).toBeNull();
   });
+
+  it('extracts text from pdf uploads with a real PDF parser', async () => {
+    const buffer = readFileSync(
+      resolve(__dirname, '../../../../dummy/data/resources/OOP JAVA.pdf'),
+    );
+
+    const result = await service.extract(buffer, 'application/pdf', 'OOP JAVA.pdf');
+
+    expect(result.status).toBe('AVAILABLE');
+    expect(result.text).toContain('OJBECT ORIENTED PROGRAMMING');
+    expect(result.text?.length).toBeGreaterThan(1000);
+    expect(result.error).toBeNull();
+  });
 });
