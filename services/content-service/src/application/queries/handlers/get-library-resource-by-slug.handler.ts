@@ -45,7 +45,7 @@ export class GetLibraryResourceBySlugHandler implements IQueryHandler<GetLibrary
         }),
       );
 
-      if (response.previewUrl) {
+      if (response.previewUrl && response.isPreview === false) {
         item.meta[0].downloadUrl = response.previewUrl;
       }
     } catch (error) {

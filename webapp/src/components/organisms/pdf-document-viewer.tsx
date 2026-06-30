@@ -3,46 +3,21 @@
 import { useEffect, useRef, useState } from "react"
 
 import { Maximize2, Minimize2 } from "lucide-react"
-import { Document, Page, pdfjs } from "react-pdf"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
-
 type PdfDocumentViewerProps = {
   sourceUrl: string
+  title?: string
 }
 
-export function PdfDocumentViewer({ sourceUrl }: PdfDocumentViewerProps) {
+export function PdfDocumentViewer({
+  sourceUrl,
+  title = "PDF document",
+}: PdfDocumentViewerProps) {
   const viewerRef = useRef<HTMLDivElement>(null)
-  const pdfContainerRef = useRef<HTMLDivElement>(null)
-  const [pdfPageCount, setPdfPageCount] = useState(0)
-  const [currentPdfPage, setCurrentPdfPage] = useState(1)
-  const [pdfViewerWidth, setPdfViewerWidth] = useState(0)
-  const [pdfZoom, setPdfZoom] = useState(1)
   const [isFullscreen, setIsFullscreen] = useState(false)
-
-  useEffect(() => {
-    const element = pdfContainerRef.current
-
-    if (!element) {
-      return
-    }
-
-    const updateWidth = () => {
-      setPdfViewerWidth(element.clientWidth)
-    }
-
-    updateWidth()
-
-    const observer = new ResizeObserver(updateWidth)
-    observer.observe(element)
-
-    return () => {
-      observer.disconnect()
-    }
-  }, [])
 
   useEffect(() => {
     const syncFullscreenState = () => {
@@ -75,9 +50,6 @@ export function PdfDocumentViewer({ sourceUrl }: PdfDocumentViewerProps) {
     }
   }
 
-  const canGoBack = currentPdfPage > 1
-  const canGoForward = currentPdfPage < pdfPageCount
-  const pdfWidth = pdfViewerWidth > 0 ? Math.round(pdfViewerWidth * pdfZoom) : 0
   const controlButtonVariant: "ghost" | "outline" = isFullscreen
     ? "outline"
     : "ghost"
@@ -98,66 +70,14 @@ export function PdfDocumentViewer({ sourceUrl }: PdfDocumentViewerProps) {
             : ""
         )}
       >
-        <Button
-          variant={controlButtonVariant}
-          size="sm"
-          onClick={() => setCurrentPdfPage((page) => Math.max(1, page - 1))}
-          disabled={!canGoBack}
-        >
-          Previous
-        </Button>
         <div
           className={cn(
             "text-sm font-medium",
             isFullscreen ? "text-foreground" : "text-muted-foreground"
           )}
         >
-          Page {currentPdfPage} of {pdfPageCount || "--"}
+          PDF document
         </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant={controlButtonVariant}
-            size="sm"
-            onClick={() =>
-              setPdfZoom((zoom) =>
-                Math.max(0.75, Number((zoom - 0.1).toFixed(2)))
-              )
-            }
-          >
-            -
-          </Button>
-          <span
-            className={cn(
-              "min-w-12 text-center text-xs font-semibold",
-              isFullscreen ? "text-foreground" : "text-muted-foreground"
-            )}
-          >
-            {Math.round(pdfZoom * 100)}%
-          </span>
-          <Button
-            variant={controlButtonVariant}
-            size="sm"
-            onClick={() =>
-              setPdfZoom((zoom) =>
-                Math.min(1.75, Number((zoom + 0.1).toFixed(2)))
-              )
-            }
-          >
-            +
-          </Button>
-        </div>
-        <Button
-          variant={controlButtonVariant}
-          size="sm"
-          onClick={() =>
-            setCurrentPdfPage((page) =>
-              Math.min(pdfPageCount || page, page + 1)
-            )
-          }
-          disabled={!canGoForward}
-        >
-          Next
-        </Button>
         <Button
           variant={controlButtonVariant}
           size="icon"
@@ -172,32 +92,20 @@ export function PdfDocumentViewer({ sourceUrl }: PdfDocumentViewerProps) {
         </Button>
       </div>
 
-      <div ref={pdfContainerRef} className="overflow-x-hidden">
-        <Document
-          file={sourceUrl}
-          loading={
-            <div className="text-sm text-muted-foreground">Loading PDF…</div>
-          }
-          error={
-            <div className="text-sm text-destructive">
-              Unable to load the PDF preview.
-            </div>
-          }
-          onLoadSuccess={({ numPages }) => {
-            setPdfPageCount(numPages)
-            setCurrentPdfPage((page) => Math.min(page, numPages))
-          }}
-        >
-          {pdfWidth > 0 ? (
-            <Page
-              key={`${currentPdfPage}-${pdfZoom}`}
-              pageNumber={currentPdfPage}
-              width={pdfWidth}
-              renderAnnotationLayer={false}
-              renderTextLayer={false}
-            />
-          ) : null}
-        </Document>
+      <div
+        className={cn(
+          "overflow-hidden border border-border/60 bg-background",
+          isFullscreen
+            ? "h-[calc(100vh-64px)] rounded-none border-0"
+            : "min-h-[68vh] rounded-2xl"
+        )}
+      >
+        <iframe
+          src={sourceUrl}
+          title={title}
+          className={cn("w-full border-0", isFullscreen ? "h-full" : "h-[68vh]")}
+          loading="lazy"
+        />
       </div>
     </div>
   )

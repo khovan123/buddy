@@ -3,7 +3,10 @@ import { GetPreviewUrlEvent, PreviewStatus, ResourcePreviewResponse } from '@lib
 import { Inject, Injectable } from '@nestjs/common';
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 
-import type { IResourceRepository } from '../../../domain/repositories/resource.repository.interface';
+import type {
+  IResourceRepository,
+  ResourceQueryItem,
+} from '../../../domain/repositories/resource.repository.interface';
 import { RESOURCE_REPOSITORY } from '../../../domain/repositories/tokens';
 import { StorageBrokerPublisher } from '../../../infrastructure/messaging/publishers/storage-broker.rpc';
 import { GetResourcePreviewQuery } from '../get-resource-preview.query';
@@ -72,12 +75,41 @@ export class GetResourcePreviewHandler implements IQueryHandler<GetResourcePrevi
       this.logger.error(
         `Failed to get preview for resource ${resource.id}: ${error instanceof Error ? error.message : String(error)}`,
       );
+
+      if (resource.price === 0) {
+        const fallback = this.buildFreeResourceFallback(resource, extension);
+        if (fallback) {
+          return fallback;
+        }
+      }
+
       return this.buildPlaceholderPreview(
         resource,
         extension,
         'Preview service is temporarily unavailable.',
       );
     }
+  }
+
+  private buildFreeResourceFallback(
+    resource: ResourceQueryItem,
+    format: string,
+  ): ResourcePreviewResponse | null {
+    const downloadUrl = resource.meta?.[0]?.downloadUrl;
+    if (!downloadUrl) {
+      return null;
+    }
+
+    return {
+      previewUrl: downloadUrl,
+      isReady: true,
+      isPreview: false,
+      previewPercentage: 100,
+      status: PreviewStatus.AVAILABLE,
+      resourceTitle: resource.title,
+      resourceSlug: resource.slug,
+      format,
+    };
   }
 
   /** Extension → display-friendly format label */

@@ -280,7 +280,7 @@ export function DocumentReader({
                     Loading document…
                   </div>
                 ) : kind === "pdf" ? (
-                  <PdfDocumentViewer sourceUrl={sourceUrl} />
+                  <PdfDocumentViewer sourceUrl={sourceUrl} title={title} />
                 ) : kind === "docx" ? (
                   <DocxDocumentViewer
                     htmlContent={documentHtml}
