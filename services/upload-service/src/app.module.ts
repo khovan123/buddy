@@ -28,6 +28,7 @@ import { ContentExtractionService } from './domain/services/content-extraction.s
 import { PreviewProcessorContext } from './domain/services/preview-processor.context';
 import { VideoTranscriptService } from './domain/services/video-transcript.service';
 import { MESSAGE_COMPONENTS, MESSAGE_CONTROLLERS } from './infrastructure/messaging/message.module';
+import { ContentSettingsClient } from './infrastructure/http/content-settings.client';
 import { S3Module } from './infrastructure/persistence/aws/s3.module';
 import { S3Service } from './infrastructure/persistence/aws/s3.service';
 import { CloudinaryService } from './infrastructure/persistence/cloudinary/cloudinary.service';
@@ -148,6 +149,7 @@ const disabledQueueProviders = uploadWorkersEnabled
     { provide: STORAGE_PROVIDER, useExisting: S3Service },
     S3Service,
     CloudinaryService,
+    ContentSettingsClient,
     OutboxCleanupService,
     ...disabledQueueProviders,
     ...uploadWorkerProviders,

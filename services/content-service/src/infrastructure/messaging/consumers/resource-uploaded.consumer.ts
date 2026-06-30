@@ -1,5 +1,6 @@
 import { AppLogger, EXCHANGES, QUEUES } from '@libs/common';
 import {
+  ContentModerationCompletedEvent,
   ResourceUploadCompletedEvent,
   UPLOAD_ROUTINGKEYS,
   extractRmqPayload,
@@ -14,6 +15,8 @@ import { RESOURCE_REPOSITORY } from '../../../domain/repositories/tokens';
 import { IdempotentConsumerService } from '../../../infrastructure/services/idempotent-consumer.service';
 import { ContentSettingsService } from '../../services/content-settings.service';
 import { ContentModerationStatus } from '../../persistence/mongo/schemas/resource.schema';
+import { ContentModerationNotificationPublisher } from '../publishers/content-moderation-notification.publisher';
+import { RecommendationSyncPublisher } from '../publishers/recommendation-sync.publisher';
 
 /** Represents the  resource uploaded consumer component. */
 @Injectable()
@@ -25,6 +28,8 @@ export class ResourceUploadedConsumer {
     private readonly resourceRepository: IResourceRepository,
     private readonly idempotentConsumer: IdempotentConsumerService,
     private readonly contentSettings: ContentSettingsService,
+    private readonly moderationNotification: ContentModerationNotificationPublisher,
+    private readonly recommendationSync: RecommendationSyncPublisher,
   ) {}
 
   /**
@@ -63,6 +68,7 @@ export class ResourceUploadedConsumer {
         return;
       }
 
+      let approvedWithoutModeration = false;
       const processed = await this.idempotentConsumer.runWithIdempotency(
         correlationId,
         UPLOAD_ROUTINGKEYS.RESOURCE_UPLOAD_COMPLETED,
@@ -80,6 +86,7 @@ export class ResourceUploadedConsumer {
           );
 
           if (!(await this.contentSettings.isModerationEnabled())) {
+            approvedWithoutModeration = true;
             await this.resourceRepository.applyModerationResult(
               payload.resourceId,
               {
@@ -104,6 +111,10 @@ export class ResourceUploadedConsumer {
       this.logger.log(
         `Successfully processed ${UPLOAD_ROUTINGKEYS.RESOURCE_UPLOAD_COMPLETED} for resourceId ${payload.resourceId}`,
       );
+
+      if (approvedWithoutModeration) {
+        await this.publishModerationBypassResult(payload.resourceId, correlationId);
+      }
     } catch (error) {
       this.logger.error(
         `Failed to process ${UPLOAD_ROUTINGKEYS.RESOURCE_UPLOAD_COMPLETED} for resourceId ${payload.resourceId}`,
@@ -111,5 +122,49 @@ export class ResourceUploadedConsumer {
       );
       return new Nack(false); // Send to DLX
     }
+  }
+
+  private async publishModerationBypassResult(
+    resourceId: string,
+    correlationId: string,
+  ): Promise<void> {
+    const resource = await this.resourceRepository.findByIdWithDetails(resourceId);
+    if (!resource) {
+      this.logger.warn(`Resource ${resourceId} not found after moderation bypass approval`);
+      return;
+    }
+
+    const reasons = ['Content moderation disabled by admin setting.'];
+    const ruleVersion = 'runtime-moderation-disabled';
+    await this.moderationNotification.send(
+      new ContentModerationCompletedEvent(
+        {
+          contentId: resource.id,
+          contentType: 'RESOURCE',
+          ownerId: resource.userId,
+          title: resource.title,
+          slug: resource.slug,
+          decision: 'APPROVED',
+          score: null,
+          reasons,
+          ruleVersion,
+          moderatedAt: new Date().toISOString(),
+        },
+        correlationId,
+      ),
+    );
+
+    await this.recommendationSync.send({
+      type: 'ITEM_UPSERT',
+      itemId: resource.id,
+      itemType: 'RESOURCE',
+      ownerId: resource.userId,
+      majorId: resource.majorId,
+      courseId: resource.courseId,
+      title: resource.title,
+      slug: resource.slug,
+      summary: resource.summary,
+      hightlights: resource.hightlights,
+    });
   }
 }

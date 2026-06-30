@@ -11,6 +11,7 @@ import { FILE_METADATA_REPOSITORY } from '../../../domain/repositories/tokens';
 import { PreviewProcessorContext } from '../../../domain/services/preview-processor.context';
 import { resolveExtension } from '../../../domain/services/resolver';
 import { OutboxService } from '../../../infrastructure/messaging/publishers/outbox.service';
+import { ContentSettingsClient } from '../../../infrastructure/http/content-settings.client';
 import { S3Service } from '../../../infrastructure/persistence/aws/s3.service';
 import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { type ContentExtractionJobData } from '../../../infrastructure/workers/content-extraction.worker';
@@ -28,6 +29,7 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
     private readonly outboxService: OutboxService,
     private readonly storageService: S3Service,
     private readonly prisma: PrismaService,
+    private readonly contentSettings: ContentSettingsClient,
     private readonly previewProcessor: PreviewProcessorContext,
     @InjectQueue(QUEUES.DOCUMENT_PREVIEW_QUEUE)
     private readonly previewQueue: Queue<DocumentPreviewJobData>,
@@ -116,20 +118,28 @@ export class ConfirmResourceUploadHandler implements ICommandHandler<ConfirmReso
       );
     });
 
+    const moderationEnabled = await this.contentSettings.isModerationEnabled();
+
     // Enqueue content extraction as part of the confirm workflow.
     // If scheduling fails, compensate the outbox row so the relay
     // does not publish ResourceUploadCompletedEvent without an
     // extraction/moderation job, then re-throw so the client can retry.
     try {
-      await this.extractionQueue.add('extract-resource-content', {
-        contentId: command.resourceId,
-        contentType: 'RESOURCE',
-        fileIds: uniqueFileIds,
-        uploadedBy: command.userId,
-        correlationId,
-      });
+      if (moderationEnabled) {
+        await this.extractionQueue.add('extract-resource-content', {
+          contentId: command.resourceId,
+          contentType: 'RESOURCE',
+          fileIds: uniqueFileIds,
+          uploadedBy: command.userId,
+          correlationId,
+        });
+      } else {
+        this.logger.log(
+          `Skipping content extraction for resource ${command.resourceId}; moderation is disabled`,
+        );
+      }
 
-      // Extraction job confirmed — promote HELD → PENDING so the relay
+      // Extraction job confirmed, or bypassed by admin setting: promote HELD → PENDING so the relay
       // can publish the event on the next flush tick.
       await this.outboxService.markReady(
         correlationId,

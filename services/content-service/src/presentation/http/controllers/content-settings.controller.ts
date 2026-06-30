@@ -1,4 +1,4 @@
-import { JwtAuthGuard, getCorrelationId } from '@libs/common';
+import { JwtAuthGuard, Public, getCorrelationId } from '@libs/common';
 import { successResponse } from '@libs/contracts';
 import {
   Body,
@@ -35,6 +35,19 @@ export class ContentSettingsController {
     this.assertAdmin(req.user?.roles ?? []);
     const result = await this.settings.getModerationSettings();
     return successResponse(result, 'Get moderation settings successful', getCorrelationId());
+  }
+
+  @Get('moderation/runtime')
+  @Public()
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async getRuntimeModerationSettings() {
+    const result = await this.settings.getModerationSettings();
+    return successResponse(
+      { enabled: result.enabled },
+      'Get runtime moderation settings successful',
+      getCorrelationId(),
+    );
   }
 
   @Patch('moderation')

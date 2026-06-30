@@ -1,4 +1,4 @@
-import { JwtAuthGuard } from '@libs/common';
+import { JwtAuthGuard, Public } from '@libs/common';
 import { Body, Controller, Get, Patch, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { HttpProxyService } from '../../../infrastructure/http/http-proxy.service';
@@ -24,6 +24,16 @@ export class ContentSettingsProxyController {
       path: '/v1/content-settings/moderation',
       method: 'PATCH',
       body,
+    });
+  }
+
+  @Get('moderation/runtime')
+  @Public()
+  getRuntimeModerationSettings(@Req() req: FastifyRequest) {
+    return this.proxy.forward(req, {
+      service: 'content',
+      path: '/v1/content-settings/moderation/runtime',
+      method: 'GET',
     });
   }
 }

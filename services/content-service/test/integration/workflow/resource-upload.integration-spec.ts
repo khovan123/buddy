@@ -238,6 +238,7 @@ describe('Resource Multi-files Upload Integration', () => {
           new OutboxService(new EventEmitter2(), mockPrismaService as any),
           mockS3Service as any,
           { client: mockPrismaService } as any,
+          { isModerationEnabled: jest.fn().mockResolvedValue(true) } as any,
           { isSupported: jest.fn().mockReturnValue(false) } as any,
           { add: jest.fn().mockResolvedValue(undefined) } as any,
           { add: jest.fn().mockResolvedValue(undefined) } as any,
