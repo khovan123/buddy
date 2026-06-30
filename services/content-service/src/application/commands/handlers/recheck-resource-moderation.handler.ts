@@ -17,6 +17,7 @@ import {
   ContentModerationService,
   type ModerationResult,
 } from '../../../infrastructure/services/content-moderation.service';
+import { ContentSettingsService } from '../../../infrastructure/services/content-settings.service';
 import { RecheckResourceModerationCommand } from '../recheck-resource-moderation.command';
 
 @CommandHandler(RecheckResourceModerationCommand)
@@ -29,6 +30,7 @@ export class RecheckResourceModerationHandler implements ICommandHandler<Recheck
     private readonly resourceRepository: IResourceRepository,
     private readonly storageBrokerPublisher: StorageBrokerPublisher,
     private readonly contentModeration: ContentModerationService,
+    private readonly contentSettings: ContentSettingsService,
     private readonly recommendationSync: RecommendationSyncPublisher,
     private readonly moderationNotification: ContentModerationNotificationPublisher,
   ) {}
@@ -42,10 +44,15 @@ export class RecheckResourceModerationHandler implements ICommandHandler<Recheck
       throw new ForbiddenException('You can only recheck your own resources');
     }
 
-    const extraction = await this.fetchContentExtraction(resource.id, command.correlationId);
+    const moderationEnabled = await this.contentSettings.isModerationEnabled();
+    const extraction = moderationEnabled
+      ? await this.fetchContentExtraction(resource.id, command.correlationId)
+      : null;
     const result: ModerationResult =
-      extraction && extraction.files.length > 0
-        ? await this.contentModeration.moderate({
+      !moderationEnabled
+        ? this.createModerationDisabledResult()
+        : extraction && extraction.files.length > 0
+          ? await this.contentModeration.moderate({
             contentId: resource.id,
             contentType: 'RESOURCE',
             title: resource.title,
@@ -59,7 +66,7 @@ export class RecheckResourceModerationHandler implements ICommandHandler<Recheck
             extractionStatus: this.resolveExtractionStatus(extraction),
             extractionError: this.resolveExtractionError(extraction),
           })
-        : this.createExtractionUnavailableResult();
+          : this.createExtractionUnavailableResult();
 
     await this.resourceRepository.applyModerationResult(resource.id, {
       status: this.toModerationStatus(result.decision),
@@ -136,6 +143,15 @@ export class RecheckResourceModerationHandler implements ICommandHandler<Recheck
         'Could not re-extract uploaded file content from storage. Please retry moderation or review manually.',
       ],
       ruleVersion: 'manual-recheck-extraction-unavailable',
+    };
+  }
+
+  private createModerationDisabledResult(): ModerationResult {
+    return {
+      decision: 'APPROVED',
+      score: null,
+      reasons: ['Content moderation disabled by admin setting.'],
+      ruleVersion: 'runtime-moderation-disabled',
     };
   }
 

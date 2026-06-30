@@ -12,6 +12,8 @@ import type { ConsumeMessage } from 'amqplib';
 import type { IResourceRepository } from '../../../domain/repositories/resource.repository.interface';
 import { RESOURCE_REPOSITORY } from '../../../domain/repositories/tokens';
 import { IdempotentConsumerService } from '../../../infrastructure/services/idempotent-consumer.service';
+import { ContentSettingsService } from '../../services/content-settings.service';
+import { ContentModerationStatus } from '../../persistence/mongo/schemas/resource.schema';
 
 /** Represents the  resource uploaded consumer component. */
 @Injectable()
@@ -22,6 +24,7 @@ export class ResourceUploadedConsumer {
     @Inject(RESOURCE_REPOSITORY)
     private readonly resourceRepository: IResourceRepository,
     private readonly idempotentConsumer: IdempotentConsumerService,
+    private readonly contentSettings: ContentSettingsService,
   ) {}
 
   /**
@@ -75,6 +78,19 @@ export class ResourceUploadedConsumer {
             })),
             { session },
           );
+
+          if (!(await this.contentSettings.isModerationEnabled())) {
+            await this.resourceRepository.applyModerationResult(
+              payload.resourceId,
+              {
+                status: ContentModerationStatus.APPROVED,
+                score: null,
+                reasons: ['Content moderation disabled by admin setting.'],
+                ruleVersion: 'runtime-moderation-disabled',
+              },
+              { session },
+            );
+          }
         },
       );
 

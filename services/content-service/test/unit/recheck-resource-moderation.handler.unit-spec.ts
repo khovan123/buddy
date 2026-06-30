@@ -18,7 +18,7 @@ describe('RecheckResourceModerationHandler', () => {
     course: { name: 'MLN111' },
   };
 
-  const createHandler = () => {
+  const createHandler = (moderationEnabled = true) => {
     const resourceRepository = {
       findByIdWithDetails: jest.fn().mockResolvedValue(resource),
       applyModerationResult: jest.fn().mockResolvedValue(undefined),
@@ -34,6 +34,9 @@ describe('RecheckResourceModerationHandler', () => {
         ruleVersion: 'test-rule',
       }),
     };
+    const contentSettings = {
+      isModerationEnabled: jest.fn().mockResolvedValue(moderationEnabled),
+    };
     const recommendationSync = {
       send: jest.fn().mockResolvedValue(undefined),
     };
@@ -46,12 +49,14 @@ describe('RecheckResourceModerationHandler', () => {
         resourceRepository as never,
         storageBrokerPublisher as never,
         contentModeration as never,
+        contentSettings as never,
         recommendationSync as never,
         moderationNotification as never,
       ),
       resourceRepository,
       storageBrokerPublisher,
       contentModeration,
+      contentSettings,
       recommendationSync,
       moderationNotification,
     };
@@ -122,6 +127,25 @@ describe('RecheckResourceModerationHandler', () => {
         'Could not re-extract uploaded file content from storage. Please retry moderation or review manually.',
       ],
       ruleVersion: 'manual-recheck-extraction-unavailable',
+    });
+  });
+
+  it('approves without re-extraction when moderation is disabled', async () => {
+    const { handler, storageBrokerPublisher, contentModeration, resourceRepository } =
+      createHandler(false);
+
+    const result = await handler.execute(
+      new RecheckResourceModerationCommand(resource.id, resource.userId, 'c-1'),
+    );
+
+    expect(storageBrokerPublisher.reextractContent).not.toHaveBeenCalled();
+    expect(contentModeration.moderate).not.toHaveBeenCalled();
+    expect(result.decision).toBe('APPROVED');
+    expect(resourceRepository.applyModerationResult).toHaveBeenCalledWith(resource.id, {
+      status: ContentModerationStatus.APPROVED,
+      score: null,
+      reasons: ['Content moderation disabled by admin setting.'],
+      ruleVersion: 'runtime-moderation-disabled',
     });
   });
 });
