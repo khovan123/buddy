@@ -120,7 +120,9 @@ export class GetPreviewUrlHandler implements IQueryHandler<GetPreviewUrlQuery> {
     isPreview = true,
     previewPercentage = DEFAULT_PREVIEW_PERCENTAGE,
   ): Promise<PreviewUrlRpcResponse> {
-    const previewUrl = await this.s3Service.generatePreviewSignedUrl(s3Key, mimeType);
+    const previewUrl = isPreview
+      ? await this.s3Service.generatePreviewSignedUrl(s3Key, mimeType)
+      : await this.s3Service.generateInlineDownloadSignedUrl(s3Key, mimeType);
 
     return {
       previewUrl,

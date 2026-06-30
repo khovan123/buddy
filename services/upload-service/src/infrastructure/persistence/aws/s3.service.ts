@@ -22,6 +22,8 @@ export class S3Service implements OnModuleDestroy {
   private readonly defaultBucket: string;
   private readonly publicUrlBase: string;
   private readonly presignedUrlExpirationSeconds: number;
+  private readonly previewUrlExpirationSeconds: number;
+  private readonly documentViewUrlExpirationSeconds: number;
   private readonly hlsUploadConcurrency: number;
 
   constructor(private readonly configService: ConfigService) {
@@ -32,6 +34,14 @@ export class S3Service implements OnModuleDestroy {
       this.configService.get<string>('SUPABASE_URL', '');
     this.presignedUrlExpirationSeconds = parseInt(
       this.configService.get<string>('PRESIGNED_URL_EXPIRATION_SECONDS', '900'),
+      10,
+    );
+    this.previewUrlExpirationSeconds = parseInt(
+      this.configService.get<string>('PREVIEW_URL_EXPIRATION_SECONDS', '1800'),
+      10,
+    );
+    this.documentViewUrlExpirationSeconds = parseInt(
+      this.configService.get<string>('DOCUMENT_VIEW_URL_EXPIRATION_SECONDS', '3600'),
       10,
     );
     this.hlsUploadConcurrency = Math.max(
@@ -247,9 +257,13 @@ export class S3Service implements OnModuleDestroy {
    * Generate a short-lived presigned URL for preview display.
    * Uses ResponseContentDisposition: 'inline' so the browser renders
    * the file in-page rather than triggering a download dialog.
-   * TTL: 60 seconds (previews are transient, re-requestable).
+   * TTL: 30 minutes by default (previews are transient, re-requestable).
    */
-  async generatePreviewSignedUrl(s3Key: string, contentType?: string): Promise<string> {
+  async generatePreviewSignedUrl(
+    s3Key: string,
+    contentType?: string,
+    expiresInSeconds = this.previewUrlExpirationSeconds,
+  ): Promise<string> {
     const command = new GetObjectCommand({
       Bucket: this.defaultBucket,
       Key: s3Key,
@@ -257,7 +271,11 @@ export class S3Service implements OnModuleDestroy {
       ...(contentType ? { ResponseContentType: contentType } : {}),
     });
 
-    return getSignedUrl(this.s3Client, command, { expiresIn: 60 });
+    return getSignedUrl(this.s3Client, command, { expiresIn: expiresInSeconds });
+  }
+
+  async generateInlineDownloadSignedUrl(s3Key: string, contentType?: string): Promise<string> {
+    return this.generatePreviewSignedUrl(s3Key, contentType, this.documentViewUrlExpirationSeconds);
   }
 
   /**
