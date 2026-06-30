@@ -48,11 +48,10 @@ export class RecheckResourceModerationHandler implements ICommandHandler<Recheck
     const extraction = moderationEnabled
       ? await this.fetchContentExtraction(resource.id, command.correlationId)
       : null;
-    const result: ModerationResult =
-      !moderationEnabled
-        ? this.createModerationDisabledResult()
-        : extraction && extraction.files.length > 0
-          ? await this.contentModeration.moderate({
+    const result: ModerationResult = !moderationEnabled
+      ? this.createModerationDisabledResult()
+      : extraction && extraction.files.length > 0
+        ? await this.contentModeration.moderate({
             contentId: resource.id,
             contentType: 'RESOURCE',
             title: resource.title,
@@ -66,7 +65,7 @@ export class RecheckResourceModerationHandler implements ICommandHandler<Recheck
             extractionStatus: this.resolveExtractionStatus(extraction),
             extractionError: this.resolveExtractionError(extraction),
           })
-          : this.createExtractionUnavailableResult();
+        : this.createExtractionUnavailableResult();
 
     await this.resourceRepository.applyModerationResult(resource.id, {
       status: this.toModerationStatus(result.decision),
