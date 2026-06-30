@@ -2,6 +2,7 @@ import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   EXCHANGES,
+  RABBITMQ_DEFAULT_TIMEOUT_MS,
   RABBITMQ_CONNECTION,
   attachTraceContextToMessage,
   ensureCorrelationId,
@@ -20,6 +21,7 @@ import { Inject, Injectable } from '@nestjs/common';
 @Injectable()
 export class BillingSubscriptionPlanPublisher {
   private readonly logger = new AppLogger(BillingSubscriptionPlanPublisher.name);
+  private readonly rpcTimeoutMs = RABBITMQ_DEFAULT_TIMEOUT_MS;
 
   constructor(
     @Inject(RABBITMQ_CONNECTION)
@@ -99,14 +101,14 @@ export class BillingSubscriptionPlanPublisher {
       exchange: EXCHANGES.BILLING,
       correlationId,
       eventId: event.eventId,
-      timeoutMs: 10_000,
+      timeoutMs: this.rpcTimeoutMs,
     });
 
     const response = await this.amqpConnection.request<BillingSubscriptionPlanRpcResponse>({
       exchange: EXCHANGES.BILLING,
       routingKey,
       payload: messageData,
-      timeout: 10_000,
+      timeout: this.rpcTimeoutMs,
     });
 
     this.logger.log('Received billing subscription plan RPC response', {

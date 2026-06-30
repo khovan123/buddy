@@ -2,6 +2,7 @@ import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   EXCHANGES,
+  RABBITMQ_DEFAULT_TIMEOUT_MS,
   RABBITMQ_CONNECTION,
   attachTraceContextToMessage,
   ensureCorrelationId,
@@ -48,7 +49,7 @@ export class ContentCatalogRpcPublisher {
       exchange: EXCHANGES.CONTENT,
       routingKey: event.routingKey,
       payload: this.toMessageData(event),
-      timeout: 15_000,
+      timeout: RABBITMQ_DEFAULT_TIMEOUT_MS,
     });
 
     return {

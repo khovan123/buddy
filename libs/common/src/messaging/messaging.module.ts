@@ -3,6 +3,7 @@ import { Global, Module } from '@nestjs/common';
 import { EXCHANGES } from '../config/rabbitmq.config';
 
 export const RABBITMQ_CONNECTION = Symbol('RABBITMQ_CONNECTION');
+export const RABBITMQ_DEFAULT_TIMEOUT_MS = 180_000;
 
 function getRequiredRabbitMqUrl(): URL {
   const rawUrl = process.env.RABBITMQ_URL?.trim().replace(/^['"]|['"]$/g, '');
@@ -48,6 +49,10 @@ function getPositiveIntEnv(name: string, fallback: number): number {
         const url = getRequiredRabbitMqUrl();
         const heartbeatIntervalInSeconds = getPositiveIntEnv('RABBITMQ_HEARTBEAT_SECONDS', 30);
         const reconnectTimeInSeconds = getPositiveIntEnv('RABBITMQ_RECONNECT_SECONDS', 5);
+        const defaultRpcTimeout = getPositiveIntEnv(
+          'RABBITMQ_RPC_TIMEOUT_MS',
+          RABBITMQ_DEFAULT_TIMEOUT_MS,
+        );
 
         return {
           exchanges: [
@@ -67,6 +72,7 @@ function getPositiveIntEnv(name: string, fallback: number): number {
             { name: EXCHANGES.DEAD_LETTER, type: 'direct' },
           ],
           uri: url.toString(),
+          defaultRpcTimeout,
           connectionManagerOptions: {
             heartbeatIntervalInSeconds,
             reconnectTimeInSeconds,
@@ -88,7 +94,7 @@ function getPositiveIntEnv(name: string, fallback: number): number {
                     },
                   },
           },
-          connectionInitOptions: { wait: false },
+          connectionInitOptions: { wait: false, timeout: RABBITMQ_DEFAULT_TIMEOUT_MS },
           enableControllerDiscovery: true,
         };
       },

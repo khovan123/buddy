@@ -2,6 +2,7 @@ import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   EXCHANGES,
+  RABBITMQ_DEFAULT_TIMEOUT_MS,
   RABBITMQ_CONNECTION,
   REDIS_KEYS,
   attachTraceContextToMessage,
@@ -15,6 +16,7 @@ import type { Cache } from 'cache-manager';
 
 /** Cache TTL for user profiles in milliseconds (10 minutes). */
 const PROFILE_CACHE_TTL = 600_000;
+const USER_PROFILE_RPC_TIMEOUT_MS = RABBITMQ_DEFAULT_TIMEOUT_MS;
 
 @Injectable()
 export class UserServicePublisher {
@@ -208,7 +210,7 @@ export class UserServicePublisher {
         exchange: EXCHANGES.USER,
         routingKey,
         payload: messageData,
-        timeout: 10000,
+        timeout: USER_PROFILE_RPC_TIMEOUT_MS,
       });
     } catch (err) {
       this.logger.warn(

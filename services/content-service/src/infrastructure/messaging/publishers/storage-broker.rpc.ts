@@ -2,6 +2,7 @@ import { AmqpConnection } from '@golevelup/nestjs-rabbitmq';
 import {
   AppLogger,
   EXCHANGES,
+  RABBITMQ_DEFAULT_TIMEOUT_MS,
   RABBITMQ_CONNECTION,
   attachTraceContextToMessage,
   ensureCorrelationId,
@@ -28,7 +29,9 @@ import { Inject, Injectable } from '@nestjs/common';
 export class StorageBrokerPublisher {
   private readonly logger = new AppLogger(StorageBrokerPublisher.name);
   private readonly uploadRpcTimeoutMs = Number.parseInt(
-    process.env.UPLOAD_RPC_TIMEOUT_MS ?? '30000',
+    process.env.UPLOAD_RPC_TIMEOUT_MS ??
+      process.env.RABBITMQ_RPC_TIMEOUT_MS ??
+      String(RABBITMQ_DEFAULT_TIMEOUT_MS),
     10,
   );
 
@@ -136,7 +139,7 @@ export class StorageBrokerPublisher {
         exchange: EXCHANGES.UPLOAD,
         routingKey,
         payload: messageData,
-        timeout: 8000,
+        timeout: this.uploadRpcTimeoutMs,
       });
     } catch (error) {
       this.logger.error(`RPC timeout or error [${routingKey}]`, String(error));
@@ -208,7 +211,7 @@ export class StorageBrokerPublisher {
         exchange: EXCHANGES.UPLOAD,
         routingKey,
         payload: messageData,
-        timeout: 10000,
+        timeout: this.uploadRpcTimeoutMs,
       });
     } catch (error) {
       this.logger.error(`RPC timeout or error [${routingKey}]`, String(error));
