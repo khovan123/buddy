@@ -28,6 +28,7 @@
     "@splinetool/react-spline": "^4.1.0",
     "@splinetool/runtime": "^1.12.81",
     "@types/uuid": "^10.0.0",
+    "@vercel/analytics": "^2.0.1",
     "@vercel/microfrontends": "^2.3.3",
     "boneyard-js": "^1.7.7",
     "class-variance-authority": "^0.7.1",
