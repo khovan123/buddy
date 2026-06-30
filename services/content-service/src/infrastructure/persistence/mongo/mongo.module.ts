@@ -10,6 +10,7 @@ import { ProcessedMessage, ProcessedMessageSchema } from './schemas/processed-me
 import { Resource, ResourceSchema } from './schemas/resource.schema';
 import { Tutorial, TutorialSchema } from './schemas/tutorial.schema';
 import { SavedContent, SavedContentSchema } from './schemas/saved-content.schema';
+import { SystemSetting, SystemSettingSchema } from './schemas/system-setting.schema';
 
 /** NestJS Module for  mongo. */
 @Global()
@@ -73,6 +74,10 @@ import { SavedContent, SavedContentSchema } from './schemas/saved-content.schema
       {
         name: SavedContent.name,
         useFactory: () => SavedContentSchema,
+      },
+      {
+        name: SystemSetting.name,
+        useFactory: () => SystemSettingSchema,
       },
     ]),
   ],

@@ -19,6 +19,7 @@ import {
 import { CareerSkillProxyController } from './presentation/http/controllers/career-skill-proxy.controller';
 import { CollectionProxyController } from './presentation/http/controllers/collection-proxy.controller';
 import { ContentMetaProxyController } from './presentation/http/controllers/content-meta-proxy.controller';
+import { ContentSettingsProxyController } from './presentation/http/controllers/content-settings-proxy.controller';
 import { ForumProxyController } from './presentation/http/controllers/forum-proxy.controller';
 import { GatewayHealthController } from './presentation/http/controllers/gateway-health.controller';
 import { InteractionProxyController } from './presentation/http/controllers/interaction-proxy.controller';
@@ -71,6 +72,7 @@ import { HttpProxyService } from './infrastructure/http/http-proxy.service';
     UserProxyController,
     GatewayHealthController,
     ContentMetaProxyController,
+    ContentSettingsProxyController,
     ResourceProxyController,
     LibraryProxyController,
     TutorialProxyController,

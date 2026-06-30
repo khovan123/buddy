@@ -8,6 +8,7 @@ import {
   ChevronRight,
   GraduationCap,
   Settings,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react"
 
@@ -67,10 +68,16 @@ export const navMain: NavItem[] = [
     ],
   },
   {
-    title: "Subcription",
+    title: "Subscription",
     url: "#",
     icon: Settings,
     items: [{ title: "Plans", url: "/dashboard/plans" }],
+  },
+  {
+    title: "Safety",
+    url: "#",
+    icon: ShieldCheck,
+    items: [{ title: "Moderation", url: "/dashboard/moderation" }],
   },
 ]
 

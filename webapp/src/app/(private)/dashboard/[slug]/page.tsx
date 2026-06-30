@@ -4,7 +4,9 @@ import { notFound } from "next/navigation"
 
 import {
   ContentDashboardView,
+  ModerationSettingsDashboard,
   PlanLimitsDashboard,
+  getModerationSettings,
   getSubscriptionPlanCatalog,
 } from "@/features/dashboard"
 import { getSeoContent } from "@/features/seo/services/seo-content"
@@ -19,6 +21,7 @@ const validSlugs = [
   "careers",
   "skills",
   "plans",
+  "moderation",
 ]
 
 export async function generateMetadata({
@@ -82,6 +85,8 @@ export default async function DashboardSlugPage({
       />
       {slug === "plans" ? (
         <PlanLimitsDashboard plans={await getSubscriptionPlanCatalog()} />
+      ) : slug === "moderation" ? (
+        <ModerationSettingsDashboard settings={await getModerationSettings()} />
       ) : (
         <ContentDashboardView seo={seo} slug={slug} />
       )}

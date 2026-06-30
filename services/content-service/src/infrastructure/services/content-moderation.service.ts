@@ -1,6 +1,7 @@
 import { AppLogger } from '@libs/common';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ContentSettingsService } from './content-settings.service';
 
 export type ModerationDecision = 'APPROVED' | 'REJECTED' | 'NEEDS_REVIEW' | 'ERROR';
 
@@ -106,11 +107,17 @@ const SOURCE_CODE_EXTENSIONS = new Set([
 export class ContentModerationService {
   private readonly logger = new AppLogger(ContentModerationService.name);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    @Optional()
+    private readonly contentSettings?: ContentSettingsService,
+  ) {}
 
   async moderate(payload: ModerationPayload): Promise<ModerationResult> {
     const ruleVersion = this.config.get<string>('CONTENT_MODERATION_RULE_VERSION', 'v1');
-    const enabled = this.config.get<string>('CONTENT_MODERATION_ENABLED', 'true') !== 'false';
+    const runtimeEnabled = await this.contentSettings?.isModerationEnabled();
+    const enabled =
+      runtimeEnabled ?? this.config.get<string>('CONTENT_MODERATION_ENABLED', 'true') !== 'false';
     const endpoint = this.config.get<string>('CONTENT_MODERATION_PROVIDER_URL');
     const geminiApiKey = this.config.get<string>('GEMINI_API_KEY');
 

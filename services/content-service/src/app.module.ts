@@ -36,6 +36,7 @@ import { QUERY_HANDLERS } from './application/queries/query.module';
 import { MESSAGE_COMPONENTS, MESSAGE_CONTROLLERS } from './infrastructure/messaging/message.module';
 import { CollectionController } from './presentation/http/controllers/collection.controller';
 import { ContentMetaController } from './presentation/http/controllers/content-meta.controller';
+import { ContentSettingsController } from './presentation/http/controllers/content-settings.controller';
 import { LibraryController } from './presentation/http/controllers/library.controller';
 import { ResourceController } from './presentation/http/controllers/resource.controller';
 import { TutorialController } from './presentation/http/controllers/tutorial.controller';
@@ -49,6 +50,7 @@ import {
 import { ContentCountService } from './infrastructure/services/content-count.service';
 import { ContentModerationService } from './infrastructure/services/content-moderation.service';
 import { BillingPlanLimitsResolver } from './infrastructure/services/billing-plan-limits.resolver';
+import { ContentSettingsService } from './infrastructure/services/content-settings.service';
 
 /** NestJS Module for  app. */
 @Module({
@@ -77,6 +79,7 @@ import { BillingPlanLimitsResolver } from './infrastructure/services/billing-pla
     LibraryController,
     CollectionController,
     ContentMetaController,
+    ContentSettingsController,
     ...MESSAGE_CONTROLLERS,
     HealthController,
   ],
@@ -94,6 +97,7 @@ import { BillingPlanLimitsResolver } from './infrastructure/services/billing-pla
     CleanupPendingCron,
     // PBAC policies
     ContentCountService,
+    ContentSettingsService,
     ContentModerationService,
     SubscriptionRequiredPolicy,
     CreatorOnlyPolicy,
