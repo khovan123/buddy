@@ -38,6 +38,7 @@ describe('GetPreviewUrlHandler', () => {
     } as unknown as PrismaService;
     const s3Service = {
       generatePreviewSignedUrl: jest.fn(async () => 'https://signed.example/original.docx'),
+      generateInlineDownloadSignedUrl: jest.fn(async () => 'https://signed.example/original.docx'),
     } as unknown as S3Service;
     const previewProcessor = {
       getPreviewMimeType: jest.fn(),
@@ -62,10 +63,11 @@ describe('GetPreviewUrlHandler', () => {
       previewPercentage: 100,
       status: PreviewStatus.AVAILABLE,
     });
-    expect(s3Service.generatePreviewSignedUrl).toHaveBeenCalledWith(
+    expect(s3Service.generateInlineDownloadSignedUrl).toHaveBeenCalledWith(
       'resources/resource-1/file.docx',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     );
+    expect(s3Service.generatePreviewSignedUrl).not.toHaveBeenCalled();
     expect(previewProcessor.getPreviewMimeType).not.toHaveBeenCalled();
     expect(previewQueue.add).not.toHaveBeenCalled();
   });
