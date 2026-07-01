@@ -1,6 +1,7 @@
 "use client"
 
 import { Hash } from "lucide-react"
+import { useI18n } from "@/i18n/language-provider"
 
 type ForumTag = {
   id: string
@@ -9,13 +10,14 @@ type ForumTag = {
 }
 
 export function ForumTags({ majors }: { majors: ForumTag[] }) {
+  const { t } = useI18n()
   return (
     <section className="rounded-2xl border border-border/80 bg-card/70 p-4">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-base font-semibold">Major tags</h2>
+          <h2 className="text-base font-semibold">{t("forum.tags.title")}</h2>
           <p className="text-sm text-muted-foreground">
-            Topic channels from content majors.
+            {t("forum.tags.description")}
           </p>
         </div>
         <Hash className="size-5 text-primary" />

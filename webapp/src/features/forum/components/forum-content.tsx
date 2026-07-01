@@ -33,8 +33,10 @@ import {
   getTopicScore,
   upsertTopic,
 } from "@/features/forum/utils/forum-utils"
+import { useI18n } from "@/i18n/language-provider"
 
 export function ForumContent() {
+  const { t } = useI18n()
   const [topics, setTopics] = useState<ForumTopic[]>([])
   const [topicMessages, setTopicMessages] = useState<
     Record<string, ForumMessage[]>
@@ -285,22 +287,30 @@ export function ForumContent() {
               <div className="max-w-2xl space-y-3">
                 <Badge variant="outline" className="gap-1.5">
                   <Users className="size-3.5" />
-                  Forum
+                  {t("forum.hero.badge")}
                 </Badge>
                 <div className="space-y-2">
                   <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                    Discuss, ask, and learn together
+                    {t("forum.hero.title")}
                   </h1>
                   <p className="text-sm leading-6 text-muted-foreground sm:text-base">
-                    Follow new topics, answer questions, react to discussions,
-                    and mention people when their context matters.
+                    {t("forum.hero.description")}
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 rounded-xl border border-border/70 bg-background/70 p-2 text-center">
-                <ForumMetric label="Topics" value={topics.length.toString()} />
-                <ForumMetric label="Replies" value={totalReplies.toString()} />
-                <ForumMetric label="Online" value={onlineUsers.toString()} />
+                <ForumMetric
+                  label={t("forum.metrics.topics")}
+                  value={topics.length.toString()}
+                />
+                <ForumMetric
+                  label={t("forum.metrics.replies")}
+                  value={totalReplies.toString()}
+                />
+                <ForumMetric
+                  label={t("forum.metrics.online")}
+                  value={onlineUsers.toString()}
+                />
               </div>
             </div>
           </div>
@@ -311,9 +321,11 @@ export function ForumContent() {
             <div className="space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold">New topics</h2>
+                  <h2 className="text-lg font-semibold">
+                    {t("forum.topics.title")}
+                  </h2>
                   <p className="text-sm text-muted-foreground">
-                    Fresh discussions from the Buddy community.
+                    {t("forum.topics.description")}
                   </p>
                 </div>
                 <div className="relative sm:w-64">
@@ -322,8 +334,8 @@ export function ForumContent() {
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
                     className="pl-9"
-                    placeholder="Search topics"
-                    aria-label="Search topics"
+                    placeholder={t("forum.topics.searchPlaceholder")}
+                    aria-label={t("forum.topics.searchPlaceholder")}
                   />
                 </div>
               </div>
@@ -331,13 +343,12 @@ export function ForumContent() {
               <div className="grid gap-3">
                 {isLoading ? (
                   <div className="rounded-xl border border-border/75 bg-background/68 p-4 text-sm text-muted-foreground">
-                    Loading forum...
+                    {t("forum.states.loading")}
                   </div>
                 ) : null}
                 {!isLoading && filteredTopics.length === 0 ? (
                   <div className="rounded-xl border border-border/75 bg-background/68 p-4 text-sm text-muted-foreground">
-                    Let&apos;s start the discussion! Create a new topic and
-                    share your thoughts with the Buddy community.
+                    {t("forum.states.emptyTopics")}
                   </div>
                 ) : null}
                 {filteredTopics.map((topic) => (

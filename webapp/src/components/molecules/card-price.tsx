@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/i18n/language-provider"
 
 export type CardPriceData = {
   originalPrice: string
@@ -19,10 +20,17 @@ export function CardPrice({
   align = "end",
   compact = false,
 }: CardPriceProps) {
+  const { t } = useI18n()
   const originalPrice = pricing?.originalPrice ?? price ?? "—"
   const finalPrice = pricing?.finalPrice
   const discountLabel = pricing?.discountLabel
   const hasDiscount = Boolean(discountLabel && finalPrice)
+  const freeLabel = t("common.free")
+  const isFreePrice = (value?: string) => {
+    const normalized = value?.trim().toLowerCase()
+    return normalized === "free" || value === freeLabel
+  }
+  const displayPrice = (value: string) => (isFreePrice(value) ? freeLabel : value)
 
   if (!hasDiscount) {
     return (
@@ -34,7 +42,7 @@ export function CardPrice({
             : "text-4xl font-extrabold"
         )}
       >
-        {originalPrice}
+        {displayPrice(originalPrice)}
       </span>
     )
   }
@@ -55,22 +63,22 @@ export function CardPrice({
               : "text-4xl font-extrabold"
           )}
         >
-          {finalPrice}
+          {displayPrice(finalPrice!)}
         </span>
-        {finalPrice !== "Free" && (
+        {!isFreePrice(finalPrice) && (
           <span className="rounded-full border border-education-gold/25 bg-education-gold/18 px-2 py-0.5 tracking-normal text-foreground">
             {discountLabel}
           </span>
         )}
       </div>
-      {finalPrice !== "Free" && (
+      {!isFreePrice(finalPrice) && (
         <span
           className={cn(
             "leading-none text-muted-foreground line-through",
             compact ? "text-3xs" : "text-xs"
           )}
         >
-          {originalPrice}
+          {displayPrice(originalPrice)}
         </span>
       )}
     </div>

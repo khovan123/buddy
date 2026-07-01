@@ -7,6 +7,8 @@ import { ExploreModeSwitcher } from "@/features/content"
 import { RecommendationSection } from "@/features/content"
 import { TrendingSection } from "@/features/content"
 import {
+  getResourceCollections,
+  getResources,
   mapCollectionToCard,
   mapResourceToCard,
   mapTutorialToCard,
@@ -16,9 +18,12 @@ import {
   getTopResources,
   getTopTutorialCollections,
   getTopTutorials,
+  getTutorialCollections,
+  getTutorials,
 } from "@/features/content"
 import { CollectionType } from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -52,16 +57,64 @@ export default async function ExplorePage(props: {
       : undefined
   const majorId =
     typeof searchParams.majorId === "string" ? searchParams.majorId : undefined
+  const courseId =
+    typeof searchParams.courseId === "string" ? searchParams.courseId : undefined
+  const verified = searchParams.verified === "true" ? true : undefined
+  const sort =
+    searchParams.sort === "popular" || searchParams.sort === "rating"
+      ? searchParams.sort
+      : undefined
+  const hasActiveFilters = Boolean(
+    search || semester || majorId || courseId || verified !== undefined || sort
+  )
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://buddy.app"
 
-  const [seo, tutsData, resData, tutColsData, resColsData] = await Promise.all([
-    seoPromise,
-    getTopTutorials(6, search, semester, majorId),
-    getTopResources(6, search, semester, majorId),
-    getTopTutorialCollections(6, search, semester, majorId),
-    getTopResourceCollections(6, search, semester, majorId),
-  ])
+  const [{ t }, seo, tutsData, resData, tutColsData, resColsData] =
+    await Promise.all([
+      getServerTranslator(),
+      seoPromise,
+      hasActiveFilters
+        ? getTutorials({
+            page: 1,
+            limit: 6,
+            semester,
+            majorId,
+            courseId,
+            search,
+            verified,
+            sort,
+          }).then((result) => result.data)
+        : getTopTutorials(6, search, semester, majorId),
+      hasActiveFilters
+        ? getResources({
+            page: 1,
+            limit: 6,
+            semester,
+            majorId,
+            courseId,
+            search,
+            verified,
+            sort,
+          }).then((result) => result.data)
+        : getTopResources(6, search, semester, majorId),
+      hasActiveFilters
+        ? getTutorialCollections({
+            page: 1,
+            limit: 3,
+            search,
+            courseId,
+          }).then((result) => result.data)
+        : getTopTutorialCollections(3, search, semester, majorId),
+      hasActiveFilters
+        ? getResourceCollections({
+            page: 1,
+            limit: 3,
+            search,
+            courseId,
+          }).then((result) => result.data)
+        : getTopResourceCollections(3, search, semester, majorId),
+    ])
 
   const collectionsData = [...tutColsData, ...resColsData]
 
@@ -82,11 +135,11 @@ export default async function ExplorePage(props: {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: t("nav.home"), item: siteUrl },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Explore",
+        name: t("nav.explore"),
         item: `${siteUrl}/explore`,
       },
     ],
@@ -118,20 +171,17 @@ export default async function ExplorePage(props: {
         // react-doctor-ignore
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListJsonLd) }}
       />
-      <ExploreHero
-        badge={seo.badge}
-        title={seo.title}
-        description={seo.description}
-      />
+      <ExploreHero />
 
-      <TrendingSection majorId={majorId} limit={6} />
-      <RecommendationSection pageSize={6} />
+      {!hasActiveFilters ? <TrendingSection majorId={majorId} limit={6} /> : null}
+      {!hasActiveFilters ? <RecommendationSection pageSize={6} /> : null}
 
       <Suspense>
         <ExploreModeSwitcher
           collections={collections}
           resources={resources}
           tutorials={tutorials}
+          isFiltered={hasActiveFilters}
         />
       </Suspense>
     </section>

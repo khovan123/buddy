@@ -35,7 +35,7 @@ function formatViews(item: ViewCountSource) {
 }
 
 function formatPrice(price: number) {
-  return price === 0 ? "Free" : vndFormat.format(price)
+  return price === 0 ? "free" : vndFormat.format(price)
 }
 
 function applyDiscount(price: number, discount: number) {
@@ -167,7 +167,7 @@ export function mapTutorialToProfileItem(
   return {
     title: item.title || "Untitled",
     description: item.description || "No description provided.",
-    price: item.price === 0 ? "Free" : formatVND(item.price ?? 0),
+    price: item.price === 0 ? "free" : formatVND(item.price ?? 0),
     rating: "5.0",
     reviews: "0",
     type: "Tutorial",
@@ -182,7 +182,7 @@ export function mapResourceToProfileItem(
   return {
     title: item.title || "Untitled",
     description: item.summary || "No description provided.",
-    price: item.price === 0 ? "Free" : formatVND(item.price ?? 0),
+    price: item.price === 0 ? "free" : formatVND(item.price ?? 0),
     rating: "5.0",
     reviews: "0",
     type: "Resource",
@@ -197,7 +197,7 @@ export function mapTutorialCollectionToProfileItem(
   return {
     title: item.title || "Untitled",
     description: item.description || "No description provided.",
-    price: item.discount === 100 ? "Free" : "—",
+    price: item.discount === 100 ? "free" : "—",
     rating: "5.0",
     reviews: "0",
     type: `Tutorial Series (${item._count?.tutorials ?? 0} items)`,
@@ -212,7 +212,7 @@ export function mapResourceCollectionToProfileItem(
   return {
     title: item.title || "Untitled",
     description: item.description || "No description provided.",
-    price: item.discount === 100 ? "Free" : "—",
+    price: item.discount === 100 ? "free" : "—",
     rating: "5.0",
     reviews: "0",
     type: `Resource Series (${item._count?.resources ?? 0} items)`,

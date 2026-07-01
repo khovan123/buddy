@@ -1,6 +1,12 @@
 "use client"
 
-import { useCallback, useState, useTransition, type ReactNode } from "react"
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react"
 
 import Link from "next/link"
 
@@ -40,6 +46,11 @@ export function LoadMoreGrid<T>({
   const [items, setItems] = useState<T[]>(initialItems)
   const [meta, setMeta] = useState<PaginationMeta>(initialMeta)
   const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    setItems(initialItems)
+    setMeta(initialMeta)
+  }, [initialItems, initialMeta])
 
   const hasMore = meta.page < meta.totalPages
 

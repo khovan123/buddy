@@ -39,6 +39,8 @@ export default async function ExploreTutorialCollectionsPage({
   const search = typeof params.search === "string" ? params.search : undefined
   const courseId =
     typeof params.courseId === "string" ? params.courseId : undefined
+  const hasSearch = Boolean(search)
+  const hasActiveFilters = Boolean(search || courseId)
 
   const [seo, result, topItems] = await Promise.all([
     getSeoContent("explore-tutorials-collections"),
@@ -116,15 +118,17 @@ export default async function ExploreTutorialCollectionsPage({
         </p>
       </header>
 
-      <div className="pt-2 pb-6">
-        <RecommendationSection
-          pageSize={6}
-          contentType="TUTORIAL_COLLECTION"
-          hasLoadMore={true}
-        />
-      </div>
+      {!hasActiveFilters ? (
+        <div className="pt-2 pb-6">
+          <RecommendationSection
+            pageSize={6}
+            contentType="TUTORIAL_COLLECTION"
+            hasLoadMore={true}
+          />
+        </div>
+      ) : null}
 
-      {featuredCollections ? (
+      {!hasActiveFilters && featuredCollections.length > 0 ? (
         <section className="space-y-5">
           <div className="flex items-end justify-between gap-4">
             <div>
@@ -153,10 +157,14 @@ export default async function ExploreTutorialCollectionsPage({
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-foreground">
-              {t("explore.list.allTutorialCollections")}
+              {hasSearch
+                ? t("explore.list.searchResults")
+                : t("explore.list.allTutorialCollections")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {t("explore.list.allTutorialCollectionsDescription")}
+              {hasSearch
+                ? t("explore.list.searchResultsDescription")
+                : t("explore.list.allTutorialCollectionsDescription")}
             </p>
           </div>
         </div>

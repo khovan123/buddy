@@ -5,7 +5,7 @@ import type { Metadata } from "next"
 
 import { ExploreBackground } from "@/components/atoms/explore-background"
 import { ExploreBreadcrumb } from "@/features/content"
-import { ExploreFilterBar } from "@/features/content"
+import { ExploreFilterBarShell } from "@/features/content"
 import { getContentMeta } from "@/features/content"
 
 export const metadata: Metadata = {
@@ -36,11 +36,9 @@ export default async function ExploreLayout({
           <ExploreBreadcrumb />
 
           {/* Filter Bar */}
-          <div className="rounded-xl border border-border/40 bg-card/30 px-4 py-3 backdrop-blur-md">
-            <Suspense>
-              <ExploreFilterBar majors={majors} courses={courses} />
-            </Suspense>
-          </div>
+          <Suspense>
+            <ExploreFilterBarShell majors={majors} courses={courses} />
+          </Suspense>
         </div>
 
         {/* ─── Main Content ─── */}

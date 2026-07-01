@@ -38,11 +38,13 @@ export function ContentModerationStatusBadge({
   status,
   moderationStatus,
 }: ContentModerationStatusBadgeProps) {
+  const { t } = useI18n()
+
   if (status === "AVAILABLE") {
     return (
       <Badge variant="default" className="uppercase">
         <CheckCircle2 className="size-3" />
-        Ready
+        {t("content.moderation.status.ready")}
       </Badge>
     )
   }
@@ -51,7 +53,7 @@ export function ContentModerationStatusBadge({
     return (
       <Badge variant="destructive" className="uppercase">
         <ShieldAlert className="size-3" />
-        Needs changes
+        {t("content.moderation.status.needsChanges")}
       </Badge>
     )
   }
@@ -60,7 +62,7 @@ export function ContentModerationStatusBadge({
     return (
       <Badge variant="destructive" className="uppercase">
         <AlertTriangle className="size-3" />
-        Try again
+        {t("content.moderation.status.tryAgain")}
       </Badge>
     )
   }
@@ -72,7 +74,7 @@ export function ContentModerationStatusBadge({
         className="border-amber-500/30 bg-amber-500/10 text-amber-700 uppercase dark:text-amber-300"
       >
         <AlertTriangle className="size-3" />
-        Review
+        {t("content.moderation.status.review")}
       </Badge>
     )
   }
@@ -81,7 +83,7 @@ export function ContentModerationStatusBadge({
     return (
       <Badge variant="secondary" className="uppercase">
         <Clock3 className="size-3" />
-        Checking
+        {t("content.moderation.status.checking")}
       </Badge>
     )
   }
@@ -90,7 +92,7 @@ export function ContentModerationStatusBadge({
     return (
       <Badge variant="default" className="uppercase">
         <CheckCircle2 className="size-3" />
-        Ready
+        {t("content.moderation.status.ready")}
       </Badge>
     )
   }
@@ -126,42 +128,41 @@ function isPlaceholderModerationReason(reason: string) {
 function getModerationSummary({
   status,
   moderationStatus,
-}: Pick<ContentModerationChecklistProps, "status" | "moderationStatus">) {
+  t,
+}: Pick<ContentModerationChecklistProps, "status" | "moderationStatus"> & {
+  t: ReturnType<typeof useI18n>["t"]
+}) {
   const contentStatus = normalizeStatus(status)
   const moderation = normalizeStatus(moderationStatus)
 
   if (contentStatus === "FAILED" || (moderation === "ERROR" && contentStatus !== "AVAILABLE")) {
     return {
-      title: "We could not finish checking this",
-      description:
-        "This is usually caused by a file we cannot read or a temporary issue. You can try again.",
+      title: t("content.moderation.summary.failedTitle"),
+      description: t("content.moderation.summary.failedDescription"),
       tone: "danger" as const,
     }
   }
 
   if (contentStatus === "BANNED" || moderation === "REJECTED") {
     return {
-      title: "Please review this content",
-      description:
-        "This file may not be suitable to share yet. Edit it or replace it before making it available.",
+      title: t("content.moderation.summary.rejectedTitle"),
+      description: t("content.moderation.summary.rejectedDescription"),
       tone: "danger" as const,
     }
   }
 
   if (moderation === "NEEDS_REVIEW") {
     return {
-      title: "Needs a closer look",
-      description:
-        "We could not clearly approve this content. Please review it before making it available.",
+      title: t("content.moderation.summary.reviewTitle"),
+      description: t("content.moderation.summary.reviewDescription"),
       tone: "warning" as const,
     }
   }
 
   if (contentStatus === "PROCESSING" || moderation === "PENDING") {
     return {
-      title: "Checking your content",
-      description:
-        "We are reading the file and checking whether learners can see it.",
+      title: t("content.moderation.summary.processingTitle"),
+      description: t("content.moderation.summary.processingDescription"),
       tone: "neutral" as const,
     }
   }
@@ -172,8 +173,8 @@ function getModerationSummary({
     moderation === "READY"
   ) {
     return {
-      title: "Ready for learners",
-      description: "We read the file and it passed the content check.",
+      title: t("content.moderation.summary.readyTitle"),
+      description: t("content.moderation.summary.readyDescription"),
       tone: "success" as const,
     }
   }
@@ -185,10 +186,13 @@ function getChecklistState({
   status,
   moderationStatus,
   verified,
+  t,
 }: Pick<
   ContentModerationChecklistProps,
   "status" | "moderationStatus" | "verified"
->) {
+> & {
+  t: ReturnType<typeof useI18n>["t"]
+}) {
   const contentStatus = normalizeStatus(status)
   const moderation = normalizeStatus(moderationStatus)
   const rejected = contentStatus === "BANNED" || moderation === "REJECTED"
@@ -202,7 +206,7 @@ function getChecklistState({
 
   return [
     {
-      label: "Upload done",
+      label: t("content.moderation.step.uploadDone"),
       state:
         contentStatus === "PENDING"
           ? "pending"
@@ -211,15 +215,15 @@ function getChecklistState({
             : "complete",
     },
     {
-      label: "Checking started",
+      label: t("content.moderation.step.checkingStarted"),
       state: processing ? "active" : "complete",
     },
     {
-      label: "Sharing check",
+      label: t("content.moderation.step.sharingCheck"),
       state: rejected || failed ? "failed" : approved ? "complete" : "active",
     },
     {
-      label: "Ready for learners",
+      label: t("content.moderation.step.readyForLearners"),
       state: approved
         ? "complete"
         : rejected || failed
@@ -259,12 +263,13 @@ export function ContentModerationChecklist({
   ruleVersion,
   compact = false,
 }: ContentModerationChecklistProps) {
-  const items = getChecklistState({ status, moderationStatus, verified })
+  const { t } = useI18n()
+  const items = getChecklistState({ status, moderationStatus, verified, t })
   const violationReasons = (reasons ?? []).filter(
     (reason) => reason.trim() && !isPlaceholderModerationReason(reason)
   )
   const hasReasons = violationReasons.length > 0
-  const summary = getModerationSummary({ status, moderationStatus })
+  const summary = getModerationSummary({ status, moderationStatus, t })
 
   return (
     <div
@@ -310,7 +315,7 @@ export function ContentModerationChecklist({
       {hasReasons && !isPlaceholderModerationReason ? (
         <div className="mt-2 border-t border-border/60 pt-2">
           <div className="mb-1 flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-destructive">
-            <span>What happened</span>
+            <span>{t("content.moderation.whatHappened")}</span>
             {ruleVersion ? (
               <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px]">
                 {ruleVersion}
@@ -336,11 +341,13 @@ export function ContentModerationChecklist({
 interface ManualModerationCheckButtonProps {
   contentId: string
   contentType: "resource" | "tutorial"
+  disabled?: boolean
 }
 
 export function ManualModerationCheckButton({
   contentId,
   contentType,
+  disabled = false,
 }: ManualModerationCheckButtonProps) {
   const { t } = useI18n()
   const router = useRouter()
@@ -370,7 +377,7 @@ export function ManualModerationCheckButton({
       variant="outline"
       size="sm"
       className="w-fit"
-      disabled={isLoading}
+      disabled={disabled || isLoading}
       onClick={handleRecheck}
     >
       {isLoading ? (

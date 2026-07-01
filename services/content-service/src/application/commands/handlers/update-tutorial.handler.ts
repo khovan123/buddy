@@ -3,6 +3,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 
 import type { ITutorialRepository } from '../../../domain/repositories/tutorial.repository.interface';
 import { TUTORIAL_REPOSITORY } from '../../../domain/repositories/tokens';
+import { TutorialStatus } from '../../../infrastructure/persistence/mongo/schemas/tutorial.schema';
 import { UpdateTutorialCommand } from '../update-tutorial.command';
 
 @CommandHandler(UpdateTutorialCommand)
@@ -20,6 +21,9 @@ export class UpdateTutorialHandler implements ICommandHandler<UpdateTutorialComm
     }
     if (tutorial.userId !== command.requesterId) {
       throw new ForbiddenException('You can only update your own tutorials');
+    }
+    if (tutorial.status === TutorialStatus.AVAILABLE) {
+      throw new ForbiddenException('Available tutorials cannot be edited');
     }
 
     await this.tutorialRepository.updateDetails(command.tutorialId, {

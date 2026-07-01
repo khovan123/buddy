@@ -42,6 +42,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { ContentItem } from "@/features/content/hooks/useCollectionBuilder"
+import { useI18n } from "@/i18n/language-provider"
 
 // ── Types ───────────────────────────────────────────────────────
 export interface StepResource {
@@ -74,6 +75,7 @@ function SortableStep({
   onRemoveStep,
   children,
 }: SortableStepProps) {
+  const { t } = useI18n()
   const {
     attributes,
     listeners,
@@ -156,7 +158,10 @@ function SortableStep({
                 <GripVertical className="size-5" />
               </div>
               <span className="font-mono text-xs font-semibold tracking-wider text-primary/70 uppercase">
-                Step {index + 1}
+                {t("content.tutorialBuilder.stepLabel").replace(
+                  "{number}",
+                  String(index + 1)
+                )}
               </span>
             </div>
 
@@ -165,7 +170,10 @@ function SortableStep({
                 variant="outline"
                 className="pointer-events-none bg-transparent font-normal text-muted-foreground"
               >
-                {itemCount} {itemCount === 1 ? "resource" : "resources"}
+                {itemCount}{" "}
+                {itemCount === 1
+                  ? t("content.tutorialBuilder.resourceSingle")
+                  : t("content.tutorialBuilder.resourcePlural")}
               </Badge>
               <div className="mx-1 h-4 w-px bg-border/60" />
               <Button
@@ -198,7 +206,7 @@ function SortableStep({
             <Input
               value={step.title}
               onChange={(e) => onTitleChange(e.target.value)}
-              placeholder="e.g. Introduction to Variables"
+              placeholder={t("content.tutorialBuilder.stepTitlePlaceholder")}
               className="h-auto rounded-none border-0 bg-transparent p-0 text-xl font-extrabold shadow-none placeholder:opacity-50 focus-visible:ring-0"
             />
           </div>
@@ -245,6 +253,7 @@ function SortableResource({
   onRemove,
   onNoteChange,
 }: SortableResourceProps) {
+  const { t } = useI18n()
   const {
     attributes,
     listeners,
@@ -328,7 +337,7 @@ function SortableResource({
         <Textarea
           value={resourceExt.instructionNote}
           onChange={(e) => onNoteChange(e.target.value)}
-          placeholder="Add instruction notes for this resource..."
+          placeholder={t("content.tutorialBuilder.instructionPlaceholder")}
           rows={1}
           className="min-h-8 resize-none rounded-none border-0 bg-transparent p-0 text-xs text-muted-foreground shadow-none placeholder:opacity-50 focus-visible:ring-0"
         />
@@ -351,6 +360,7 @@ export function TutorialStepBuilder({
   availableResources,
   inferType,
 }: StepBuilderProps) {
+  const { t } = useI18n()
   const [activeId, setActiveId] = useState<string | null>(null)
 
   const sensors = useSensors(
@@ -462,7 +472,10 @@ export function TutorialStepBuilder({
           targetStepIndex = 0
           steps.push({
             id: `step-${crypto.randomUUID()}`,
-            title: "Step 1",
+            title: t("content.tutorialBuilder.defaultStepTitle").replace(
+              "{number}",
+              "1"
+            ),
             resources: [],
           })
         }
@@ -549,10 +562,12 @@ export function TutorialStepBuilder({
         <div className="flex flex-col gap-y-0.5">
           <div className="flex items-center gap-2">
             <Milestone className="size-4 text-primary" />
-            <h4 className="font-semibold tracking-tight">Step Builder</h4>
+            <h4 className="font-semibold tracking-tight">
+              {t("content.tutorialBuilder.title")}
+            </h4>
           </div>
           <p className="text-xs text-muted-foreground">
-            Organize resources into a learning timeline.
+            {t("content.tutorialBuilder.description")}
           </p>
         </div>
         <Button
@@ -561,7 +576,7 @@ export function TutorialStepBuilder({
           onClick={handleAddStep}
           className="rounded-full"
         >
-          <Plus className="mr-2 size-4" /> Add Step
+          <Plus className="mr-2 size-4" /> {t("content.tutorialBuilder.addStep")}
         </Button>
       </div>
 
@@ -572,9 +587,11 @@ export function TutorialStepBuilder({
       >
         {steps.length === 0 ? (
           <div className="flex h-40 flex-col items-center justify-center gap-y-2 rounded-xl border border-dashed border-border/60">
-            <p className="text-sm text-muted-foreground">No steps added yet.</p>
+            <p className="text-sm text-muted-foreground">
+              {t("content.tutorialBuilder.emptyTitle")}
+            </p>
             <Button type="button" variant="link" onClick={handleAddStep}>
-              Create the first step
+              {t("content.tutorialBuilder.createFirstStep")}
             </Button>
           </div>
         ) : (
@@ -644,7 +661,7 @@ export function TutorialStepBuilder({
                             </div>
                             <div className="relative flex justify-center">
                               <span className="bg-background px-2 text-2xs tracking-wider text-muted-foreground/50 uppercase transition-colors group-hover/add:text-muted-foreground">
-                                Drop resources here
+                                {t("content.tutorialBuilder.dropResources")}
                               </span>
                             </div>
                           </div>
@@ -693,7 +710,8 @@ export function TutorialStepBuilder({
                         <div className="flex items-center gap-3">
                           <GripVertical className="size-5 text-muted-foreground/40" />
                           <div className="text-base font-semibold">
-                            {activeStep.title || "Untitled Step"}
+                            {activeStep.title ||
+                              t("content.tutorialBuilder.untitledStep")}
                           </div>
                           <Badge
                             variant="secondary"
@@ -701,8 +719,8 @@ export function TutorialStepBuilder({
                           >
                             {activeStep.resources.length}{" "}
                             {activeStep.resources.length === 1
-                              ? "resource"
-                              : "resources"}
+                              ? t("content.tutorialBuilder.resourceSingle")
+                              : t("content.tutorialBuilder.resourcePlural")}
                           </Badge>
                         </div>
                       </div>

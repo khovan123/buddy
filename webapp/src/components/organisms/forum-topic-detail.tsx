@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Hash, MessageCircle, Reply, Sparkles } from "lucide-react"
@@ -12,7 +12,7 @@ import { ForumReactionControl } from "@/components/molecules/forum-reaction-cont
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  forumMessageSchema,
+  createForumMessageSchema,
   type ForumMessageFormValues,
 } from "@/features/forum/schema"
 import type {
@@ -21,6 +21,7 @@ import type {
   ForumTopic,
   ForumTopicReaction,
 } from "@/features/forum/types"
+import { useI18n } from "@/i18n/language-provider"
 
 export function ForumTopicDetail({
   topic,
@@ -35,8 +36,13 @@ export function ForumTopicDetail({
   ) => Promise<boolean | void>
   onReact: (reaction: ForumTopicReaction) => void
 }) {
+  const { t } = useI18n()
   const replyInputRef = useRef<HTMLTextAreaElement | null>(null)
   const [mentions, setMentions] = useState<ForumMention[]>([])
+  const forumMessageSchema = useMemo(
+    () => createForumMessageSchema((key) => t(key as never)),
+    [t]
+  )
   const {
     control,
     handleSubmit,
@@ -65,7 +71,7 @@ export function ForumTopicDetail({
   if (!topic) {
     return (
       <section className="rounded-2xl border border-border/80 bg-card/70 p-4 text-sm text-muted-foreground">
-        Select a topic to answer and react.
+        {t("forum.detail.empty")}
       </section>
     )
   }
@@ -83,7 +89,7 @@ export function ForumTopicDetail({
             {topic.tag}
           </Badge>
           <span className="text-xs text-muted-foreground">
-            by {topic.author}
+            {t("forum.common.by")} {topic.author}
           </span>
         </div>
         <h2 className="text-base leading-6 font-semibold">{topic.title}</h2>
@@ -106,7 +112,7 @@ export function ForumTopicDetail({
             className="h-8 gap-1.5"
           >
             <MessageCircle className="size-3.5" />
-            Answer
+            {t("forum.detail.answer")}
           </Button>
         </div>
       </div>
@@ -129,7 +135,7 @@ export function ForumTopicDetail({
             })
           }
           onMentionsChange={setMentions}
-          placeholder="Answer this topic. Type @ to mention someone."
+          placeholder={t("forum.detail.placeholder")}
         />
         {errors.message ? (
           <p className="text-xs text-destructive">{errors.message.message}</p>
@@ -137,7 +143,7 @@ export function ForumTopicDetail({
         <div className="flex justify-end">
           <Button type="submit" size="sm" disabled={isSubmitting}>
             <Reply className="size-4" />
-            Answer
+            {t("forum.detail.answer")}
           </Button>
         </div>
       </form>

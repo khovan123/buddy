@@ -6,6 +6,7 @@ import { ForumTopicStat } from "@/components/atoms/forum-topic-stat"
 import { Badge } from "@/components/ui/badge"
 import type { ForumTopic } from "@/features/forum/types"
 import { getTopicReactions } from "@/features/forum/utils/forum-utils"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 
 
@@ -18,6 +19,7 @@ export function ForumTopicCard({
   active: boolean
   onSelect: () => void
 }) {
+  const { t } = useI18n()
   const reactions = getTopicReactions(topic)
 
   return (
@@ -41,7 +43,7 @@ export function ForumTopicCard({
               {topic.tag}
             </Badge>
             <span className="text-xs text-muted-foreground">
-              by {topic.author}
+              {t("forum.common.by")} {topic.author}
             </span>
           </div>
           <h3 className="text-base leading-6 font-semibold text-foreground">
@@ -66,12 +68,15 @@ export function ForumTopicCard({
           </div>
         </div>
         <div className="grid min-w-36 grid-cols-3 gap-2 text-center sm:grid-cols-1">
-          <ForumTopicStat label="Replies" value={topic.replies.toString()} />
           <ForumTopicStat
-            label="Views"
+            label={t("forum.metrics.replies")}
+            value={topic.replies.toString()}
+          />
+          <ForumTopicStat
+            label={t("forum.topicCard.views")}
             value={topic.views ?? topic.viewCount.toString()}
           />
-          <ForumTopicStat label="Active" value={topic.activity} />
+          <ForumTopicStat label={t("forum.topicCard.active")} value={topic.activity} />
         </div>
       </div>
     </button>

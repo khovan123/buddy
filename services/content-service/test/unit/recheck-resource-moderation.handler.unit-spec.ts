@@ -1,5 +1,7 @@
 /// <reference types="jest" />
 
+import { ForbiddenException } from '@nestjs/common';
+
 import { ContentModerationStatus } from '../../src/infrastructure/persistence/mongo/schemas/resource.schema';
 import { RecheckResourceModerationHandler } from '../../src/application/commands/handlers/recheck-resource-moderation.handler';
 import { RecheckResourceModerationCommand } from '../../src/application/commands/recheck-resource-moderation.command';
@@ -147,5 +149,20 @@ describe('RecheckResourceModerationHandler', () => {
       reasons: ['Content moderation disabled by admin setting.'],
       ruleVersion: 'runtime-moderation-disabled',
     });
+  });
+
+  it('blocks recheck for available resources', async () => {
+    const { handler, resourceRepository, contentModeration, storageBrokerPublisher } =
+      createHandler();
+    resourceRepository.findByIdWithDetails.mockResolvedValue({
+      ...resource,
+      status: 'AVAILABLE',
+    });
+
+    await expect(
+      handler.execute(new RecheckResourceModerationCommand(resource.id, resource.userId, 'c-1')),
+    ).rejects.toThrow(new ForbiddenException('Available resources cannot be rechecked'));
+    expect(storageBrokerPublisher.reextractContent).not.toHaveBeenCalled();
+    expect(contentModeration.moderate).not.toHaveBeenCalled();
   });
 });

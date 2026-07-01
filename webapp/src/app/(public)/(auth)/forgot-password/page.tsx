@@ -7,6 +7,7 @@ import {
   webPageJsonLd,
 } from "@/features/seo/components/json-ld"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getSeoContent("auth-forgot-password")
@@ -31,7 +32,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ForgotPasswordPage() {
-  const seo = await getSeoContent("auth-forgot-password")
+  const [seo, { t }] = await Promise.all([
+    getSeoContent("auth-forgot-password"),
+    getServerTranslator(),
+  ])
 
   return (
     <>
@@ -43,8 +47,8 @@ export default async function ForgotPasswordPage() {
             url: "/forgot-password",
           }),
           breadcrumbJsonLd([
-            { name: "Home", path: "/" },
-            { name: "Forgot Password", path: "/forgot-password" },
+            { name: t("nav.home"), path: "/" },
+            { name: seo.badge, path: "/forgot-password" },
           ]),
         ]}
       />

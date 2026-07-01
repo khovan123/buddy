@@ -50,7 +50,9 @@ function isDisabledPath(pathname: string) {
     pathname.startsWith("/login/") ||
     pathname.startsWith("/sign-up/") ||
     pathname.startsWith("/otp/") ||
-    pathname.startsWith("/onboarding/")
+    pathname.startsWith("/onboarding/") ||
+    (pathname.startsWith("/home") && !pathname.startsWith("/home/")) ||
+    pathname.startsWith("/explore/")
   )
 }
 
@@ -219,6 +221,19 @@ export function SessionLoginDialogProvider({
                   ) : (
                     t("common.login")
                   )}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    setOpen(false)
+                    router.push("/sign-up")
+                  }}
+                >
+                  {t("common.signUp")}
                 </Button>
               </FieldGroup>
             </form>

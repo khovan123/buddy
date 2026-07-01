@@ -7,6 +7,7 @@ import {
   webPageJsonLd,
 } from "@/features/seo/components/json-ld"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getSeoContent("auth-login")
@@ -31,7 +32,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LoginPage() {
-  const seo = await getSeoContent("auth-login")
+  const [seo, { t }] = await Promise.all([
+    getSeoContent("auth-login"),
+    getServerTranslator(),
+  ])
 
   return (
     <>
@@ -43,8 +47,8 @@ export default async function LoginPage() {
             url: "/login",
           }),
           breadcrumbJsonLd([
-            { name: "Home", path: "/" },
-            { name: "Login", path: "/login" },
+            { name: t("nav.home"), path: "/" },
+            { name: t("common.login"), path: "/login" },
           ]),
         ]}
       />

@@ -9,6 +9,7 @@ import {
   webPageJsonLd,
 } from "@/features/seo/components/json-ld"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getSeoContent("faq")
@@ -40,9 +41,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function FaqPage() {
-  const [seo, data] = await Promise.all([
+  const [seo, data, { t }] = await Promise.all([
     getSeoContent("faq"),
     getFaqPageData(),
+    getServerTranslator(),
   ])
 
   // Flatten all FAQ categories into a single Q&A list for FAQPage schema
@@ -59,8 +61,8 @@ export default async function FaqPage() {
           }),
           faqPageJsonLd(allFaqs),
           breadcrumbJsonLd([
-            { name: "Home", path: "/" },
-            { name: "FAQ", path: "/faq" },
+            { name: t("nav.home"), path: "/" },
+            { name: t("intro.nav.faq"), path: "/faq" },
           ]),
         ]}
       />

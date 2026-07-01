@@ -14,6 +14,7 @@ import type {
 } from "@/features/interaction"
 import { ItemInteractionControls } from "@/features/interaction"
 import type { WithSkeletonLinkProps } from "@/hoc/with-skeleton-link"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 
 import type { CardPriceData } from "./card-price"
@@ -56,16 +57,16 @@ function buildCheckoutHref(
   return `${href}${separator}checkout=resume&itemType=${encodeURIComponent(itemType)}&itemId=${encodeURIComponent(itemId)}`
 }
 
-function getBuyLabel(price?: string) {
+function getBuyLabel(price: string | undefined, t: (key: "billing.purchase.learnNow" | "billing.purchase.seePreview") => string) {
   const normalized = price?.trim().toLowerCase()
   if (!normalized || normalized === "free") {
-    return "Learn now"
+    return t("billing.purchase.learnNow")
   }
 
   const numericPrice = Number(normalized.replace(/[^\d.-]/g, ""))
   return Number.isFinite(numericPrice) && numericPrice > 0
-    ? "See preview"
-    : "Learn now"
+    ? t("billing.purchase.seePreview")
+    : t("billing.purchase.learnNow")
 }
 
 function isPaid(price?: string) {
@@ -82,6 +83,7 @@ function ResourceCardInner({
   resource,
   imageSizes = "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw",
 }: ResourceCardInnerProps) {
+  const { t } = useI18n()
   const ratingNum = Number(resource?.rating || 0)
   const checkoutHref =
     resource?.href && resource.purchaseType
@@ -151,8 +153,8 @@ function ResourceCardInner({
 
         <p className="line-clamp-1 text-xs text-muted-foreground">
           {paid
-            ? "Preview first · Full file after purchase"
-            : "Free to learn · Open anytime"}
+            ? t("card.resource.paidHint")
+            : t("card.resource.freeHint")}
         </p>
 
         <div className="mt-1 flex items-center gap-1.5">
@@ -183,7 +185,7 @@ function ResourceCardInner({
               itemType={resource.interactionType}
               initialStats={resource.initialStats}
               buyHref={!resource.owned ? checkoutHref : undefined}
-              buyLabel={getBuyLabel(resource.price)}
+              buyLabel={getBuyLabel(resource.price, t)}
               compact
             />
           ) : (

@@ -1,7 +1,10 @@
+"use client"
+
 import { Calendar, FolderOpen, Layers } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import type { CollectionQueryItem } from "@/features/content"
+import { useI18n } from "@/i18n/language-provider"
 
 import { ContentItemProgressScene } from "./content-item-progress-scene"
 import { CreatorContentHeader } from "./creator-content-header"
@@ -18,14 +21,15 @@ export function CreatorCollectionsPanel({
   tutorialCollections?: CollectionQueryItem[]
   actionHref?: string
 }) {
+  const { t } = useI18n()
   const collections = [...resourceCollections, ...tutorialCollections]
 
   return (
     <div className="space-y-6">
       <CreatorContentHeader
-        title={`Collections (${collections.length})`}
-        description="Organize your resources into collections for easier discovery."
-        actionLabel="New Collection"
+        title={`${t("content.collections")} (${collections.length})`}
+        description={t("content.collectionsPanel.description")}
+        actionLabel={t("content.collectionsPanel.new")}
         actionHref={actionHref}
         actionIcon={FolderOpen}
       />
@@ -33,8 +37,8 @@ export function CreatorCollectionsPanel({
       {collections.length === 0 ? (
         <CreatorEmptyPlaceholder
           icon={FolderOpen}
-          title="No collections yet"
-          description="Create your first collection to group related resources together."
+          title={t("content.collectionsPanel.emptyTitle")}
+          description={t("content.collectionsPanel.emptyDescription")}
         />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
@@ -49,7 +53,7 @@ export function CreatorCollectionsPanel({
                     {collection.title}
                   </h3>
                   <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                    {collection.description || "No description"}
+                    {collection.description || t("common.noDescription")}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -65,7 +69,7 @@ export function CreatorCollectionsPanel({
                   <Layers className="size-3.5" />
                   {(collection._count?.resources ?? 0) +
                     (collection._count?.tutorials ?? 0)}{" "}
-                  items
+                  {t("content.collectionsPanel.items")}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Calendar className="size-3.5" />

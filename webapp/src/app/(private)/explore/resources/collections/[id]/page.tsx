@@ -43,7 +43,7 @@ const vndFormat = new Intl.NumberFormat("vi-VN", {
 })
 
 function formatPrice(price: number) {
-  return price === 0 ? "Free" : vndFormat.format(price)
+  return price === 0 ? "free" : vndFormat.format(price)
 }
 
 function applyDiscount(price: number, discount: number) {

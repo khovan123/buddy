@@ -24,6 +24,7 @@ import type {
   ContentResourceItem,
   UploadHistoryItem,
 } from "@/features/content/types"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 
 import { ContentItemProgressScene } from "./content-item-progress-scene"
@@ -38,6 +39,7 @@ import { CreatorEmptyPlaceholder } from "./creator-empty-placeholder"
 import { UploadHistoryFileRow } from "./upload-history-file-row"
 
 function ResourceHistoryList({ resourceId }: { resourceId: string }) {
+  const { t } = useI18n()
   const { data, isLoading, isError } =
     useGetResourceUploadHistoryByIdQuery(resourceId)
 
@@ -52,7 +54,7 @@ function ResourceHistoryList({ resourceId }: { resourceId: string }) {
   if (isError || !data?.data) {
     return (
       <div className="p-4 text-center text-sm text-muted-foreground">
-        Failed to load upload history.
+        {t("content.uploadHistory.loadError")}
       </div>
     )
   }
@@ -62,7 +64,7 @@ function ResourceHistoryList({ resourceId }: { resourceId: string }) {
   if (files.length === 0) {
     return (
       <div className="p-4 text-center text-sm text-muted-foreground">
-        No upload history for this resource.
+        {t("content.uploadHistory.emptyResource")}
       </div>
     )
   }
@@ -71,7 +73,9 @@ function ResourceHistoryList({ resourceId }: { resourceId: string }) {
     <div className="space-y-4 px-2 pt-2 pb-4">
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <History className="size-4" />
-        <h4>Upload History ({files.length})</h4>
+        <h4>
+          {t("content.uploadHistory.title")} ({files.length})
+        </h4>
       </div>
       <div className="overflow-hidden rounded-md border border-border/50 bg-card">
         <div className="divide-y divide-border/50">
@@ -86,15 +90,8 @@ function ResourceHistoryList({ resourceId }: { resourceId: string }) {
 
 const EMPTY_RESOURCES: ContentResourceItem[] = []
 
-function canEditContent(status: string, moderationStatus?: string | null) {
-  const normalizedStatus = status.toUpperCase()
-  const normalizedModeration = moderationStatus?.toUpperCase() ?? ""
-  return (
-    normalizedStatus === "PROCESSING" ||
-    normalizedModeration === "PENDING" ||
-    normalizedStatus === "BANNED" ||
-    normalizedModeration === "REJECTED"
-  )
+function canManageMutableContent(status: string) {
+  return status.toUpperCase() !== "AVAILABLE"
 }
 
 export function CreatorResourcesPanel({
@@ -104,24 +101,28 @@ export function CreatorResourcesPanel({
   resources?: ContentResourceItem[]
   actionHref?: string
 }) {
+  const { t } = useI18n()
+
   return (
     <div className="space-y-6">
       <CreatorContentHeader
-        title={`Resources (${resources.length})`}
-        description="Manage your document resources and track upload progress."
-        actionLabel="New Resource"
+        title={`${t("content.resources")} (${resources.length})`}
+        description={t("content.resourcesPanel.description")}
+        actionLabel={t("content.newResource")}
         actionHref={actionHref}
         actionIcon={FileText}
       />
 
       <div className="mt-4 space-y-4">
-        <h3 className="text-lg font-semibold tracking-tight">Your Resources</h3>
+        <h3 className="text-lg font-semibold tracking-tight">
+          {t("content.resourcesPanel.yours")}
+        </h3>
 
         {resources.length === 0 ? (
           <CreatorEmptyPlaceholder
             icon={FileText}
-            title="No resources yet"
-            description="Create your first resource to share documents and files with students."
+            title={t("content.resourcesPanel.emptyTitle")}
+            description={t("content.resourcesPanel.emptyDescription")}
           />
         ) : (
           <Accordion
@@ -183,7 +184,7 @@ export function CreatorResourcesPanel({
                           }
                         >
                           {resource.price === 0
-                            ? "Free"
+                            ? t("common.free")
                             : new Intl.NumberFormat("vi-VN", {
                                 style: "currency",
                                 currency: "VND",
@@ -203,28 +204,27 @@ export function CreatorResourcesPanel({
                   <div className="mb-4 flex flex-col gap-1">
                     <h4 className="flex items-center gap-2 text-sm font-semibold tracking-tight text-foreground">
                       <History className="h-4 w-4 text-primary" />
-                      Upload History
+                      {t("content.uploadHistory.title")}
                     </h4>
                     <p className="text-xs text-muted-foreground">
-                      View all upload attempts and their execution status for
-                      this resource.
+                      {t("content.uploadHistory.resourceDescription")}
                     </p>
                   </div>
                   <div className="mb-4 flex flex-wrap gap-2">
-                    {canEditContent(
-                      resource.status,
-                      resource.moderationStatus
-                    ) ? (
+                    {canManageMutableContent(resource.status) ? (
                       <Button asChild type="button" variant="outline" size="sm">
-                        <Link href={`/home/resources/create?edit=${resource.id}`}>
+                        <Link
+                          href={`/home/resources/create?edit=${resource.id}`}
+                        >
                           <Pencil className="size-4" />
-                          Edit
+                          {t("common.edit")}
                         </Link>
                       </Button>
                     ) : null}
                     <ManualModerationCheckButton
                       contentId={resource.id}
                       contentType="resource"
+                      disabled={!canManageMutableContent(resource.status)}
                     />
                     <DeleteContentButton
                       contentId={resource.id}

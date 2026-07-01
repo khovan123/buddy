@@ -18,6 +18,7 @@ import {
   webPageJsonLd,
 } from "@/features/seo/components/json-ld"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 import { ProfileSettingsCard } from "@/features/user/components/profile-settings-card"
 import { getCreatorStats, getMe } from "@/features/user/services/user.service"
 
@@ -46,7 +47,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ProfilePage() {
-  const seo = await getSeoContent("profile")
+  const [seo, { t }] = await Promise.all([
+    getSeoContent("profile"),
+    getServerTranslator(),
+  ])
 
   const emptyTutorials = {
     data: [] as TutorialQueryItem[],
@@ -84,14 +88,14 @@ export default async function ProfilePage() {
       <JsonLdScript
         data={[
           webPageJsonLd({
-            name: "Personal Profile",
+            name: seo.title,
             description: seo.description,
             url: "/profile",
             type: "ProfilePage",
           }),
           breadcrumbJsonLd([
-            { name: "Home", path: "/home" },
-            { name: "Profile", path: "/profile" },
+            { name: t("nav.home"), path: "/home" },
+            { name: t("nav.profile"), path: "/profile" },
           ]),
         ]}
       />

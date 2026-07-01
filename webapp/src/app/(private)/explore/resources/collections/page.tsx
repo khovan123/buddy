@@ -41,6 +41,8 @@ export default async function ExploreResourceCollectionsPage({
   const search = typeof params.search === "string" ? params.search : undefined
   const courseId =
     typeof params.courseId === "string" ? params.courseId : undefined
+  const hasSearch = Boolean(search)
+  const hasActiveFilters = Boolean(search || courseId)
 
   const [seo, result, topItems] = await Promise.all([
     getSeoContent("explore-resources-collections"),
@@ -118,11 +120,13 @@ export default async function ExploreResourceCollectionsPage({
         </p>
       </header>
 
-      <div className="pt-2 pb-6">
-        <RecommendationSection pageSize={3} contentType="RESOURCE_COLLECTION" />
-      </div>
+      {!hasActiveFilters ? (
+        <div className="pt-2 pb-6">
+          <RecommendationSection pageSize={3} contentType="RESOURCE_COLLECTION" />
+        </div>
+      ) : null}
 
-      {featuredCollections ? (
+      {!hasActiveFilters && featuredCollections.length > 0 ? (
         <section className="space-y-5">
           <div className="flex items-end justify-between gap-4">
             <div>
@@ -151,10 +155,14 @@ export default async function ExploreResourceCollectionsPage({
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-foreground">
-              {t("explore.list.allCollections")}
+              {hasSearch
+                ? t("explore.list.searchResults")
+                : t("explore.list.allCollections")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              {t("explore.list.allResourceCollectionsDescription")}
+              {hasSearch
+                ? t("explore.list.searchResultsDescription")
+                : t("explore.list.allResourceCollectionsDescription")}
             </p>
           </div>
           <p className="text-sm font-medium text-muted-foreground">

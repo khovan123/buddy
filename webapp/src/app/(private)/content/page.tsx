@@ -9,11 +9,16 @@ import {
   getMyResources,
   getMyTutorials,
 } from "@/features/dashboard"
+import { getServerTranslator } from "@/i18n/server"
 import { requireCreatorAccess } from "@/lib/auth/server-role-access"
 
-export const metadata: Metadata = {
-  title: "Content",
-  description: "Manage creator tutorials, resources, and collections.",
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getServerTranslator()
+
+  return {
+    title: t("content.metaTitle"),
+    description: t("content.metaDescription"),
+  }
 }
 
 export default async function CreatorContentPage() {

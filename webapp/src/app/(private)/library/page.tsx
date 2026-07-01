@@ -22,6 +22,7 @@ import {
   webPageJsonLd,
 } from "@/features/seo/components/json-ld"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getSeoContent("library")
@@ -47,7 +48,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function LibraryPage() {
-  const seo = await getSeoContent("library")
+  const [seo, { t }] = await Promise.all([
+    getSeoContent("library"),
+    getServerTranslator(),
+  ])
 
   const [resources, tutorials, resourceCollections, tutorialCollections] =
     await Promise.all([
@@ -90,16 +94,13 @@ export default async function LibraryPage() {
             url: "/library",
           }),
           breadcrumbJsonLd([
-            { name: "Home", path: "/home" },
-            { name: "Library", path: "/library" },
+            { name: t("nav.home"), path: "/home" },
+            { name: t("nav.library"), path: "/library" },
           ]),
         ]}
       />
       <LibraryBrowser
         catalog={catalog}
-        seoBadge={seo.badge}
-        seoTitle={seo.title}
-        seoDescription={seo.description}
       />
       <div className="mt-10">
         <RecommendationSection pageSize={3} />

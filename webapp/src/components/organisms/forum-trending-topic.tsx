@@ -4,6 +4,7 @@ import { Flame } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import type { ForumTopic } from "@/features/forum/types"
+import { useI18n } from "@/i18n/language-provider"
 
 export function ForumTrendingTopic({
   topics,
@@ -12,13 +13,14 @@ export function ForumTrendingTopic({
   topics: ForumTopic[]
   onTopicSelect: (topicId: string) => void
 }) {
+  const { t } = useI18n()
   return (
     <section className="rounded-2xl border border-border/80 bg-card/70 p-4">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-base font-semibold">Trending</h2>
+          <h2 className="text-base font-semibold">{t("forum.trending.title")}</h2>
           <p className="text-sm text-muted-foreground">
-            Most active right now.
+            {t("forum.trending.description")}
           </p>
         </div>
         <Flame className="size-5 text-primary" />
@@ -34,7 +36,7 @@ export function ForumTrendingTopic({
             <div className="mb-2 flex items-center gap-2">
               <Badge variant="secondary">#{index + 1}</Badge>
               <span className="text-xs text-muted-foreground">
-                {topic.replies} replies
+                {topic.replies} {t("forum.metrics.replies").toLowerCase()}
               </span>
             </div>
             <p className="text-sm leading-5 font-medium">{topic.title}</p>

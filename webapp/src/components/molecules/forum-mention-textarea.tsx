@@ -12,6 +12,7 @@ import type {
   ForumMentionCandidate,
 } from "@/features/forum/types"
 import { addMention, getMentionQuery } from "@/features/forum/utils/forum-utils"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 
 export function ForumMentionTextarea({
@@ -31,6 +32,7 @@ export function ForumMentionTextarea({
   placeholder: string
   minHeightClassName?: string
 }) {
+  const { t } = useI18n()
   const [candidates, setCandidates] = useState<ForumMentionCandidate[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [searchFailed, setSearchFailed] = useState(false)
@@ -114,17 +116,17 @@ export function ForumMentionTextarea({
                 <AtSign className="size-3" />
               )}
               {isSearching
-                ? "Looking for people..."
+                ? t("forum.mentions.searching")
                 : mentionQuery
-                  ? "People you can mention"
-                  : "Type a name to mention someone"}
+                  ? t("forum.mentions.available")
+                  : t("forum.mentions.typeToMention")}
             </div>
             <div className="max-h-56 space-y-1 overflow-y-auto">
               {searchFailed && !isSearching ? (
                 <div className="flex items-start gap-2 rounded-lg px-2 py-2 text-xs text-muted-foreground">
                   <WifiOff className="mt-0.5 size-3.5 shrink-0" />
                   <span>
-                    We could not search people right now. Please try again.
+                    {t("forum.mentions.searchFailed")}
                   </span>
                 </div>
               ) : null}
@@ -134,7 +136,7 @@ export function ForumMentionTextarea({
               mentionQuery ? (
                 <div className="flex items-start gap-2 rounded-lg px-2 py-2 text-xs text-muted-foreground">
                   <SearchX className="mt-0.5 size-3.5 shrink-0" />
-                  <span>No matching people found.</span>
+                  <span>{t("forum.mentions.noResults")}</span>
                 </div>
               ) : null}
               {visibleCandidates.map((candidate) => (
@@ -174,7 +176,7 @@ export function ForumMentionTextarea({
               {mention.name}
               <button
                 type="button"
-                aria-label={`Remove ${mention.name}`}
+                aria-label={`${t("forum.mentions.remove")} ${mention.name}`}
                 onClick={() =>
                   onMentionsChange(
                     mentions.filter((item) => item.userId !== mention.userId)

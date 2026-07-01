@@ -10,6 +10,7 @@ import {
   getSubscriptionPlanCatalog,
 } from "@/features/dashboard"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 interface DashboardSlugPageProps {
   params: Promise<{ slug: string }>
@@ -58,7 +59,10 @@ export default async function DashboardSlugPage({
     notFound()
   }
 
-  const seo = await getSeoContent("dashboard")
+  const [seo, { t }] = await Promise.all([
+    getSeoContent("dashboard"),
+    getServerTranslator(),
+  ])
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://buddy.app"
 
@@ -66,11 +70,11 @@ export default async function DashboardSlugPage({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: t("nav.home"), item: siteUrl },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Dashboard",
+        name: t("nav.dashboard"),
         item: `${siteUrl}/dashboard/${slug}`,
       },
     ],

@@ -12,7 +12,10 @@ import { RESOURCE_REPOSITORY } from '../../../domain/repositories/tokens';
 import { ContentModerationNotificationPublisher } from '../../../infrastructure/messaging/publishers/content-moderation-notification.publisher';
 import { RecommendationSyncPublisher } from '../../../infrastructure/messaging/publishers/recommendation-sync.publisher';
 import { StorageBrokerPublisher } from '../../../infrastructure/messaging/publishers/storage-broker.rpc';
-import { ContentModerationStatus } from '../../../infrastructure/persistence/mongo/schemas/resource.schema';
+import {
+  ContentModerationStatus,
+  ResourceStatus,
+} from '../../../infrastructure/persistence/mongo/schemas/resource.schema';
 import {
   ContentModerationService,
   type ModerationResult,
@@ -42,6 +45,9 @@ export class RecheckResourceModerationHandler implements ICommandHandler<Recheck
     }
     if (resource.userId !== command.requesterId) {
       throw new ForbiddenException('You can only recheck your own resources');
+    }
+    if (resource.status === ResourceStatus.AVAILABLE) {
+      throw new ForbiddenException('Available resources cannot be rechecked');
     }
 
     const moderationEnabled = await this.contentSettings.isModerationEnabled();

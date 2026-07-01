@@ -9,6 +9,7 @@ import {
   webPageJsonLd,
 } from "@/features/seo/components/json-ld"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getSeoContent("how-it-works")
@@ -34,9 +35,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HowItWorksPage() {
-  const [seo, data] = await Promise.all([
+  const [seo, data, { t }] = await Promise.all([
     getSeoContent("how-it-works"),
     getHowItWorksData(),
+    getServerTranslator(),
   ])
 
   return (
@@ -67,8 +69,8 @@ export default async function HowItWorksPage() {
             })),
           }),
           breadcrumbJsonLd([
-            { name: "Home", path: "/" },
-            { name: "How It Works", path: "/how-it-works" },
+            { name: t("nav.home"), path: "/" },
+            { name: t("intro.nav.howItWorks"), path: "/how-it-works" },
           ]),
         ]}
       />

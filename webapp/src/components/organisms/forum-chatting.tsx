@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { MessageCircle, Send } from "lucide-react"
@@ -10,10 +10,11 @@ import { ForumMentionTextarea } from "@/components/molecules/forum-mention-texta
 import { ForumMessageItem } from "@/components/molecules/forum-message-item"
 import { Button } from "@/components/ui/button"
 import {
-  forumMessageSchema,
+  createForumMessageSchema,
   type ForumMessageFormValues,
 } from "@/features/forum/schema"
 import type { ForumMention, ForumMessage } from "@/features/forum/types"
+import { useI18n } from "@/i18n/language-provider"
 
 export function ForumChatting({
   isLoading,
@@ -26,7 +27,12 @@ export function ForumChatting({
     values: ForumMessageFormValues & { mentions: ForumMention[] }
   ) => Promise<boolean | void>
 }) {
+  const { t } = useI18n()
   const [mentions, setMentions] = useState<ForumMention[]>([])
+  const forumMessageSchema = useMemo(
+    () => createForumMessageSchema((key) => t(key as never)),
+    [t]
+  )
   const {
     control,
     handleSubmit,
@@ -53,8 +59,10 @@ export function ForumChatting({
       <div className="border-b border-border/70 p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-semibold">Chat everyone</h2>
-            <p className="text-sm text-muted-foreground">Open study room.</p>
+            <h2 className="text-base font-semibold">{t("forum.chat.title")}</h2>
+            <p className="text-sm text-muted-foreground">
+              {t("forum.chat.description")}
+            </p>
           </div>
           <MessageCircle className="size-5 text-primary" />
         </div>
@@ -62,8 +70,7 @@ export function ForumChatting({
       <div className="max-h-90 space-y-3 overflow-y-auto p-4">
         {!isLoading && messages.length === 0 ? (
           <div className="rounded-xl border border-border/70 bg-background/60 p-3 text-sm text-muted-foreground">
-            Let&apos;s start the conversation! Send a message to everyone in
-            this study room.
+            {t("forum.chat.empty")}
           </div>
         ) : null}
         {messages.map((message) => (
@@ -84,7 +91,7 @@ export function ForumChatting({
             })
           }
           onMentionsChange={setMentions}
-          placeholder="Message everyone"
+          placeholder={t("forum.chat.placeholder")}
           minHeightClassName="min-h-10"
         />
         {errors.message ? (
@@ -93,7 +100,7 @@ export function ForumChatting({
         <div className="flex justify-end">
           <Button type="submit" size="sm" disabled={isSubmitting}>
             <Send className="size-4" />
-            Send
+            {t("forum.chat.send")}
           </Button>
         </div>
       </form>

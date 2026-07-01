@@ -38,6 +38,7 @@ import {
   ItemInteractionControls,
   TrackContentView,
 } from "@/features/interaction"
+import { getServerTranslator } from "@/i18n/server"
 
 type PageParams = Promise<{ id: string }>
 
@@ -47,7 +48,7 @@ const vndFormat = new Intl.NumberFormat("vi-VN", {
 })
 
 function formatPrice(price: number) {
-  return price === 0 ? "Free" : vndFormat.format(price)
+  return price === 0 ? "free" : vndFormat.format(price)
 }
 
 function applyDiscount(price: number, discount: number) {
@@ -61,13 +62,13 @@ export async function generateMetadata({
   params: PageParams
 }): Promise<Metadata> {
   const { id } = await params
+  const { t } = await getServerTranslator()
   const collection = await getTutorialCollectionBySlug(id)
 
   if (!collection) {
     return {
-      title: "Tutorial Collection Not Found",
-      description:
-        "The tutorial collection you are looking for does not exist.",
+      title: t("explore.collection.notFoundTitle"),
+      description: t("explore.collection.notFoundDescription"),
     }
   }
 
@@ -99,6 +100,7 @@ export default async function ExploreCollectionTutorialDetailPage({
   params: PageParams
 }) {
   const { id } = await params
+  const { t } = await getServerTranslator()
   const collection = await getTutorialCollectionBySlug(id)
 
   if (!collection) {
@@ -135,7 +137,7 @@ export default async function ExploreCollectionTutorialDetailPage({
     instructor: {
       "@type": "Person",
       name: collection.userId,
-      jobTitle: "Creator",
+      jobTitle: t("common.contentCreator"),
     },
     offers: {
       "@type": "Offer",
@@ -153,17 +155,17 @@ export default async function ExploreCollectionTutorialDetailPage({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: t("nav.home"), item: siteUrl },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Explore",
+        name: t("nav.explore"),
         item: `${siteUrl}/explore`,
       },
       {
         "@type": "ListItem",
         position: 3,
-        name: "Tutorial Collections",
+        name: t("content.collections"),
         item: `${siteUrl}/explore/tutorials/collections`,
       },
       {

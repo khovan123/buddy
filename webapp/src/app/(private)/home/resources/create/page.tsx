@@ -7,6 +7,7 @@ import {
   webPageJsonLd,
 } from "@/features/seo/components/json-ld"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 import { requireCreatorAccess } from "@/lib/auth/server-role-access"
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,7 +36,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function CreateResourcePage() {
   await requireCreatorAccess()
 
-  const seo = await getSeoContent("create-resource")
+  const [seo, { t }] = await Promise.all([
+    getSeoContent("create-resource"),
+    getServerTranslator(),
+  ])
 
   return (
     <>
@@ -47,15 +51,15 @@ export default async function CreateResourcePage() {
             url: "/home/resources/create",
           }),
           breadcrumbJsonLd([
-            { name: "Home", path: "/home" },
-            { name: "Create Resource", path: "/home/resources/create" },
+            { name: t("nav.home"), path: "/home" },
+            { name: t("home.create.resourceBreadcrumb"), path: "/home/resources/create" },
           ]),
         ]}
       />
       <div className="mx-auto w-full max-w-5xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">
-            Resource Creator
+            {t("home.create.resourceTitle")}
           </h1>
           <p className="mt-2 text-muted-foreground">{seo.description}</p>
         </div>

@@ -7,7 +7,7 @@ type SeoContent = {
   badge: string
 }
 
-const SEO_FALLBACK = {
+const SEO_FALLBACK: Record<"en" | "vi", Record<string, SeoContent>> = {
   en: {
     explore: {
       title: "Explore featured learning content",
@@ -232,7 +232,7 @@ const SEO_FALLBACK = {
     badge: "Tạo mới",
   },
   },
-} satisfies Record<"en" | "vi", Record<string, SeoContent>>
+}
 
 export async function getSeoContent(slug: string): Promise<SeoContent> {
   const locale = await getServerLocale()

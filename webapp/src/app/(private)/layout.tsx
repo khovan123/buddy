@@ -6,8 +6,9 @@ import { EducationUniverse } from "@/components/atoms/education-universe"
 import { SiteFooter } from "@/components/organisms/site-footer"
 import { PrivateHeader } from "@/features/user/components/private-header-client"
 import { getMe } from "@/features/user/services/user.service"
-import { buildRoleAccessInput, isAdminAccess } from "@/lib/auth/role-access"
-import { getAccessToken, getCachedSession } from "@/lib/server-session"
+import { isAdminAccess } from "@/lib/auth/role-access"
+import { getServerRoleAccessInput } from "@/lib/auth/server-role-access"
+import { getCachedSession } from "@/lib/server-session"
 
 export const metadata: Metadata = {
   robots: {
@@ -28,12 +29,11 @@ export default async function PrivateLayout({
 }: {
   children: ReactNode
 }) {
-  const [user, session, accessToken] = await Promise.all([
+  const [user, session, roleAccess] = await Promise.all([
     getMe(),
     getCachedSession(),
-    getAccessToken(),
+    getServerRoleAccessInput(),
   ])
-  const roleAccess = buildRoleAccessInput(session?.user, accessToken)
   const isAdmin = isAdminAccess(roleAccess)
 
   return (

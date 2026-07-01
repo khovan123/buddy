@@ -6,34 +6,36 @@ import { MetaChip } from "@/components/atoms/meta-chip"
 import { SectionHeading } from "@/components/atoms/section-heading"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { useI18n } from "@/i18n/language-provider"
 
 /**
  * Home page loading — wraps mock layout in boneyard Skeleton.
  * Mirrors the real HomePage structure so boneyard captures accurate bones.
  */
 export default function HomeLoading() {
+  const { t } = useI18n()
+
   return (
     <Skeleton name="home-page" loading={true}>
       <section className="space-y-14">
         {/* ── Welcome + SeoHero ── */}
         <section className="space-y-5">
           <SectionHeading
-            badge="Wellcome"
-            title="Let's find out"
-            description="Track resources, collections, and the content your audience engages with the most."
+            badge={t("home.hero.badge")}
+            title={t("home.hero.title")}
+            description={t("home.hero.description")}
           />
           <Card className="border-none bg-transparent shadow-none">
             <CardContent className="space-y-5">
               <h1 className="text-3xl font-semibold tracking-tight text-card-foreground md:text-5xl">
-                Discover trending academic content
+                {t("home.loading.heroTitle")}
               </h1>
               <p className="text-sm leading-6 text-muted-foreground md:text-base">
-                Browse curated resources, tutorials, and collections tailored to
-                your learning journey and academic goals.
+                {t("home.loading.heroDescription")}
               </p>
               <div className="flex flex-wrap gap-3">
-                <Button>Start learning</Button>
-                <Button variant="outline">View profile</Button>
+                <Button>{t("home.hero.primaryCta")}</Button>
+                <Button variant="outline">{t("home.hero.secondaryCta")}</Button>
               </div>
             </CardContent>
           </Card>
@@ -42,9 +44,9 @@ export default function HomeLoading() {
         {/* ── Quick Picks ── */}
         <section className="space-y-5 rounded-2xl border border-border/80 bg-card/40 p-6">
           <SectionHeading
-            badge="Quick Picks"
-            title="Today's Highlights"
-            description="Jump into learning items people are opening most today."
+            badge={t("home.quickPicks.badge")}
+            title={t("home.quickPicks.title")}
+            description={t("home.quickPicks.description")}
           />
           <div className="grid auto-rows-fr items-stretch gap-4 md:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -53,16 +55,16 @@ export default function HomeLoading() {
                 className="flex h-full flex-col rounded-2xl border border-border bg-card p-5 shadow-sm"
               >
                 <div className="mb-4">
-                  <MetaChip>Resource</MetaChip>
+                  <MetaChip>{t("nav.resource")}</MetaChip>
                 </div>
                 <h3 className="mb-2 text-lg font-semibold text-card-foreground">
-                  Featured content title
+                  {t("home.loading.featuredTitle")}
                 </h3>
                 <p className="mb-4 text-sm text-muted-foreground">
-                  A brief description of the featured content item.
+                  {t("home.loading.featuredDescription")}
                 </p>
                 <Button size="sm" variant="outline" className="mt-auto w-fit">
-                  Xem chi tiet
+                  {t("home.loading.viewDetails")}
                 </Button>
               </article>
             ))}
@@ -72,9 +74,9 @@ export default function HomeLoading() {
         {/* ── Trending Section placeholder ── */}
         <section className="space-y-5 rounded-2xl border border-border/80 bg-card/40 p-6">
           <SectionHeading
-            badge="Hot Right Now"
-            title="Top Trending"
-            description="Most interacted and highly rated content this week."
+            badge={t("home.loading.trendingBadge")}
+            title={t("home.loading.trendingTitle")}
+            description={t("home.loading.trendingDescription")}
           />
           <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -92,11 +94,10 @@ export default function HomeLoading() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-2">
                 <h2 className="text-xl font-bold tracking-tight text-foreground uppercase">
-                  Overview
+                  {t("home.switcher.overview")}
                 </h2>
                 <p className="max-w-2xl text-sm text-muted-foreground">
-                  Switch between resources and tutorials without leaving your
-                  page.
+                  {t("home.switcher.overviewDescription")}
                 </p>
               </div>
               <div className="flex h-10 w-56 rounded-md bg-muted" />
@@ -107,10 +108,10 @@ export default function HomeLoading() {
             <div className="flex items-end justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                  Top Resource Collections
+                  {t("home.switcher.resourceCollectionsTitle")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Best performing curated resource packs across subjects.
+                  {t("home.switcher.resourceCollectionsDescription")}
                 </p>
               </div>
             </div>
@@ -128,10 +129,10 @@ export default function HomeLoading() {
             <div className="flex items-end justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                  Trending Resources
+                  {t("home.switcher.resourceTitle")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Most downloaded materials this week across faculties.
+                  {t("home.switcher.resourceDescription")}
                 </p>
               </div>
             </div>

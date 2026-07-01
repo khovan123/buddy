@@ -21,6 +21,7 @@ export const translations = {
     "common.password": "Password",
     "common.loadingLogin": "Logging in...",
     "common.login": "Log in",
+    "common.signUp": "Sign up",
     "common.free": "Free",
     "common.noSummary": "No summary provided.",
     "common.noDescription": "No description provided.",
@@ -29,6 +30,7 @@ export const translations = {
     "common.follow": "Follow",
     "common.share": "Share",
     "common.saveItem": "Save",
+    "common.discoverNow": "Discover now",
     "common.addToCart": "Add to cart",
     "common.orders": "orders",
     "common.downloads": "Downloads",
@@ -72,6 +74,9 @@ export const translations = {
     "session.loginDescription":
       "Your session expired. Use the same account method again to continue from this page.",
     "content.title": "My content",
+    "content.metaTitle": "Content",
+    "content.metaDescription":
+      "Manage creator tutorials, resources, and collections.",
     "content.description":
       "Create, organize, and check everything you share with learners.",
     "content.newResource": "New resource",
@@ -87,6 +92,33 @@ export const translations = {
     "content.moderation.recheckError":
       "We could not check this content right now. Please try again.",
     "content.moderation.recheckAction": "Check again",
+    "content.moderation.status.ready": "Ready",
+    "content.moderation.status.needsChanges": "Needs changes",
+    "content.moderation.status.tryAgain": "Try again",
+    "content.moderation.status.review": "Review",
+    "content.moderation.status.checking": "Checking",
+    "content.moderation.summary.failedTitle":
+      "We could not finish checking this",
+    "content.moderation.summary.failedDescription":
+      "This is usually caused by a file we cannot read or a temporary issue. You can try again.",
+    "content.moderation.summary.rejectedTitle":
+      "Please review this content",
+    "content.moderation.summary.rejectedDescription":
+      "This file may not be suitable to share yet. Edit it or replace it before making it available.",
+    "content.moderation.summary.reviewTitle": "Needs a closer look",
+    "content.moderation.summary.reviewDescription":
+      "We could not clearly approve this content. Please review it before making it available.",
+    "content.moderation.summary.processingTitle": "Checking your content",
+    "content.moderation.summary.processingDescription":
+      "We are reading the file and checking whether learners can see it.",
+    "content.moderation.summary.readyTitle": "Ready for learners",
+    "content.moderation.summary.readyDescription":
+      "We read the file and it passed the content check.",
+    "content.moderation.step.uploadDone": "Upload done",
+    "content.moderation.step.checkingStarted": "Checking started",
+    "content.moderation.step.sharingCheck": "Sharing check",
+    "content.moderation.step.readyForLearners": "Ready for learners",
+    "content.moderation.whatHappened": "What happened",
     "content.moderation.delete.resourceSuccess": "Resource deleted.",
     "content.moderation.delete.tutorialSuccess": "Tutorial deleted.",
     "content.moderation.delete.resourceError":
@@ -119,6 +151,36 @@ export const translations = {
     "content.resourceForm.createError":
       "We could not create this resource. Please review the form and try again.",
     "content.resourceForm.copyUploadLink": "Upload link copied.",
+    "content.uploadHistory.title": "Upload History",
+    "content.uploadHistory.loadError": "Failed to load upload history.",
+    "content.uploadHistory.emptyResource":
+      "No upload history for this resource.",
+    "content.uploadHistory.emptyTutorial":
+      "No upload history for this tutorial.",
+    "content.uploadHistory.resourceDescription":
+      "View all upload attempts and their execution status for this resource.",
+    "content.uploadHistory.tutorialDescription":
+      "View all upload attempts and their execution status for this tutorial.",
+    "content.resourcesPanel.description":
+      "Manage your document resources and track upload progress.",
+    "content.resourcesPanel.yours": "Your Resources",
+    "content.resourcesPanel.emptyTitle": "No resources yet",
+    "content.resourcesPanel.emptyDescription":
+      "Create your first resource to share documents and files with students.",
+    "content.tutorialsPanel.description":
+      "Manage your video tutorials and track upload progress.",
+    "content.tutorialsPanel.new": "New Tutorial",
+    "content.tutorialsPanel.yours": "Your Tutorials",
+    "content.tutorialsPanel.emptyTitle": "No tutorials yet",
+    "content.tutorialsPanel.emptyDescription":
+      "Create your first tutorial to share video content with students.",
+    "content.collectionsPanel.description":
+      "Organize your resources into collections for easier discovery.",
+    "content.collectionsPanel.new": "New Collection",
+    "content.collectionsPanel.emptyTitle": "No collections yet",
+    "content.collectionsPanel.emptyDescription":
+      "Create your first collection to group related resources together.",
+    "content.collectionsPanel.items": "items",
     "content.tutorialForm.loadResourcesError":
       "We could not load related resources.",
     "content.tutorialForm.loadCollectionsError":
@@ -138,6 +200,78 @@ export const translations = {
       "Video uploaded, but we could not start checking it. Please try again from Content.",
     "content.tutorialForm.createError":
       "We could not create this tutorial. Please review the form and try again.",
+    "content.form.titleLabel": "Title",
+    "content.form.priceLabel": "Price (VND)",
+    "content.tutorialForm.titlePlaceholder":
+      "e.g. Master Advanced Algorithmic Patterns",
+    "content.tutorialForm.descriptionPlaceholder":
+      "Detailed explanation of what the student will learn...",
+    "content.tutorialForm.bundleDiscountLabel": "Bundle Discount (%)",
+    "content.tutorialForm.keyLearningsTitle": "Key Learnings (Highlights)",
+    "content.tutorialForm.highlightPlaceholder": "Highlight #{number}",
+    "content.tutorialForm.addHighlight": "Add Highlight",
+    "content.tutorialForm.editVideoHint":
+      "Your uploaded video will stay the same while you edit the details.",
+    "content.tutorialForm.selectVideoHint":
+      "Select a {types} video file. We will fill in the length, file name, and size for you.",
+    "content.tutorialForm.fileNameLabel": "File Name",
+    "content.tutorialForm.fileNamePlaceholder": "lecture-video.mp4",
+    "content.tutorialForm.fileSizeLabel": "Size (bytes)",
+    "content.tutorialForm.fileSizePlaceholder": "104857600",
+    "content.tutorialForm.durationLabel": "Duration (sec)",
+    "content.tutorialForm.durationPlaceholder": "1200",
+    "content.tutorialForm.chooseVideoLabel": "Choose Video",
+    "content.tutorialForm.chooseVideoAction": "Choose Video File",
+    "content.tutorialForm.changeVideoAction": "Change Video File",
+    "content.tutorialForm.studyMaterialsLabel": "Study materials",
+    "content.tutorialForm.studyMaterialsHint":
+      "Choose which resources should go with this tutorial.",
+    "content.tutorialForm.loadingMajors": "Loading majors...",
+    "content.tutorialForm.selectMajor": "Select major...",
+    "content.tutorialForm.loadingCourses": "Loading options...",
+    "content.tutorialForm.selectCourse": "Select course...",
+    "content.tutorialForm.useCollection": "Use a collection",
+    "content.tutorialForm.pickOneByOne": "Pick one by one",
+    "content.tutorialForm.organizeStepsHint":
+      "Organize resources into learning steps.",
+    "content.tutorialForm.stepsError": "Please check the steps structure.",
+    "content.tutorialForm.updateTitle": "Update tutorial",
+    "content.tutorialForm.createTitle": "Create tutorial",
+    "content.tutorialForm.updateDescription":
+      "Update the details, price, course, and linked resources.",
+    "content.tutorialForm.createDescription":
+      "Upload your {types} video lesson. Linked resources must use the same major and course.",
+    "content.tutorialForm.advancedLabel": "Advanced",
+    "content.tutorialForm.detailsSection": "Details",
+    "content.tutorialForm.videoSection": "Video",
+    "content.tutorialForm.courseResourcesSection": "Course & resources",
+    "content.tutorialForm.updatingAction": "Updating tutorial...",
+    "content.tutorialForm.updateAction": "Update tutorial",
+    "content.tutorialForm.preparingUploadAction": "Getting upload ready...",
+    "content.tutorialForm.createAndUploadAction": "Create tutorial and upload",
+    "content.tutorialForm.createAction": "Create tutorial",
+    "content.tutorialForm.confirmUpdateTitle": "Update this tutorial?",
+    "content.tutorialForm.confirmCreateTitle": "Create this tutorial?",
+    "content.tutorialForm.confirmUpdateDescription":
+      "Your tutorial changes and linked resources will be saved.",
+    "content.tutorialForm.confirmCreateDescription":
+      "Your tutorial will be created and the selected video will start uploading.",
+    "content.tutorialBuilder.stepLabel": "Step {number}",
+    "content.tutorialBuilder.resourceSingle": "resource",
+    "content.tutorialBuilder.resourcePlural": "resources",
+    "content.tutorialBuilder.stepTitlePlaceholder":
+      "e.g. Introduction to Variables",
+    "content.tutorialBuilder.instructionPlaceholder":
+      "Add instruction notes for this resource...",
+    "content.tutorialBuilder.defaultStepTitle": "Step {number}",
+    "content.tutorialBuilder.title": "Step Builder",
+    "content.tutorialBuilder.description":
+      "Organize resources into a learning timeline.",
+    "content.tutorialBuilder.addStep": "Add Step",
+    "content.tutorialBuilder.emptyTitle": "No steps added yet.",
+    "content.tutorialBuilder.createFirstStep": "Create the first step",
+    "content.tutorialBuilder.dropResources": "Drop resources here",
+    "content.tutorialBuilder.untitledStep": "Untitled Step",
     "createContent.title": "What do you want to create?",
     "createContent.description":
       "Pick the format that fits what you want to share.",
@@ -210,6 +344,11 @@ export const translations = {
     "profile.detail.verified": "Verified",
     "profile.detail.courses": "12 courses",
     "profile.detail.rating": "4.9 rating",
+    "profile.published.tutorials": "Published Tutorials",
+    "profile.published.resources": "Published Resources",
+    "profile.published.collections": "Collections",
+    "profile.published.empty": "No {type} published yet.",
+    "profile.published.viewMore": "View More {type}",
     "intro.nav.explore": "Explore",
     "intro.nav.resources": "Resources",
     "intro.nav.resourcesDescription": "Study materials, notes, and documents",
@@ -258,6 +397,7 @@ export const translations = {
     "billing.topup.continue": "Continue",
     "billing.purchase.buyNow": "Buy now",
     "billing.purchase.learnNow": "Learn now",
+    "billing.purchase.seePreview": "See preview",
     "billing.purchase.success":
       "Purchase completed. Your library is being updated.",
     "billing.purchase.confirmTitle": "Confirm checkout",
@@ -478,6 +618,9 @@ export const translations = {
     "explore.filter.clear": "Clear filters",
     "explore.filter.searchPlaceholder":
       "Search by course name, course code, major name, or major code",
+    "explore.filter.searchTitle": "Search library",
+    "explore.filter.searchHint": "Press Enter to search now",
+    "explore.filter.searchAction": "Search",
     "explore.switcher.marketplace": "Marketplace",
     "explore.switcher.overview": "Overview",
     "explore.switcher.overviewDescription":
@@ -521,6 +664,93 @@ export const translations = {
       "Most watched tutorials this week across learning tracks.",
     "home.switcher.exploreAll": "Explore all",
     "home.switcher.showMore": "Show more results",
+    "home.hero.badge": "Welcome",
+    "home.hero.title": "Let's find out",
+    "home.hero.description":
+      "Track resources, collections, and the content your audience engages with the most.",
+    "home.hero.primaryCta": "Start learning",
+    "home.hero.secondaryCta": "View profile",
+    "home.seoHero.learningLoop": "Learning loop",
+    "home.seoHero.discover": "Discover focused material",
+    "home.seoHero.study": "Study with context",
+    "home.seoHero.nextStep": "Ask for the next step",
+    "home.startHere.badge": "Start here",
+    "home.startHere.title": "Create your first learning item",
+    "home.startHere.description":
+      "Follow these steps when you are not sure where to begin.",
+    "home.startHere.step1Title": "Upload a resource",
+    "home.startHere.step1Description":
+      "Add a PDF, document, or slide deck that learners can preview.",
+    "home.startHere.step2Title": "Group related content",
+    "home.startHere.step2Description":
+      "Create a collection so learners can follow a clear path.",
+    "home.startHere.step3Title": "Check the preview",
+    "home.startHere.step3Description":
+      "Open the resource page and make sure the preview is useful.",
+    "home.startHere.step4Title": "Follow the result",
+    "home.startHere.step4Description":
+      "Use Content to see whether your upload is ready for learners.",
+    "home.quickPicks.badge": "Quick picks",
+    "home.quickPicks.title": "Today's highlights",
+    "home.quickPicks.description":
+      "Jump into learning items people are opening most today.",
+    "home.quickPicks.resourceTitle": "Featured resources",
+    "home.quickPicks.resourceDescription":
+      "A roundup of the most viewed materials in the last 24 hours.",
+    "home.quickPicks.tutorialTitle": "Trending videos",
+    "home.quickPicks.tutorialDescription":
+      "Top tutorial videos to improve practical skills and study outcomes.",
+    "home.quickPicks.collectionTitle": "Collections",
+    "home.quickPicks.collectionDescription":
+      "Curated collections tailored by subject area and learning goals.",
+    "home.create.resourceBreadcrumb": "Create resource",
+    "home.create.resourceTitle": "Resource creator",
+    "home.create.tutorialBreadcrumb": "Create tutorial",
+    "home.create.tutorialTitle": "Content creator",
+    "home.create.collectionBreadcrumb": "Create collection",
+    "home.create.collectionTitle": "Collection creator",
+    "home.loading.heroTitle": "Discover trending academic content",
+    "home.loading.heroDescription":
+      "Browse curated resources, tutorials, and collections tailored to your learning journey and academic goals.",
+    "home.loading.featuredTitle": "Featured content title",
+    "home.loading.featuredDescription":
+      "A brief description of the featured content item.",
+    "home.loading.viewDetails": "View details",
+    "home.loading.trendingBadge": "Hot right now",
+    "home.loading.trendingTitle": "Top trending",
+    "home.loading.trendingDescription":
+      "Most interacted and highly rated content this week.",
+    "page.home.badge": "Learning platform",
+    "page.home.title": "Buddy learning platform",
+    "page.home.description":
+      "Discover, trade, and organize educational resources, tutorials, and curated collections on Buddy.",
+    "page.explore.badge": "Explore",
+    "page.explore.title": "Explore featured learning content",
+    "page.explore.description":
+      "Discover standout collections, resources, and tutorials on Buddy. Find curated learning content for students and educators.",
+    "page.library.badge": "Library",
+    "page.library.title": "My library",
+    "page.library.description":
+      "Access all purchased resources, tutorials, and collections. Content remains available even if the owner removes the original.",
+    "recommendation.badge": "Just for you",
+    "recommendation.title": "Recommended for you",
+    "recommendation.description":
+      "Personalized content based on your learning journey.",
+    "trending.badge": "Hot right now",
+    "trending.title": "Top trending",
+    "trending.description":
+      "Most interacted and highly rated content this week.",
+    "trending.fallbackTitle": "Trending content",
+    "trending.interactions": "{count} interactions",
+    "trending.averageRating": "{rating} average rating",
+    "trending.thisWeek": "Trending this week",
+    "card.resource.paidHint": "Preview first · Full file after purchase",
+    "card.resource.freeHint": "Free to learn · Open any time",
+    "card.tutorial.paidHint": "Preview first · Full lesson after purchase",
+    "card.tutorial.freeHint": "Free to learn · Start any time",
+    "card.collection.paidHint":
+      "Preview first · Full collection after purchase",
+    "card.collection.freeHint": "Free to learn · Open any time",
     "library.back": "Back to library",
     "library.browser.learningSpace": "Learning space",
     "library.browser.workspace": "My learning space",
@@ -537,6 +767,8 @@ export const translations = {
     "library.browser.noResultsDescription":
       "Try a different keyword or explore more content to save.",
     "library.browser.continueNext": "Continue next",
+    "library.browser.continueEmpty":
+      "Pick something from your library to keep learning.",
     "library.browser.emptyTitle": "Your library is empty",
     "library.browser.emptyDescription":
       "Purchased or saved content will appear here.",
@@ -730,6 +962,9 @@ export const translations = {
     "explore.list.allResources": "All resources",
     "explore.list.allResourcesDescription":
       "Browse the rest of the collection below.",
+    "explore.list.searchResults": "Search results",
+    "explore.list.searchResultsDescription":
+      "Showing matching results for your current search and filters.",
     "explore.list.resourceCount": "resources",
     "explore.list.topCollections": "Top collections",
     "explore.list.topCollectionsDescription":
@@ -748,6 +983,63 @@ export const translations = {
     "explore.list.allTutorialCollections": "All tutorial collections",
     "explore.list.allTutorialCollectionsDescription":
       "Browse the rest of the tutorial collections below.",
+    "forum.meta.title": "Forum",
+    "forum.meta.description":
+      "Join Buddy forum discussions, follow trending topics, and chat with everyone in the community.",
+    "forum.hero.badge": "Forum",
+    "forum.hero.title": "Discuss, ask, and learn together",
+    "forum.hero.description":
+      "Follow new topics, answer questions, react to discussions, and mention people when their context matters.",
+    "forum.metrics.topics": "Topics",
+    "forum.metrics.replies": "Replies",
+    "forum.metrics.online": "Online",
+    "forum.topics.title": "New topics",
+    "forum.topics.description": "Fresh discussions from the Buddy community.",
+    "forum.topics.searchPlaceholder": "Search topics",
+    "forum.states.loading": "Loading forum...",
+    "forum.states.emptyTopics":
+      "Let's start the discussion! Create a new topic and share your thoughts with the Buddy community.",
+    "forum.common.by": "by",
+    "forum.form.title": "New topic",
+    "forum.form.description": "Pick a major tag before posting.",
+    "forum.form.majorPlaceholder": "Select major tag",
+    "forum.form.majorAriaLabel": "Topic major tag",
+    "forum.form.titlePlaceholder": "Topic title",
+    "forum.form.titleAriaLabel": "Topic title",
+    "forum.form.bodyPlaceholder": "What do you want to discuss?",
+    "forum.form.bodyAriaLabel": "Topic body",
+    "forum.form.submit": "Post topic",
+    "forum.chat.title": "Chat everyone",
+    "forum.chat.description": "Open study room.",
+    "forum.chat.empty":
+      "Let's start the conversation! Send a message to everyone in this study room.",
+    "forum.chat.placeholder": "Message everyone",
+    "forum.chat.send": "Send",
+    "forum.detail.empty": "Select a topic to answer and react.",
+    "forum.detail.answer": "Answer",
+    "forum.detail.placeholder": "Answer this topic. Type @ to mention someone.",
+    "forum.trending.title": "Trending",
+    "forum.trending.description": "Most active right now.",
+    "forum.tags.title": "Major tags",
+    "forum.tags.description": "Topic channels from content majors.",
+    "forum.topicCard.views": "Views",
+    "forum.topicCard.active": "Active",
+    "forum.mentions.searching": "Looking for people...",
+    "forum.mentions.available": "People you can mention",
+    "forum.mentions.typeToMention": "Type a name to mention someone",
+    "forum.mentions.searchFailed":
+      "We could not search people right now. Please try again.",
+    "forum.mentions.noResults": "No matching people found.",
+    "forum.mentions.remove": "Remove",
+    "forum.validation.majorRequired": "Major tag is required",
+    "forum.validation.topicTitleMin":
+      "Topic title must be at least 3 characters",
+    "forum.validation.topicTitleMax": "Topic title is too long",
+    "forum.validation.topicBodyMin":
+      "Topic body must be at least 10 characters",
+    "forum.validation.topicBodyMax": "Topic body is too long",
+    "forum.validation.messageRequired": "Message is required",
+    "forum.validation.messageMax": "Message is too long",
   },
   vi: {
     "common.language": "Ngôn ngữ",
@@ -768,6 +1060,7 @@ export const translations = {
     "common.password": "Mật khẩu",
     "common.loadingLogin": "Đang đăng nhập...",
     "common.login": "Đăng nhập",
+    "common.signUp": "Đăng ký",
     "common.free": "Miễn phí",
     "common.noSummary": "Chưa có tóm tắt.",
     "common.noDescription": "Chưa có mô tả.",
@@ -776,6 +1069,7 @@ export const translations = {
     "common.follow": "Theo dõi",
     "common.share": "Chia sẻ",
     "common.saveItem": "Lưu",
+    "common.discoverNow": "Khám phá ngay",
     "common.addToCart": "Thêm vào giỏ",
     "common.orders": "đơn hàng",
     "common.downloads": "lượt tải",
@@ -819,6 +1113,9 @@ export const translations = {
     "session.loginDescription":
       "Phiên đăng nhập đã hết hạn. Hãy dùng lại cách đăng nhập cũ để tiếp tục.",
     "content.title": "Nội dung của tôi",
+    "content.metaTitle": "Nội dung",
+    "content.metaDescription":
+      "Quản lý bài học, tài liệu và bộ sưu tập của creator.",
     "content.description":
       "Tạo, sắp xếp và kiểm tra mọi thứ bạn chia sẻ với người học.",
     "content.newResource": "Tài liệu mới",
@@ -834,6 +1131,34 @@ export const translations = {
     "content.moderation.recheckError":
       "Không thể kiểm tra nội dung này ngay bây giờ. Vui lòng thử lại.",
     "content.moderation.recheckAction": "Kiểm tra lại",
+    "content.moderation.status.ready": "Sẵn sàng",
+    "content.moderation.status.needsChanges": "Cần chỉnh sửa",
+    "content.moderation.status.tryAgain": "Thử lại",
+    "content.moderation.status.review": "Xem lại",
+    "content.moderation.status.checking": "Đang kiểm tra",
+    "content.moderation.summary.failedTitle":
+      "Không thể hoàn tất kiểm tra nội dung này",
+    "content.moderation.summary.failedDescription":
+      "Thường do tệp không đọc được hoặc lỗi tạm thời. Bạn có thể thử lại.",
+    "content.moderation.summary.rejectedTitle":
+      "Hãy xem lại nội dung này",
+    "content.moderation.summary.rejectedDescription":
+      "Tệp này có thể chưa phù hợp để chia sẻ. Hãy chỉnh sửa hoặc thay thế trước khi mở cho người học.",
+    "content.moderation.summary.reviewTitle": "Cần xem kỹ hơn",
+    "content.moderation.summary.reviewDescription":
+      "Chúng tôi chưa thể phê duyệt rõ ràng nội dung này. Hãy xem lại trước khi mở cho người học.",
+    "content.moderation.summary.processingTitle":
+      "Đang kiểm tra nội dung của bạn",
+    "content.moderation.summary.processingDescription":
+      "Chúng tôi đang đọc tệp và kiểm tra xem người học có thể xem nội dung này hay không.",
+    "content.moderation.summary.readyTitle": "Sẵn sàng cho người học",
+    "content.moderation.summary.readyDescription":
+      "Chúng tôi đã đọc tệp và nội dung đã vượt qua kiểm tra.",
+    "content.moderation.step.uploadDone": "Đã tải lên",
+    "content.moderation.step.checkingStarted": "Đã bắt đầu kiểm tra",
+    "content.moderation.step.sharingCheck": "Kiểm tra chia sẻ",
+    "content.moderation.step.readyForLearners": "Sẵn sàng cho người học",
+    "content.moderation.whatHappened": "Điều gì đã xảy ra",
     "content.moderation.delete.resourceSuccess": "Đã xóa tài liệu.",
     "content.moderation.delete.tutorialSuccess": "Đã xóa bài học.",
     "content.moderation.delete.resourceError":
@@ -866,6 +1191,37 @@ export const translations = {
     "content.resourceForm.createError":
       "Không thể tạo tài liệu này. Vui lòng kiểm tra lại biểu mẫu và thử lại.",
     "content.resourceForm.copyUploadLink": "Đã sao chép liên kết tải lên.",
+    "content.uploadHistory.title": "Lịch sử tải lên",
+    "content.uploadHistory.loadError":
+      "Không thể tải lịch sử tải lên.",
+    "content.uploadHistory.emptyResource":
+      "Chưa có lịch sử tải lên cho tài liệu này.",
+    "content.uploadHistory.emptyTutorial":
+      "Chưa có lịch sử tải lên cho bài học này.",
+    "content.uploadHistory.resourceDescription":
+      "Xem toàn bộ lần tải lên và trạng thái xử lý của tài liệu này.",
+    "content.uploadHistory.tutorialDescription":
+      "Xem toàn bộ lần tải lên và trạng thái xử lý của bài học này.",
+    "content.resourcesPanel.description":
+      "Quản lý tài liệu của bạn và theo dõi tiến trình tải lên.",
+    "content.resourcesPanel.yours": "Tài liệu của bạn",
+    "content.resourcesPanel.emptyTitle": "Chưa có tài liệu nào",
+    "content.resourcesPanel.emptyDescription":
+      "Tạo tài liệu đầu tiên để chia sẻ file và tài liệu với người học.",
+    "content.tutorialsPanel.description":
+      "Quản lý bài học video của bạn và theo dõi tiến trình tải lên.",
+    "content.tutorialsPanel.new": "Bài học mới",
+    "content.tutorialsPanel.yours": "Bài học của bạn",
+    "content.tutorialsPanel.emptyTitle": "Chưa có bài học nào",
+    "content.tutorialsPanel.emptyDescription":
+      "Tạo bài học đầu tiên để chia sẻ nội dung video với người học.",
+    "content.collectionsPanel.description":
+      "Sắp xếp tài nguyên của bạn thành các bộ sưu tập để dễ khám phá hơn.",
+    "content.collectionsPanel.new": "Bộ sưu tập mới",
+    "content.collectionsPanel.emptyTitle": "Chưa có bộ sưu tập nào",
+    "content.collectionsPanel.emptyDescription":
+      "Tạo bộ sưu tập đầu tiên để nhóm các tài nguyên liên quan lại với nhau.",
+    "content.collectionsPanel.items": "mục",
     "content.tutorialForm.loadResourcesError":
       "Không thể tải các tài liệu liên quan.",
     "content.tutorialForm.loadCollectionsError":
@@ -885,6 +1241,82 @@ export const translations = {
       "Video đã tải lên, nhưng chưa thể bắt đầu kiểm tra. Vui lòng thử lại từ trang Nội dung.",
     "content.tutorialForm.createError":
       "Không thể tạo bài học này. Vui lòng kiểm tra lại biểu mẫu và thử lại.",
+    "content.form.titleLabel": "Tiêu đề",
+    "content.form.priceLabel": "Giá (VND)",
+    "content.tutorialForm.titlePlaceholder":
+      "vd. Làm chủ các mẫu thuật toán nâng cao",
+    "content.tutorialForm.descriptionPlaceholder":
+      "Mô tả chi tiết những gì người học sẽ đạt được...",
+    "content.tutorialForm.bundleDiscountLabel": "Giảm giá gói (%)",
+    "content.tutorialForm.keyLearningsTitle": "Điểm học chính (Highlights)",
+    "content.tutorialForm.highlightPlaceholder": "Điểm nổi bật #{number}",
+    "content.tutorialForm.addHighlight": "Thêm highlight",
+    "content.tutorialForm.editVideoHint":
+      "Video đã tải lên sẽ được giữ nguyên khi bạn chỉnh sửa thông tin.",
+    "content.tutorialForm.selectVideoHint":
+      "Chọn video định dạng {types}. Chúng tôi sẽ tự điền thời lượng, tên file và dung lượng cho bạn.",
+    "content.tutorialForm.fileNameLabel": "Tên file",
+    "content.tutorialForm.fileNamePlaceholder": "lecture-video.mp4",
+    "content.tutorialForm.fileSizeLabel": "Dung lượng (byte)",
+    "content.tutorialForm.fileSizePlaceholder": "104857600",
+    "content.tutorialForm.durationLabel": "Thời lượng (giây)",
+    "content.tutorialForm.durationPlaceholder": "1200",
+    "content.tutorialForm.chooseVideoLabel": "Chọn video",
+    "content.tutorialForm.chooseVideoAction": "Chọn file video",
+    "content.tutorialForm.changeVideoAction": "Đổi file video",
+    "content.tutorialForm.studyMaterialsLabel": "Tài liệu học tập",
+    "content.tutorialForm.studyMaterialsHint":
+      "Chọn những tài liệu sẽ đi kèm với bài học này.",
+    "content.tutorialForm.loadingMajors": "Đang tải ngành...",
+    "content.tutorialForm.selectMajor": "Chọn ngành...",
+    "content.tutorialForm.loadingCourses": "Đang tải lựa chọn...",
+    "content.tutorialForm.selectCourse": "Chọn môn học...",
+    "content.tutorialForm.useCollection": "Dùng bộ sưu tập",
+    "content.tutorialForm.pickOneByOne": "Chọn từng mục",
+    "content.tutorialForm.organizeStepsHint":
+      "Sắp xếp tài liệu thành các bước học.",
+    "content.tutorialForm.stepsError":
+      "Vui lòng kiểm tra lại cấu trúc các bước.",
+    "content.tutorialForm.updateTitle": "Cập nhật bài học",
+    "content.tutorialForm.createTitle": "Tạo bài học",
+    "content.tutorialForm.updateDescription":
+      "Cập nhật thông tin, giá, môn học và tài liệu liên kết.",
+    "content.tutorialForm.createDescription":
+      "Tải lên bài học video định dạng {types}. Tài liệu liên kết phải cùng ngành và môn học.",
+    "content.tutorialForm.advancedLabel": "Nâng cao",
+    "content.tutorialForm.detailsSection": "Thông tin",
+    "content.tutorialForm.videoSection": "Video",
+    "content.tutorialForm.courseResourcesSection": "Môn học & tài liệu",
+    "content.tutorialForm.updatingAction": "Đang cập nhật bài học...",
+    "content.tutorialForm.updateAction": "Cập nhật bài học",
+    "content.tutorialForm.preparingUploadAction":
+      "Đang chuẩn bị tải lên...",
+    "content.tutorialForm.createAndUploadAction":
+      "Tạo bài học và tải lên",
+    "content.tutorialForm.createAction": "Tạo bài học",
+    "content.tutorialForm.confirmUpdateTitle":
+      "Cập nhật bài học này?",
+    "content.tutorialForm.confirmCreateTitle": "Tạo bài học này?",
+    "content.tutorialForm.confirmUpdateDescription":
+      "Các thay đổi và tài liệu liên kết của bài học sẽ được lưu.",
+    "content.tutorialForm.confirmCreateDescription":
+      "Bài học sẽ được tạo và video đã chọn sẽ bắt đầu tải lên.",
+    "content.tutorialBuilder.stepLabel": "Bước {number}",
+    "content.tutorialBuilder.resourceSingle": "tài liệu",
+    "content.tutorialBuilder.resourcePlural": "tài liệu",
+    "content.tutorialBuilder.stepTitlePlaceholder":
+      "vd. Giới thiệu về biến",
+    "content.tutorialBuilder.instructionPlaceholder":
+      "Thêm ghi chú hướng dẫn cho tài liệu này...",
+    "content.tutorialBuilder.defaultStepTitle": "Bước {number}",
+    "content.tutorialBuilder.title": "Trình dựng bước học",
+    "content.tutorialBuilder.description":
+      "Sắp xếp tài liệu theo dòng thời gian học tập.",
+    "content.tutorialBuilder.addStep": "Thêm bước",
+    "content.tutorialBuilder.emptyTitle": "Chưa có bước nào.",
+    "content.tutorialBuilder.createFirstStep": "Tạo bước đầu tiên",
+    "content.tutorialBuilder.dropResources": "Thả tài liệu vào đây",
+    "content.tutorialBuilder.untitledStep": "Bước chưa đặt tên",
     "createContent.title": "Bạn muốn tạo gì?",
     "createContent.description":
       "Chọn định dạng phù hợp với nội dung bạn muốn chia sẻ.",
@@ -957,6 +1389,11 @@ export const translations = {
     "profile.detail.verified": "Đã xác minh",
     "profile.detail.courses": "12 khóa học",
     "profile.detail.rating": "Đánh giá 4.9",
+    "profile.published.tutorials": "Bài học đã xuất bản",
+    "profile.published.resources": "Tài liệu đã xuất bản",
+    "profile.published.collections": "Bộ sưu tập",
+    "profile.published.empty": "Chưa có {type} nào được xuất bản.",
+    "profile.published.viewMore": "Xem thêm {type}",
     "intro.nav.explore": "Khám phá",
     "intro.nav.resources": "Tài liệu",
     "intro.nav.resourcesDescription": "Tài liệu học, ghi chú và văn bản",
@@ -1005,6 +1442,7 @@ export const translations = {
     "billing.topup.continue": "Tiếp tục",
     "billing.purchase.buyNow": "Mua ngay",
     "billing.purchase.learnNow": "Học ngay",
+    "billing.purchase.seePreview": "Xem trước",
     "billing.purchase.success":
       "Mua thành công. Thư viện của bạn đang được cập nhật.",
     "billing.purchase.confirmTitle": "Xác nhận thanh toán",
@@ -1225,6 +1663,9 @@ export const translations = {
     "explore.filter.clear": "Xóa lọc",
     "explore.filter.searchPlaceholder":
       "Tìm theo tên môn, mã môn, tên ngành hoặc mã ngành",
+    "explore.filter.searchTitle": "Tìm trong thư viện",
+    "explore.filter.searchHint": "Nhấn Enter để tìm ngay",
+    "explore.filter.searchAction": "Tìm kiếm",
     "explore.switcher.marketplace": "Kho nội dung",
     "explore.switcher.overview": "Tổng quan",
     "explore.switcher.overviewDescription":
@@ -1268,6 +1709,94 @@ export const translations = {
       "Các bài học được xem nhiều nhất tuần này trên các lộ trình học.",
     "home.switcher.exploreAll": "Khám phá tất cả",
     "home.switcher.showMore": "Xem thêm kết quả",
+    "home.hero.badge": "Chào mừng",
+    "home.hero.title": "Cùng khám phá",
+    "home.hero.description":
+      "Theo dõi tài liệu, bộ sưu tập và những nội dung mà người học của bạn tương tác nhiều nhất.",
+    "home.hero.primaryCta": "Bắt đầu học",
+    "home.hero.secondaryCta": "Xem hồ sơ",
+    "home.seoHero.learningLoop": "Vòng lặp học tập",
+    "home.seoHero.discover": "Khám phá tài liệu phù hợp",
+    "home.seoHero.study": "Học với đầy đủ ngữ cảnh",
+    "home.seoHero.nextStep": "Nhận gợi ý bước tiếp theo",
+    "home.startHere.badge": "Bắt đầu từ đây",
+    "home.startHere.title": "Tạo nội dung học tập đầu tiên",
+    "home.startHere.description":
+      "Làm theo các bước này nếu bạn chưa biết nên bắt đầu từ đâu.",
+    "home.startHere.step1Title": "Tải lên một tài liệu",
+    "home.startHere.step1Description":
+      "Thêm PDF, tài liệu hoặc slide để người học có thể xem trước.",
+    "home.startHere.step2Title": "Nhóm nội dung liên quan",
+    "home.startHere.step2Description":
+      "Tạo bộ sưu tập để người học theo dõi theo một lộ trình rõ ràng.",
+    "home.startHere.step3Title": "Kiểm tra phần xem trước",
+    "home.startHere.step3Description":
+      "Mở trang tài liệu và đảm bảo phần xem trước thực sự hữu ích.",
+    "home.startHere.step4Title": "Theo dõi kết quả",
+    "home.startHere.step4Description":
+      "Dùng trang Content để biết nội dung của bạn đã sẵn sàng cho người học hay chưa.",
+    "home.quickPicks.badge": "Chọn nhanh",
+    "home.quickPicks.title": "Điểm nổi bật hôm nay",
+    "home.quickPicks.description":
+      "Đi thẳng vào những nội dung học tập đang được mở nhiều nhất hôm nay.",
+    "home.quickPicks.resourceTitle": "Tài liệu nổi bật",
+    "home.quickPicks.resourceDescription":
+      "Tổng hợp các tài liệu được xem nhiều nhất trong 24 giờ qua.",
+    "home.quickPicks.tutorialTitle": "Video xu hướng",
+    "home.quickPicks.tutorialDescription":
+      "Những video bài học hàng đầu giúp cải thiện kỹ năng thực hành và kết quả học tập.",
+    "home.quickPicks.collectionTitle": "Bộ sưu tập",
+    "home.quickPicks.collectionDescription":
+      "Các bộ sưu tập được tuyển chọn theo môn học và mục tiêu học tập.",
+    "home.create.resourceBreadcrumb": "Tạo tài liệu",
+    "home.create.resourceTitle": "Trình tạo tài liệu",
+    "home.create.tutorialBreadcrumb": "Tạo bài học",
+    "home.create.tutorialTitle": "Trình tạo nội dung",
+    "home.create.collectionBreadcrumb": "Tạo bộ sưu tập",
+    "home.create.collectionTitle": "Trình tạo bộ sưu tập",
+    "home.loading.heroTitle": "Khám phá nội dung học thuật đang nổi bật",
+    "home.loading.heroDescription":
+      "Duyệt tài liệu, bài học và bộ sưu tập được tuyển chọn theo hành trình học tập và mục tiêu của bạn.",
+    "home.loading.featuredTitle": "Tiêu đề nội dung nổi bật",
+    "home.loading.featuredDescription":
+      "Mô tả ngắn cho một nội dung nổi bật.",
+    "home.loading.viewDetails": "Xem chi tiết",
+    "home.loading.trendingBadge": "Đang nổi bật",
+    "home.loading.trendingTitle": "Xu hướng hàng đầu",
+    "home.loading.trendingDescription":
+      "Những nội dung được tương tác nhiều và đánh giá cao nhất trong tuần này.",
+    "page.home.badge": "Nền tảng học tập",
+    "page.home.title": "Nền tảng học tập Buddy",
+    "page.home.description":
+      "Khám phá, mua bán và sắp xếp tài liệu, bài học và các bộ sưu tập học tập được tuyển chọn trên Buddy.",
+    "page.explore.badge": "Khám phá",
+    "page.explore.title": "Khám phá bộ sưu tập nổi bật",
+    "page.explore.description":
+      "Khám phá các bộ sưu tập, tài liệu và bài học đang nổi bật trên Buddy. Tìm nội dung học tập được chọn lọc cho người học và nhà giáo dục.",
+    "page.library.badge": "Thư viện",
+    "page.library.title": "Thư viện của tôi",
+    "page.library.description":
+      "Truy cập toàn bộ tài liệu, bài học và bộ sưu tập bạn đã mua. Nội dung vẫn khả dụng kể cả khi chủ sở hữu xóa bản gốc.",
+    "recommendation.badge": "Dành cho bạn",
+    "recommendation.title": "Gợi ý cho bạn",
+    "recommendation.description":
+      "Nội dung được cá nhân hóa theo hành trình học tập của bạn.",
+    "trending.badge": "Đang nổi bật",
+    "trending.title": "Xu hướng hàng đầu",
+    "trending.description":
+      "Những nội dung được tương tác nhiều và đánh giá cao nhất trong tuần này.",
+    "trending.fallbackTitle": "Nội dung xu hướng",
+    "trending.interactions": "{count} lượt tương tác",
+    "trending.averageRating": "Điểm trung bình {rating}",
+    "trending.thisWeek": "Đang nổi bật trong tuần này",
+    "card.resource.paidHint": "Xem trước trước khi mua · Mở toàn bộ tệp sau khi thanh toán",
+    "card.resource.freeHint": "Học miễn phí · Mở bất cứ lúc nào",
+    "card.tutorial.paidHint":
+      "Xem trước trước khi mua · Mở toàn bộ bài học sau khi thanh toán",
+    "card.tutorial.freeHint": "Học miễn phí · Bắt đầu bất cứ lúc nào",
+    "card.collection.paidHint":
+      "Xem trước trước khi mua · Mở toàn bộ bộ sưu tập sau khi thanh toán",
+    "card.collection.freeHint": "Học miễn phí · Mở bất cứ lúc nào",
     "library.back": "Quay lại thư viện",
     "library.browser.learningSpace": "Không gian học tập",
     "library.browser.workspace": "Khu học tập của tôi",
@@ -1284,6 +1813,8 @@ export const translations = {
     "library.browser.noResultsDescription":
       "Hãy thử từ khóa khác hoặc khám phá thêm nội dung để lưu.",
     "library.browser.continueNext": "Tiếp tục tiếp theo",
+    "library.browser.continueEmpty":
+      "Chọn một nội dung trong thư viện để tiếp tục học.",
     "library.browser.emptyTitle": "Chưa có nội dung trong thư viện",
     "library.browser.emptyDescription":
       "Nội dung bạn đã mua hoặc lưu sẽ xuất hiện tại đây.",
@@ -1477,6 +2008,9 @@ export const translations = {
     "explore.list.allResources": "Tất cả tài liệu",
     "explore.list.allResourcesDescription":
       "Xem thêm toàn bộ tài liệu ở bên dưới.",
+    "explore.list.searchResults": "Kết quả tìm kiếm",
+    "explore.list.searchResultsDescription":
+      "Hiển thị các kết quả phù hợp với từ khóa và bộ lọc hiện tại.",
     "explore.list.resourceCount": "tài liệu",
     "explore.list.topCollections": "Bộ sưu tập nổi bật",
     "explore.list.topCollectionsDescription":
@@ -1495,6 +2029,62 @@ export const translations = {
     "explore.list.allTutorialCollections": "Tất cả bộ sưu tập bài học",
     "explore.list.allTutorialCollectionsDescription":
       "Xem thêm các bộ sưu tập bài học ở bên dưới.",
+    "forum.meta.title": "Diễn đàn",
+    "forum.meta.description":
+      "Tham gia thảo luận trên diễn đàn Buddy, theo dõi chủ đề nổi bật và trò chuyện cùng cộng đồng.",
+    "forum.hero.badge": "Diễn đàn",
+    "forum.hero.title": "Thảo luận, đặt câu hỏi và học cùng nhau",
+    "forum.hero.description":
+      "Theo dõi chủ đề mới, trả lời câu hỏi, thả cảm xúc vào thảo luận và nhắc tên đúng người khi cần thêm ngữ cảnh.",
+    "forum.metrics.topics": "Chủ đề",
+    "forum.metrics.replies": "Phản hồi",
+    "forum.metrics.online": "Đang online",
+    "forum.topics.title": "Chủ đề mới",
+    "forum.topics.description": "Các thảo luận mới nhất từ cộng đồng Buddy.",
+    "forum.topics.searchPlaceholder": "Tìm kiếm chủ đề",
+    "forum.states.loading": "Đang tải diễn đàn...",
+    "forum.states.emptyTopics":
+      "Hãy bắt đầu cuộc thảo luận! Tạo một chủ đề mới và chia sẻ suy nghĩ của bạn với cộng đồng Buddy.",
+    "forum.common.by": "bởi",
+    "forum.form.title": "Chủ đề mới",
+    "forum.form.description": "Chọn thẻ chuyên ngành trước khi đăng bài.",
+    "forum.form.majorPlaceholder": "Chọn thẻ chuyên ngành",
+    "forum.form.majorAriaLabel": "Thẻ chuyên ngành của chủ đề",
+    "forum.form.titlePlaceholder": "Tiêu đề chủ đề",
+    "forum.form.titleAriaLabel": "Tiêu đề chủ đề",
+    "forum.form.bodyPlaceholder": "Bạn muốn thảo luận điều gì?",
+    "forum.form.bodyAriaLabel": "Nội dung chủ đề",
+    "forum.form.submit": "Đăng chủ đề",
+    "forum.chat.title": "Trò chuyện cùng mọi người",
+    "forum.chat.description": "Phòng học mở cho cả cộng đồng.",
+    "forum.chat.empty":
+      "Hãy bắt đầu cuộc trò chuyện! Gửi một tin nhắn cho mọi người trong phòng học này.",
+    "forum.chat.placeholder": "Nhắn với mọi người",
+    "forum.chat.send": "Gửi",
+    "forum.detail.empty": "Chọn một chủ đề để trả lời và thả cảm xúc.",
+    "forum.detail.answer": "Trả lời",
+    "forum.detail.placeholder":
+      "Trả lời chủ đề này. Gõ @ để nhắc tên ai đó.",
+    "forum.trending.title": "Đang nổi bật",
+    "forum.trending.description": "Những chủ đề hoạt động mạnh nhất hiện tại.",
+    "forum.tags.title": "Thẻ chuyên ngành",
+    "forum.tags.description": "Các kênh chủ đề theo chuyên ngành nội dung.",
+    "forum.topicCard.views": "Lượt xem",
+    "forum.topicCard.active": "Hoạt động",
+    "forum.mentions.searching": "Đang tìm mọi người...",
+    "forum.mentions.available": "Những người bạn có thể nhắc tới",
+    "forum.mentions.typeToMention": "Gõ tên để nhắc tới ai đó",
+    "forum.mentions.searchFailed":
+      "Hiện chưa thể tìm người dùng. Vui lòng thử lại.",
+    "forum.mentions.noResults": "Không tìm thấy người phù hợp.",
+    "forum.mentions.remove": "Xóa",
+    "forum.validation.majorRequired": "Bạn cần chọn thẻ chuyên ngành",
+    "forum.validation.topicTitleMin": "Tiêu đề chủ đề phải có ít nhất 3 ký tự",
+    "forum.validation.topicTitleMax": "Tiêu đề chủ đề quá dài",
+    "forum.validation.topicBodyMin": "Nội dung chủ đề phải có ít nhất 10 ký tự",
+    "forum.validation.topicBodyMax": "Nội dung chủ đề quá dài",
+    "forum.validation.messageRequired": "Tin nhắn không được để trống",
+    "forum.validation.messageMax": "Tin nhắn quá dài",
   },
 } as const
 
@@ -1504,10 +2094,24 @@ export function normalizeLocale(value: string | null | undefined): Locale {
   return value === "en" ? "en" : "vi"
 }
 
-export function translate(locale: Locale, key: TranslationKey): string {
-  return translations[locale][key] ?? translations.en[key]
+export function translate(
+  locale: Locale,
+  key: TranslationKey,
+  params?: Record<string, string>
+): string {
+  const template = String(translations[locale][key] ?? translations.en[key])
+
+  if (!params) {
+    return template
+  }
+
+  return Object.entries(params).reduce(
+    (message, [token, value]) => message.replaceAll(`{${token}}`, value),
+    template
+  )
 }
 
 export function createTranslator(locale: Locale) {
-  return (key: TranslationKey) => translate(locale, key)
+  return (key: TranslationKey, params?: Record<string, string>) =>
+    translate(locale, key, params)
 }

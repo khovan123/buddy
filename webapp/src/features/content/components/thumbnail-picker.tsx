@@ -215,7 +215,7 @@ export function ThumbnailPicker({
                       title: `[Name of the ${labelContext} will appear here]`,
                       rating: "5.0",
                       reviews: "1,234",
-                      price: "Free",
+                      price: "free",
                       href: "#",
                       thumbnailUrl: previewSource || undefined,
                       author: {

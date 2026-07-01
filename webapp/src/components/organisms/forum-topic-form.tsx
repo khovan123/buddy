@@ -17,9 +17,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  forumTopicSchema,
+  createForumTopicSchema,
   type ForumTopicFormValues,
 } from "@/features/forum/schema"
+import { useI18n } from "@/i18n/language-provider"
 
 type ForumTopicMajor = {
   id: string
@@ -34,7 +35,12 @@ export function ForumTopicForm({
   majors: ForumTopicMajor[]
   onSubmit: (values: ForumTopicFormValues) => Promise<boolean | void>
 }) {
+  const { t } = useI18n()
   const [majorSearch, setMajorSearch] = useState("")
+  const forumTopicSchema = useMemo(
+    () => createForumTopicSchema((key) => t(key as never)),
+    [t]
+  )
   const {
     control,
     register,
@@ -52,7 +58,8 @@ export function ForumTopicForm({
 
   const majorId = useWatch({ control, name: "majorId" })
   const selectedMajor = majors.find((major) => major.id === majorId)
-  const selectedMajorName = selectedMajor?.name ?? "Select major tag"
+  const selectedMajorName =
+    selectedMajor?.name ?? t("forum.form.majorPlaceholder")
   const visibleMajors = useMemo(() => {
     const query = majorSearch.trim().toLowerCase()
 
@@ -84,9 +91,9 @@ export function ForumTopicForm({
           <Plus className="size-4" />
         </div>
         <div>
-          <h2 className="text-sm font-semibold">New topic</h2>
+          <h2 className="text-sm font-semibold">{t("forum.form.title")}</h2>
           <p className="text-xs text-muted-foreground">
-            Pick a major tag before posting.
+            {t("forum.form.description")}
           </p>
         </div>
       </div>
@@ -111,7 +118,7 @@ export function ForumTopicForm({
             }}
           >
             <ComboboxInput
-              aria-label="Topic major tag"
+              aria-label={t("forum.form.majorAriaLabel")}
               placeholder={selectedMajorName}
               className="w-full"
               onBlur={() => {
@@ -140,16 +147,16 @@ export function ForumTopicForm({
         <p className="text-xs text-destructive">{errors.majorId.message}</p>
       ) : null}
       <Input
-        placeholder="Topic title"
-        aria-label="Topic title"
+        placeholder={t("forum.form.titlePlaceholder")}
+        aria-label={t("forum.form.titleAriaLabel")}
         {...register("title")}
       />
       {errors.title ? (
         <p className="text-xs text-destructive">{errors.title.message}</p>
       ) : null}
       <Textarea
-        placeholder="What do you want to discuss?"
-        aria-label="Topic body"
+        placeholder={t("forum.form.bodyPlaceholder")}
+        aria-label={t("forum.form.bodyAriaLabel")}
         className="min-h-28 rounded-xl"
         {...register("excerpt")}
       />
@@ -162,7 +169,7 @@ export function ForumTopicForm({
         disabled={!majorId || isSubmitting}
       >
         <Plus className="size-4" />
-        Post topic
+        {t("forum.form.submit")}
       </Button>
     </form>
   )

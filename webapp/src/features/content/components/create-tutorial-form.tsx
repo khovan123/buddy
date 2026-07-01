@@ -581,7 +581,10 @@ export function CreateTutorialForm() {
     if (currentSteps.length === 0) {
       currentSteps.push({
         id: `step-${crypto.randomUUID()}`,
-        title: "Step 1",
+        title: t("content.tutorialBuilder.defaultStepTitle").replace(
+          "{number}",
+          "1"
+        ),
         resources: [],
       })
     }
@@ -599,11 +602,11 @@ export function CreateTutorialForm() {
   const metadataSection = (
     <div className="space-y-4">
       <Field>
-        <Label htmlFor="title">Title</Label>
+        <Label htmlFor="title">{t("content.form.titleLabel")}</Label>
         <Input
           id="title"
           {...form.register("title")}
-          placeholder="e.g. Master Advanced Algorithmic Patterns"
+          placeholder={t("content.tutorialForm.titlePlaceholder")}
         />
         {errors.title && (
           <p className="text-sm text-destructive">{errors.title.message}</p>
@@ -611,11 +614,11 @@ export function CreateTutorialForm() {
       </Field>
 
       <Field>
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description">{t("common.descriptionLabel")}</Label>
         <Textarea
           id="description"
           {...form.register("description")}
-          placeholder="Detailed explanation of what the student will learn..."
+          placeholder={t("content.tutorialForm.descriptionPlaceholder")}
           className="min-h-32"
         />
         {errors.description && (
@@ -627,7 +630,7 @@ export function CreateTutorialForm() {
 
       <div className="grid grid-cols-2 gap-4">
         <Field>
-          <Label htmlFor="price">Price (VND)</Label>
+          <Label htmlFor="price">{t("content.form.priceLabel")}</Label>
           <Input
             id="price"
             type="number"
@@ -638,7 +641,9 @@ export function CreateTutorialForm() {
           )}
         </Field>
         <Field>
-          <Label htmlFor="discountBundle">Bundle Discount (%)</Label>
+          <Label htmlFor="discountBundle">
+            {t("content.tutorialForm.bundleDiscountLabel")}
+          </Label>
           <Input
             id="discountBundle"
             type="number"
@@ -657,14 +662,17 @@ export function CreateTutorialForm() {
       {/* Highlights Dynamic Array */}
       <div className="space-y-4 border-t border-border/50 pt-4">
         <h3 className="text-lg font-semibold tracking-tight">
-          Key Learnings (Highlights)
+          {t("content.tutorialForm.keyLearningsTitle")}
         </h3>
         {fields.map((field, index) => (
           <div key={field.id} className="flex items-start gap-2">
             <div className="w-full space-y-1">
               <Input
                 {...form.register(`hightlights.${index}.value` as const)}
-                placeholder={`Highlight #${index + 1}`}
+                placeholder={t("content.tutorialForm.highlightPlaceholder").replace(
+                  "{number}",
+                  String(index + 1)
+                )}
               />
               {errors.hightlights?.[index]?.value && (
                 <p className="text-sm text-destructive">
@@ -696,7 +704,7 @@ export function CreateTutorialForm() {
           onClick={() => append({ value: "" })}
           className="rounded-xl border-dashed"
         >
-          <Plus className="mr-2 size-4" /> Add Highlight
+          <Plus className="mr-2 size-4" /> {t("content.tutorialForm.addHighlight")}
         </Button>
       </div>
     </div>
@@ -706,18 +714,21 @@ export function CreateTutorialForm() {
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
         {isEditMode
-          ? "Your uploaded video will stay the same while you edit the details."
-          : `Select a ${TUTORIAL_ALLOWED_FILE_TYPE_COPY} video file. We will fill in the length, file name, and size for you.`}
+          ? t("content.tutorialForm.editVideoHint")
+          : t("content.tutorialForm.selectVideoHint").replace(
+              "{types}",
+              TUTORIAL_ALLOWED_FILE_TYPE_COPY
+            )}
       </p>
 
       <div className="flex gap-6 rounded-2xl border bg-muted/20 p-6">
         <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
           <Field>
-            <Label htmlFor="fileName">File Name</Label>
+            <Label htmlFor="fileName">{t("content.tutorialForm.fileNameLabel")}</Label>
             <Input
               id="fileName"
               {...form.register("fileName")}
-              placeholder="lecture-video.mp4"
+              placeholder={t("content.tutorialForm.fileNamePlaceholder")}
               readOnly
               className="cursor-default rounded-xl bg-muted/50"
             />
@@ -728,27 +739,29 @@ export function CreateTutorialForm() {
             )}
           </Field>
           <Field>
-            <Label htmlFor="fileSizeBytes">Size (bytes)</Label>
+            <Label htmlFor="fileSizeBytes">{t("content.tutorialForm.fileSizeLabel")}</Label>
             <Input
               id="fileSizeBytes"
               type="number"
               {...form.register("fileSizeBytes", {
                 valueAsNumber: true,
               })}
-              placeholder="104857600"
+              placeholder={t("content.tutorialForm.fileSizePlaceholder")}
               readOnly
               className="cursor-default rounded-xl bg-muted/50"
             />
           </Field>
           <Field>
-            <Label htmlFor="videoDurationSeconds">Duration (sec)</Label>
+            <Label htmlFor="videoDurationSeconds">
+              {t("content.tutorialForm.durationLabel")}
+            </Label>
             <Input
               id="videoDurationSeconds"
               type="number"
               {...form.register("videoDurationSeconds", {
                 valueAsNumber: true,
               })}
-              placeholder="1200"
+              placeholder={t("content.tutorialForm.durationPlaceholder")}
               readOnly
               className="cursor-default rounded-xl bg-muted/50"
             />
@@ -757,7 +770,9 @@ export function CreateTutorialForm() {
 
         {!isEditMode ? (
           <Field>
-            <Label htmlFor="videoDurationSeconds">Choose Video</Label>
+            <Label htmlFor="videoDurationSeconds">
+              {t("content.tutorialForm.chooseVideoLabel")}
+            </Label>
             <Input
               ref={fileInputRef}
               id="video-picker"
@@ -774,7 +789,9 @@ export function CreateTutorialForm() {
                 onClick={() => fileInputRef.current?.click()}
               >
                 <FileUp className="size-6" />
-                {watchFileName ? "Change Video File" : "Choose Video File"}
+                {watchFileName
+                  ? t("content.tutorialForm.changeVideoAction")
+                  : t("content.tutorialForm.chooseVideoAction")}
               </Button>
               {/* {watchFileName && (
                 <span className="text-xs text-muted-foreground">
@@ -792,7 +809,7 @@ export function CreateTutorialForm() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Field>
-          <Label>Major</Label>
+          <Label>{t("common.major")}</Label>
           <Select
             value={selectedMajorId}
             onValueChange={(val) => {
@@ -805,7 +822,9 @@ export function CreateTutorialForm() {
             <SelectTrigger className="w-full justify-between rounded-xl">
               <SelectValue
                 placeholder={
-                  isLoadingMajors ? "Loading Majors..." : "Select Major..."
+                  isLoadingMajors
+                    ? t("content.tutorialForm.loadingMajors")
+                    : t("content.tutorialForm.selectMajor")
                 }
               />
             </SelectTrigger>
@@ -823,7 +842,7 @@ export function CreateTutorialForm() {
         </Field>
 
         <Field>
-          <Label>Course</Label>
+          <Label>{t("common.course")}</Label>
           <Select
             value={selectedCourseId}
             onValueChange={(val) => {
@@ -836,7 +855,9 @@ export function CreateTutorialForm() {
             <SelectTrigger className="w-full justify-between rounded-xl">
               <SelectValue
                 placeholder={
-                  isLoadingCourses ? "Loading Options..." : "Select Course..."
+                  isLoadingCourses
+                    ? t("content.tutorialForm.loadingCourses")
+                    : t("content.tutorialForm.selectCourse")
                 }
               />
             </SelectTrigger>
@@ -861,9 +882,11 @@ export function CreateTutorialForm() {
       {/*   2. "Manual Pick" — use ResourceExplorer + TutorialStepBuilder */}
       <div className="space-y-4 border-t border-border/50 pt-4">
         <div className="space-y-1">
-          <Label className="text-base text-primary">Study materials</Label>
+          <Label className="text-base text-primary">
+            {t("content.tutorialForm.studyMaterialsLabel")}
+          </Label>
           <p className="text-xs text-muted-foreground">
-            Choose which resources should go with this tutorial.
+            {t("content.tutorialForm.studyMaterialsHint")}
           </p>
         </div>
 
@@ -877,10 +900,10 @@ export function CreateTutorialForm() {
         >
           <TabsList className="grid w-full grid-cols-2 rounded-xl bg-muted/50 p-1">
             <TabsTrigger value="collection" className="rounded-lg">
-              <LibraryIcon /> Use a collection
+              <LibraryIcon /> {t("content.tutorialForm.useCollection")}
             </TabsTrigger>
             <TabsTrigger value="manual" className="rounded-lg">
-              <TableOfContentsIcon /> Pick one by one
+              <TableOfContentsIcon /> {t("content.tutorialForm.pickOneByOne")}
             </TabsTrigger>
           </TabsList>
 
@@ -908,12 +931,12 @@ export function CreateTutorialForm() {
               <div className="flex animate-in items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">
-                    Organize resources into learning steps.
+                    {t("content.tutorialForm.organizeStepsHint")}
                   </p>
                 </div>
                 {errors.steps && (
                   <p className="text-sm text-destructive">
-                    Please check the steps structure.
+                    {t("content.tutorialForm.stepsError")}
                   </p>
                 )}
                 {isLoadingResources && (
@@ -960,12 +983,17 @@ export function CreateTutorialForm() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>
-              {isEditMode ? "Update tutorial" : "Create tutorial"}
+              {isEditMode
+                ? t("content.tutorialForm.updateTitle")
+                : t("content.tutorialForm.createTitle")}
             </CardTitle>
             <CardDescription>
               {isEditMode
-                ? "Update the details, price, course, and linked resources."
-                : `Upload your ${TUTORIAL_ALLOWED_FILE_TYPE_COPY} video lesson. Linked resources must use the same major and course.`}
+                ? t("content.tutorialForm.updateDescription")
+                : t("content.tutorialForm.createDescription").replace(
+                    "{types}",
+                    TUTORIAL_ALLOWED_FILE_TYPE_COPY
+                  )}
             </CardDescription>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -973,7 +1001,7 @@ export function CreateTutorialForm() {
               htmlFor="tutorial-mode-switch"
               className="text-sm text-muted-foreground"
             >
-              Advanced
+              {t("content.tutorialForm.advancedLabel")}
             </Label>
             <Switch
               id="tutorial-mode-switch"
@@ -992,20 +1020,20 @@ export function CreateTutorialForm() {
             <div className="space-y-10">
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Details
+                  {t("content.tutorialForm.detailsSection")}
                 </h3>
                 {metadataSection}
               </div>
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Video
+                  {t("content.tutorialForm.videoSection")}
                 </h3>
                 {mediaSection}
               </div>
               <Separator />
               <div>
                 <h3 className="mb-4 text-lg font-semibold tracking-tight">
-                  Course & resources
+                  {t("content.tutorialForm.courseResourcesSection")}
                 </h3>
                 {packagingSection}
               </div>
@@ -1019,13 +1047,13 @@ export function CreateTutorialForm() {
             >
               <TabsList className="mb-8 grid w-full grid-cols-3 rounded-xl bg-muted/50 p-1">
                 <TabsTrigger value="metadata" className="rounded-lg">
-                  Details
+                  {t("content.tutorialForm.detailsSection")}
                 </TabsTrigger>
                 <TabsTrigger value="media" className="rounded-lg">
-                  Video
+                  {t("content.tutorialForm.videoSection")}
                 </TabsTrigger>
                 <TabsTrigger value="packaging" className="rounded-lg">
-                  Course & resources
+                  {t("content.tutorialForm.courseResourcesSection")}
                 </TabsTrigger>
               </TabsList>
 
@@ -1062,25 +1090,31 @@ export function CreateTutorialForm() {
             )}
             {isEditMode
               ? isUpdating
-                ? "Updating tutorial..."
-                : "Update tutorial"
+                ? t("content.tutorialForm.updatingAction")
+                : t("content.tutorialForm.updateAction")
               : isLoading
-                ? "Getting upload ready..."
-                : "Create tutorial and upload"}
+                ? t("content.tutorialForm.preparingUploadAction")
+                : t("content.tutorialForm.createAndUploadAction")}
           </Button>
           <ConfirmDialog
             open={confirmOpen}
             onOpenChange={setConfirmOpen}
             variant={isEditMode ? "warning" : "confirm"}
             title={
-              isEditMode ? "Update this tutorial?" : "Create this tutorial?"
+              isEditMode
+                ? t("content.tutorialForm.confirmUpdateTitle")
+                : t("content.tutorialForm.confirmCreateTitle")
             }
             description={
               isEditMode
-                ? "Your tutorial changes and linked resources will be saved."
-                : "Your tutorial will be created and the selected video will start uploading."
+                ? t("content.tutorialForm.confirmUpdateDescription")
+                : t("content.tutorialForm.confirmCreateDescription")
             }
-            confirmLabel={isEditMode ? "Update tutorial" : "Create tutorial"}
+            confirmLabel={
+              isEditMode
+                ? t("content.tutorialForm.updateAction")
+                : t("content.tutorialForm.createAction")
+            }
             loading={isLoading || isUpdating}
             onConfirm={async () => {
               if (!pendingSubmitData) {

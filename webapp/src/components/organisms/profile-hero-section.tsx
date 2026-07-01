@@ -1,4 +1,4 @@
-import { Bell, Mail, Wallet } from "lucide-react"
+import { Bell, Mail, VerifiedIcon, Wallet } from "lucide-react"
 
 import { UserAvatar } from "@/components/atoms/user-avatar"
 import { Button } from "@/components/ui/button"
@@ -51,14 +51,14 @@ export function ProfileHeroSection({
             <div className="relative">
               <div>
                 <UserAvatar
-                  className="size-32 border-2 border-border md:size-40"
+                  className="size-14 border-2 border-border md:size-16"
                   src={me?.profile?.avatarUrl}
                   name={profileName}
                 />
               </div>
               {isAuthVerified(authVerification) ? (
-                <span className="text-2xs absolute right-2 bottom-2 rounded-full bg-primary px-2 py-1 font-bold text-primary-foreground">
-                  Đã xác minh
+                <span className="absolute right-0 bottom-0 rounded-full bg-primary text-primary-foreground">
+                  <VerifiedIcon size={18} />
                 </span>
               ) : null}
             </div>
@@ -67,12 +67,14 @@ export function ProfileHeroSection({
               <p className="text-xs font-semibold tracking-wide text-primary uppercase">
                 {seoBadge}
               </p>
-              <h1 className="text-3xl font-extrabold tracking-tight text-foreground md:text-5xl">
+              <h1 className="text-xl font-extrabold tracking-tight text-foreground md:text-2xl">
                 {profileName}
               </h1>
-              <p className="font-semibold text-primary">
-                {me?.profile?.career?.name || "Chưa cập nhật định hướng"}
-              </p>
+              {me?.profile?.career?.name && (
+                <p className="text-sm font-semibold text-primary">
+                  {me?.profile?.career?.name}
+                </p>
+              )}
             </div>
           </div>
 

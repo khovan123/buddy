@@ -30,6 +30,8 @@ npm run dev
 - Redis
 - Qdrant
 
+If `npm run dev:infra` fails immediately with a port-conflict message, another local container is already publishing one of Buddy's required ports. The most common case is PostgreSQL on `localhost:5432`; stop the conflicting container before rerunning the command.
+
 `docker-compose.yml` cung co Prometheus, Grafana, Jaeger cho local observability.
 
 ## Local Infrastructure

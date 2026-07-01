@@ -34,6 +34,7 @@ type ExploreModeSwitcherProps = {
   collections: ExploreCollection[]
   resources: ResourceCardData[]
   tutorials: TutorialCardData[]
+  isFiltered?: boolean
 }
 
 type ExploreMode = "resources" | "tutorials"
@@ -53,6 +54,7 @@ export function ExploreModeSwitcher({
   collections,
   resources,
   tutorials,
+  isFiltered = false,
 }: ExploreModeSwitcherProps) {
   const { t } = useI18n()
   const pathname = usePathname()
@@ -138,29 +140,55 @@ export function ExploreModeSwitcher({
     () => collections.filter((collection) => collection.mode === mode),
     [collections, mode]
   )
+  const sharedSearchParams = useMemo(() => {
+    const nextSearchParams = new URLSearchParams(searchParams.toString())
+    nextSearchParams.delete("mode")
+    nextSearchParams.delete("restore")
+    return nextSearchParams.toString()
+  }, [searchParams])
+  const buildHref = (basePath: string) =>
+    sharedSearchParams ? `${basePath}?${sharedSearchParams}` : basePath
   const topCollectionsTitle =
-    mode === "resources"
+    isFiltered
+      ? mode === "resources"
+        ? t("explore.list.allCollections")
+        : t("explore.list.allTutorialCollections")
+      : mode === "resources"
       ? t("explore.switcher.resourceCollectionsTitle")
       : t("explore.switcher.tutorialCollectionsTitle")
   const topCollectionsDescription =
-    mode === "resources"
+    isFiltered
+      ? mode === "resources"
+        ? t("explore.list.allResourceCollectionsDescription")
+        : t("explore.list.allTutorialCollectionsDescription")
+      : mode === "resources"
       ? t("explore.switcher.resourceCollectionsDescription")
       : t("explore.switcher.tutorialCollectionsDescription")
   const topTitle =
-    mode === "resources"
+    isFiltered
+      ? mode === "resources"
+        ? t("explore.list.allResources")
+        : t("explore.list.allTutorials")
+      : mode === "resources"
       ? t("explore.switcher.resourceTitle")
       : t("explore.switcher.tutorialTitle")
   const topDescription =
-    mode === "resources"
+    isFiltered
+      ? mode === "resources"
+        ? t("explore.list.allResourcesDescription")
+        : t("explore.list.allTutorialsDescription")
+      : mode === "resources"
       ? t("explore.switcher.resourceDescription")
       : t("explore.switcher.tutorialDescription")
 
   const collectionsHref =
     mode === "resources"
-      ? "/explore/resources/collections"
-      : "/explore/tutorials/collections"
+      ? buildHref("/explore/resources/collections")
+      : buildHref("/explore/tutorials/collections")
   const contentHref =
-    mode === "resources" ? "/explore/resources" : "/explore/tutorials"
+    mode === "resources"
+      ? buildHref("/explore/resources")
+      : buildHref("/explore/tutorials")
 
   return (
     <div className="space-y-12">
@@ -244,13 +272,20 @@ export function ExploreModeSwitcher({
             className="grid auto-rows-fr items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3"
             staggerDelay={0.1}
           >
-            {filteredCollections.map((collection) => (
-              <CollectionCard
-                key={collection.title}
-                collection={collection}
-                onClick={rememberExploreState}
-              />
-            ))}
+            {filteredCollections.length > 0 ? (
+              filteredCollections.map((collection) => (
+                <CollectionCard
+                  key={collection.title}
+                  collection={collection}
+                  onClick={rememberExploreState}
+                />
+              ))
+            ) : (
+              <div className="col-span-full rounded-2xl border border-dashed border-border/70 bg-background/40 px-6 py-10 text-center text-sm text-muted-foreground">
+                <p className="font-medium">{t("library.browser.noResults")}</p>
+                <p className="mt-2">{t("library.browser.noResultsDescription")}</p>
+              </div>
+            )}
           </MotionStagger>
 
           <div className="flex justify-center md:hidden">
@@ -307,21 +342,35 @@ export function ExploreModeSwitcher({
             className="grid auto-rows-fr items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3"
             staggerDelay={0.08}
           >
-            {mode === "resources"
-              ? resources.map((resource) => (
+            {mode === "resources" ? (
+              resources.length > 0 ? (
+                resources.map((resource) => (
                   <ResourceCard
                     key={resource.title}
                     resource={resource}
                     onClick={rememberExploreState}
                   />
                 ))
-              : tutorials.map((tutorial) => (
-                  <TutorialCard
-                    key={tutorial.title}
-                    tutorial={tutorial}
-                    onClick={rememberExploreState}
-                  />
-                ))}
+              ) : (
+                <div className="col-span-full rounded-2xl border border-dashed border-border/70 bg-background/40 px-6 py-10 text-center text-sm text-muted-foreground">
+                  <p className="font-medium">{t("library.browser.noResults")}</p>
+                  <p className="mt-2">{t("library.browser.noResultsDescription")}</p>
+                </div>
+              )
+            ) : tutorials.length > 0 ? (
+              tutorials.map((tutorial) => (
+                <TutorialCard
+                  key={tutorial.title}
+                  tutorial={tutorial}
+                  onClick={rememberExploreState}
+                />
+              ))
+            ) : (
+              <div className="col-span-full rounded-2xl border border-dashed border-border/70 bg-background/40 px-6 py-10 text-center text-sm text-muted-foreground">
+                <p className="font-medium">{t("library.browser.noResults")}</p>
+                <p className="mt-2">{t("library.browser.noResultsDescription")}</p>
+              </div>
+            )}
           </MotionStagger>
 
           <div className="flex justify-center md:hidden">

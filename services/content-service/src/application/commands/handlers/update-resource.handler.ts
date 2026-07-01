@@ -5,6 +5,7 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import type { IResourceRepository } from '../../../domain/repositories/resource.repository.interface';
 import { RESOURCE_REPOSITORY } from '../../../domain/repositories/tokens';
 import { StorageBrokerPublisher } from '../../../infrastructure/messaging/publishers/storage-broker.rpc';
+import { ResourceStatus } from '../../../infrastructure/persistence/mongo/schemas/resource.schema';
 import { UpdateResourceCommand } from '../update-resource.command';
 
 @CommandHandler(UpdateResourceCommand)
@@ -23,6 +24,9 @@ export class UpdateResourceHandler implements ICommandHandler<UpdateResourceComm
     }
     if (resource.userId !== command.requesterId) {
       throw new ForbiddenException('You can only update your own resources');
+    }
+    if (resource.status === ResourceStatus.AVAILABLE) {
+      throw new ForbiddenException('Available resources cannot be edited');
     }
 
     await this.resourceRepository.updateDetails(command.resourceId, {

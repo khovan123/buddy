@@ -13,6 +13,7 @@ import type {
   InteractionStats,
 } from "@/features/interaction"
 import type { WithSkeletonLinkProps } from "@/hoc/with-skeleton-link"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 
 import type { CardPriceData } from "./card-price"
@@ -56,16 +57,16 @@ function buildCheckoutHref(
   return `${href}${separator}checkout=resume&itemType=${encodeURIComponent(itemType)}&itemId=${encodeURIComponent(itemId)}`
 }
 
-function getBuyLabel(price?: string) {
+function getBuyLabel(price: string | undefined, t: (key: "billing.purchase.learnNow" | "billing.purchase.seePreview") => string) {
   const normalized = price?.trim().toLowerCase()
   if (!normalized || normalized === "free") {
-    return "Learn now"
+    return t("billing.purchase.learnNow")
   }
 
   const numericPrice = Number(normalized.replace(/[^\d.-]/g, ""))
   return Number.isFinite(numericPrice) && numericPrice > 0
-    ? "See preview"
-    : "Learn now"
+    ? t("billing.purchase.seePreview")
+    : t("billing.purchase.learnNow")
 }
 
 function isPaid(price?: string) {
@@ -82,6 +83,7 @@ function TutorialCardInner({
   tutorial,
   imageSizes = "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw",
 }: TutorialCardInnerProps) {
+  const { t } = useI18n()
   const ratingNum = Number(tutorial?.rating || 0)
   const checkoutHref =
     tutorial?.href && tutorial.purchaseType
@@ -136,8 +138,8 @@ function TutorialCardInner({
 
         <p className="line-clamp-1 text-xs text-muted-foreground">
           {paid
-            ? "Preview first · Full lesson after purchase"
-            : "Free to learn · Start anytime"}
+            ? t("card.tutorial.paidHint")
+            : t("card.tutorial.freeHint")}
         </p>
 
         <div className="text-3xs flex items-center gap-1 text-muted-foreground">
@@ -174,7 +176,7 @@ function TutorialCardInner({
               itemType={tutorial.interactionType}
               initialStats={tutorial.initialStats}
               buyHref={checkoutHref}
-              buyLabel={getBuyLabel(tutorial.pricing?.finalPrice ?? tutorial.price)}
+              buyLabel={getBuyLabel(tutorial.pricing?.finalPrice ?? tutorial.price, t)}
               compact
             />
           ) : (

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 
+import { usePathname } from "next/navigation"
 import { signIn } from "next-auth/react"
 
 import { Loader2 } from "lucide-react"
@@ -58,15 +59,25 @@ const providers: {
 ]
 
 export function OAuthButtons({ callbackUrl = "/home" }: OAuthButtonsProps) {
+  const pathname = usePathname()
   const [loadingProvider, setLoadingProvider] = useState<OAuthProvider | null>(
     null
   )
+
+  const allowOnboarding =
+    pathname === "/login" ||
+    pathname === "/sign-up" ||
+    pathname === "/forgot-password" ||
+    pathname === "/otp" ||
+    pathname.startsWith("/auth/")
 
   const handleOAuth = async (provider: OAuthProvider) => {
     setLoadingProvider(provider)
     try {
       await signIn(provider, {
-        callbackUrl: `/auth/post-login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        callbackUrl: `/auth/post-login?callbackUrl=${encodeURIComponent(callbackUrl)}${
+          allowOnboarding ? "&allowOnboarding=1" : ""
+        }`,
       })
     } catch {
       setLoadingProvider(null)

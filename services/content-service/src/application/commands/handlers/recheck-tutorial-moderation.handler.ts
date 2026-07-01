@@ -4,7 +4,10 @@ import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 
 import type { ITutorialRepository } from '../../../domain/repositories/tutorial.repository.interface';
 import { TUTORIAL_REPOSITORY } from '../../../domain/repositories/tokens';
-import { ContentModerationStatus } from '../../../infrastructure/persistence/mongo/schemas/tutorial.schema';
+import {
+  ContentModerationStatus,
+  TutorialStatus,
+} from '../../../infrastructure/persistence/mongo/schemas/tutorial.schema';
 import { ContentModerationNotificationPublisher } from '../../../infrastructure/messaging/publishers/content-moderation-notification.publisher';
 import { RecommendationSyncPublisher } from '../../../infrastructure/messaging/publishers/recommendation-sync.publisher';
 import { RecheckTutorialModerationCommand } from '../recheck-tutorial-moderation.command';
@@ -26,6 +29,9 @@ export class RecheckTutorialModerationHandler implements ICommandHandler<Recheck
     }
     if (tutorial.userId !== command.requesterId) {
       throw new ForbiddenException('You can only recheck your own tutorials');
+    }
+    if (tutorial.status === TutorialStatus.AVAILABLE) {
+      throw new ForbiddenException('Available tutorials cannot be rechecked');
     }
 
     await this.tutorialRepository.applyModerationResult(tutorial.id, {

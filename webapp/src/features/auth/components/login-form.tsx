@@ -88,7 +88,7 @@ export function LoginForm() {
             new URL(globalThis.location.href).searchParams.get("callbackUrl") ||
             "/home"
           router.push(
-            `/auth/post-login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+            `/auth/post-login?callbackUrl=${encodeURIComponent(callbackUrl)}&allowOnboarding=1`
           )
         }
         router.refresh()

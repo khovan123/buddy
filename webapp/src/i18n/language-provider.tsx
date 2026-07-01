@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -9,6 +10,8 @@ import {
   useState,
   type ReactNode,
 } from "react"
+
+import { useRouter } from "next/navigation"
 
 import {
   createTranslator,
@@ -20,7 +23,7 @@ import {
 interface LanguageContextValue {
   locale: Locale
   setLocale: (locale: Locale) => void
-  t: (key: TranslationKey) => string
+  t: (key: TranslationKey, params?: Record<string, string>) => string
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null)
@@ -40,6 +43,7 @@ function readInitialLocale() {
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
+  const router = useRouter()
   const [locale, setLocaleState] = useState<Locale>(readInitialLocale)
 
   const setLocale = useCallback((nextLocale: Locale) => {
@@ -47,7 +51,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     globalThis.localStorage?.setItem("buddy_locale", nextLocale)
     document.cookie = `buddy_locale=${nextLocale}; path=/; max-age=31536000; samesite=lax`
     document.documentElement.lang = nextLocale
-  }, [])
+    startTransition(() => {
+      router.refresh()
+    })
+  }, [router])
 
   useEffect(() => {
     document.documentElement.lang = locale

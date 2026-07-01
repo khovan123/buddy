@@ -216,7 +216,7 @@ export default async function LibraryTutorialDetailPage({
                           <span className="font-semibold">{fileSize}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">{copy.status}</span>
+                          <span className="text-muted-foreground">{t("common.status")}</span>
                           <Badge
                             variant="secondary"
                             className="border-none bg-primary/10 text-primary shadow-sm"

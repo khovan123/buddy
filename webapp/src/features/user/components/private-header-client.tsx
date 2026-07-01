@@ -6,7 +6,6 @@ import type { NavigationItem } from "@/components/atoms/nav-dropdown-item"
 import { CreateContentCTA } from "@/components/molecules/create-content-cta"
 import { LanguageSwitcher } from "@/components/molecules/language-switcher"
 import { Navigation } from "@/components/organisms/navigation"
-import { useGetSubscriptionQuery } from "@/features/billing/services/billing-api"
 import { HeaderWalletPopover } from "@/features/user/components/header-wallet-popover"
 import { Notifications } from "@/features/user/components/notifications"
 import { PlanSelectorDialog } from "@/features/user/components/plan-selector-dialog"
@@ -40,16 +39,11 @@ interface PrivateHeaderProps {
  */
 export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
-  const { data: subscriptionData } = useGetSubscriptionQuery()
   const { t } = useI18n()
 
   const openProfileDialog = () => setProfileDialogOpen(true)
   const isAdmin = isAdminAccess(accountFallback)
-  const isCreator = isCreatorAccess({
-    ...accountFallback,
-    subscriptionPlan:
-      subscriptionData?.data?.plan ?? accountFallback?.subscriptionPlan,
-  })
+  const isCreator = isCreatorAccess(accountFallback)
   const navigationItems = useMemo(() => {
     const baseNavItems: NavigationItem[] = [
       { href: "/home", label: t("nav.home") },

@@ -14,18 +14,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { useI18n } from "@/i18n/language-provider"
 
 type Crumb = {
   label: string
   href?: string
   icon?: ReactNode
-}
-
-const SEGMENT_LABELS: Record<string, string> = {
-  explore: "Explore",
-  resources: "Resources",
-  tutorials: "Tutorials",
-  collections: "Collections",
 }
 
 function toTitleCaseFromSlug(value: string): string {
@@ -36,7 +30,10 @@ function toTitleCaseFromSlug(value: string): string {
     .join(" ")
 }
 
-function buildCrumbs(pathname: string): Crumb[] {
+function buildCrumbs(
+  pathname: string,
+  labels: Record<string, string>
+): Crumb[] {
   const segments = pathname.split("/").filter(Boolean).map(decodeURIComponent)
 
   if (segments[0] !== "explore") {
@@ -45,7 +42,7 @@ function buildCrumbs(pathname: string): Crumb[] {
 
   const crumbs: Crumb[] = [
     {
-      label: "Explore",
+      label: labels.explore,
       href: "/explore",
     },
   ]
@@ -53,7 +50,7 @@ function buildCrumbs(pathname: string): Crumb[] {
   for (let index = 1; index < segments.length; index++) {
     const segment = segments[index]
     const isLastSegment = index === segments.length - 1
-    const label = SEGMENT_LABELS[segment] ?? toTitleCaseFromSlug(segment)
+    const label = labels[segment] ?? toTitleCaseFromSlug(segment)
 
     let href: string | undefined = isLastSegment
       ? undefined
@@ -70,8 +67,14 @@ function buildCrumbs(pathname: string): Crumb[] {
 }
 
 export function ExploreBreadcrumb() {
+  const { t } = useI18n()
   const pathname = usePathname()
-  const crumbs = buildCrumbs(pathname)
+  const crumbs = buildCrumbs(pathname, {
+    explore: t("nav.explore"),
+    resources: t("content.resources"),
+    tutorials: t("content.tutorials"),
+    collections: t("content.collections"),
+  })
 
   if (crumbs.length === 0) {
     return null

@@ -6,6 +6,7 @@ import { ArrowUpRight, BookOpenCheck, Sparkles } from "lucide-react"
 
 import { MetaChip } from "@/components/atoms/meta-chip"
 import { Button } from "@/components/ui/button"
+import { useI18n } from "@/i18n/language-provider"
 
 import { LearningCardShell, LearningOrbit } from "./learning-card-shell"
 
@@ -22,6 +23,8 @@ export function FeatureCard({
   href,
   chip,
 }: FeatureCardProps) {
+  const { t } = useI18n()
+
   return (
     <LearningCardShell className="group/feature min-h-[17rem] p-5">
       <div className="relative z-10 mb-6 flex items-start justify-between gap-4">
@@ -63,7 +66,7 @@ export function FeatureCard({
         className="relative z-10 mt-auto w-fit rounded-full pr-2 transition group-hover/feature:border-primary/30 group-hover/feature:bg-primary/8"
       >
         <Link href={href}>
-          Discover now
+          {t("common.discoverNow")}
           <ArrowUpRight className="size-4 transition group-hover/feature:translate-x-0.5 group-hover/feature:-translate-y-0.5" />
         </Link>
       </Button>

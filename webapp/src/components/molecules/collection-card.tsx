@@ -14,6 +14,7 @@ import type {
   InteractionStats,
 } from "@/features/interaction"
 import type { WithSkeletonLinkProps } from "@/hoc/with-skeleton-link"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 
 import type { CardPriceData } from "./card-price"
@@ -56,16 +57,16 @@ function buildCheckoutHref(
   return `${href}${separator}checkout=resume&itemType=${encodeURIComponent(itemType)}&itemId=${encodeURIComponent(itemId)}`
 }
 
-function getBuyLabel(price?: string) {
+function getBuyLabel(price: string | undefined, t: (key: "billing.purchase.learnNow" | "billing.purchase.seePreview") => string) {
   const normalized = price?.trim().toLowerCase()
   if (!normalized || normalized === "free") {
-    return "Learn now"
+    return t("billing.purchase.learnNow")
   }
 
   const numericPrice = Number(normalized.replace(/[^\d.-]/g, ""))
   return Number.isFinite(numericPrice) && numericPrice > 0
-    ? "See preview"
-    : "Learn now"
+    ? t("billing.purchase.seePreview")
+    : t("billing.purchase.learnNow")
 }
 
 function isPaid(price?: string) {
@@ -82,6 +83,7 @@ function CollectionCardInner({
   collection,
   imageSizes = "(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw",
 }: CollectionCardInnerProps) {
+  const { t } = useI18n()
   const ratingNum = Number(collection?.rating || 0)
   const checkoutHref =
     collection?.href && collection.purchaseType
@@ -142,8 +144,8 @@ function CollectionCardInner({
 
         <p className="line-clamp-1 text-xs text-muted-foreground">
           {paid
-            ? "Preview first · Full collection after purchase"
-            : "Free to learn · Open anytime"}
+            ? t("card.collection.paidHint")
+            : t("card.collection.freeHint")}
         </p>
 
         <div className="mt-1 flex items-center gap-1.5">
@@ -184,7 +186,7 @@ function CollectionCardInner({
               itemType={collection.interactionType}
               initialStats={collection.initialStats}
               buyHref={checkoutHref}
-              buyLabel={getBuyLabel(collection.pricing?.finalPrice ?? collection.price)}
+              buyLabel={getBuyLabel(collection.pricing?.finalPrice ?? collection.price, t)}
               compact
             />
           ) : null}

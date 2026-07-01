@@ -7,15 +7,10 @@ import {
   type ProfileItem,
 } from "@/components/molecules/profile-card"
 import { Button } from "@/components/ui/button"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 
 type ProfileTab = "tutorials" | "resources" | "collections"
-
-const TABS: { key: ProfileTab; label: string }[] = [
-  { key: "tutorials", label: "Published Tutorials" },
-  { key: "resources", label: "Published Resources" },
-  { key: "collections", label: "Collections" },
-]
 
 type FetchTabResult = { items: ProfileItem[]; total: number }
 
@@ -33,10 +28,25 @@ export function ProfilePublishedSection({
   initialCounts,
   fetchTab,
 }: ProfilePublishedSectionProps) {
+  const { t } = useI18n()
   const [active, setActive] = useState<ProfileTab>("tutorials")
   const [items, setItems] = useState<ProfileItem[]>(initialItems)
   const [counts, setCounts] = useState(initialCounts)
   const [isPending, startTransition] = useTransition()
+  const tabs: { key: ProfileTab; label: string }[] = [
+    {
+      key: "tutorials",
+      label: t("profile.published.tutorials"),
+    },
+    {
+      key: "resources",
+      label: t("profile.published.resources"),
+    },
+    {
+      key: "collections",
+      label: t("profile.published.collections"),
+    },
+  ]
 
   const switchTab = useCallback(
     (tab: ProfileTab) => {
@@ -65,7 +75,7 @@ export function ProfilePublishedSection({
   return (
     <section className="space-y-8">
       <div className="flex flex-wrap items-center gap-6 border-b border-border pb-4">
-        {TABS.map(({ key, label }) => (
+        {tabs.map(({ key, label }) => (
           <Button
             key={key}
             variant="link"
@@ -102,7 +112,11 @@ export function ProfilePublishedSection({
         ))}
         {items.length === 0 && !isPending && (
           <p className="col-span-full py-12 text-center text-sm text-muted-foreground">
-            No {active} published yet.
+            {t("profile.published.empty").replace(
+              "{type}",
+              tabs.find((tab) => tab.key === active)?.label.toLowerCase() ??
+                active
+            )}
           </p>
         )}
       </div>
@@ -113,7 +127,10 @@ export function ProfilePublishedSection({
             variant="secondary"
             className="rounded-full px-8 font-semibold"
           >
-            View More {TABS.find((t) => t.key === active)?.label}
+            {t("profile.published.viewMore").replace(
+              "{type}",
+              tabs.find((tab) => tab.key === active)?.label ?? active
+            )}
           </Button>
         </div>
       )}

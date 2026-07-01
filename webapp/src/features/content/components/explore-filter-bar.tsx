@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useRef, useState } from "react"
+import { startTransition, useCallback, useMemo, useRef, useState } from "react"
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
@@ -32,6 +32,7 @@ interface ExploreFilterBarProps {
 }
 
 export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
+  const SEARCH_DEBOUNCE_MS = 30_000
   const { t } = useI18n()
   const copy = {
     semesters: [
@@ -58,6 +59,9 @@ export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
     verified: t("explore.filter.verified"),
     clear: t("explore.filter.clear"),
     searchPlaceholder: t("explore.filter.searchPlaceholder"),
+    searchTitle: t("explore.filter.searchTitle"),
+    searchHint: t("explore.filter.searchHint"),
+    searchAction: t("explore.filter.searchAction"),
   }
   const router = useRouter()
   const pathname = usePathname()
@@ -70,7 +74,10 @@ export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
   const verified = searchParams.get("verified") ?? ""
   const sort = searchParams.get("sort") ?? ""
 
-  const allMajorsOption = useMemo(() => ({ id: "", name: copy.allMajors }), [copy.allMajors])
+  const allMajorsOption = useMemo(
+    () => ({ id: "", name: copy.allMajors }),
+    [copy.allMajors]
+  )
   const allCoursesOption = useMemo(
     () => ({ id: "", name: copy.allCourses }),
     [copy.allCourses]
@@ -92,12 +99,29 @@ export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
 
   /** Local search text inside the combobox popover. */
   const [majorSearch, setMajorSearch] = useState("")
-  const searchDebounceRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
+  const searchDebounceRef = useRef<ReturnType<
+    typeof globalThis.setTimeout
+  > | null>(null)
 
   const selectedMajorName =
     majors.find((m) => m.id === majorId)?.name ?? copy.allMajors
   const selectedCourseName =
-    courseOptions.find((course) => course.id === courseId)?.name ?? copy.allCourses
+    courseOptions.find((course) => course.id === courseId)?.name ??
+    copy.allCourses
+
+  const navigateWithParams = useCallback(
+    (next: URLSearchParams) => {
+      next.delete("page")
+      const qs = next.toString()
+      const href = `${pathname}${qs ? `?${qs}` : ""}`
+
+      startTransition(() => {
+        router.replace(href, { scroll: false })
+        router.refresh()
+      })
+    },
+    [pathname, router]
+  )
 
   const updateParams = useCallback(
     (key: string, value: string) => {
@@ -107,12 +131,9 @@ export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
       } else {
         next.delete(key)
       }
-      // Always reset page to 1 when filters change
-      next.delete("page")
-      const qs = next.toString()
-      router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
+      navigateWithParams(next)
     },
-    [router, pathname, searchParams]
+    [navigateWithParams, searchParams]
   )
 
   const handleSearch = useCallback(
@@ -146,18 +167,14 @@ export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
               next.set("semester", val)
             }
             next.delete("courseId")
-            next.delete("page")
-            const qs = next.toString()
-            router.replace(`${pathname}${qs ? `?${qs}` : ""}`, {
-              scroll: false,
-            })
+            navigateWithParams(next)
           }}
         >
           <SelectTrigger
             size="sm"
             className="h-8 w-auto min-w-36 gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 text-xs font-medium shadow-xs backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-card/80 focus-visible:border-primary/40 focus-visible:bg-card/80"
           >
-              <SelectValue placeholder={copy.semesters[0].label} />
+            <SelectValue placeholder={copy.semesters[0].label} />
           </SelectTrigger>
           <SelectContent position="popper" className="rounded-xl">
             <SelectGroup>
@@ -185,11 +202,7 @@ export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
               next.delete("majorId")
             }
             next.delete("courseId")
-            next.delete("page")
-            const qs = next.toString()
-            router.replace(`${pathname}${qs ? `?${qs}` : ""}`, {
-              scroll: false,
-            })
+            navigateWithParams(next)
             setMajorSearch("")
           }}
           inputValue={majorSearch}
@@ -263,14 +276,16 @@ export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
                   value={course.id || "all"}
                   className="rounded-lg text-xs"
                 >
-                  {"code" in course ? `${course.code} · ${course.name}` : course.name}
+                  {"code" in course
+                    ? `${course.code} · ${course.name}`
+                    : course.name}
                 </SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>
         </Select>
 
-        <Select
+        {/* <Select
           value={verified || "all"}
           onValueChange={(val) =>
             updateParams("verified", val === "all" ? "" : val)
@@ -292,7 +307,7 @@ export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
               </SelectItem>
             </SelectGroup>
           </SelectContent>
-        </Select>
+        </Select> */}
 
         <Select
           value={sort || "newest"}
@@ -328,7 +343,10 @@ export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
             size="sm"
             className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
             onClick={() => {
-              router.replace(pathname, { scroll: false })
+              startTransition(() => {
+                router.replace(pathname, { scroll: false })
+                router.refresh()
+              })
             }}
           >
             <X className="size-3" />
@@ -337,28 +355,42 @@ export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
         ) : null}
       </div>
 
-      {/* ── Search (compact) ── */}
-      <form
-        key={search}
-        onSubmit={handleSearch}
-        className="relative w-full sm:max-w-56"
-      >
-        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
-        <Input
-          name="search"
-          defaultValue={search}
-          onChange={(e) => {
-            if (searchDebounceRef.current) {
-              globalThis.clearTimeout(searchDebounceRef.current)
-            }
-            const value = e.target.value
-            searchDebounceRef.current = globalThis.setTimeout(() => {
-              updateParams("search", value.trim())
-            }, 300)
-          }}
-          placeholder={copy.searchPlaceholder}
-          className="h-8 rounded-lg border-border/60 bg-card/50 pl-8 text-xs shadow-xs backdrop-blur-sm placeholder:text-muted-foreground/50"
-        />
+      {/* ── Search ── */}
+      <form key={search} onSubmit={handleSearch} className="w-full sm:max-w-md">
+        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-linear-to-br from-primary/10 via-card/95 to-accent/8 p-3 shadow-[0_18px_50px_-28px_color-mix(in_oklch,var(--primary)_45%,transparent)] backdrop-blur-xl">
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-28 bg-linear-to-l from-primary/8 to-transparent" />
+          <div className="relative space-y-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative flex-1">
+                {/* <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-primary/70" /> */}
+                <Input
+                  name="search"
+                  defaultValue={search}
+                  onChange={(e) => {
+                    if (searchDebounceRef.current) {
+                      globalThis.clearTimeout(searchDebounceRef.current)
+                    }
+                    const value = e.target.value
+                    searchDebounceRef.current = globalThis.setTimeout(() => {
+                      updateParams("search", value.trim())
+                    }, SEARCH_DEBOUNCE_MS)
+                  }}
+                  placeholder={copy.searchPlaceholder}
+                  className="h-11 rounded-xl border-primary/15 bg-background/88 text-sm shadow-[inset_0_1px_0_color-mix(in_oklch,var(--background)_80%,transparent)] placeholder:text-muted-foreground/55 focus-visible:border-primary/35 focus-visible:ring-primary/15"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                size="lg"
+                className="rounded-xl px-5 shadow-[0_14px_32px_-20px_color-mix(in_oklch,var(--primary)_75%,transparent)]"
+              >
+                <Search className="size-4" />
+                {copy.searchAction}
+              </Button>
+            </div>
+          </div>
+        </div>
       </form>
     </div>
   )

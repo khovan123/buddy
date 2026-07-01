@@ -62,15 +62,22 @@ export function getIntroNav(locale?: Locale | string | null) {
   const t = createTranslator(normalizeLocale(locale))
 
   return {
-    navItems: navItemConfig.map((item) => ({
-      ...item,
-      label: t(item.label),
-      dropdown: item.dropdown?.map((entry) => ({
-        ...entry,
-        label: t(entry.label),
-        description: entry.description ? t(entry.description) : undefined,
-      })),
-    })),
+    navItems: navItemConfig.map((item) =>
+      item.dropdown
+        ? {
+            ...item,
+            label: t(item.label),
+            dropdown: item.dropdown.map((entry) => ({
+              ...entry,
+              label: t(entry.label),
+              description: entry.description ? t(entry.description) : undefined,
+            })),
+          }
+        : {
+            ...item,
+            label: t(item.label),
+          }
+    ),
     navActions: navActionConfig.map((action) => ({
       ...action,
       label: t(action.label),

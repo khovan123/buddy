@@ -5,6 +5,8 @@ import Image from "next/image"
 import { Skeleton } from "boneyard-js/react"
 import { BookOpen, FileText, Star } from "lucide-react"
 
+import { useI18n } from "@/i18n/language-provider"
+
 import { LearningCardShell, LearningOrbit } from "./learning-card-shell"
 
 export type ProfileItem = {
@@ -27,6 +29,10 @@ export function ProfileCard({
   item,
   isLoading = false,
 }: ProfileItemCardProps) {
+  const { t } = useI18n()
+  const priceLabel =
+    item?.price?.trim().toLowerCase() === "free" ? t("common.free") : item?.price
+
   return (
     <Skeleton
       name="profile-item-card"
@@ -68,7 +74,7 @@ export function ProfileCard({
               </h4>
             </div>
             <span className="shrink-0 rounded-2xl border border-border/70 bg-background/58 px-3 py-2 text-lg font-black text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-              {item?.price || "—"}
+              {priceLabel || "—"}
             </span>
           </div>
           <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">
