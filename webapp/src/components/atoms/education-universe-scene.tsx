@@ -49,7 +49,12 @@ function createAtom(material: THREE.Material, coreMaterial: THREE.Material) {
   secondRing.rotation.x = Math.PI / 2
   thirdRing.rotation.y = Math.PI / 2
 
-  atom.add(firstRing, secondRing, thirdRing, new THREE.Mesh(coreGeometry, coreMaterial))
+  atom.add(
+    firstRing,
+    secondRing,
+    thirdRing,
+    new THREE.Mesh(coreGeometry, coreMaterial)
+  )
   return atom
 }
 
@@ -176,7 +181,10 @@ export default function EducationUniverseScene({
       positions[index * 3 + 2] = (seededPosition(index, 4.2) - 0.5) * 7 - 1
     }
     const particleGeometry = new THREE.BufferGeometry()
-    particleGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3))
+    particleGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(positions, 3)
+    )
     const particleMaterial = new THREE.PointsMaterial({
       color: 0xa9fff2,
       opacity: variant === "ambient" ? 0.18 : 0.42,
@@ -235,12 +243,12 @@ export default function EducationUniverseScene({
       atom.rotation.z = elapsed * 0.18 * motionScale
       codeBlock.position.y =
         -1.65 + Math.cos(elapsed * 0.54) * 0.12 * motionScale
-      codeBlock.rotation.y = -0.45 + Math.sin(elapsed * 0.3) * 0.15 * motionScale
+      codeBlock.rotation.y =
+        -0.45 + Math.sin(elapsed * 0.3) * 0.15 * motionScale
       moon.position.x = 0.35 + Math.cos(elapsed * 0.42) * 0.24 * motionScale
       particles.rotation.y = elapsed * 0.008 * motionScale
       camera.position.x += (pointer.x * 0.24 - camera.position.x) * 0.018
-      camera.position.y +=
-        (0.15 - pointer.y * 0.16 - camera.position.y) * 0.018
+      camera.position.y += (0.15 - pointer.y * 0.16 - camera.position.y) * 0.018
       camera.lookAt(0, 0, 0)
       renderer.render(scene, camera)
     })

@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useI18n } from "@/i18n/language-provider"
 
 type ExploreCollection = CollectionCardData & {
   mode: ExploreMode
@@ -53,6 +54,7 @@ export function ExploreModeSwitcher({
   resources,
   tutorials,
 }: ExploreModeSwitcherProps) {
+  const { t } = useI18n()
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -138,18 +140,20 @@ export function ExploreModeSwitcher({
   )
   const topCollectionsTitle =
     mode === "resources"
-      ? "Top Resource Collections"
-      : "Top Tutorial Collections"
+      ? t("explore.switcher.resourceCollectionsTitle")
+      : t("explore.switcher.tutorialCollectionsTitle")
   const topCollectionsDescription =
     mode === "resources"
-      ? "Curated resource packs for faster exam prep and subject mastery."
-      : "Curated tutorial tracks for guided learning and hands-on practice."
-
-  const topTitle = mode === "resources" ? "Top Resources" : "Top Tutorials"
+      ? t("explore.switcher.resourceCollectionsDescription")
+      : t("explore.switcher.tutorialCollectionsDescription")
+  const topTitle =
+    mode === "resources"
+      ? t("explore.switcher.resourceTitle")
+      : t("explore.switcher.tutorialTitle")
   const topDescription =
     mode === "resources"
-      ? "Most viewed and highly rated resources this week."
-      : "Most watched tutorials and learning sessions this week."
+      ? t("explore.switcher.resourceDescription")
+      : t("explore.switcher.tutorialDescription")
 
   const collectionsHref =
     mode === "resources"
@@ -167,16 +171,15 @@ export function ExploreModeSwitcher({
             <div className="space-y-2">
               <Badge
                 variant="outline"
-                className="text-2xs rounded-full border-primary/20 bg-primary/5 px-3 py-1 font-bold tracking-widest text-primary uppercase"
+                  className="text-2xs rounded-full border-primary/20 bg-primary/5 px-3 py-1 font-bold tracking-widest text-primary uppercase"
               >
-                Marketplace
+                  {t("explore.switcher.marketplace")}
               </Badge>
               <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                Overview
+                {t("explore.switcher.overview")}
               </h2>
               <p className="max-w-xl text-muted-foreground">
-                Switch between study resources and tutorial content without
-                leaving the marketplace.
+                {t("explore.switcher.overviewDescription")}
               </p>
             </div>
 
@@ -190,13 +193,13 @@ export function ExploreModeSwitcher({
                   value="resources"
                   className="rounded-full px-8 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                 >
-                  Resources
+                  {t("explore.switcher.resources")}
                 </TabsTrigger>
                 <TabsTrigger
                   value="tutorials"
                   className="rounded-full px-8 data-[state=active]:bg-background data-[state=active]:shadow-sm"
                 >
-                  Tutorials
+                  {t("explore.switcher.tutorials")}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -214,7 +217,7 @@ export function ExploreModeSwitcher({
                   variant="outline"
                   className="text-2xs rounded-full border-border/80 px-2 py-0.5 font-semibold tracking-widest text-muted-foreground uppercase"
                 >
-                  Curated
+                  {t("explore.switcher.curated")}
                 </Badge>
               </div>
               <h3 className="text-2xl font-bold tracking-tighter">
@@ -233,7 +236,7 @@ export function ExploreModeSwitcher({
               className="hidden rounded-full border-border/80 hover:bg-accent md:flex"
               onClick={rememberExploreState}
             >
-              <Link href={collectionsHref}>View All Collections</Link>
+              <Link href={collectionsHref}>{t("explore.switcher.viewCollections")}</Link>
             </Button>
           </div>
 
@@ -257,7 +260,7 @@ export function ExploreModeSwitcher({
               className="w-full rounded-full border-border/80"
               onClick={rememberExploreState}
             >
-              <Link href={collectionsHref}>Show More Results</Link>
+              <Link href={collectionsHref}>{t("explore.switcher.showMore")}</Link>
             </Button>
           </div>
         </section>
@@ -273,7 +276,7 @@ export function ExploreModeSwitcher({
                   variant="outline"
                   className="text-2xs rounded-full border-border/80 px-2 py-0.5 font-semibold tracking-widest text-muted-foreground uppercase"
                 >
-                  Popular
+                  {t("explore.switcher.popular")}
                 </Badge>
               </div>
               <h3 className="text-2xl font-bold tracking-tighter">
@@ -293,7 +296,9 @@ export function ExploreModeSwitcher({
               onClick={rememberExploreState}
             >
               <Link href={contentHref}>
-                View All {mode === "resources" ? "Resources" : "Tutorials"}
+                {mode === "resources"
+                  ? t("explore.switcher.viewAllResources")
+                  : t("explore.switcher.viewAllTutorials")}
               </Link>
             </Button>
           </div>
@@ -326,7 +331,7 @@ export function ExploreModeSwitcher({
               className="w-full rounded-full border-border/80"
               onClick={rememberExploreState}
             >
-              <Link href={contentHref}>Show More Results</Link>
+              <Link href={contentHref}>{t("explore.switcher.showMore")}</Link>
             </Button>
           </div>
         </section>

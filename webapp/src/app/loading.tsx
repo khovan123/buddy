@@ -8,10 +8,10 @@ export default function GlobalLoading() {
       </div>
       <div className="space-y-1 text-center">
         <h3 className="text-lg font-semibold tracking-tight text-foreground">
-          Loading
+          Đang tải
         </h3>
         <p className="text-sm text-muted-foreground animate-pulse">
-          Please wait a moment...
+          Vui lòng chờ trong giây lát...
         </p>
       </div>
     </div>

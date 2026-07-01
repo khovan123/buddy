@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { useI18n } from "@/i18n/language-provider"
 
 import { savePlanLimitsAction } from "../actions/plan-limits-actions"
 import type {
@@ -42,6 +43,8 @@ const LIMIT_FIELDS: Array<{
 ]
 
 export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
+  const { t } = useI18n()
+
   const initialValues = useMemo(
     () =>
       Object.fromEntries(plans.map((plan) => [plan.code, plan.limits])) as Record<
@@ -75,20 +78,22 @@ export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
       setSavingCode(null)
 
       if (result.ok) {
-        toast.success("Plan limits saved")
+        toast.success(t("dashboard.planLimits.saveSuccess"))
         return
       }
 
-      toast.error("Could not save plan limits")
+      toast.error(t("dashboard.planLimits.saveError"))
     })
   }
 
   if (plans.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center">
-        <h1 className="text-lg font-semibold">Plan limits</h1>
+        <h1 className="text-lg font-semibold">
+          {t("dashboard.planLimits.emptyTitle")}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          No subscription plans were returned by billing-service.
+          {t("dashboard.planLimits.emptyDescription")}
         </p>
       </div>
     )
@@ -97,9 +102,11 @@ export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
   return (
     <section className="space-y-4">
       <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold tracking-normal">Plan limits</h1>
+        <h1 className="text-xl font-semibold tracking-normal">
+          {t("dashboard.planLimits.title")}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Control the quantitative limits stored in the billing plan catalog.
+          {t("dashboard.planLimits.description")}
         </p>
       </div>
 
@@ -128,7 +135,7 @@ export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
                 </div>
                 <Button size="sm" type="submit" disabled={isSaving}>
                   <Save className="size-4" />
-                  Save
+                  {t("common.save")}
                 </Button>
               </div>
 
@@ -136,7 +143,7 @@ export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
                 {LIMIT_FIELDS.map((field) => (
                   <div key={field.key} className="space-y-1.5">
                     <Label htmlFor={`${plan.code}-${field.key}`}>
-                      {field.label}
+                      {t(`dashboard.planLimits.${field.key}` as const)}
                     </Label>
                     <Input
                       id={`${plan.code}-${field.key}`}
@@ -158,10 +165,10 @@ export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
                 <div className="flex min-h-16 items-center justify-between gap-3 rounded-md border px-3">
                   <div>
                     <Label htmlFor={`${plan.code}-canCreateContent`}>
-                      Create content
+                      {t("dashboard.planLimits.createContent")}
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Updates the catalog flag for creator access.
+                      {t("dashboard.planLimits.createContentHint")}
                     </p>
                   </div>
                   <Switch

@@ -19,40 +19,34 @@ import {
   SidebarMenuButton,
   SidebarMenuItem
 } from "@/components/ui/sidebar"
-
-const SETTINGS_NAV = [
-  {
-    label: "Billing",
-    items: [
-      {
-        title: "Overview",
-        href: "/settings/billing",
-        icon: Wallet,
-      },
-      {
-        title: "Transactions",
-        href: "/settings/billing/transactions",
-        icon: Receipt,
-      },
-      {
-        title: "Payout Account",
-        href: "/settings/billing/payout",
-        icon: CreditCard,
-      },
-    ],
-  },
-  // Extensible: add more groups here
-  // {
-  //   label: "Account",
-  //   items: [
-  //     { title: "Profile", href: "/settings/profile", icon: User },
-  //     { title: "Notifications", href: "/settings/notifications", icon: Bell },
-  //   ],
-  // },
-] as const
+import { useI18n } from "@/i18n/language-provider"
 
 export function SettingsSidebar() {
+  const { t } = useI18n()
   const pathname = usePathname()
+
+  const settingsNav = [
+    {
+      label: t("settings.billing"),
+      items: [
+        {
+          title: t("settings.overview"),
+          href: "/settings/billing",
+          icon: Wallet,
+        },
+        {
+          title: t("settings.transactions"),
+          href: "/settings/billing/transactions",
+          icon: Receipt,
+        },
+        {
+          title: t("settings.payoutAccount"),
+          href: "/settings/billing/payout",
+          icon: CreditCard,
+        },
+      ],
+    },
+  ] as const
 
   return (
     <Sidebar
@@ -71,7 +65,7 @@ export function SettingsSidebar() {
       </SidebarHeader> */}
 
       <SidebarContent>
-        {SETTINGS_NAV.map((group) => (
+        {settingsNav.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel >
               {group.label}

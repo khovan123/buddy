@@ -29,6 +29,7 @@ import {
   type CareerItem,
   type SkillItem,
 } from "@/features/user/services/user-api"
+import { useI18n } from "@/i18n/language-provider"
 
 const skillSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -51,6 +52,7 @@ export default function SkillModal({
   skill,
   careers,
 }: SkillModalProps) {
+  const { t } = useI18n()
   const isEditing = !!skill
   const [createSkill, { isLoading: isCreating }] = useCreateSkillMutation()
   const [updateSkill, { isLoading: isUpdating }] = useUpdateSkillMutation()
@@ -74,14 +76,14 @@ export default function SkillModal({
     try {
       if (isEditing && skill) {
         await updateSkill({ id: skill.id, body: data }).unwrap()
-        toast.success("Skill updated.")
+        toast.success(t("dashboard.skillModal.updated"))
       } else {
         await createSkill(data).unwrap()
-        toast.success("Skill created.")
+        toast.success(t("dashboard.skillModal.created"))
       }
       onOpenChange(false)
     } catch (error) {
-      toast.error("We could not save this skill.")
+      toast.error(t("dashboard.skillModal.saveError"))
     }
   }
 
@@ -91,17 +93,19 @@ export default function SkillModal({
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>
-              {isEditing ? "Edit Skill" : "Create Skill"}
+              {isEditing
+                ? t("dashboard.skillModal.editTitle")
+                : t("dashboard.skillModal.createTitle")}
             </DialogTitle>
             <DialogDescription>
               {isEditing
-                ? "Modify the skill details below."
-                : "Add a new skill to the platform."}
+                ? t("dashboard.skillModal.editDescription")
+                : t("dashboard.skillModal.createDescription")}
             </DialogDescription>
           </DialogHeader>
           <FieldGroup className="py-4">
             <Field>
-              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <FieldLabel htmlFor="name">{t("common.name")}</FieldLabel>
               <Input id="name" placeholder="ReactJS" {...register("name")} />
               {errors.name && (
                 <p className="mt-1 text-sm text-destructive">
@@ -111,7 +115,7 @@ export default function SkillModal({
             </Field>
 
             <Field>
-              <FieldLabel>Related Career</FieldLabel>
+              <FieldLabel>{t("dashboard.skillModal.relatedCareer")}</FieldLabel>
               <Controller
                 name="careerId"
                 control={control}
@@ -122,7 +126,9 @@ export default function SkillModal({
                     defaultValue={field.value}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a career" />
+                      <SelectValue
+                        placeholder={t("dashboard.skillModal.selectCareer")}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {careers.map((c) => (
@@ -143,7 +149,7 @@ export default function SkillModal({
 
             {isEditing && (
               <Field>
-                <FieldLabel>Status</FieldLabel>
+                <FieldLabel>{t("common.status")}</FieldLabel>
                 <Controller
                   name="status"
                   control={control}

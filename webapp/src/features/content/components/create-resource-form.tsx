@@ -50,6 +50,7 @@ import {
   useGetResourceByIdQuery,
   useUpdateResourceMutation,
 } from "@/features/content/services/content-api"
+import { useI18n } from "@/i18n/language-provider"
 import { extractApiError } from "@/types/api"
 
 import { ResourceFormValues, resourceSchema } from "../schema"
@@ -131,6 +132,7 @@ const RESOURCE_SUBMIT_STAGE_COPY: Record<
 }
 
 export function CreateResourceForm() {
+  const { t } = useI18n()
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get("edit") || undefined
@@ -283,7 +285,7 @@ export function CreateResourceForm() {
           queueMicrotask(() => setResourceCollections(collections))
         }
       })
-      .catch(() => toast.error("We could not load your collections."))
+      .catch(() => toast.error(t("content.resourceForm.loadCollectionsError")))
       .finally(() => {
         if (!ignore) {
           queueMicrotask(() => setIsLoadingCollections(false))
@@ -299,6 +301,7 @@ export function CreateResourceForm() {
     selectedCourseId,
     selectedMajorId,
     setValue,
+    t,
   ])
 
   // ── Error-to-tab auto-navigation (called on validation failure) ──
@@ -339,7 +342,12 @@ export function CreateResourceForm() {
       setValue(`files.${index}.mimeType`, "", {
         shouldValidate: true,
       })
-      toast.error(`Resources only support ${RESOURCE_ALLOWED_FILE_TYPES_COPY} files.`)
+      toast.error(
+        t("content.resourceForm.invalidFileType").replace(
+          "{types}",
+          RESOURCE_ALLOWED_FILE_TYPES_COPY
+        )
+      )
       return
     }
 
@@ -369,12 +377,12 @@ export function CreateResourceForm() {
             collectionId: restData.collectionId || undefined,
           },
         }).unwrap()
-        toast.success("Resource updated.")
+        toast.success(t("content.resourceForm.updated"))
         router.refresh()
       } catch (error: unknown) {
         toast.error(
           extractApiError(error) ||
-            "We could not update this resource. Please review the form and try again."
+            t("content.resourceForm.updateError")
         )
       }
       return
@@ -390,7 +398,10 @@ export function CreateResourceForm() {
 
     if (missingFiles.length > 0) {
       toast.error(
-        `Please choose a file for slot(s): #${missingFiles.join(", #")}`
+        t("content.resourceForm.missingFiles").replace(
+          "{slots}",
+          `#${missingFiles.join(", #")}`
+        )
       )
       return
     }
@@ -452,17 +463,13 @@ export function CreateResourceForm() {
               fileIds: currentBatch.files.map((f) => f.id),
             }).unwrap()
             setSubmitStage("processing")
-            toast.success(
-              "Resource uploaded. We will read and check it in the background."
-            )
+            toast.success(t("content.resourceForm.uploaded"))
           } catch (error) {
             console.error(
               "Failed to confirm resource:",
               getFriendlyContentError(error)
             )
-            toast.error(
-              "The file uploaded, but we could not start checking it. Please try again from Content."
-            )
+            toast.error(t("content.resourceForm.confirmError"))
             setSubmitStage("idle")
           }
         }
@@ -474,7 +481,7 @@ export function CreateResourceForm() {
     } catch (error: unknown) {
       const message = getFriendlyContentError(
         error,
-        "We could not create this resource. Please review the form and try again."
+        t("content.resourceForm.createError")
       )
       toast.error(message)
       console.error("Create resource failed:", {
@@ -498,7 +505,7 @@ export function CreateResourceForm() {
   const copyToClipboard = async (url: string) => {
     await navigator.clipboard.writeText(url)
     setCopiedUrl(url)
-    toast.success("Upload link copied.")
+    toast.success(t("content.resourceForm.copyUploadLink"))
     setTimeout(() => setCopiedUrl(null), 2000)
   }
 

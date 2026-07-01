@@ -17,7 +17,7 @@ interface Props {
   initialMeta: PaginationMeta
   filters?: Pick<
     ContentListParams,
-    "semester" | "majorId" | "search" | "price" | "verified" | "sort"
+    "semester" | "majorId" | "courseId" | "search" | "verified" | "sort"
   >
 }
 

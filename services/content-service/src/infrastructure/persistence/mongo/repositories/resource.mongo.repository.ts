@@ -86,7 +86,10 @@ type ResourceWritePayload = {
 
 type ResourceSearchClause =
   | { title: { $regex: string; $options: string } }
-  | { summary: { $regex: string; $options: string } };
+  | { summary: { $regex: string; $options: string } }
+  | { hightlights: { $regex: string; $options: string } }
+  | { courseId: { $in: Types.ObjectId[] } }
+  | { majorId: { $in: Types.ObjectId[] } };
 
 /** Repository interface/implementation for  resource mongo data access. */
 @Injectable()
@@ -520,11 +523,7 @@ export class ResourceMongoRepository implements IResourceRepository {
     }
 
     if (search) {
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      filter.$or = [
-        { title: { $regex: escapedSearch, $options: 'i' } },
-        { summary: { $regex: escapedSearch, $options: 'i' } },
-      ];
+      filter.$or = await this.buildSearchClauses(search);
     }
 
     if (semester) {
@@ -559,8 +558,19 @@ export class ResourceMongoRepository implements IResourceRepository {
       collectionId?: null | { $ne: null };
     },
   ): Promise<ResourceQueryResult> {
-    const { page, limit, search, userId, collectionId, semester, majorId, price, verified, sort } =
-      params;
+    const {
+      page,
+      limit,
+      search,
+      userId,
+      collectionId,
+      semester,
+      majorId,
+      courseId,
+      price,
+      verified,
+      sort,
+    } = params;
     const safeLimit = Math.max(limit, 1);
     const skip = (page - 1) * safeLimit;
     const sortBy: Record<string, SortOrder> =
@@ -583,6 +593,10 @@ export class ResourceMongoRepository implements IResourceRepository {
       filter.majorId = new Types.ObjectId(majorId);
     }
 
+    if (courseId) {
+      filter.courseId = new Types.ObjectId(courseId);
+    }
+
     if (price === 'free') {
       filter.price = 0;
     } else if (price === 'paid') {
@@ -598,15 +612,11 @@ export class ResourceMongoRepository implements IResourceRepository {
     }
 
     if (search) {
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      filter.$or = [
-        { title: { $regex: escapedSearch, $options: 'i' } },
-        { summary: { $regex: escapedSearch, $options: 'i' } },
-      ];
+      filter.$or = await this.buildSearchClauses(search);
     }
 
     // If semester is specified, find courseIds that match the semester first
-    if (semester) {
+    if (semester && !courseId) {
       const CourseModel = this.resourceModel.db.model('Course');
       const matchingCourseIds = await CourseModel.find({ semester, deletedAt: null }, { _id: 1 })
         .lean<{ _id: Types.ObjectId }[]>()
@@ -666,11 +676,7 @@ export class ResourceMongoRepository implements IResourceRepository {
     }
 
     if (search) {
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      filter.$or = [
-        { title: { $regex: escapedSearch, $options: 'i' } },
-        { summary: { $regex: escapedSearch, $options: 'i' } },
-      ];
+      filter.$or = await this.buildSearchClauses(search);
     }
 
     const [rows, total] = await Promise.all([
@@ -797,6 +803,38 @@ export class ResourceMongoRepository implements IResourceRepository {
         resourceOrders: 0,
       },
     };
+  }
+
+  private async buildSearchClauses(search: string): Promise<ResourceSearchClause[]> {
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = { $regex: escapedSearch, $options: 'i' } as const;
+    const clauses: ResourceSearchClause[] = [
+      { title: regex },
+      { summary: regex },
+      { hightlights: regex },
+    ];
+
+    const CourseModel = this.resourceModel.db.model('Course');
+    const MajorModel = this.resourceModel.db.model('Major');
+
+    const [matchingCourses, matchingMajors] = await Promise.all([
+      CourseModel.find({ deletedAt: null, $or: [{ name: regex }, { code: regex }] }, { _id: 1 })
+        .lean<{ _id: Types.ObjectId }[]>()
+        .exec(),
+      MajorModel.find({ deletedAt: null, $or: [{ name: regex }, { code: regex }] }, { _id: 1 })
+        .lean<{ _id: Types.ObjectId }[]>()
+        .exec(),
+    ]);
+
+    if (matchingCourses.length > 0) {
+      clauses.push({ courseId: { $in: matchingCourses.map((course) => course._id) } });
+    }
+
+    if (matchingMajors.length > 0) {
+      clauses.push({ majorId: { $in: matchingMajors.map((major) => major._id) } });
+    }
+
+    return clauses;
   }
 
   /**

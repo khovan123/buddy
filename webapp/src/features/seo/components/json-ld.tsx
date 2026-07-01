@@ -1,3 +1,5 @@
+import { DISPLAY_CURRENCY } from "@/features/billing/types/billing-types"
+
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
   "https://buddy.app"
@@ -119,7 +121,7 @@ export function productWithOffersJsonLd(params: {
       "@type": "Offer",
       name: offer.name,
       price: offer.price,
-      priceCurrency: offer.priceCurrency ?? "USD",
+      priceCurrency: offer.priceCurrency ?? DISPLAY_CURRENCY,
       description: offer.description,
       availability: "https://schema.org/InStock",
     })),

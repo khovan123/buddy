@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useI18n } from "@/i18n/language-provider"
 
 import { fetchTransactionsAction } from "../actions/billing.actions"
 import type {
@@ -27,48 +28,6 @@ import { formatVND } from "../types/billing-types"
 
 // ── Config ─────────────────────────────────────────────────
 
-const TYPE_CONFIG: Record<
-  TransactionType,
-  { icon: typeof Clock; label: string; sign: "+" | "-"; color: string }
-> = {
-  TOP_UP: {
-    icon: ArrowDownToLine,
-    label: "Top Up",
-    sign: "+",
-    color: "text-emerald-600 dark:text-emerald-400",
-  },
-  PURCHASE_DEBIT: {
-    icon: ShoppingCart,
-    label: "Purchase",
-    sign: "-",
-    color: "text-foreground",
-  },
-  PURCHASE_CREDIT: {
-    icon: CircleDollarSign,
-    label: "Sale Credit",
-    sign: "+",
-    color: "text-emerald-600 dark:text-emerald-400",
-  },
-  WITHDRAW: {
-    icon: ArrowUpFromLine,
-    label: "Withdraw",
-    sign: "-",
-    color: "text-foreground",
-  },
-  REFUND_DEBIT: {
-    icon: RefreshCcw,
-    label: "Refund Sent",
-    sign: "-",
-    color: "text-foreground",
-  },
-  REFUND_CREDIT: {
-    icon: RefreshCcw,
-    label: "Refund Received",
-    sign: "+",
-    color: "text-emerald-600 dark:text-emerald-400",
-  },
-}
-
 const STATUS_VARIANT: Record<
   TransactionStatus,
   "default" | "secondary" | "destructive"
@@ -78,28 +37,10 @@ const STATUS_VARIANT: Record<
   FAILED: "destructive",
 }
 
-const TYPE_FILTERS: { value: TransactionType | "ALL"; label: string }[] = [
-  { value: "ALL", label: "All" },
-  { value: "TOP_UP", label: "Top Up" },
-  { value: "PURCHASE_DEBIT", label: "Purchase" },
-  { value: "PURCHASE_CREDIT", label: "Sale Credit" },
-  { value: "WITHDRAW", label: "Withdraw" },
-  { value: "REFUND_DEBIT", label: "Refund Sent" },
-  { value: "REFUND_CREDIT", label: "Refund Received" },
-]
-
-const STATUS_FILTERS: { value: TransactionStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "All" },
-  { value: "SUCCESS", label: "Success" },
-  { value: "PENDING", label: "Pending" },
-  { value: "FAILED", label: "Failed" },
-]
-
 // ── Helpers ────────────────────────────────────────────────
-
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, locale: string): string {
   const date = new Date(dateStr)
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -110,8 +51,16 @@ function formatDate(dateStr: string): string {
 
 // ── Sub-components ─────────────────────────────────────────
 
-function TransactionRow({ tx }: { tx: Transaction }) {
-  const config = TYPE_CONFIG[tx.type]
+function TransactionRow({
+  tx,
+  locale,
+  labels,
+}: {
+  tx: Transaction
+  locale: string
+  labels: Record<TransactionType, { icon: typeof Clock; label: string; sign: "+" | "-"; color: string }>
+}) {
+  const config = labels[tx.type]
   const Icon = config.icon
 
   return (
@@ -125,7 +74,7 @@ function TransactionRow({ tx }: { tx: Transaction }) {
       <div className="flex-1 space-y-0.5">
         <p className="text-sm font-medium leading-none">{config.label}</p>
         <p className="text-xs text-muted-foreground">
-          {formatDate(tx.createdAt)}
+          {formatDate(tx.createdAt, locale)}
         </p>
       </div>
 
@@ -184,6 +133,7 @@ interface TransactionHistoryPageProps {
 export default function TransactionHistoryPage({
   initialData,
 }: TransactionHistoryPageProps) {
+  const { locale, t } = useI18n()
   const [transactions, setTransactions] = useState<Transaction[]>(
     initialData?.data ?? []
   )
@@ -194,6 +144,63 @@ export default function TransactionHistoryPage({
   const [statusFilter, setStatusFilter] = useState<
     TransactionStatus | "ALL"
   >("ALL")
+  const dateLocale = locale === "en" ? "en-US" : "vi-VN"
+  const typeConfig: Record<
+    TransactionType,
+    { icon: typeof Clock; label: string; sign: "+" | "-"; color: string }
+  > = {
+    TOP_UP: {
+      icon: ArrowDownToLine,
+      label: t("billing.transactions.topUp"),
+      sign: "+",
+      color: "text-emerald-600 dark:text-emerald-400",
+    },
+    PURCHASE_DEBIT: {
+      icon: ShoppingCart,
+      label: t("billing.transactions.purchase"),
+      sign: "-",
+      color: "text-foreground",
+    },
+    PURCHASE_CREDIT: {
+      icon: CircleDollarSign,
+      label: t("billing.transactions.saleCredit"),
+      sign: "+",
+      color: "text-emerald-600 dark:text-emerald-400",
+    },
+    WITHDRAW: {
+      icon: ArrowUpFromLine,
+      label: t("billing.transactions.withdraw"),
+      sign: "-",
+      color: "text-foreground",
+    },
+    REFUND_DEBIT: {
+      icon: RefreshCcw,
+      label: t("billing.transactions.refundSent"),
+      sign: "-",
+      color: "text-foreground",
+    },
+    REFUND_CREDIT: {
+      icon: RefreshCcw,
+      label: t("billing.transactions.refundReceived"),
+      sign: "+",
+      color: "text-emerald-600 dark:text-emerald-400",
+    },
+  }
+  const typeFilters: { value: TransactionType | "ALL"; label: string }[] = [
+    { value: "ALL", label: t("billing.transactions.all") },
+    { value: "TOP_UP", label: t("billing.transactions.topUp") },
+    { value: "PURCHASE_DEBIT", label: t("billing.transactions.purchase") },
+    { value: "PURCHASE_CREDIT", label: t("billing.transactions.saleCredit") },
+    { value: "WITHDRAW", label: t("billing.transactions.withdraw") },
+    { value: "REFUND_DEBIT", label: t("billing.transactions.refundSent") },
+    { value: "REFUND_CREDIT", label: t("billing.transactions.refundReceived") },
+  ]
+  const statusFilters: { value: TransactionStatus | "ALL"; label: string }[] = [
+    { value: "ALL", label: t("billing.transactions.all") },
+    { value: "SUCCESS", label: t("billing.transactions.success") },
+    { value: "PENDING", label: t("billing.transactions.pending") },
+    { value: "FAILED", label: t("billing.transactions.failed") },
+  ]
 
   const hasMore = meta ? meta.page < meta.totalPages : false
 
@@ -228,17 +235,17 @@ export default function TransactionHistoryPage({
         <div className="flex items-center gap-2">
           <Filter className="size-4 text-muted-foreground" />
           <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            Filter
+            {t("common.filter")}
           </CardTitle>
         </div>
 
         <div className="space-y-3">
           <div className="space-y-1.5">
             <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-              Type
+              {t("common.type")}
             </p>
             <FilterChips
-              options={TYPE_FILTERS}
+              options={typeFilters}
               value={typeFilter}
               onChange={setTypeFilter}
             />
@@ -246,10 +253,10 @@ export default function TransactionHistoryPage({
 
           <div className="space-y-1.5">
             <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-              Status
+              {t("common.status")}
             </p>
             <FilterChips
-              options={STATUS_FILTERS}
+              options={statusFilters}
               value={statusFilter}
               onChange={setStatusFilter}
             />
@@ -262,18 +269,18 @@ export default function TransactionHistoryPage({
           <div className="flex flex-col items-center gap-2 py-16 text-center">
             <Clock className="size-10 text-muted-foreground/30" />
             <p className="text-sm text-muted-foreground">
-              No transactions found
+              {t("billing.transactions.empty")}
             </p>
             <p className="text-xs text-muted-foreground/60">
               {transactions.length > 0
-                ? "Try adjusting your filters."
-                : "Top up your wallet to get started."}
+                ? t("common.tryAdjustingFilters")
+                : t("billing.transactions.emptyHint")}
             </p>
           </div>
         ) : (
           <div className="divide-y divide-border/40">
             {filtered.map((tx) => (
-              <TransactionRow key={tx.id} tx={tx} />
+              <TransactionRow key={tx.id} tx={tx} locale={dateLocale} labels={typeConfig} />
             ))}
           </div>
         )}
@@ -290,7 +297,7 @@ export default function TransactionHistoryPage({
               className="gap-2"
             >
               {isPending && <Loader2 className="size-3 animate-spin" />}
-              Load More
+              {t("common.loadMore")}
             </Button>
           </div>
         )}
@@ -298,7 +305,11 @@ export default function TransactionHistoryPage({
         {/* Summary footer */}
         {meta && (
           <p className="pt-4 text-center text-xs text-muted-foreground/50">
-            Showing {transactions.length} of {meta.total} transactions
+            {t("common.showingOf", {
+              shown: String(transactions.length),
+              total: String(meta.total),
+              item: t("settings.transactions").toLowerCase(),
+            })}
           </p>
         )}
       </CardContent>

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ComponentType } from "react"
 
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import {
   BookOpen,
@@ -30,6 +31,7 @@ import {
   type LibraryAsset,
 } from "@/features/library/components/library-asset-card"
 import type { LibraryCatalog } from "@/features/library/types"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 
 type LibraryTab = "all" | "learning" | "resources" | "collections"
@@ -76,13 +78,12 @@ const LIBRARY_BROWSER_STATE_KEY = "library-browser-state"
 
 const workspaceTabs: Array<{
   key: LibraryTab
-  label: string
   icon: ComponentType<{ className?: string }>
 }> = [
-  { key: "all", label: "Continue", icon: Grid2x2 },
-  { key: "learning", label: "Lessons", icon: PlayCircle },
-  { key: "resources", label: "Files", icon: FileText },
-  { key: "collections", label: "Collections", icon: FolderKanban },
+  { key: "all", icon: Grid2x2 },
+  { key: "learning", icon: PlayCircle },
+  { key: "resources", icon: FileText },
+  { key: "collections", icon: FolderKanban },
 ]
 
 function canUseSessionStorage() {
@@ -107,15 +108,26 @@ function readSavedState(): LibraryBrowserSavedState | null {
   }
 }
 
-function assetKindMeta(asset: LibraryAsset) {
+function assetKindMeta(
+  asset: LibraryAsset,
+  copy: {
+    tutorialSource: string
+    startLearning: string
+    tutorialMeta: string
+    learningBadge: string
+    resourceSource: string
+    openResource: string
+    referenceBadge: string
+  }
+) {
   if (asset.kind === LibraryAssetKind.Tutorial) {
     return {
       kind: "tutorial" as const,
       href: `/library/tutorials/${asset.slug}`,
-      source: "Tutorial",
-      actionLabel: "Start lesson",
-      meta: "Video lesson",
-      badge: "Learning",
+      source: copy.tutorialSource,
+      actionLabel: copy.startLearning,
+      meta: copy.tutorialMeta,
+      badge: copy.learningBadge,
       icon: Video,
     }
   }
@@ -123,16 +135,19 @@ function assetKindMeta(asset: LibraryAsset) {
   return {
     kind: "resource" as const,
     href: `/library/resources/${asset.slug}`,
-    source: "Resource",
-    actionLabel: "Open resource",
+    source: copy.resourceSource,
+    actionLabel: copy.openResource,
     meta: asset.kind,
-    badge: "Reference",
+    badge: copy.referenceBadge,
     icon: BookOpen,
   }
 }
 
-function buildAssetItem(asset: LibraryAsset): WorkspaceItem {
-  const meta = assetKindMeta(asset)
+function buildAssetItem(
+  asset: LibraryAsset,
+  copy: Parameters<typeof assetKindMeta>[1]
+): WorkspaceItem {
+  const meta = assetKindMeta(asset, copy)
 
   return {
     id: `${meta.kind}:${asset.slug}`,
@@ -145,19 +160,27 @@ function buildAssetItem(asset: LibraryAsset): WorkspaceItem {
   }
 }
 
-function buildCollectionItems(catalog: LibraryCatalog): WorkspaceItem[] {
+function buildCollectionItems(
+  catalog: LibraryCatalog,
+  copy: {
+    buddyExpert: string
+    tutorialCollectionSource: string
+    resourceCollectionSource: string
+    openCollection: string
+  }
+): WorkspaceItem[] {
   return [
     ...catalog.tutorialCollections.map((collection) => ({
       id: `tutorial-collection:${collection.id}`,
       title: collection.title,
       description: collection.description,
-      author: collection.author?.name ?? "Buddy Expert",
+      author: collection.author?.name ?? copy.buddyExpert,
       authorAvatar: collection.author?.avatar,
       image: collection.thumbnailUrl ?? "",
       href: collection.href,
       kind: "tutorial-collection" as const,
-      source: "Tutorial collection",
-      actionLabel: "Open collection",
+      source: copy.tutorialCollectionSource,
+      actionLabel: copy.openCollection,
       meta: collection.count,
       badge: collection.discount ?? collection.price,
       icon: FolderKanban,
@@ -166,13 +189,13 @@ function buildCollectionItems(catalog: LibraryCatalog): WorkspaceItem[] {
       id: `resource-collection:${collection.id}`,
       title: collection.title,
       description: collection.description,
-      author: collection.author?.name ?? "Buddy Expert",
+      author: collection.author?.name ?? copy.buddyExpert,
       authorAvatar: collection.author?.avatar,
       image: collection.thumbnailUrl ?? "",
       href: collection.href,
       kind: "resource-collection" as const,
-      source: "Resource collection",
-      actionLabel: "Open collection",
+      source: copy.resourceCollectionSource,
+      actionLabel: copy.openCollection,
       meta: collection.count,
       badge: collection.discount ?? collection.price,
       icon: FolderKanban,
@@ -277,18 +300,25 @@ function WorkspaceItemRow({
 function WorkspacePreview({
   item,
   onNavigate,
+  copy,
 }: {
   item?: WorkspaceItem
-  onNavigate: () => void
+  onNavigate: (href: string) => void
+  copy: {
+    emptyTitle: string
+    emptyDescription: string
+    ready: string
+    readyDescription: string
+  }
 }) {
   if (!item) {
     return (
       <div className="flex min-h-[360px] items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
         <div className="max-w-xs space-y-3">
           <Library className="mx-auto size-10 text-muted-foreground" />
-          <h2 className="text-lg font-semibold">No library items yet</h2>
+          <h2 className="text-lg font-semibold">{copy.emptyTitle}</h2>
           <p className="text-sm text-muted-foreground">
-            Purchased and saved learning content will appear here.
+            {copy.emptyDescription}
           </p>
         </div>
       </div>
@@ -356,16 +386,18 @@ function WorkspacePreview({
         <div className="flex min-w-48 flex-col gap-3 rounded-lg border border-border bg-muted/30 p-4">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <CheckCircle2 className="size-4 text-primary" />
-            Ready
+            {copy.ready}
           </div>
           <p className="text-xs leading-5 text-muted-foreground">
-            Continue from this workspace without leaving your library context.
+            {copy.readyDescription}
           </p>
-          <Button asChild className="mt-auto w-full" onClick={onNavigate}>
-            <Link href={item.href}>
-              {item.actionLabel}
-              <ChevronRight className="size-4" />
-            </Link>
+          <Button
+            type="button"
+            className="mt-auto w-full"
+            onClick={() => onNavigate(item.href)}
+          >
+            {item.actionLabel}
+            <ChevronRight className="size-4" />
           </Button>
         </div>
       </div>
@@ -379,6 +411,56 @@ export default function LibraryBrowser({
   seoTitle,
   seoDescription,
 }: LibraryBrowserProps) {
+  const { t } = useI18n()
+  const copy = useMemo(
+    () => ({
+        tabs: {
+          all: t("library.browser.tabAll"),
+          learning: t("library.browser.tabLearning"),
+          resources: t("library.browser.tabResources"),
+          collections: t("library.browser.tabCollections"),
+        },
+        tutorialSource: t("library.browser.tutorialSource"),
+        startLearning: t("library.browser.startLearning"),
+        tutorialMeta: t("library.browser.tutorialMeta"),
+        learningBadge: t("library.browser.learningBadge"),
+        resourceSource: t("library.browser.resourceSource"),
+        openResource: t("library.browser.openResource"),
+        referenceBadge: t("library.browser.referenceBadge"),
+        buddyExpert: t("common.expertBuddy"),
+        tutorialCollectionSource: t("library.browser.tutorialCollectionSource"),
+        resourceCollectionSource: t("library.browser.resourceCollectionSource"),
+        openCollection: t("library.browser.openCollection"),
+        emptyTitle: t("library.browser.emptyTitle"),
+        emptyDescription: t("library.browser.emptyDescription"),
+        ready: t("library.browser.ready"),
+        readyDescription: t("library.browser.readyDescription"),
+        learningSpace: t("library.browser.learningSpace"),
+        tutorials: t("library.browser.tutorials"),
+        resources: t("library.browser.resources"),
+        collections: t("library.browser.collections"),
+        workspace: t("library.browser.workspace"),
+        sort: t("library.browser.sort"),
+        recent: t("library.browser.newest"),
+        alphabetical: t("library.browser.alphabetical"),
+        search: t("library.browser.search"),
+        items: [
+          t("library.browser.itemSingular"),
+          t("library.browser.itemPlural"),
+        ] as const,
+        savedContent: t("library.browser.savedContent"),
+        results: [
+          t("library.browser.resultSingular"),
+          t("library.browser.resultPlural"),
+        ] as const,
+        noResults: t("library.browser.noResults"),
+        noResultsDescription: t("library.browser.noResultsDescription"),
+        continueNext: t("library.browser.continueNext"),
+        continueEmpty: t("library.browser.continueEmpty"),
+      }),
+    [t]
+  )
+  const router = useRouter()
   const savedState = readSavedState()
   const [activeTab, setActiveTab] = useState<LibraryTab>(
     savedState?.restoreOnNextMount && savedState.activeTab
@@ -399,11 +481,11 @@ export default function LibraryBrowser({
 
   const allItems = useMemo(
     () => [
-      ...catalog.tutorials.map(buildAssetItem),
-      ...catalog.resources.map(buildAssetItem),
-      ...buildCollectionItems(catalog),
+      ...catalog.tutorials.map((item) => buildAssetItem(item, copy)),
+      ...catalog.resources.map((item) => buildAssetItem(item, copy)),
+      ...buildCollectionItems(catalog, copy),
     ],
-    [catalog]
+    [catalog, copy]
   )
 
   const visibleItems = useMemo(
@@ -457,6 +539,11 @@ export default function LibraryBrowser({
     )
   }
 
+  const navigateToItem = (href: string) => {
+    persistBrowserState()
+    router.push(href)
+  }
+
   const stats = {
     resources: catalog.resources.length,
     tutorials: catalog.tutorials.length,
@@ -481,7 +568,7 @@ export default function LibraryBrowser({
             </Badge>
             <Badge className="rounded-md bg-primary/10 text-primary shadow-none hover:bg-primary/10">
               <Sparkles className="size-3" />
-              Study space
+              {copy.learningSpace}
             </Badge>
           </div>
           <div className="max-w-3xl space-y-2">
@@ -497,15 +584,15 @@ export default function LibraryBrowser({
         <div className="grid grid-cols-3 gap-2 rounded-lg border border-border bg-card p-2">
           <div className="rounded-md bg-muted/50 px-3 py-2">
             <p className="text-lg font-bold">{stats.tutorials}</p>
-            <p className="text-xs text-muted-foreground">Tutorials</p>
+            <p className="text-xs text-muted-foreground">{copy.tutorials}</p>
           </div>
           <div className="rounded-md bg-muted/50 px-3 py-2">
             <p className="text-lg font-bold">{stats.resources}</p>
-            <p className="text-xs text-muted-foreground">Resources</p>
+            <p className="text-xs text-muted-foreground">{copy.resources}</p>
           </div>
           <div className="rounded-md bg-muted/50 px-3 py-2">
             <p className="text-lg font-bold">{stats.collections}</p>
-            <p className="text-xs text-muted-foreground">Collections</p>
+            <p className="text-xs text-muted-foreground">{copy.collections}</p>
           </div>
         </div>
       </div>
@@ -515,7 +602,7 @@ export default function LibraryBrowser({
           <div className="rounded-lg border border-border bg-card p-3">
             <div className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold">
               <Library className="size-4 text-primary" />
-              My learning
+              {copy.workspace}
             </div>
             <div className="grid gap-2">
               {workspaceTabs.map((tab) => {
@@ -532,10 +619,10 @@ export default function LibraryBrowser({
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
-                  >
+                      >
                     <span className="flex items-center gap-2">
                       <Icon className="size-4" />
-                      {tab.label}
+                      {copy.tabs[tab.key]}
                     </span>
                     <span
                       className={cn(
@@ -557,7 +644,7 @@ export default function LibraryBrowser({
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <SlidersHorizontal className="size-4 text-primary" />
-                Order
+                {copy.sort}
               </div>
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -567,7 +654,7 @@ export default function LibraryBrowser({
                 variant={sortMode === "recent" ? "secondary" : "outline"}
                 onClick={() => setSortMode("recent")}
               >
-                Recent
+                {copy.recent}
               </Button>
               <Button
                 type="button"
@@ -575,7 +662,7 @@ export default function LibraryBrowser({
                 variant={sortMode === "alphabetical" ? "secondary" : "outline"}
                 onClick={() => setSortMode("alphabetical")}
               >
-                A-Z
+                {copy.alphabetical}
               </Button>
             </div>
           </div>
@@ -587,34 +674,35 @@ export default function LibraryBrowser({
               <Search className="size-4 shrink-0 text-muted-foreground" />
               <Field className="min-w-0 flex-1 gap-0">
                 <FieldLabel htmlFor="library-search" className="sr-only">
-                  Search your library
+                  {copy.search}
                 </FieldLabel>
                 <Input
                   id="library-search"
                   type="text"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search your library"
+                  placeholder={copy.search}
                   className="h-7 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
                 />
               </Field>
             </div>
             <div className="flex items-center rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-              {formatCount(visibleItems.length, "item", "items")}
+              {formatCount(visibleItems.length, copy.items[0], copy.items[1])}
             </div>
           </div>
 
           <WorkspacePreview
             item={selectedItem}
-            onNavigate={persistBrowserState}
+            onNavigate={navigateToItem}
+            copy={copy}
           />
 
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold">Saved items</h2>
+                <h2 className="text-lg font-semibold">{copy.savedContent}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {formatCount(visibleItems.length, "result", "results")}
+                  {formatCount(visibleItems.length, copy.results[0], copy.results[1])}
                 </p>
               </div>
 
@@ -631,9 +719,9 @@ export default function LibraryBrowser({
                 </div>
               ) : (
                 <div className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
-                  <p className="text-sm font-medium">Nothing matched</p>
+                  <p className="text-sm font-medium">{copy.noResults}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Try another search, or explore more learning items to save.
+                    {copy.noResultsDescription}
                   </p>
                 </div>
               )}
@@ -641,7 +729,7 @@ export default function LibraryBrowser({
 
             <div className="space-y-4">
               <div className="rounded-lg border border-border bg-card p-4">
-                <h2 className="text-lg font-semibold">Continue next</h2>
+                <h2 className="text-lg font-semibold">{copy.continueNext}</h2>
                 <div className="mt-4 space-y-3">
                   {allItems.length > 0 ? (
                     allItems.slice(0, 4).map((item, index) => (
@@ -666,8 +754,7 @@ export default function LibraryBrowser({
                     ))
                   ) : (
                     <div className="rounded-md border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-                      Saved lessons, files you bought, and collections you
-                      follow will appear here.
+                      {copy.continueEmpty}
                     </div>
                   )}
                 </div>

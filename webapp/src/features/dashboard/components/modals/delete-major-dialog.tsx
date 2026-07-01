@@ -3,6 +3,7 @@ import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
 import { useDeleteMajorMutation } from "@/features/content/services/content-api"
+import { useI18n } from "@/i18n/language-provider"
 
 interface DeleteMajorDialogProps {
   open: boolean
@@ -15,6 +16,7 @@ export default function DeleteMajorDialog({
   onOpenChange,
   id,
 }: DeleteMajorDialogProps) {
+  const { t } = useI18n()
   const [deleteMajor, { isLoading }] = useDeleteMajorMutation()
 
   const handleConfirm = async () => {
@@ -23,10 +25,10 @@ export default function DeleteMajorDialog({
     }
     try {
       await deleteMajor(id).unwrap()
-      toast.success("Major deleted.")
+      toast.success(t("dashboard.deleteMajor.success"))
       onOpenChange(false)
     } catch (error) {
-      toast.error("We could not delete this major.")
+      toast.error(t("dashboard.deleteMajor.error"))
     }
   }
 
@@ -35,9 +37,9 @@ export default function DeleteMajorDialog({
       open={open}
       onOpenChange={onOpenChange}
       variant="error"
-      title="Delete major?"
-      description="This action cannot be undone and may affect related courses."
-      confirmLabel="Delete"
+      title={t("dashboard.deleteMajor.title")}
+      description={t("dashboard.deleteMajor.description")}
+      confirmLabel={t("dashboard.deleteMajor.confirm")}
       loading={isLoading}
       onConfirm={handleConfirm}
     />

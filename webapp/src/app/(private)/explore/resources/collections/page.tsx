@@ -9,6 +9,7 @@ import {
   getTopResourceCollections,
 } from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 
 
@@ -30,11 +31,21 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function ExploreResourceCollectionsPage() {
+export default async function ExploreResourceCollectionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  const { t } = await getServerTranslator()
+  const params = await searchParams
+  const search = typeof params.search === "string" ? params.search : undefined
+  const courseId =
+    typeof params.courseId === "string" ? params.courseId : undefined
+
   const [seo, result, topItems] = await Promise.all([
     getSeoContent("explore-resources-collections"),
-    getResourceCollections({ page: 1, limit: 20 }),
-    getTopResourceCollections(6),
+    getResourceCollections({ page: 1, limit: 20, search, courseId }),
+    getTopResourceCollections(6, search),
   ])
   const collections = result.data.map((c) => mapCollectionToCard(c, "resource"))
   const featuredCollections = topItems.map((c) =>
@@ -47,23 +58,23 @@ export default async function ExploreResourceCollectionsPage() {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: t("nav.home"), item: siteUrl },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Explore",
+        name: t("nav.explore"),
         item: `${siteUrl}/explore`,
       },
       {
         "@type": "ListItem",
         position: 3,
-        name: "Resources",
+        name: t("content.resources"),
         item: `${siteUrl}/explore/resources`,
       },
       {
         "@type": "ListItem",
         position: 4,
-        name: "Collections",
+        name: t("content.collections"),
         item: `${siteUrl}/explore/resources/collections`,
       },
     ],
@@ -116,10 +127,10 @@ export default async function ExploreResourceCollectionsPage() {
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold tracking-tight text-foreground">
-                Top Collection
+                {t("explore.list.topCollections")}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Featured bundle for this week.
+                {t("explore.list.topCollectionsDescription")}
               </p>
             </div>
           </div>
@@ -140,14 +151,14 @@ export default async function ExploreResourceCollectionsPage() {
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-foreground">
-              All Collections
+              {t("explore.list.allCollections")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Browse the rest of the resource collections below.
+              {t("explore.list.allResourceCollectionsDescription")}
             </p>
           </div>
           <p className="text-sm font-medium text-muted-foreground">
-            {result.meta.total} collections
+            {result.meta.total} {t("explore.list.collectionCount")}
           </p>
         </div>
 
@@ -155,6 +166,7 @@ export default async function ExploreResourceCollectionsPage() {
           initialItems={collections}
           initialMeta={result.meta}
           collectionType="resource"
+          filters={{ search, courseId }}
         />
       </section>
     </section>

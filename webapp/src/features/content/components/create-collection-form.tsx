@@ -55,6 +55,7 @@ import {
   type ResourceQueryItem,
   type TutorialQueryItem,
 } from "@/features/content/types"
+import { useI18n } from "@/i18n/language-provider"
 import { extractApiError } from "@/types/api"
 
 import { CollectionFormValues, collectionSchema } from "../schema"
@@ -86,6 +87,7 @@ const FIELD_TAB_MAP: Record<string, string> = {
 
 // ── Main Form ────────────────────────────────────────────────────
 export function CreateCollectionForm() {
+  const { t } = useI18n()
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get("edit") || undefined
@@ -339,11 +341,11 @@ export function CreateCollectionForm() {
 
       if (isEditMode && editId) {
         await updateCollection({ id: editId, body: payload }).unwrap()
-        toast.success("Collection updated.")
+        toast.success(t("content.collection.updated"))
         router.refresh()
       } else {
         await createCollection(payload).unwrap()
-        toast.success("Collection created.")
+        toast.success(t("content.collection.created"))
         form.reset()
         setRoadmapPhases([])
       }

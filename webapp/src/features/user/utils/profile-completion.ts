@@ -11,22 +11,22 @@ export function getMissingProfileFields(
   const profile = user?.profile
 
   if (!profile) {
-    return [{ key: "profile", label: "profile details" }]
+    return [{ key: "profile", label: "thông tin hồ sơ" }]
   }
 
   const missing: MissingProfileField[] = []
 
   if (!profile.careerId) {
-    missing.push({ key: "careerId", label: "career goal" })
+    missing.push({ key: "careerId", label: "mục tiêu nghề nghiệp" })
   }
   if (!profile.majorId) {
-    missing.push({ key: "majorId", label: "major" })
+    missing.push({ key: "majorId", label: "chuyên ngành" })
   }
   if (!profile.courseId) {
-    missing.push({ key: "courseId", label: "course" })
+    missing.push({ key: "courseId", label: "môn học" })
   }
   if (!profile.skillIds || profile.skillIds.length === 0) {
-    missing.push({ key: "skillIds", label: "highlight skills" })
+    missing.push({ key: "skillIds", label: "kỹ năng nổi bật" })
   }
 
   return missing

@@ -29,6 +29,7 @@ import {
   useUpdateCareerMutation,
   type CareerItem,
 } from "@/features/user/services/user-api"
+import { useI18n } from "@/i18n/language-provider"
 
 const careerSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -49,6 +50,7 @@ export default function CareerModal({
   onOpenChange,
   career,
 }: CareerModalProps) {
+  const { t } = useI18n()
   const isEditing = !!career
   const [createCareer, { isLoading: isCreating }] = useCreateCareerMutation()
   const [updateCareer, { isLoading: isUpdating }] = useUpdateCareerMutation()
@@ -72,14 +74,14 @@ export default function CareerModal({
     try {
       if (isEditing && career) {
         await updateCareer({ id: career.id, body: data }).unwrap()
-        toast.success("Career updated.")
+        toast.success(t("dashboard.careerModal.updated"))
       } else {
         await createCareer(data).unwrap()
-        toast.success("Career created.")
+        toast.success(t("dashboard.careerModal.created"))
       }
       onOpenChange(false)
     } catch (error) {
-      toast.error("We could not save this career.")
+      toast.error(t("dashboard.careerModal.saveError"))
     }
   }
 
@@ -89,17 +91,19 @@ export default function CareerModal({
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>
-              {isEditing ? "Edit Career" : "Create Career"}
+              {isEditing
+                ? t("dashboard.careerModal.editTitle")
+                : t("dashboard.careerModal.createTitle")}
             </DialogTitle>
             <DialogDescription>
               {isEditing
-                ? "Modify the career details below."
-                : "Add a new career to the platform."}
+                ? t("dashboard.careerModal.editDescription")
+                : t("dashboard.careerModal.createDescription")}
             </DialogDescription>
           </DialogHeader>
           <FieldGroup className="py-4">
             <Field>
-              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <FieldLabel htmlFor="name">{t("common.name")}</FieldLabel>
               <Input
                 id="name"
                 placeholder="Software Engineer"
@@ -113,7 +117,9 @@ export default function CareerModal({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="description">Description</FieldLabel>
+              <FieldLabel htmlFor="description">
+                {t("common.descriptionLabel")}
+              </FieldLabel>
               <Textarea
                 id="description"
                 rows={3}
@@ -128,7 +134,7 @@ export default function CareerModal({
 
             {isEditing && (
               <Field>
-                <FieldLabel>Status</FieldLabel>
+                <FieldLabel>{t("common.status")}</FieldLabel>
                 <Controller
                   name="status"
                   control={control}

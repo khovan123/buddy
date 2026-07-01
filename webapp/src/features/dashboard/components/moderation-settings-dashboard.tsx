@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { useI18n } from "@/i18n/language-provider"
 
 import { saveModerationSettingsAction } from "../actions/content-settings-actions"
 import type { ModerationSettings } from "../services/content-settings.service"
@@ -19,6 +20,8 @@ type ModerationSettingsDashboardProps = {
 export function ModerationSettingsDashboard({
   settings,
 }: ModerationSettingsDashboardProps) {
+  const { t } = useI18n()
+
   const [enabled, setEnabled] = useState(settings.enabled)
   const [lastUpdatedAt, setLastUpdatedAt] = useState(settings.updatedAt)
   const [source, setSource] = useState(settings.source)
@@ -33,7 +36,7 @@ export function ModerationSettingsDashboard({
 
       if (!result.ok || !result.settings) {
         setEnabled(previous)
-        toast.error("Could not update moderation settings")
+        toast.error(t("dashboard.moderation.error"))
         return
       }
 
@@ -42,8 +45,8 @@ export function ModerationSettingsDashboard({
       setSource(result.settings.source)
       toast.success(
         result.settings.enabled
-          ? "Moderation is now enabled"
-          : "Moderation is now disabled"
+          ? t("dashboard.moderation.enabledToast")
+          : t("dashboard.moderation.disabledToast")
       )
     })
   }
@@ -52,11 +55,10 @@ export function ModerationSettingsDashboard({
     <section className="space-y-5">
       <div className="flex flex-col gap-1">
         <h1 className="text-xl font-semibold tracking-normal">
-          Moderation settings
+          {t("dashboard.moderation.title")}
         </h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          Control whether uploaded resources run through content moderation
-          before becoming available.
+          {t("dashboard.moderation.description")}
         </p>
       </div>
 
@@ -72,15 +74,16 @@ export function ModerationSettingsDashboard({
                   htmlFor="dashboard-moderation-enabled"
                   className="text-base font-semibold"
                 >
-                  Content moderation
+                  {t("dashboard.moderation.label")}
                 </Label>
                 <Badge variant={enabled ? "default" : "outline"}>
-                  {enabled ? "Enabled" : "Disabled"}
+                  {enabled
+                    ? t("dashboard.moderation.enabled")
+                    : t("dashboard.moderation.disabled")}
                 </Badge>
               </div>
               <p className="max-w-2xl text-sm text-muted-foreground">
-                When disabled, new uploads are approved by policy without
-                calling the configured moderation provider.
+                {t("dashboard.moderation.hint")}
               </p>
             </div>
           </div>
@@ -95,19 +98,23 @@ export function ModerationSettingsDashboard({
 
         <div className="mt-5 grid gap-3 border-t pt-4 text-sm sm:grid-cols-2">
           <div>
-            <p className="text-xs uppercase text-muted-foreground">Source</p>
+            <p className="text-xs uppercase text-muted-foreground">
+              {t("dashboard.moderation.source")}
+            </p>
             <p className="font-medium">
-              {source === "runtime" ? "Admin setting" : "Environment default"}
+              {source === "runtime"
+                ? t("dashboard.moderation.adminSetting")
+                : t("dashboard.moderation.envDefault")}
             </p>
           </div>
           <div>
             <p className="text-xs uppercase text-muted-foreground">
-              Last updated
+              {t("dashboard.moderation.lastUpdated")}
             </p>
             <p className="font-medium">
               {lastUpdatedAt
                 ? new Date(lastUpdatedAt).toLocaleString()
-                : "Not changed in dashboard"}
+                : t("dashboard.moderation.neverUpdated")}
             </p>
           </div>
         </div>

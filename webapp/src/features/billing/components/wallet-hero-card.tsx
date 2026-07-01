@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 import { useGetWalletBalanceQuery } from "../services/billing-api"
 import type { WalletBalance } from "../types/billing-types"
-import { formatVND } from "../types/billing-types"
+import { DISPLAY_CURRENCY, formatVND } from "../types/billing-types"
 
 import { TopUpDialog } from "./top-up-dialog"
 import { WithdrawDialog } from "./withdraw-dialog"
@@ -57,7 +57,7 @@ export function WalletHeroCard({ balance }: WalletHeroCardProps) {
             )}
 
             <p className="text-xs text-white/50">
-              {currentBalance?.currency ?? "VND"} - {isFetching ? "Refreshing" : "Updated just now"}
+              {DISPLAY_CURRENCY} - {isFetching ? "Refreshing" : "Updated just now"}
             </p>
           </div>
 

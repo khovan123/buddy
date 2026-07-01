@@ -22,49 +22,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-
-const SETTINGS_NAV = [
-  {
-    label: "Account",
-    items: [
-      {
-        title: "Profile",
-        href: "/settings/profile",
-        icon: UserRound,
-      },
-      {
-        title: "Security",
-        href: "/settings/security",
-        icon: ShieldCheck,
-      },
-      {
-        title: "Notifications",
-        href: "/settings/notifications",
-        icon: Bell,
-      },
-    ],
-  },
-  {
-    label: "Billing",
-    items: [
-      {
-        title: "Overview",
-        href: "/settings/billing",
-        icon: Wallet,
-      },
-      {
-        title: "Transactions",
-        href: "/settings/billing/transactions",
-        icon: Receipt,
-      },
-      {
-        title: "Payout Account",
-        href: "/settings/billing/payout",
-        icon: CreditCard,
-      },
-    ],
-  },
-] as const
+import { useI18n } from "@/i18n/language-provider"
 
 function isItemActive(pathname: string, href: string) {
   if (href === "/settings/billing") {
@@ -76,6 +34,50 @@ function isItemActive(pathname: string, href: string) {
 
 export function SettingsSidebar() {
   const pathname = usePathname()
+  const { t } = useI18n()
+
+  const settingsNav = [
+    {
+      label: t("settings.account"),
+      items: [
+        {
+          title: t("settings.profile"),
+          href: "/settings/profile",
+          icon: UserRound,
+        },
+        {
+          title: t("settings.security"),
+          href: "/settings/security",
+          icon: ShieldCheck,
+        },
+        {
+          title: t("settings.notifications"),
+          href: "/settings/notifications",
+          icon: Bell,
+        },
+      ],
+    },
+    {
+      label: t("settings.billing"),
+      items: [
+        {
+          title: t("settings.overview"),
+          href: "/settings/billing",
+          icon: Wallet,
+        },
+        {
+          title: t("settings.transactions"),
+          href: "/settings/billing/transactions",
+          icon: Receipt,
+        },
+        {
+          title: t("settings.payoutAccount"),
+          href: "/settings/billing/payout",
+          icon: CreditCard,
+        },
+      ],
+    },
+  ] as const
 
   return (
     <Sidebar
@@ -83,7 +85,7 @@ export function SettingsSidebar() {
       className="h-full! border-r border-border/50 bg-card/50 shadow-sm backdrop-blur-xl"
     >
       <SidebarContent className="py-3">
-        {SETTINGS_NAV.map((group) => (
+        {settingsNav.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>

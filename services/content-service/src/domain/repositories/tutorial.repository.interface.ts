@@ -32,6 +32,7 @@ export interface TutorialListQueryParams {
   userId?: string;
   semester?: number;
   majorId?: string;
+  courseId?: string;
   price?: 'free' | 'paid';
   verified?: boolean;
   sort?: 'newest' | 'popular' | 'rating';

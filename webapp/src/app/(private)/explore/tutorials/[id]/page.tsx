@@ -43,6 +43,7 @@ import {
   ItemInteractionControls,
   TrackContentView,
 } from "@/features/interaction"
+import { getServerTranslator } from "@/i18n/server"
 import { getCachedSession } from "@/lib/server-session"
 
 type PageParams = Promise<{ id: string }>
@@ -67,12 +68,13 @@ export async function generateMetadata({
   params: PageParams
 }): Promise<Metadata> {
   const { id } = await params
+  const { t } = await getServerTranslator()
 
   const tutorial = await getTutorialBySlug(id)
   if (!tutorial) {
     return {
-      title: "Tutorial Not Found",
-      description: "The tutorial you are looking for does not exist.",
+      title: t("explore.tutorial.notFoundTitle"),
+      description: t("explore.tutorial.notFoundDescription"),
     }
   }
 
@@ -107,6 +109,7 @@ export default async function ExploreTutorialDetailPage({
   params: PageParams
 }) {
   const { id } = await params
+  const { locale, t } = await getServerTranslator()
 
   const tutorial = await getTutorialBySlug(id)
   if (!tutorial) {
@@ -165,7 +168,7 @@ export default async function ExploreTutorialDetailPage({
     instructor: {
       "@type": "Person",
       name: tutorial.uploader?.nickname || tutorial.userId,
-      jobTitle: "Creator",
+      jobTitle: t("common.contentCreator"),
     },
     offers: {
       "@type": "Offer",
@@ -184,17 +187,17 @@ export default async function ExploreTutorialDetailPage({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: t("nav.home"), item: siteUrl },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Explore",
+        name: t("nav.explore"),
         item: `${siteUrl}/explore`,
       },
       {
         "@type": "ListItem",
         position: 3,
-        name: "Tutorials",
+        name: t("content.tutorials"),
         item: `${siteUrl}/explore/tutorials`,
       },
       {
@@ -229,13 +232,13 @@ export default async function ExploreTutorialDetailPage({
       {/* ── Header ── */}
       <div className="space-y-2">
         <p className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">
-          {tutorial.course?.name ?? "Tutorial"}
+          {tutorial.course?.name ?? t("nav.tutorial")}
         </p>
         <h1 className="text-3xl font-extrabold tracking-tight text-foreground md:text-4xl">
           {courseTitle}
         </h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          {tutorial.description || "No description provided."}
+          {tutorial.description || t("common.noDescription")}
         </p>
       </div>
 
@@ -261,9 +264,9 @@ export default async function ExploreTutorialDetailPage({
                 </ItemMedia>
                 <ItemTitle className="text-sm font-medium">
                   {tutorial._count.tutorialMedia > 0
-                    ? "Media Attached"
-                    : "No Media"}{" "}
-                  · {tutorial._count.tutorialOrders} Orders
+                    ? t("explore.tutorial.mediaAttached")
+                    : t("explore.tutorial.noMedia")}{" "}
+                  · {tutorial._count.tutorialOrders} {t("explore.tutorial.ordersLabel")}
                 </ItemTitle>
               </Item>
               {tutorial.trailerUrl && (
@@ -273,7 +276,7 @@ export default async function ExploreTutorialDetailPage({
                     size="sm"
                     className="font-bold text-primary hover:bg-transparent"
                   >
-                    Watch Trailer
+                    {t("explore.tutorial.watchTrailer")}
                   </Button>
                 </Link>
               )}
@@ -298,7 +301,7 @@ export default async function ExploreTutorialDetailPage({
                   <Star className="size-4 fill-amber-500 text-amber-500" />
                 </ItemMedia>
                 <ItemTitle className="text-sm font-medium text-foreground">
-                  {tutorial._count.tutorialOrders} orders
+                  {tutorial._count.tutorialOrders} {t("explore.resource.orders")}
                 </ItemTitle>
               </Item>
               <Item variant="default" size="xs" className="w-auto border-0 p-0">
@@ -307,8 +310,8 @@ export default async function ExploreTutorialDetailPage({
                 </ItemMedia>
                 <ItemTitle className="text-sm font-medium text-muted-foreground">
                   {tutorial._count.tutorialMedia > 0
-                    ? "Media Attached"
-                    : "No Media"}
+                    ? t("explore.tutorial.mediaAttached")
+                    : t("explore.tutorial.noMedia")}
                 </ItemTitle>
               </Item>
               <Item variant="default" size="xs" className="w-auto border-0 p-0">
@@ -316,8 +319,8 @@ export default async function ExploreTutorialDetailPage({
                   <CalendarDays className="size-4" />
                 </ItemMedia>
                 <ItemTitle className="text-sm font-medium text-muted-foreground">
-                  Updated{" "}
-                  {new Date(tutorial.updatedAt).toLocaleDateString("en-US", {
+                  {t("common.updated")}{" "}
+                  {new Date(tutorial.updatedAt).toLocaleDateString(locale === "en" ? "en-US" : "vi-VN", {
                     month: "short",
                     year: "numeric",
                   })}
@@ -336,16 +339,16 @@ export default async function ExploreTutorialDetailPage({
               />
               <div>
                 <p className="font-bold text-foreground">
-                  {tutorial.uploader?.nickname || "Expert Buddy"}
+                  {tutorial.uploader?.nickname || t("common.expertBuddy")}
                 </p>
                 <p className="text-xs font-medium text-muted-foreground">
-                  {tutorial.uploader?.career?.name || "Content Creator"}
+                  {tutorial.uploader?.career?.name || t("common.contentCreator")}
                 </p>
               </div>
             </div>
             {isOwner ? (
               <Button asChild variant="outline" className="font-bold">
-                <Link href="/content">Manage</Link>
+                <Link href="/content">{t("common.manage")}</Link>
               </Button>
             ) : (
               <Button
@@ -353,7 +356,7 @@ export default async function ExploreTutorialDetailPage({
                 className="font-bold text-primary hover:bg-primary/5"
               >
                 <UserPlus className="mr-2 size-4" />
-                Follow
+                {t("common.follow")}
               </Button>
             )}
           </div>
@@ -361,10 +364,10 @@ export default async function ExploreTutorialDetailPage({
           {/* ── About + Highlights ── */}
           <div className="space-y-6 text-muted-foreground">
             <h3 className="text-2xl font-bold text-foreground">
-              About this Tutorial
+              {t("explore.tutorial.about")}
             </h3>
             <p className="text-lg leading-relaxed">
-              {tutorial.description || "No description provided."}
+              {tutorial.description || t("common.noDescription")}
             </p>
 
             {tutorial.hightlights.length > 0 && (
@@ -387,7 +390,7 @@ export default async function ExploreTutorialDetailPage({
           {/* ── Tutorial Resources (Steps / Attached Resources) ── */}
           <div className="space-y-5">
             <h3 className="text-2xl font-bold text-foreground">
-              Tutorial Resources
+              {t("explore.tutorial.resources")}
             </h3>
 
             {tutorial.steps && tutorial.steps.length > 0 ? (
@@ -410,7 +413,7 @@ export default async function ExploreTutorialDetailPage({
                         </div>
                         <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
                           {totalItems}{" "}
-                          {totalItems === 1 ? "resource" : "resources"}
+                          {totalItems === 1 ? t("explore.collection.itemResource").toLowerCase() : t("content.resources").toLowerCase()}
                         </span>
                       </div>
                       <div className="divide-y divide-border/20">
@@ -432,7 +435,7 @@ export default async function ExploreTutorialDetailPage({
                               <div>
                                 <p className="text-sm font-bold text-foreground">
                                   {res.resource?.title ||
-                                    `Resource #${resIdx + 1}`}
+                                    `${t("explore.collection.itemResource")} #${resIdx + 1}`}
                                 </p>
                                 {(res.instructionNote ||
                                   res.resource?.summary) && (
@@ -448,7 +451,7 @@ export default async function ExploreTutorialDetailPage({
                                 previewData={previewData}
                                 title={
                                   res.resource?.title ||
-                                  `Resource #${resIdx + 1}`
+                                  `${t("explore.collection.itemResource")} #${resIdx + 1}`
                                 }
                                 description={
                                   res.instructionNote || res.resource?.summary
@@ -457,7 +460,7 @@ export default async function ExploreTutorialDetailPage({
                               >
                                 <button className="flex cursor-pointer items-center gap-5 transition-opacity hover:opacity-80">
                                   <span className="text-sm font-bold text-primary">
-                                    Preview
+                                    {t("explore.tutorial.preview")}
                                   </span>
                                   <LockOpen className="size-5 text-muted-foreground" />
                                 </button>
@@ -507,7 +510,7 @@ export default async function ExploreTutorialDetailPage({
                       >
                         <button className="flex cursor-pointer items-center gap-5 transition-opacity hover:opacity-80">
                           <span className="text-sm font-bold text-primary">
-                            Preview
+                            {t("explore.tutorial.preview")}
                           </span>
                           <LockOpen className="size-5 text-muted-foreground" />
                         </button>
@@ -523,11 +526,10 @@ export default async function ExploreTutorialDetailPage({
               <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border/40 bg-muted/20 py-16 text-center">
                 <FolderOpen className="mb-4 size-12 text-muted-foreground/40" />
                 <h4 className="text-lg font-bold text-foreground">
-                  No resources yet
+                  {t("explore.tutorial.noResourcesTitle")}
                 </h4>
                 <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                  This tutorial doesn&apos;t have any attached resources yet.
-                  Check back later!
+                  {t("explore.tutorial.noResourcesDescription")}
                 </p>
               </div>
             )}
@@ -551,8 +553,7 @@ export default async function ExploreTutorialDetailPage({
                   <Alert className="border-primary/30 bg-primary/8">
                     <ShieldCheck className="size-4 text-primary" />
                     <AlertDescription className="text-sm font-medium text-foreground">
-                      This is your tutorial. Students see checkout here, while
-                      you can manage or preview your published content.
+                      {t("explore.tutorial.ownerAlert")}
                     </AlertDescription>
                   </Alert>
                   <Button
@@ -560,10 +561,10 @@ export default async function ExploreTutorialDetailPage({
                     className="font-headline w-full py-4 font-bold shadow-lg"
                     size="lg"
                   >
-                    <Link href="/content">
-                      <PencilLine className="size-4" />
-                      Manage in Content
-                    </Link>
+                      <Link href="/content">
+                        <PencilLine className="size-4" />
+                        {t("explore.resource.manageInContent")}
+                      </Link>
                   </Button>
                   <Button
                     asChild
@@ -573,7 +574,7 @@ export default async function ExploreTutorialDetailPage({
                   >
                     <Link href={`/library/tutorials/${tutorial.slug}`}>
                       <Eye className="size-4" />
-                      Open owner view
+                      {t("explore.tutorial.openOwnerView")}
                     </Link>
                   </Button>
                 </div>
@@ -582,8 +583,8 @@ export default async function ExploreTutorialDetailPage({
                   <PurchaseButton
                     itemId={tutorial.id}
                     itemType="TUTORIAL_BUNDLE"
-                    label="Buy tutorial"
-                    freeLabel="Start tutorial"
+                    label={t("explore.tutorial.buy")}
+                    freeLabel={t("explore.tutorial.start")}
                     className="font-headline w-full py-4 font-bold shadow-lg"
                     price={tutorialFinalPrice}
                   />
@@ -592,7 +593,7 @@ export default async function ExploreTutorialDetailPage({
                     className="font-headline w-full py-4 font-bold"
                     size="lg"
                   >
-                    Add to Cart
+                    {t("common.addToCart")}
                   </Button>
                 </div>
               )}
@@ -607,7 +608,7 @@ export default async function ExploreTutorialDetailPage({
                     <ItemMedia variant="icon">
                       <Video className="size-4 text-muted-foreground" />
                     </ItemMedia>
-                    <ItemTitle className="text-sm font-medium">Media</ItemTitle>
+                    <ItemTitle className="text-sm font-medium">{t("explore.tutorial.media")}</ItemTitle>
                   </Item>
                   <span className="font-bold">
                     {tutorial._count.tutorialMedia}
@@ -623,7 +624,7 @@ export default async function ExploreTutorialDetailPage({
                       <Star className="size-4 text-muted-foreground" />
                     </ItemMedia>
                     <ItemTitle className="text-sm font-medium">
-                      Orders
+                      {t("explore.tutorial.ordersLabel")}
                     </ItemTitle>
                   </Item>
                   <span className="font-bold">
@@ -639,7 +640,7 @@ export default async function ExploreTutorialDetailPage({
                   className="gap-2 text-muted-foreground hover:text-primary"
                 >
                   <Share2 className="size-4" />
-                  Share
+                  {t("common.share")}
                 </Button>
                 <Toggle
                   variant="outline"
@@ -648,7 +649,7 @@ export default async function ExploreTutorialDetailPage({
                   aria-label="Toggle bookmark"
                 >
                   <Heart className="size-4 transition-colors group-data-[state=on]/toggle:fill-foreground" />
-                  Save
+                  {t("common.saveItem")}
                 </Toggle>
               </div>
 
@@ -663,7 +664,7 @@ export default async function ExploreTutorialDetailPage({
                       <CheckCircle2 className="size-4 text-primary" />
                     </ItemMedia>
                     <ItemTitle className="text-sm font-medium text-muted-foreground">
-                      30-Day Money Back Guarantee
+                      {t("explore.tutorial.moneyBack")}
                     </ItemTitle>
                   </Item>
                   <Item
@@ -675,7 +676,7 @@ export default async function ExploreTutorialDetailPage({
                       <BadgeHelp className="size-4 text-primary" />
                     </ItemMedia>
                     <ItemTitle className="text-sm font-medium text-muted-foreground">
-                      Full Lifetime Access
+                      {t("explore.tutorial.lifetimeAccess")}
                     </ItemTitle>
                   </Item>
                   <Item
@@ -687,7 +688,7 @@ export default async function ExploreTutorialDetailPage({
                       <Smartphone className="size-4 text-primary" />
                     </ItemMedia>
                     <ItemTitle className="text-sm font-medium text-muted-foreground">
-                      Access on mobile and TV
+                      {t("explore.tutorial.mobileTv")}
                     </ItemTitle>
                   </Item>
                 </div>
@@ -704,12 +705,11 @@ export default async function ExploreTutorialDetailPage({
                   <ShieldCheck className="size-5" />
                 </ItemMedia>
                 <ItemTitle className="text-sm font-bold text-foreground">
-                  Verified Tutorial
+                  {t("explore.tutorial.verifiedTitle")}
                 </ItemTitle>
               </Item>
               <p className="text-xs text-muted-foreground">
-                This tutorial has been reviewed by the Buddy Academic Board
-                for accuracy and curriculum alignment.
+                {t("explore.tutorial.verifiedDescription")}
               </p>
             </Card>
 
@@ -720,13 +720,13 @@ export default async function ExploreTutorialDetailPage({
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle className="text-xs font-bold text-foreground">
-                    Teams &amp; Enterprises
+                    {t("explore.tutorial.teams")}
                   </ItemTitle>
                   <Link
                     href="/explore"
                     className="text-xs font-bold text-primary hover:underline"
                   >
-                    Get Buddy for Teams
+                    {t("explore.tutorial.getForTeams")}
                   </Link>
                 </ItemContent>
               </Item>
@@ -736,9 +736,9 @@ export default async function ExploreTutorialDetailPage({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <MetaChip>Major: {tutorial.major?.name ?? "#"}</MetaChip>
-        <MetaChip>Course: {tutorial.course?.name ?? "#"}</MetaChip>
-        <MetaChip>Semester: {tutorial.course?.semester ?? "#"}</MetaChip>
+        <MetaChip>{t("common.major")}: {tutorial.major?.name ?? "#"}</MetaChip>
+        <MetaChip>{t("common.course")}: {tutorial.course?.name ?? "#"}</MetaChip>
+        <MetaChip>{t("common.semester")}: {tutorial.course?.semester ?? "#"}</MetaChip>
       </div>
     </section>
   )

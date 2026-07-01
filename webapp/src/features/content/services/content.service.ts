@@ -94,8 +94,8 @@ export const getTutorials = async (
   if (params.majorId) {
     qs.set("majorId", params.majorId)
   }
-  if (params.price) {
-    qs.set("price", params.price)
+  if (params.courseId) {
+    qs.set("courseId", params.courseId)
   }
   if (typeof params.verified === "boolean") {
     qs.set("verified", String(params.verified))
@@ -224,6 +224,9 @@ export const getTutorialCollections = async (
   }
   if (params.userId) {
     qs.set("userId", params.userId)
+  }
+  if (params.courseId) {
+    qs.set("courseId", params.courseId)
   }
 
   const queryString = qs.toString()
@@ -354,8 +357,8 @@ export const getResources = async (
   if (params.majorId) {
     qs.set("majorId", params.majorId)
   }
-  if (params.price) {
-    qs.set("price", params.price)
+  if (params.courseId) {
+    qs.set("courseId", params.courseId)
   }
   if (typeof params.verified === "boolean") {
     qs.set("verified", String(params.verified))
@@ -483,6 +486,9 @@ export const getResourceCollections = async (
   }
   if (params.userId) {
     qs.set("userId", params.userId)
+  }
+  if (params.courseId) {
+    qs.set("courseId", params.courseId)
   }
 
   const queryString = qs.toString()

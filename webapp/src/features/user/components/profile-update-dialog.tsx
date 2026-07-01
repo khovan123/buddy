@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { enUS } from "date-fns/locale"
+import { vi } from "date-fns/locale"
 import { CalendarIcon, CheckCircle2, Loader2 } from "lucide-react"
 import { Controller, useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
@@ -43,6 +43,7 @@ import {
   useUpdateMeMutation,
   type UserProfile,
 } from "@/features/user/services/user-api"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 import { useGlobalError } from "@/providers/error-provider"
 
@@ -62,6 +63,7 @@ export function ProfileUpdateDialog({
   onOpenChange,
 }: ProfileUpdateDialogProps) {
   const { handleError, clearError } = useGlobalError()
+  const { t } = useI18n()
 
   const { data: contentMetaRes } = useGetContentMetaQuery()
   const { data: careersRes } = useGetCareersQuery()
@@ -170,7 +172,7 @@ export function ProfileUpdateDialog({
       }
 
       await updateMe(payload).unwrap()
-      toast.success("Profile updated.")
+      toast.success(t("profile.updated"))
       onOpenChange(false)
     } catch (err: unknown) {
       handleError(err)
@@ -181,10 +183,10 @@ export function ProfileUpdateDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Update Your Profile</DialogTitle>
+          <DialogTitle>Cập nhật hồ sơ</DialogTitle>
           <DialogDescription>
-            Keep your profile up to date for personalised recommendations and a
-            better community experience.
+            Giữ hồ sơ luôn mới để nhận gợi ý phù hợp hơn và có trải nghiệm cộng
+            đồng tốt hơn.
           </DialogDescription>
         </DialogHeader>
 
@@ -196,15 +198,15 @@ export function ProfileUpdateDialog({
           {/* ═══════════════ Personal Info ═══════════════ */}
           <fieldset className="space-y-4">
             <legend className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
-              Personal Information
+              Thông tin cá nhân
             </legend>
 
             {/* ── Nickname ─────────────────────────────── */}
             <Field>
-              <Label htmlFor="profile-nickname">Nickname</Label>
+              <Label htmlFor="profile-nickname">Tên hiển thị</Label>
               <Input
                 id="profile-nickname"
-                placeholder="How others see you"
+                placeholder="Tên mọi người sẽ thấy"
                 maxLength={100}
                 {...register("nickname")}
               />
@@ -217,7 +219,7 @@ export function ProfileUpdateDialog({
 
             {/* ── Phone ────────────────────────────────── */}
             <Field>
-              <Label htmlFor="profile-phone">Phone Number</Label>
+              <Label htmlFor="profile-phone">Số điện thoại</Label>
               <Input
                 id="profile-phone"
                 type="tel"
@@ -233,7 +235,7 @@ export function ProfileUpdateDialog({
 
             {/* ── Date of Birth ────────────────────────── */}
             <Field>
-              <Label>Date of Birth</Label>
+              <Label>Ngày sinh</Label>
               <Controller
                 control={control}
                 name="dateOfBirth"
@@ -255,9 +257,9 @@ export function ProfileUpdateDialog({
                         >
                           <CalendarIcon className="mr-2 size-4" />
                           {dateValue ? (
-                            dateValue.toLocaleDateString("en-US")
+                            dateValue.toLocaleDateString("vi-VN")
                           ) : (
-                            <span>Select date</span>
+                            <span>Chọn ngày</span>
                           )}
                         </Button>
                       </PopoverTrigger>
@@ -266,7 +268,7 @@ export function ProfileUpdateDialog({
                           mode="single"
                           selected={dateValue}
                           defaultMonth={dateValue}
-                          locale={enUS}
+                          locale={vi}
                           captionLayout="dropdown"
                           fromYear={1900}
                           toYear={new Date().getFullYear()}
@@ -294,10 +296,10 @@ export function ProfileUpdateDialog({
 
             {/* ── Bio ──────────────────────────────────── */}
             <Field>
-              <Label htmlFor="profile-bio">Bio</Label>
+              <Label htmlFor="profile-bio">Giới thiệu</Label>
               <Textarea
                 id="profile-bio"
-                placeholder="Tell others about yourself…"
+                placeholder="Chia sẻ đôi điều về bạn..."
                 rows={3}
                 maxLength={500}
                 className="resize-none"
@@ -317,19 +319,19 @@ export function ProfileUpdateDialog({
           {/* ═══════════════ Academic & Career ═══════════════ */}
           <fieldset className="space-y-4">
             <legend className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
-              Academic &amp; Career
+              Học tập và định hướng nghề nghiệp
             </legend>
 
             {/* ── Major + Semester (side by side) ─────── */}
             <div className="grid gap-4 sm:grid-cols-2">
               <Field>
-                <Label htmlFor="profile-update-major">Major</Label>
+                <Label htmlFor="profile-update-major">Chuyên ngành</Label>
                 <Select
                   value={watchMajorId}
                   onValueChange={(val) => setValue("majorId", val)}
                 >
                   <SelectTrigger id="profile-major-select">
-                    <SelectValue placeholder="Select your major" />
+                    <SelectValue placeholder="Chọn chuyên ngành của bạn" />
                   </SelectTrigger>
                   <SelectContent>
                     {majors.map((m) => (
@@ -342,12 +344,12 @@ export function ProfileUpdateDialog({
               </Field>
 
               <Field>
-                <Label htmlFor="profile-semester">Semester</Label>
+                <Label htmlFor="profile-semester">Học kỳ</Label>
                 <Input
                   id="profile-semester"
                   type="number"
                   min={1}
-                  placeholder="e.g. 3"
+                  placeholder="Ví dụ: 3"
                   {...register("semester", { valueAsNumber: true })}
                 />
                 {errors.semester && (
@@ -360,7 +362,9 @@ export function ProfileUpdateDialog({
 
             {/* ── Career Goal ─────────────────────────── */}
             <Field>
-              <Label htmlFor="profile-update-career">Career Goal</Label>
+              <Label htmlFor="profile-update-career">
+                Mục tiêu nghề nghiệp
+              </Label>
               <Select
                 value={selectedCareerId}
                 onValueChange={(val) => {
@@ -369,7 +373,7 @@ export function ProfileUpdateDialog({
                 }}
               >
                 <SelectTrigger id="profile-update-career">
-                  <SelectValue placeholder="Select your career goal" />
+                  <SelectValue placeholder="Chọn mục tiêu nghề nghiệp" />
                 </SelectTrigger>
                 <SelectContent>
                   {careers.map((c) => (
@@ -384,9 +388,9 @@ export function ProfileUpdateDialog({
             {/* ── Highlight Skills ────────────────────── */}
             {selectedCareerId && skills.length > 0 && (
               <Field>
-                <Label>Highlight Skills</Label>
+                <Label>Kỹ năng nổi bật</Label>
                 <p className="text-xs text-muted-foreground">
-                  Select the skills you want to showcase on your profile.
+                  Chọn những kỹ năng bạn muốn hiển thị trên hồ sơ.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {skills.map((skill) => {
@@ -421,7 +425,7 @@ export function ProfileUpdateDialog({
             {isLoading ? (
               <Loader2 className="mr-2 size-4 animate-spin" />
             ) : null}
-            Save Changes
+            Lưu thay đổi
           </Button>
         </DialogFooter>
       </DialogContent>

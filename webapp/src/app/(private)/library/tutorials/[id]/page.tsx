@@ -14,6 +14,7 @@ import {
   LibraryTutorialVideoPlayer,
 } from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 type PageParams = Promise<{ id: string }>
 
@@ -73,6 +74,7 @@ export default async function LibraryTutorialDetailPage({
     params,
     getSeoContent("library-tutorials-:id"),
   ])
+  const { locale, t } = await getServerTranslator()
   const tutorial = await getLibraryTutorialBySlug(id)
 
   if (!tutorial) {
@@ -87,6 +89,14 @@ export default async function LibraryTutorialDetailPage({
     ? formatFileSize(tutorial.media.fileSize)
     : "—"
   const linkedResourceCount = tutorial.resourceIds?.length ?? 0
+  const linkedCountLabel =
+    linkedResourceCount > 1
+      ? t("library.detail.linkedResourcesCount", {
+          count: String(linkedResourceCount),
+        })
+      : linkedResourceCount === 1
+        ? t("library.detail.linkedResourcesSingle")
+        : t("library.detail.noAttachedResources")
 
   return (
     <section className="bg-background text-foreground">
@@ -98,7 +108,7 @@ export default async function LibraryTutorialDetailPage({
               <div className="flex flex-col gap-2">
                 <LibraryBackButton
                   fallbackHref="/library"
-                  label="Back to Library"
+                  label={t("library.back")}
                   variant="ghost"
                   size="sm"
                   className="w-fit"
@@ -115,7 +125,7 @@ export default async function LibraryTutorialDetailPage({
                 >
                   <a href={videoUrl} download>
                     <Download className="size-4" />
-                    Download Video
+                    {t("library.detail.downloadVideo")}
                   </a>
                 </Button>
               ) : null}
@@ -141,10 +151,10 @@ export default async function LibraryTutorialDetailPage({
                         <Info className="relative z-10 size-8 text-primary" />
                       </div>
                       <p className="mt-3 text-lg font-medium text-foreground/80">
-                        Video is still processing
+                        {t("library.detail.processingTitle")}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        It will be available shortly.
+                        {t("library.detail.processingDescription")}
                       </p>
                     </div>
                   </div>
@@ -156,10 +166,10 @@ export default async function LibraryTutorialDetailPage({
                     <Card className="rounded-3xl border border-white/5 bg-card/40 shadow-sm backdrop-blur-xl transition-colors hover:border-primary/20">
                       <CardContent className="space-y-4 p-8">
                         <p className="text-xs font-bold tracking-widest text-primary uppercase">
-                          About this Tutorial
+                          {t("library.detail.aboutTutorial")}
                         </p>
                         <p className="text-base leading-relaxed text-foreground/80">
-                          {tutorial.description || "No description provided."}
+                          {tutorial.description || t("common.noDescription")}
                         </p>
                       </CardContent>
                     </Card>
@@ -168,7 +178,7 @@ export default async function LibraryTutorialDetailPage({
                       <Card className="rounded-3xl border border-white/5 bg-card/40 shadow-sm backdrop-blur-xl transition-colors hover:border-primary/20">
                         <CardContent className="space-y-4 p-8">
                           <p className="text-xs font-bold tracking-widest text-primary uppercase">
-                            Key Highlights
+                            {t("library.detail.highlights")}
                           </p>
                           <ul className="grid gap-3 sm:grid-cols-2">
                             {tutorial.hightlights.map((h) => (
@@ -190,23 +200,23 @@ export default async function LibraryTutorialDetailPage({
                   <aside className="lg:col-span-1">
                     <Card className="rounded-3xl border border-white/5 bg-card/40 p-8 shadow-sm backdrop-blur-xl transition-colors hover:border-primary/20">
                       <p className="mb-6 text-xs font-bold tracking-widest text-primary uppercase">
-                        Details
+                        {t("library.detail.details")}
                       </p>
                       <div className="space-y-4">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">
-                            Duration
+                            {t("library.detail.duration")}
                           </span>
                           <span className="font-semibold">{duration}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground">
-                            Video Size
+                            {t("library.detail.videoSize")}
                           </span>
                           <span className="font-semibold">{fileSize}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Status</span>
+                          <span className="text-muted-foreground">{copy.status}</span>
                           <Badge
                             variant="secondary"
                             className="border-none bg-primary/10 text-primary shadow-sm"
@@ -215,10 +225,10 @@ export default async function LibraryTutorialDetailPage({
                           </Badge>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Updated</span>
+                          <span className="text-muted-foreground">{t("library.detail.updatedLabel")}</span>
                           <span className="font-semibold">
                             {new Date(tutorial.updatedAt).toLocaleDateString(
-                              "en-US",
+                              locale === "en" ? "en-US" : "vi-VN",
                               {
                                 month: "short",
                                 year: "numeric",
@@ -241,24 +251,22 @@ export default async function LibraryTutorialDetailPage({
                     <div>
                       <h3 className="flex items-center gap-2 text-lg font-bold tracking-tight text-foreground">
                         <FileText className="size-5 text-accent" />
-                        Attached Resources
+                        {t("library.detail.attachedResources")}
                       </h3>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Download materials included in this tutorial package.
+                        {t("library.detail.attachedResourcesDescription")}
                       </p>
                     </div>
 
                     <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-card/20 p-8 text-center">
                       <Info className="mb-3 size-8 text-muted-foreground/30" />
                       <p className="text-sm font-medium text-muted-foreground">
-                        {linkedResourceCount > 0
-                          ? `${linkedResourceCount} linked resource${linkedResourceCount === 1 ? "" : "s"}`
-                          : "No resources attached"}
+                        {linkedCountLabel}
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground/60">
                         {linkedResourceCount > 0
-                          ? "Linked resources will appear here when the library API returns their details."
-                          : "This tutorial does not have any downloadable materials."}
+                          ? t("library.detail.linkedResourcesDescription")
+                          : t("library.detail.noLinkedResourcesDescription")}
                       </p>
                     </div>
                   </div>

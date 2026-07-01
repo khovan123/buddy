@@ -4,6 +4,7 @@ import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
 import { useDeleteSkillMutation } from "@/features/user/services/user-api"
+import { useI18n } from "@/i18n/language-provider"
 
 interface DeleteSkillDialogProps {
   open: boolean
@@ -16,6 +17,7 @@ export default function DeleteSkillDialog({
   onOpenChange,
   id,
 }: DeleteSkillDialogProps) {
+  const { t } = useI18n()
   const [deleteSkill, { isLoading }] = useDeleteSkillMutation()
 
   const handleDelete = async () => {
@@ -24,10 +26,10 @@ export default function DeleteSkillDialog({
     }
     try {
       await deleteSkill(id).unwrap()
-      toast.success("Skill deleted.")
+      toast.success(t("dashboard.deleteSkill.success"))
       onOpenChange(false)
     } catch {
-      toast.error("We could not delete this skill.")
+      toast.error(t("dashboard.deleteSkill.error"))
     }
   }
 
@@ -36,9 +38,9 @@ export default function DeleteSkillDialog({
       open={open}
       onOpenChange={onOpenChange}
       variant="error"
-      title="Delete skill?"
-      description="This action cannot be undone. This will permanently delete the skill."
-      confirmLabel="Delete"
+      title={t("dashboard.deleteSkill.title")}
+      description={t("dashboard.deleteSkill.description")}
+      confirmLabel={t("dashboard.deleteSkill.confirm")}
       loading={isLoading}
       onConfirm={handleDelete}
     />

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useI18n } from "@/i18n/language-provider"
 import { extractApiError } from "@/types/api"
 
 import { useWithdrawWalletMutation } from "../services/billing-api"
@@ -35,6 +36,7 @@ export function WithdrawDialog({
   onOpenChange,
   currentBalance,
 }: WithdrawDialogProps) {
+  const { t } = useI18n()
   const router = useRouter()
   const [amount, setAmount] = useState("")
   const [withdraw, { isLoading }] = useWithdrawWalletMutation()
@@ -54,7 +56,7 @@ export function WithdrawDialog({
         idempotencyKey: uuid(),
       }).unwrap()
 
-      toast.success("Withdrawal request created!")
+      toast.success(t("billing.withdraw.success"))
       setAmount("")
       onOpenChange(false)
       router.refresh()
@@ -74,16 +76,14 @@ export function WithdrawDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Withdraw</DialogTitle>
-          <DialogDescription>
-            Transfer funds from your wallet to your payout account.
-          </DialogDescription>
+          <DialogTitle>{t("billing.withdraw.title")}</DialogTitle>
+          <DialogDescription>{t("billing.withdraw.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="rounded-xl bg-muted/50 px-4 py-3">
             <p className="text-xs text-muted-foreground">
-              Available Balance
+              {t("billing.withdraw.availableBalance")}
             </p>
             <p className="text-lg font-bold tabular-nums">
               {formatVND(currentBalance)}
@@ -92,27 +92,27 @@ export function WithdrawDialog({
 
           <div className="space-y-2">
             <Label htmlFor="withdraw-amount">
-              Withdrawal Amount (VND)
+              {t("billing.withdraw.amount")}
             </Label>
             <Input
               id="withdraw-amount"
               type="number"
               min="1"
               max={balanceNum}
-              placeholder="e.g. 50000"
+              placeholder={t("billing.withdraw.placeholder")}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
 
             {amount && amountNum > balanceNum && (
               <p className="text-xs text-destructive">
-                Amount exceeds your available balance.
+                {t("billing.withdraw.exceeds")}
               </p>
             )}
 
             {amount && amountNum > 0 && amountNum <= balanceNum && (
               <p className="text-xs text-muted-foreground">
-                You will withdraw {formatVND(amount)}
+                {t("billing.withdraw.withdrawing", { amount: formatVND(amount) })}
               </p>
             )}
           </div>
@@ -125,7 +125,7 @@ export function WithdrawDialog({
             onClick={handleClose}
             disabled={isLoading}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             id="withdraw-submit-btn"
@@ -133,7 +133,7 @@ export function WithdrawDialog({
             disabled={isLoading || !isValid}
           >
             {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
-            Withdraw
+            {t("billing.withdraw.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

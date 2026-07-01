@@ -56,6 +56,7 @@ import type {
   CollectionQueryItem,
   ResourceQueryItem,
 } from "@/features/content/types"
+import { useI18n } from "@/i18n/language-provider"
 import { extractApiError } from "@/types/api"
 
 import { TutorialFormValues, tutorialSchema } from "../schema"
@@ -132,6 +133,7 @@ const FIELD_TAB_MAP: Record<string, string> = {
 }
 
 export function CreateTutorialForm() {
+  const { t } = useI18n()
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get("edit") || undefined
@@ -285,14 +287,14 @@ export function CreateTutorialForm() {
     queueMicrotask(() => setIsLoadingResources(true))
     fetchResourcesByCourse(selectedCourseId)
       .then((fetched) => queueMicrotask(() => setResources(fetched)))
-      .catch(() => toast.error("We could not load related resources."))
+      .catch(() => toast.error(t("content.tutorialForm.loadResourcesError")))
       .finally(() => queueMicrotask(() => setIsLoadingResources(false)))
 
     // Fetch resource collections (for collection mode)
     queueMicrotask(() => setIsLoadingCollections(true))
     fetchResourceCollectionsByCourse(selectedCourseId)
       .then((fetched) => queueMicrotask(() => setResourceCollections(fetched)))
-      .catch(() => toast.error("We could not load resource collections."))
+      .catch(() => toast.error(t("content.tutorialForm.loadCollectionsError")))
       .finally(() => queueMicrotask(() => setIsLoadingCollections(false)))
   }, [
     form,
@@ -301,6 +303,7 @@ export function CreateTutorialForm() {
     setIsLoadingResources,
     setResourceCollections,
     setResources,
+    t,
   ])
 
   // ── Mode switch: clear data when switching attachment mode ─────
@@ -346,7 +349,10 @@ export function CreateTutorialForm() {
       setValue("fileSizeBytes", 0, { shouldValidate: true })
       setValue("videoDurationSeconds", 0, { shouldValidate: true })
       toast.error(
-        `Tutorial videos must be ${TUTORIAL_ALLOWED_FILE_TYPE_COPY} files.`
+        t("content.tutorialForm.invalidFileType").replace(
+          "{types}",
+          TUTORIAL_ALLOWED_FILE_TYPE_COPY
+        )
       )
       return
     }
@@ -363,9 +369,7 @@ export function CreateTutorialForm() {
       const duration = await getVideoDuration(file)
       setValue("videoDurationSeconds", duration, { shouldValidate: true })
     } catch {
-      toast.error(
-        "We could not detect the video length. Please enter it manually."
-      )
+      toast.error(t("content.tutorialForm.videoDurationError"))
     }
   }
 
@@ -406,13 +410,13 @@ export function CreateTutorialForm() {
               steps: stepsPayload,
             },
           }).unwrap()
-          toast.success("Tutorial updated.")
+          toast.success(t("content.tutorialForm.updated"))
           router.refresh()
         } catch (error: unknown) {
           toast.error(
             getFriendlyContentError(
               error,
-              "We could not update this tutorial. Please review the form and try again."
+              t("content.tutorialForm.updateError")
             )
           )
         }
@@ -420,7 +424,7 @@ export function CreateTutorialForm() {
       }
 
       if (!selectedFileRef.current) {
-        toast.error("Please select a video file to upload.")
+        toast.error(t("content.tutorialForm.missingVideo"))
         return
       }
 
@@ -486,14 +490,10 @@ export function CreateTutorialForm() {
                 fileId: response.fileId,
                 s3Key: response.s3Key,
               }).unwrap()
-              toast.success(
-                "Video uploaded. We will prepare captions and check the content in the background."
-              )
+              toast.success(t("content.tutorialForm.uploaded"))
             } catch (error) {
               console.error("Failed to confirm tutorial:", error)
-              toast.error(
-                "Video uploaded, but we could not start checking it. Please try again from Content."
-              )
+              toast.error(t("content.tutorialForm.confirmError"))
             }
           }
         })
@@ -503,7 +503,7 @@ export function CreateTutorialForm() {
       } catch (error: unknown) {
         const message = getFriendlyContentError(
           error,
-          "We could not create this tutorial. Please review the form and try again."
+          t("content.tutorialForm.createError")
         )
         toast.error(message)
         console.error("Failed to create tutorial:", {
@@ -521,6 +521,7 @@ export function CreateTutorialForm() {
       isEditMode,
       router,
       updateTutorial,
+      t,
     ]
   )
 

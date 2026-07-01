@@ -11,6 +11,7 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useI18n } from "@/i18n/language-provider"
 
 import type {
   Transaction,
@@ -24,22 +25,6 @@ interface TransactionTimelineProps {
   initialData: TransactionPage | null
 }
 
-const TYPE_CONFIG: Record<
-  TransactionType,
-  { icon: typeof Clock; label: string; sign: "+" | "-" }
-> = {
-  TOP_UP: { icon: ArrowDownToLine, label: "Top Up", sign: "+" },
-  PURCHASE_DEBIT: { icon: ShoppingCart, label: "Purchase", sign: "-" },
-  PURCHASE_CREDIT: {
-    icon: CircleDollarSign,
-    label: "Sale Credit",
-    sign: "+",
-  },
-  WITHDRAW: { icon: ArrowUpFromLine, label: "Withdraw", sign: "-" },
-  REFUND_DEBIT: { icon: RefreshCcw, label: "Refund Sent", sign: "-" },
-  REFUND_CREDIT: { icon: RefreshCcw, label: "Refund Received", sign: "+" },
-}
-
 const STATUS_VARIANT: Record<
   TransactionStatus,
   "default" | "secondary" | "destructive"
@@ -49,37 +34,61 @@ const STATUS_VARIANT: Record<
   FAILED: "destructive",
 }
 
-function formatRelativeDate(dateStr: string): string {
+function formatRelativeDate(
+  dateStr: string,
+  locale: string,
+  labels: {
+    justNow: string
+    minutesAgo: (count: string) => string
+    hoursAgo: (count: string) => string
+    daysAgo: (count: string) => string
+  }
+): string {
   const date = new Date(dateStr)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffMins = Math.floor(diffMs / 60_000)
 
   if (diffMins < 1) {
-    return "Just now"
+    return labels.justNow
   }
   if (diffMins < 60) {
-    return `${diffMins}m ago`
+    return labels.minutesAgo(String(diffMins))
   }
 
   const diffHours = Math.floor(diffMins / 60)
   if (diffHours < 24) {
-    return `${diffHours}h ago`
+    return labels.hoursAgo(String(diffHours))
   }
 
   const diffDays = Math.floor(diffHours / 24)
   if (diffDays < 7) {
-    return `${diffDays}d ago`
+    return labels.daysAgo(String(diffDays))
   }
 
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
   })
 }
 
-function TransactionEntry({ tx }: { tx: Transaction }) {
-  const config = TYPE_CONFIG[tx.type]
+function TransactionEntry({
+  tx,
+  locale,
+  relativeLabels,
+  labels,
+}: {
+  tx: Transaction
+  locale: string
+  relativeLabels: {
+    justNow: string
+    minutesAgo: (count: string) => string
+    hoursAgo: (count: string) => string
+    daysAgo: (count: string) => string
+  }
+  labels: Record<TransactionType, { icon: typeof Clock; label: string; sign: "+" | "-" }>
+}) {
+  const config = labels[tx.type]
   const Icon = config.icon
   const isPositive = config.sign === "+"
 
@@ -97,7 +106,7 @@ function TransactionEntry({ tx }: { tx: Transaction }) {
         <div className="space-y-0.5">
           <p className="text-sm font-medium leading-none">{config.label}</p>
           <p className="text-xs text-muted-foreground">
-            {formatRelativeDate(tx.createdAt)}
+            {formatRelativeDate(tx.createdAt, locale, relativeLabels)}
           </p>
         </div>
 
@@ -127,13 +136,37 @@ function TransactionEntry({ tx }: { tx: Transaction }) {
 export function TransactionTimeline({
   initialData,
 }: TransactionTimelineProps) {
+  const { locale, t } = useI18n()
   const transactions = initialData?.data ?? []
+  const dateLocale = locale === "en" ? "en-US" : "vi-VN"
+  const relativeLabels = {
+    justNow: t("billing.transactions.justNow"),
+    minutesAgo: (count: string) =>
+      t("billing.transactions.minutesAgo", { count }),
+    hoursAgo: (count: string) => t("billing.transactions.hoursAgo", { count }),
+    daysAgo: (count: string) => t("billing.transactions.daysAgo", { count }),
+  }
+  const typeConfig: Record<
+    TransactionType,
+    { icon: typeof Clock; label: string; sign: "+" | "-" }
+  > = {
+    TOP_UP: { icon: ArrowDownToLine, label: t("billing.transactions.topUp"), sign: "+" },
+    PURCHASE_DEBIT: { icon: ShoppingCart, label: t("billing.transactions.purchase"), sign: "-" },
+    PURCHASE_CREDIT: {
+      icon: CircleDollarSign,
+      label: t("billing.transactions.saleCredit"),
+      sign: "+",
+    },
+    WITHDRAW: { icon: ArrowUpFromLine, label: t("billing.transactions.withdraw"), sign: "-" },
+    REFUND_DEBIT: { icon: RefreshCcw, label: t("billing.transactions.refundSent"), sign: "-" },
+    REFUND_CREDIT: { icon: RefreshCcw, label: t("billing.transactions.refundReceived"), sign: "+" },
+  }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          Recent Transactions
+          {t("billing.transactions.recentTitle")}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -141,16 +174,22 @@ export function TransactionTimeline({
           <div className="flex flex-col items-center gap-2 py-12 text-center">
             <Clock className="size-8 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">
-              No transactions yet
+              {t("billing.transactions.empty")}
             </p>
             <p className="text-xs text-muted-foreground/60">
-              Top up your wallet to get started.
+              {t("billing.transactions.emptyHint")}
             </p>
           </div>
         ) : (
           <div className="divide-y divide-border/50">
             {transactions.map((tx) => (
-              <TransactionEntry key={tx.id} tx={tx} />
+              <TransactionEntry
+                key={tx.id}
+                tx={tx}
+                locale={dateLocale}
+                relativeLabels={relativeLabels}
+                labels={typeConfig}
+              />
             ))}
           </div>
         )}

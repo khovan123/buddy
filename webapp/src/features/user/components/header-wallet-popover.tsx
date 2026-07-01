@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { TopUpDialog } from "@/features/billing/components/top-up-dialog"
 import { WithdrawDialog } from "@/features/billing/components/withdraw-dialog"
 import { useGetWalletBalanceQuery } from "@/features/billing/services/billing-api"
-import { formatVND } from "@/features/billing/types/billing-types"
+import { DISPLAY_CURRENCY, formatVND } from "@/features/billing/types/billing-types"
 
 export function HeaderWalletPopover() {
   const [open, setOpen] = useState(false)
@@ -71,7 +71,7 @@ export function HeaderWalletPopover() {
               <Skeleton className="mt-2 h-8 w-36" />
             )}
             <p className="mt-1 text-xs text-muted-foreground">
-              {balance?.currency ?? "VND"} - {isFetching ? "Refreshing" : "Ready"}
+              {DISPLAY_CURRENCY} - {isFetching ? "Refreshing" : "Ready"}
             </p>
           </div>
 

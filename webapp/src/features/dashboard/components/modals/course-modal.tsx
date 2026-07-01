@@ -41,6 +41,7 @@ import {
   useUpdateCourseMutation,
 } from "@/features/content/services/content-api"
 import { Course, CourseStatus, Major } from "@/features/content/types"
+import { useI18n } from "@/i18n/language-provider"
 
 interface CourseModalProps {
   open: boolean
@@ -55,6 +56,7 @@ export default function CourseModal({
   course,
   majors,
 }: CourseModalProps) {
+  const { t } = useI18n()
   const isEditing = !!course
   const [createCourse, { isLoading: isCreating }] = useCreateCourseMutation()
   const [updateCourse, { isLoading: isUpdating }] = useUpdateCourseMutation()
@@ -108,14 +110,14 @@ export default function CourseModal({
     try {
       if (isEditing && course) {
         await updateCourse({ id: course.id, body: data }).unwrap()
-        toast.success("Course updated.")
+        toast.success(t("dashboard.courseModal.updated"))
       } else {
         await createCourse(data).unwrap()
-        toast.success("Course created.")
+        toast.success(t("dashboard.courseModal.created"))
       }
       onOpenChange(false)
     } catch (error) {
-      toast.error("We could not save this course.")
+      toast.error(t("dashboard.courseModal.saveError"))
     }
   }
 
@@ -139,17 +141,19 @@ export default function CourseModal({
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>
-              {isEditing ? "Edit Course" : "Create Course"}
+              {isEditing
+                ? t("dashboard.courseModal.editTitle")
+                : t("dashboard.courseModal.createTitle")}
             </DialogTitle>
             <DialogDescription>
               {isEditing
-                ? "Modify the course details."
-                : "Add a new course linked to a major."}
+                ? t("dashboard.courseModal.editDescription")
+                : t("dashboard.courseModal.createDescription")}
             </DialogDescription>
           </DialogHeader>
           <FieldGroup className="py-4">
             <Field>
-              <FieldLabel htmlFor="code">Code</FieldLabel>
+              <FieldLabel htmlFor="code">{t("common.code")}</FieldLabel>
               <Input id="code" placeholder="PRF192" {...register("code")} />
               {errors.code && (
                 <p className="mt-1 text-sm text-destructive">
@@ -159,7 +163,7 @@ export default function CourseModal({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <FieldLabel htmlFor="name">{t("common.name")}</FieldLabel>
               <Input
                 id="name"
                 placeholder="Programming Fundamentals"
@@ -173,7 +177,9 @@ export default function CourseModal({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="majorIds">Majors</FieldLabel>
+              <FieldLabel htmlFor="majorIds">
+                {t("dashboard.courseModal.majors")}
+              </FieldLabel>
               <Controller
                 name="majorIds"
                 control={control}
@@ -210,7 +216,11 @@ export default function CourseModal({
                           })}
                           <ComboboxChipsInput
                             id="majorIds"
-                            placeholder={currentValues.length === 0 ? "Select Majors..." : ""}
+                            placeholder={
+                              currentValues.length === 0
+                                ? t("dashboard.courseModal.selectMajors")
+                                : ""
+                            }
                             onBlur={() => setMajorSearch("")}
                           />
                         </ComboboxChips>

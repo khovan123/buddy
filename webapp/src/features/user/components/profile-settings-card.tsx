@@ -27,6 +27,7 @@ import {
   useUpdateMeMutation,
   type UserProfile,
 } from "@/features/user/services/user-api"
+import { useI18n } from "@/i18n/language-provider"
 import { useGlobalError } from "@/providers/error-provider"
 
 const profileSettingsSchema = z.object({
@@ -44,6 +45,7 @@ interface ProfileSettingsCardProps {
 export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
   const [editing, setEditing] = useState(false)
   const { handleError, clearError } = useGlobalError()
+  const { t } = useI18n()
 
   const { data: contentMetaRes } = useGetContentMetaQuery()
   const { data: careersRes } = useGetCareersQuery()
@@ -112,7 +114,7 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
       }
 
       await updateMe(payload).unwrap()
-      toast.success("Profile updated.")
+      toast.success(t("profile.updated"))
       setEditing(false)
     } catch (err: unknown) {
       handleError(err)
@@ -127,7 +129,7 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
     <Card className="border-border/70">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
-          Academic & Career Info
+          Học tập và định hướng nghề nghiệp
         </CardTitle>
         {!editing ? (
           <Button
@@ -137,7 +139,7 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
             className="gap-1"
           >
             <Pencil className="size-3" />
-            Edit
+            {t("common.edit")}
           </Button>
         ) : null}
       </CardHeader>
@@ -147,27 +149,27 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <p className="text-xs font-semibold text-muted-foreground">
-                Major
+                Chuyên ngành
               </p>
               <p className="text-sm font-medium text-foreground">
                 {currentMajor?.name ?? (
-                  <span className="text-muted-foreground">Not set</span>
+                  <span className="text-muted-foreground">Chưa cập nhật</span>
                 )}
               </p>
             </div>
             <div>
               <p className="text-xs font-semibold text-muted-foreground">
-                Career Goal
+                Mục tiêu nghề nghiệp
               </p>
               <p className="text-sm font-medium text-foreground">
                 {currentCareer?.name ?? (
-                  <span className="text-muted-foreground">Not set</span>
+                  <span className="text-muted-foreground">Chưa cập nhật</span>
                 )}
               </p>
             </div>
             <div>
               <p className="text-xs font-semibold text-muted-foreground">
-                Highlight Skills
+                Kỹ năng nổi bật
               </p>
               {profile.skillIds && profile.skillIds.length > 0 ? (
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -181,7 +183,7 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Not set</p>
+                <p className="text-sm text-muted-foreground">Chưa cập nhật</p>
               )}
             </div>
           </div>
@@ -190,13 +192,13 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field>
-                <Label htmlFor="profile-settings-major">Major</Label>
+                <Label htmlFor="profile-settings-major">Chuyên ngành</Label>
                 <Select
                   value={selectedMajorId}
                   onValueChange={(val) => setValue("majorId", val)}
                 >
                   <SelectTrigger id="profile-settings-major">
-                    <SelectValue placeholder="Select major" />
+                    <SelectValue placeholder="Chọn chuyên ngành" />
                   </SelectTrigger>
                   <SelectContent>
                     {majors.map((m) => (
@@ -209,7 +211,9 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
               </Field>
 
               <Field>
-                <Label htmlFor="profile-settings-career">Career Goal</Label>
+                <Label htmlFor="profile-settings-career">
+                  Mục tiêu nghề nghiệp
+                </Label>
                 <Select
                   value={selectedCareerId}
                   onValueChange={(val) => {
@@ -218,7 +222,7 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
                   }}
                 >
                   <SelectTrigger id="profile-settings-career">
-                    <SelectValue placeholder="Select career" />
+                    <SelectValue placeholder="Chọn định hướng nghề nghiệp" />
                   </SelectTrigger>
                   <SelectContent>
                     {careers.map((c) => (
@@ -233,7 +237,7 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
 
             {selectedCareerId && skills.length > 0 ? (
               <Field>
-                <Label>Highlight Skills</Label>
+                <Label>Kỹ năng nổi bật</Label>
                 <div className="flex flex-wrap gap-2">
                   {skills.map((skill) => {
                     const isSelected = selectedSkills.includes(skill.id)
@@ -262,7 +266,7 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
                 ) : (
                   <Save className="mr-1 size-3" />
                 )}
-                Save
+                {t("common.save")}
               </Button>
               <Button
                 type="button"
@@ -273,7 +277,7 @@ export function ProfileSettingsCard({ user }: ProfileSettingsCardProps) {
                   clearError()
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </form>

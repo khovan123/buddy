@@ -24,6 +24,7 @@ import {
   useRecheckResourceModerationMutation,
   useRecheckTutorialModerationMutation,
 } from "@/features/content/services/content-api"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 
 import { getFriendlyModerationReason } from "../../utils/user-facing-content"
@@ -341,6 +342,7 @@ export function ManualModerationCheckButton({
   contentId,
   contentType,
 }: ManualModerationCheckButtonProps) {
+  const { t } = useI18n()
   const router = useRouter()
   const [recheckResource, resourceState] =
     useRecheckResourceModerationMutation()
@@ -355,12 +357,10 @@ export function ManualModerationCheckButton({
       } else {
         await recheckTutorial({ tutorialId: contentId }).unwrap()
       }
-      toast.success("Content check finished")
+      toast.success(t("content.moderation.recheckSuccess"))
       router.refresh()
     } catch {
-      toast.error(
-        "We could not check this content right now. Please try again."
-      )
+      toast.error(t("content.moderation.recheckError"))
     }
   }
 
@@ -378,7 +378,7 @@ export function ManualModerationCheckButton({
       ) : (
         <RefreshCw className="size-4" />
       )}
-      Check again
+      {t("content.moderation.recheckAction")}
     </Button>
   )
 }
@@ -392,6 +392,7 @@ export function DeleteContentButton({
   contentId,
   contentType,
 }: DeleteContentButtonProps) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const [deleteResource, resourceState] = useDeleteResourceMutation()
@@ -406,15 +407,17 @@ export function DeleteContentButton({
         await deleteTutorial(contentId).unwrap()
       }
       toast.success(
-        contentType === "resource" ? "Resource deleted" : "Tutorial deleted"
+        contentType === "resource"
+          ? t("content.moderation.delete.resourceSuccess")
+          : t("content.moderation.delete.tutorialSuccess")
       )
       setOpen(false)
       router.refresh()
     } catch {
       toast.error(
         contentType === "resource"
-          ? "We could not delete this resource"
-          : "We could not delete this tutorial"
+          ? t("content.moderation.delete.resourceError")
+          : t("content.moderation.delete.tutorialError")
       )
     }
   }
@@ -429,9 +432,17 @@ export function DeleteContentButton({
       }}
       variant="error"
       icon={<Trash2 />}
-      title={`Delete this ${contentType}?`}
-      description={`This ${contentType} will be removed from your content list. You cannot undo this.`}
-      confirmLabel="Delete"
+      title={
+        contentType === "resource"
+          ? t("content.moderation.delete.resourceTitle")
+          : t("content.moderation.delete.tutorialTitle")
+      }
+      description={
+        contentType === "resource"
+          ? t("content.moderation.delete.resourceDescription")
+          : t("content.moderation.delete.tutorialDescription")
+      }
+      confirmLabel={t("content.moderation.delete.confirm")}
       loading={isLoading}
       onConfirm={handleDelete}
       trigger={
@@ -447,11 +458,11 @@ export function DeleteContentButton({
           ) : (
             <Trash2 className="size-4" />
           )}
-          Delete
+          {t("content.moderation.delete.trigger")}
         </Button>
       }
     >
-      This removes the item from your creator pages.
+      {t("content.moderation.delete.footnote")}
     </ConfirmDialog>
   )
 }

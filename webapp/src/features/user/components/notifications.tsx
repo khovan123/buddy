@@ -43,6 +43,7 @@ import {
   useGetNotificationsQuery,
   useMarkAllNotificationsReadMutation,
 } from "@/features/user/services/notification-api"
+import { useI18n } from "@/i18n/language-provider"
 import { baseApi } from "@/lib/redux/base-api"
 import { cn } from "@/lib/utils"
 
@@ -52,7 +53,7 @@ interface ModerationNotification {
   id: string
   href: string
   title: string
-  type: "Resource" | "Tutorial" | "Purchase" | "Forum"
+  type: string
   statusLabel: string
   description: string
   reason?: string
@@ -86,7 +87,8 @@ function isAfterReadAll(updatedAt: string, readAllAt: string | null) {
 
 function getModerationMeta(
   contentStatus: ResourceStatus | TutorialStatus,
-  moderationStatus?: ContentModerationStatus
+  moderationStatus: ContentModerationStatus | undefined,
+  t: (key: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string
 ): Pick<ModerationNotification, "statusLabel" | "description" | "tone"> {
   if (
     contentStatus === ResourceStatus.BANNED ||
@@ -94,8 +96,8 @@ function getModerationMeta(
     moderationStatus === ContentModerationStatus.REJECTED
   ) {
     return {
-      statusLabel: "Rejected",
-      description: "This content did not pass moderation.",
+      statusLabel: t("notifications.status.rejected"),
+      description: t("notifications.message.rejected"),
       tone: "danger",
     }
   }
@@ -106,16 +108,16 @@ function getModerationMeta(
     moderationStatus === ContentModerationStatus.ERROR
   ) {
     return {
-      statusLabel: "Failed",
-      description: "Content processing or moderation failed.",
+      statusLabel: t("notifications.status.failed"),
+      description: t("notifications.message.failed"),
       tone: "danger",
     }
   }
 
   if (moderationStatus === ContentModerationStatus.NEEDS_REVIEW) {
     return {
-      statusLabel: "Needs review",
-      description: "This content needs further admin review.",
+      statusLabel: t("notifications.status.needsReview"),
+      description: t("notifications.message.needsReview"),
       tone: "warning",
     }
   }
@@ -126,24 +128,23 @@ function getModerationMeta(
     moderationStatus === ContentModerationStatus.PENDING
   ) {
     return {
-      statusLabel: "Processing",
-      description:
-        "Extracting content and running moderation in the background.",
+      statusLabel: t("notifications.status.processing"),
+      description: t("notifications.message.processing"),
       tone: "info",
     }
   }
 
   if (moderationStatus === ContentModerationStatus.APPROVED) {
     return {
-      statusLabel: "Approved",
-      description: "This content has been approved and is ready to display.",
+      statusLabel: t("notifications.status.approved"),
+      description: t("notifications.message.approved"),
       tone: "success",
     }
   }
 
   return {
-    statusLabel: "Pending",
-    description: "This content is waiting to be processed.",
+    statusLabel: t("notifications.status.pending"),
+    description: t("notifications.message.pending"),
     tone: "info",
   }
 }
@@ -169,15 +170,16 @@ function isActiveTutorialNotification(tutorial: TutorialQueryItem) {
 }
 
 function buildResourceNotification(
-  resource: ResourceQueryItem
+  resource: ResourceQueryItem,
+  t: (key: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string
 ): ModerationNotification {
-  const meta = getModerationMeta(resource.status, resource.moderationStatus)
+  const meta = getModerationMeta(resource.status, resource.moderationStatus, t)
 
   return {
     id: `resource-${resource.id}`,
     href: "/content",
     title: resource.title,
-    type: "Resource",
+    type: t("notifications.type.resource"),
     updatedAt: resource.moderatedAt ?? resource.updatedAt ?? resource.createdAt,
     reason: resource.moderationReasons?.[0],
     ...meta,
@@ -185,15 +187,16 @@ function buildResourceNotification(
 }
 
 function buildTutorialNotification(
-  tutorial: TutorialQueryItem
+  tutorial: TutorialQueryItem,
+  t: (key: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string
 ): ModerationNotification {
-  const meta = getModerationMeta(tutorial.status, tutorial.moderationStatus)
+  const meta = getModerationMeta(tutorial.status, tutorial.moderationStatus, t)
 
   return {
     id: `tutorial-${tutorial.id}`,
     href: "/content",
     title: tutorial.title,
-    type: "Tutorial",
+    type: t("notifications.type.tutorial"),
     updatedAt: tutorial.moderatedAt ?? tutorial.updatedAt ?? tutorial.createdAt,
     reason: tutorial.moderationReasons?.[0],
     ...meta,
@@ -214,43 +217,45 @@ function toneClassName(tone: ModerationNotificationTone) {
 }
 
 function getModerationEventMeta(
-  decision?: "APPROVED" | "REJECTED" | "NEEDS_REVIEW" | "ERROR"
+  decision: "APPROVED" | "REJECTED" | "NEEDS_REVIEW" | "ERROR" | undefined,
+  t: (key: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string
 ): Pick<ModerationNotification, "statusLabel" | "description" | "tone"> {
   switch (decision) {
     case "APPROVED":
       return {
-        statusLabel: "Approved",
-        description: "This content has been approved and is ready to display.",
+        statusLabel: t("notifications.status.approved"),
+        description: t("notifications.message.approved"),
         tone: "success",
       }
     case "REJECTED":
       return {
-        statusLabel: "Rejected",
-        description: "This content did not pass moderation.",
+        statusLabel: t("notifications.status.rejected"),
+        description: t("notifications.message.rejected"),
         tone: "danger",
       }
     case "ERROR":
       return {
-        statusLabel: "Failed",
-        description: "Content processing or moderation failed.",
+        statusLabel: t("notifications.status.failed"),
+        description: t("notifications.message.failed"),
         tone: "danger",
       }
     case "NEEDS_REVIEW":
       return {
-        statusLabel: "Needs review",
-        description: "This content needs further admin review.",
+        statusLabel: t("notifications.status.needsReview"),
+        description: t("notifications.message.needsReview"),
         tone: "warning",
       }
     default:
       return {
-        statusLabel: "Completed",
-        description: "Content moderation has completed.",
+        statusLabel: t("notifications.status.completed"),
+        description: t("notifications.message.completed"),
         tone: "info",
       }
   }
 }
 
 export function Notifications() {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [readAllAt, setReadAllAt] = useState<string | null>(null)
   const dispatch = useDispatch()
@@ -296,10 +301,10 @@ export function Notifications() {
     const tutorials = tutorialResponse?.data?.data ?? []
     const activeResources = resources
       .filter(isActiveResourceNotification)
-      .map(buildResourceNotification)
+      .map((item) => buildResourceNotification(item, t))
     const activeTutorials = tutorials
       .filter(isActiveTutorialNotification)
-      .map(buildTutorialNotification)
+      .map((item) => buildTutorialNotification(item, t))
     const unreadActiveNotifications = [
       ...activeResources,
       ...activeTutorials,
@@ -315,10 +320,15 @@ export function Notifications() {
           item.templateId === "purchase-seller"
             ? "/settings/billing/transactions"
             : "/library",
-        title: item.subject ?? "Purchase completed",
-        type: "Purchase",
-        statusLabel: item.templateId === "purchase-seller" ? "Sold" : "Paid",
-        description: `${item.templateData.itemCount ?? 1} item(s) · ${formatVND(item.templateData.amount ?? "0")}`,
+        title: item.subject ?? t("notifications.message.purchaseCompleted"),
+        type: t("notifications.type.purchase"),
+        statusLabel:
+          item.templateId === "purchase-seller"
+            ? t("notifications.status.sold")
+            : t("notifications.status.paid"),
+        description: `${t("notifications.message.purchaseItems", {
+          count: String(item.templateData.itemCount ?? 1),
+        })} · ${formatVND(item.templateData.amount ?? "0")}`,
         tone: "success",
         updatedAt: item.createdAt,
       }))
@@ -326,17 +336,19 @@ export function Notifications() {
       storedNotifications
         .filter((item) => item.channel === "content-moderation")
         .map((item) => {
-          const meta = getModerationEventMeta(item.templateData.decision)
+          const meta = getModerationEventMeta(item.templateData.decision, t)
           const contentType =
             item.templateData.contentType === "TUTORIAL"
-              ? "Tutorial"
-              : "Resource"
+              ? t("notifications.type.tutorial")
+              : t("notifications.type.resource")
 
           return {
             id: `moderation-${item._id}`,
             href: "/content",
             title:
-              item.templateData.title ?? item.subject ?? "Content moderated",
+              item.templateData.title ??
+              item.subject ??
+              t("notifications.message.contentModerated"),
             type: contentType,
             reason: item.templateData.reasons?.[0],
             updatedAt: item.templateData.moderatedAt ?? item.createdAt,
@@ -349,12 +361,12 @@ export function Notifications() {
         .map((item) => ({
           id: `forum-mention-${item._id}`,
           href: item.templateData.href ?? "/forum",
-          title: item.subject ?? "You were mentioned",
-          type: "Forum",
-          statusLabel: "Mention",
+          title: item.subject ?? t("notifications.status.mention"),
+          type: t("notifications.type.forum"),
+          statusLabel: t("notifications.status.mention"),
           description:
             item.templateData.excerpt ??
-            `${item.templateData.actorName ?? "Someone"} mentioned you in ${item.templateData.topicTitle ?? "a topic"}.`,
+            `${item.templateData.actorName ?? t("notifications.message.unknownActor")} ${t("notifications.message.mentioned")} ${item.templateData.topicTitle ?? t("notifications.message.unknownTopic")}.`,
           tone: "info",
           updatedAt: item.templateData.createdAt ?? item.createdAt,
         }))
@@ -373,14 +385,14 @@ export function Notifications() {
             item.status === ResourceStatus.AVAILABLE &&
             item.moderationStatus === ContentModerationStatus.APPROVED
         )
-        .map(buildResourceNotification),
+        .map((item) => buildResourceNotification(item, t)),
       ...tutorials
         .filter(
           (item) =>
             item.status === TutorialStatus.AVAILABLE &&
             item.moderationStatus === ContentModerationStatus.APPROVED
         )
-        .map(buildTutorialNotification),
+        .map((item) => buildTutorialNotification(item, t)),
     ]
 
     const sorted = [
@@ -400,7 +412,7 @@ export function Notifications() {
       activeCount: unreadActiveNotifications.length + unreadStoredCount,
       notifications: sorted,
     }
-  }, [notificationResponse, readAllAt, resourceResponse, tutorialResponse])
+  }, [notificationResponse, readAllAt, resourceResponse, t, tutorialResponse])
 
   const isFetching =
     resourcesFetching || tutorialsFetching || notificationsFetching
@@ -482,7 +494,7 @@ export function Notifications() {
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Notifications"
+          aria-label={t("notifications.aria")}
           className="relative inline-flex"
         >
           {isFetching ? (
@@ -504,30 +516,30 @@ export function Notifications() {
       >
         <PopoverHeader>
           <PopoverTitle className="text-sm font-semibold">
-            Notifications
+            {t("notifications.title")}
           </PopoverTitle>
           <PopoverDescription className="text-xs">
-            Recent content moderation and transaction updates.
+            {t("notifications.description")}
           </PopoverDescription>
         </PopoverHeader>
 
         {hasError ? (
           <div className="rounded-2xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            Unable to load notifications.
+            {t("notifications.loadError")}
           </div>
         ) : notifications.length === 0 ? (
           <div className="rounded-2xl bg-secondary/70 px-3 py-4 text-center text-xs text-muted-foreground">
-            No notifications yet.
+            {t("notifications.empty")}
           </div>
         ) : (
           <div className="flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
             {notifications.map((item) => {
               const Icon =
-                item.type === "Tutorial"
+                item.type === t("notifications.type.tutorial")
                   ? Video
-                  : item.type === "Purchase"
+                  : item.type === t("notifications.type.purchase")
                     ? ShoppingBag
-                    : item.type === "Forum"
+                    : item.type === t("notifications.type.forum")
                       ? MessageCircle
                       : FileText
               const StatusIcon =

@@ -22,12 +22,13 @@ export class GetResourceCollectionsHandler implements IQueryHandler<GetResourceC
    * @param query - The query parameter
    */
   async execute(query: GetResourceCollectionsQuery) {
-    const { page, limit, search, userId } = query;
+    const { page, limit, search, userId, courseId } = query;
     const result = await this.collectionRepository.findAvailableCollections({
       page: page ?? 1,
       limit: limit ?? 20,
       search,
       userId,
+      courseId,
       type: CollectionType.RESOURCE,
     });
     result.data = await this.userServicePublisher.enrichWithUploaders(result.data);

@@ -32,6 +32,7 @@ import {
   ItemInteractionControls,
   TrackContentView,
 } from "@/features/interaction"
+import { getServerTranslator } from "@/i18n/server"
 import { getCachedSession } from "@/lib/server-session"
 
 type PageParams = Promise<{ id: string }>
@@ -51,12 +52,13 @@ export async function generateMetadata({
   params: PageParams
 }): Promise<Metadata> {
   const { id } = await params
+  const { t } = await getServerTranslator()
 
   const resource = await getResourceBySlug(id)
   if (!resource) {
     return {
-      title: "Resource Not Found",
-      description: "The resource you are looking for does not exist.",
+      title: t("explore.resource.notFoundTitle"),
+      description: t("explore.resource.notFoundDescription"),
     }
   }
 
@@ -83,6 +85,7 @@ export default async function ExploreResourceDetailPage({
   params: PageParams
 }) {
   const { id } = await params
+  const { locale, t } = await getServerTranslator()
 
   const [resource, previewData] = await Promise.all([
     getResourceBySlug(id),
@@ -105,7 +108,7 @@ export default async function ExploreResourceDetailPage({
     name: resourceTitle,
     description: resource.summary || "",
     url: `${siteUrl}${canonical}`,
-    category: "Educational Resource",
+    category: t("explore.resource.category"),
     offers: {
       "@type": "Offer",
       price: resource.price?.toString() || "0",
@@ -122,17 +125,17 @@ export default async function ExploreResourceDetailPage({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: t("nav.home"), item: siteUrl },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Explore",
+        name: t("nav.explore"),
         item: `${siteUrl}/explore`,
       },
       {
         "@type": "ListItem",
         position: 3,
-        name: "Resources",
+        name: t("content.resources"),
         item: `${siteUrl}/explore/resources`,
       },
       {
@@ -168,7 +171,7 @@ export default async function ExploreResourceDetailPage({
           {resourceTitle}
         </h1>
         <p className="max-w-3xl text-sm text-muted-foreground">
-          {resource.summary || "No summary provided."}
+          {resource.summary || t("common.noSummary")}
         </p>
       </div>
 
@@ -178,18 +181,18 @@ export default async function ExploreResourceDetailPage({
             resourceId={id}
             thumbnailUrl={resource.thumbnailUrl}
             title={resourceTitle}
-            sourceLabel={resource.major?.name || "Resource"}
-            description={resource.summary || "No summary provided."}
-            author={resource.uploader?.nickname || "Expert Buddy"}
+            sourceLabel={resource.major?.name || t("explore.resource.sourceLabel")}
+            description={resource.summary || t("common.noSummary")}
+            author={resource.uploader?.nickname || t("common.expertBuddy")}
             updatedAt={new Date(resource.updatedAt).toLocaleDateString(
-              "en-US",
+              locale === "en" ? "en-US" : "vi-VN",
               {
                 year: "numeric",
                 month: "long",
                 day: "numeric",
               }
             )}
-            pageCountHint={`${resource._count.resourceMeta || 1} pages`}
+            pageCountHint={`${resource._count.resourceMeta || 1} ${t("explore.resource.pageHint")}`}
             fileSize={"—"} // TODO: compute if needed
             highlights={resource.hightlights || []}
             previewData={previewData}
@@ -212,7 +215,7 @@ export default async function ExploreResourceDetailPage({
                   <Star className="size-4 fill-amber-500 text-amber-500" />
                 </ItemMedia>
                 <ItemTitle className="text-sm font-medium text-foreground">
-                  {resource._count.resourceOrders} orders
+                  {resource._count.resourceOrders} {t("explore.resource.orders")}
                 </ItemTitle>
               </Item>
               <Item variant="default" size="xs" className="w-auto border-0 p-0">
@@ -220,7 +223,7 @@ export default async function ExploreResourceDetailPage({
                   <ShoppingCart className="size-4 text-primary" />
                 </ItemMedia>
                 <ItemTitle className="text-sm font-medium text-muted-foreground">
-                  {resource._count.resourceOrders}+ Downloads
+                  {resource._count.resourceOrders}+ {t("explore.resource.downloads")}
                 </ItemTitle>
               </Item>
               <Item variant="default" size="xs" className="w-auto border-0 p-0">
@@ -228,8 +231,8 @@ export default async function ExploreResourceDetailPage({
                   <CalendarDays className="size-4" />
                 </ItemMedia>
                 <ItemTitle className="text-sm font-medium text-muted-foreground">
-                  Updated{" "}
-                  {new Date(resource.updatedAt).toLocaleDateString("en-US", {
+                  {t("common.updated")}{" "}
+                  {new Date(resource.updatedAt).toLocaleDateString(locale === "en" ? "en-US" : "vi-VN", {
                     month: "short",
                     year: "numeric",
                   })}
@@ -258,33 +261,33 @@ export default async function ExploreResourceDetailPage({
 
               <div>
                 <p className="font-bold text-foreground">
-                  {resource.uploader?.nickname || "Expert Buddy"}
+                  {resource.uploader?.nickname || t("common.expertBuddy")}
                 </p>
                 <p className="text-xs font-medium text-muted-foreground">
-                  {resource.uploader?.career?.name || "Content Creator"}
+                  {resource.uploader?.career?.name || t("common.contentCreator")}
                 </p>
               </div>
             </div>
             {isOwner ? (
               <Button asChild variant="outline" className="font-bold">
-                <Link href="/content">Manage</Link>
+                <Link href="/content">{t("common.manage")}</Link>
               </Button>
             ) : (
               <Button
                 variant="outline"
                 className="font-bold text-primary hover:bg-primary/5"
               >
-                Follow
+                {t("common.follow")}
               </Button>
             )}
           </div>
 
           <div className="space-y-6 text-muted-foreground">
             <h3 className="text-2xl font-bold text-foreground">
-              About this Resource
+              {t("explore.resource.about")}
             </h3>
             <p className="text-lg leading-relaxed">
-              {resource.summary || "No summary provided."}
+              {resource.summary || t("common.noSummary")}
             </p>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -302,10 +305,11 @@ export default async function ExploreResourceDetailPage({
             </div>
 
             <div className="pt-2">
-              <h4 className="mb-2 font-bold text-foreground">File details</h4>
+              <h4 className="mb-2 font-bold text-foreground">
+                {t("explore.resource.fileDetails")}
+              </h4>
               <p>
-                This document is easy to read on screen and works well for A4
-                printing.
+                {t("explore.resource.fileDetailsDescription")}
               </p>
             </div>
           </div>
@@ -335,7 +339,7 @@ export default async function ExploreResourceDetailPage({
                       <FileText className="size-4 text-muted-foreground" />
                     </ItemMedia>
                     <ItemTitle className="text-sm font-medium">
-                      Format
+                      {t("explore.resource.format")}
                     </ItemTitle>
                   </Item>
                   <span className="font-bold">PDF</span>
@@ -350,7 +354,7 @@ export default async function ExploreResourceDetailPage({
                       <Database className="size-4 text-muted-foreground" />
                     </ItemMedia>
                     <ItemTitle className="text-sm font-medium">
-                      File Size
+                      {t("explore.resource.fileSize")}
                     </ItemTitle>
                   </Item>
                   <span className="font-bold">—</span>
@@ -365,11 +369,11 @@ export default async function ExploreResourceDetailPage({
                       <FileText className="size-4 text-muted-foreground" />
                     </ItemMedia>
                     <ItemTitle className="text-sm font-medium">
-                      Total Pages
+                      {t("explore.resource.totalPages")}
                     </ItemTitle>
                   </Item>
                   <span className="font-bold">
-                    {resource._count.resourceMeta} documents
+                    {resource._count.resourceMeta} {t("explore.resource.documents")}
                   </span>
                 </div>
               </div>
@@ -379,21 +383,20 @@ export default async function ExploreResourceDetailPage({
                   <Alert className="border-primary/30 bg-primary/8">
                     <ShieldCheck className="size-4 text-primary" />
                     <AlertDescription className="text-sm font-medium text-foreground">
-                      This is your resource. Students see checkout here, while
-                      you can manage or preview the published file.
+                      {t("explore.resource.ownerAlert")}
                     </AlertDescription>
                   </Alert>
                   <div className="grid gap-2">
                     <Button asChild className="w-full text-base font-bold">
                       <Link href="/content">
                         <PencilLine className="size-4" />
-                        Manage in Content
+                        {t("explore.resource.manageInContent")}
                       </Link>
                     </Button>
                     <Button asChild variant="outline" className="w-full">
                       <Link href={`/library/resources/${resource.slug}`}>
                         <Eye className="size-4" />
-                        Open owner preview
+                        {t("explore.resource.openOwnerPreview")}
                       </Link>
                     </Button>
                   </div>
@@ -403,8 +406,8 @@ export default async function ExploreResourceDetailPage({
                   <PurchaseButton
                     itemId={resource.id}
                     itemType="RESOURCE"
-                    label="Buy resource"
-                    freeLabel="Get resource"
+                    label={t("explore.resource.buy")}
+                    freeLabel={t("explore.resource.get")}
                     className="mb-4 w-full text-base font-bold"
                     price={resource.price || 0}
                   />
@@ -418,7 +421,7 @@ export default async function ExploreResourceDetailPage({
                         <ShieldCheck className="size-4" />
                       </ItemMedia>
                       <ItemTitle className="text-xs font-medium text-muted-foreground">
-                        Secure encrypted payment
+                        {t("explore.resource.securePayment")}
                       </ItemTitle>
                     </Item>
                   </div>
@@ -427,13 +430,13 @@ export default async function ExploreResourceDetailPage({
 
               <CardContent className="mt-8 rounded-lg border border-primary/20 bg-primary/10 p-4">
                 <p className="text-sm leading-tight font-semibold text-foreground">
-                  Browse more resources in this subject.
+                  {t("explore.resource.browseSubject")}
                 </p>
                 <Link
                   href="/explore/resources/collections"
                   className="mt-2 inline-block text-xs font-bold text-primary hover:underline"
                 >
-                  View Collections
+                  {t("explore.resource.viewCollections")}
                 </Link>
               </CardContent>
             </Card>
@@ -448,12 +451,11 @@ export default async function ExploreResourceDetailPage({
                   <ShieldCheck className="size-5" />
                 </ItemMedia>
                 <ItemTitle className="text-sm font-bold text-foreground">
-                  Verified Resource
+                  {t("explore.resource.verifiedTitle")}
                 </ItemTitle>
               </Item>
               <p className="text-xs text-muted-foreground">
-                This document has been reviewed by the Buddy Academic Board
-                for accuracy and curriculum alignment.
+                {t("explore.resource.verifiedDescription")}
               </p>
             </Card>
           </div>
@@ -461,9 +463,9 @@ export default async function ExploreResourceDetailPage({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <MetaChip>Major: {resource.major?.name ?? "#"}</MetaChip>
-        <MetaChip>Course: {resource.course?.name ?? "#"}</MetaChip>
-        <MetaChip>Semester: {resource.course?.semester ?? "#"}</MetaChip>
+        <MetaChip>{t("common.major")}: {resource.major?.name ?? "#"}</MetaChip>
+        <MetaChip>{t("common.course")}: {resource.course?.name ?? "#"}</MetaChip>
+        <MetaChip>{t("common.semester")}: {resource.course?.semester ?? "#"}</MetaChip>
       </div>
     </section>
   )

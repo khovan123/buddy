@@ -12,6 +12,7 @@ import {
   getTutorials,
 } from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getSeoContent("explore-tutorials")
@@ -37,15 +38,14 @@ export default async function ExploreTutorialsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const seoPromise = getSeoContent("explore-tutorials")
+  const { t } = await getServerTranslator()
   const params = await searchParams
   const semester = params.semester ? Number(params.semester) : undefined
   const majorId =
     typeof params.majorId === "string" ? params.majorId : undefined
+  const courseId =
+    typeof params.courseId === "string" ? params.courseId : undefined
   const search = typeof params.search === "string" ? params.search : undefined
-  const price =
-    params.price === "free" || params.price === "paid"
-      ? params.price
-      : undefined
   const verified = params.verified === "true" ? true : undefined
   const sort =
     params.sort === "popular" || params.sort === "rating"
@@ -59,8 +59,8 @@ export default async function ExploreTutorialsPage({
       limit: 20,
       semester,
       majorId,
+      courseId,
       search,
-      price,
       verified,
       sort,
     }),
@@ -75,17 +75,17 @@ export default async function ExploreTutorialsPage({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: t("nav.home"), item: siteUrl },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Explore",
+        name: t("nav.explore"),
         item: `${siteUrl}/explore`,
       },
       {
         "@type": "ListItem",
         position: 3,
-        name: "Tutorials",
+        name: t("content.tutorials"),
         item: `${siteUrl}/explore/tutorials`,
       },
     ],
@@ -138,15 +138,15 @@ export default async function ExploreTutorialsPage({
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold tracking-tight text-foreground">
-                Top Tutorial
+                {t("explore.list.topTutorials")}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Featured learning path for this week.
+                {t("explore.list.topTutorialsDescription")}
               </p>
             </div>
             <Button variant="outline" asChild>
               <Link href="/explore/tutorials/collections">
-                View Collections
+                {t("explore.list.viewCollections")}
               </Link>
             </Button>
           </div>
@@ -167,21 +167,21 @@ export default async function ExploreTutorialsPage({
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-foreground">
-              All Tutorials
+              {t("explore.list.allTutorials")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Browse the rest of the tutorials below.
+              {t("explore.list.allTutorialsDescription")}
             </p>
           </div>
           <p className="text-sm font-medium text-muted-foreground">
-            {result.meta.total} tutorials
+            {result.meta.total} {t("explore.list.tutorialCount")}
           </p>
         </div>
 
         <TutorialLoadMoreGrid
           initialItems={tutorials}
           initialMeta={result.meta}
-          filters={{ semester, majorId, search, price, verified, sort }}
+          filters={{ semester, majorId, courseId, search, verified, sort }}
         />
       </section>
     </section>

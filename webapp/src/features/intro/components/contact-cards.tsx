@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { useI18n } from "@/i18n/language-provider"
 
 /* ------------------------------------------------------------------ */
 /*  Contact cards — main view                                          */
@@ -22,6 +23,8 @@ export function ContactCards({
 }: {
   onNavigate: (v: ContactView) => void
 }) {
+  const { t } = useI18n()
+
   return (
     <div className="mx-auto max-w-3xl space-y-12 px-6">
       <MotionHero delay={0}>
@@ -30,14 +33,13 @@ export function ContactCards({
             variant="outline"
             className="mb-6 rounded-full px-4 py-1.5 text-xs font-semibold tracking-widest uppercase"
           >
-            Contact
+            {t("intro.contact.badge")}
           </Badge>
           <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-            Get in touch
+            {t("intro.contact.title")}
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
-            Get in touch with our partnership and support teams for demos,
-            onboarding help, or product questions.
+            {t("intro.contact.description")}
           </p>
         </div>
       </MotionHero>
@@ -53,15 +55,14 @@ export function ContactCards({
               <div className="mb-2 flex size-12 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary/20">
                 <Building2 className="size-6 text-primary" />
               </div>
-              <CardTitle>Contact sales</CardTitle>
+              <CardTitle>{t("intro.contact.salesTitle")}</CardTitle>
               <CardDescription>
-                Discuss your requirements, learn about custom plans, or request
-                a demo for your institution.
+                {t("intro.contact.salesDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
               <Button variant="outline" className="rounded-full">
-                Contact sales <ArrowRight className="ml-2 size-4" />
+                {t("intro.contact.salesButton")} <ArrowRight className="ml-2 size-4" />
               </Button>
             </CardContent>
           </Card>
@@ -75,22 +76,21 @@ export function ContactCards({
               <div className="mb-2 flex size-12 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary/20">
                 <Headphones className="size-6 text-primary" />
               </div>
-              <CardTitle>Submit a ticket</CardTitle>
+              <CardTitle>{t("intro.contact.supportTitle")}</CardTitle>
               <CardDescription>
-                Submit a ticket to our support team or email{" "}
+                {t("intro.contact.supportDescription").replace("support@buddy.edu", "").trim()}{" "}
                 <a
                   href="mailto:support@buddy.edu"
                   className="font-medium text-foreground underline underline-offset-2"
                   onClick={(e) => e.stopPropagation()}
                 >
                   support@buddy.edu
-                </a>{" "}
-                directly.
+                </a>
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
               <Button variant="outline" className="rounded-full">
-                Submit a ticket <ArrowRight className="ml-2 size-4" />
+                {t("intro.contact.supportButton")} <ArrowRight className="ml-2 size-4" />
               </Button>
             </CardContent>
           </Card>

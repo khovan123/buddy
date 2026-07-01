@@ -1,10 +1,12 @@
 import { ProfileCard } from "@/components/molecules/profile-card"
+import { getServerTranslator } from "@/i18n/server"
 
-export default function ProfileDetailLoading() {
+export default async function ProfileDetailLoading() {
+  const { t } = await getServerTranslator()
   return (
     <section className="space-y-8">
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Profile Detail
+        {t("profile.detail.title")}
       </h1>
 
       {/* Hero Skeleton (SeoHero equivalent) */}

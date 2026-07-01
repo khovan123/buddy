@@ -145,6 +145,8 @@ export interface PlanLimits {
   maxSearchResults: number
 }
 
+export const DISPLAY_CURRENCY = "VND"
+
 export const PLAN_DISPLAY_NAMES: Record<SubscriptionPlan, string> = {
   CREATOR_FREE: "Creator Free",
   CREATOR_PRO: "Creator Pro",
@@ -157,7 +159,7 @@ export function formatVND(cents: string | number): string {
   const value = typeof cents === "string" ? Number(cents) : cents
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
-    currency: "VND",
+    currency: DISPLAY_CURRENCY,
     maximumFractionDigits: 0,
   }).format(value)
 }

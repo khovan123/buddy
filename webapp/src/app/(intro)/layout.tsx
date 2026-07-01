@@ -5,7 +5,8 @@ import { cookies } from "next/headers"
 import { EducationUniverse } from "@/components/atoms/education-universe"
 import { Navigation } from "@/components/organisms/navigation"
 import { SiteFooter } from "@/components/organisms/site-footer"
-import { navActions, navItems } from "@/config/nav"
+import { getIntroNav } from "@/config/nav"
+import { getServerTranslator } from "@/i18n/server"
 
 export default async function IntroLayout({
   children,
@@ -14,9 +15,12 @@ export default async function IntroLayout({
 }) {
   const cookieStore = await cookies()
   const hasAccessToken = !!cookieStore.get("accessToken")?.value
+  const locale = cookieStore.get("buddy_locale")?.value
+  const { t } = await getServerTranslator()
+  const { navActions, navItems } = getIntroNav(locale)
 
   const headerActions = hasAccessToken
-    ? [{ href: "/home", label: "Go to Buddy", variant: "default" as const }]
+    ? [{ href: "/home", label: t("intro.nav.goToBuddy"), variant: "default" as const }]
     : navActions
 
   return (

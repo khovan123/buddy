@@ -11,6 +11,7 @@ import {
   fetchMoreTutorialCollections,
 } from "../actions/explore.actions"
 import { mapCollectionToCard } from "../mappers"
+import type { ContentListParams } from "../types"
 
 import { LoadMoreGrid } from "./load-more-grid"
 
@@ -18,25 +19,27 @@ interface Props {
   initialItems: CollectionCardData[]
   initialMeta: PaginationMeta
   collectionType: "resource" | "tutorial"
+  filters?: Pick<ContentListParams, "search" | "courseId">
 }
 
 export function CollectionLoadMoreGrid({
   initialItems,
   initialMeta,
   collectionType,
+  filters,
 }: Props) {
   const fetchMore = useCallback(
     async (page: number, limit: number) => {
       const result =
         collectionType === "tutorial"
-          ? await fetchMoreTutorialCollections(page, limit)
-          : await fetchMoreResourceCollections(page, limit)
+          ? await fetchMoreTutorialCollections(page, limit, filters)
+          : await fetchMoreResourceCollections(page, limit, filters)
       return {
         data: result.data.map((c) => mapCollectionToCard(c, collectionType)),
         meta: result.meta,
       }
     },
-    [collectionType]
+    [collectionType, filters]
   )
 
   return (

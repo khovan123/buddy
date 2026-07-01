@@ -4,6 +4,7 @@ import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
 import { useDeleteCareerMutation } from "@/features/user/services/user-api"
+import { useI18n } from "@/i18n/language-provider"
 
 interface DeleteCareerDialogProps {
   open: boolean
@@ -16,6 +17,7 @@ export default function DeleteCareerDialog({
   onOpenChange,
   id,
 }: DeleteCareerDialogProps) {
+  const { t } = useI18n()
   const [deleteCareer, { isLoading }] = useDeleteCareerMutation()
 
   const handleDelete = async () => {
@@ -24,10 +26,10 @@ export default function DeleteCareerDialog({
     }
     try {
       await deleteCareer(id).unwrap()
-      toast.success("Career deleted.")
+      toast.success(t("dashboard.deleteCareer.success"))
       onOpenChange(false)
     } catch {
-      toast.error("We could not delete this career.")
+      toast.error(t("dashboard.deleteCareer.error"))
     }
   }
 
@@ -36,9 +38,9 @@ export default function DeleteCareerDialog({
       open={open}
       onOpenChange={onOpenChange}
       variant="error"
-      title="Delete career?"
-      description="This action cannot be undone and may break relationships elsewhere in the system."
-      confirmLabel="Delete"
+      title={t("dashboard.deleteCareer.title")}
+      description={t("dashboard.deleteCareer.description")}
+      confirmLabel={t("dashboard.deleteCareer.confirm")}
       loading={isLoading}
       onConfirm={handleDelete}
     />

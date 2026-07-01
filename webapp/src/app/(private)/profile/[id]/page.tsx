@@ -18,6 +18,7 @@ import {
   webPageJsonLd,
 } from "@/features/seo/components/json-ld"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 
 type PageParams = Promise<{ id: string }>
@@ -57,6 +58,7 @@ export default async function ProfileDetailPage({
     params,
     getSeoContent(`profile-${(await params).id}`),
   ])
+  const { t } = await getServerTranslator()
 
   const emptyTutorials = {
     data: [] as TutorialQueryItem[],
@@ -85,32 +87,32 @@ export default async function ProfileDetailPage({
             type: "ProfilePage",
           }),
           breadcrumbJsonLd([
-            { name: "Home", path: "/home" },
-            { name: "Profile", path: `/profile/${id}` },
+            { name: t("nav.home"), path: "/home" },
+            { name: t("nav.profile"), path: `/profile/${id}` },
           ]),
         ]}
       />
       <section className="space-y-8">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Profile Detail
+          {t("profile.detail.title")}
         </h1>
         <SeoHero
           badge={seo.badge}
           title={seo.title}
           description={seo.description}
-          primaryCta="Follow creator"
-          secondaryCta="Send message"
+          primaryCta={t("profile.detail.primaryCta")}
+          secondaryCta={t("profile.detail.secondaryCta")}
         />
         <SectionHeading
-          badge="Highlights"
-          title="Creator details"
-          description="Content is regenerated on an ISR cycle for better discovery and indexing."
+          badge={t("profile.detail.badge")}
+          title={t("profile.detail.sectionTitle")}
+          description={t("profile.detail.sectionDescription")}
         />
         <div className="flex flex-wrap gap-2">
           <MetaChip>id: {id}</MetaChip>
-          {verified ? <MetaChip>Verified</MetaChip> : null}
-          <MetaChip>12 courses</MetaChip>
-          <MetaChip>4.9 rating</MetaChip>
+          {verified ? <MetaChip>{t("profile.detail.verified")}</MetaChip> : null}
+          <MetaChip>{t("profile.detail.courses")}</MetaChip>
+          <MetaChip>{t("profile.detail.rating")}</MetaChip>
         </div>
         <ProfilePublishedSection
           initialItems={initialItems}

@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useI18n } from "@/i18n/language-provider"
 import { useGlobalError } from "@/providers/error-provider"
 
 import {
@@ -37,14 +38,12 @@ import {
 } from "../services/billing-api"
 import type { PayoutAccount } from "../types/billing-types"
 
-const payoutSchema = z.object({
-  bankBin: z.string().min(3, "Bank is required"),
-  bankAccountNumber: z.string().min(5, "Account number is required"),
-  bankAccountName: z.string().min(2, "Account name is required"),
-  bankName: z.string().min(2, "Bank name is required"),
-})
-
-type PayoutFormValues = z.infer<typeof payoutSchema>
+type PayoutFormValues = {
+  bankBin: string
+  bankAccountNumber: string
+  bankAccountName: string
+  bankName: string
+}
 
 interface PayoutAccountCardProps {
   account: PayoutAccount | null
@@ -58,6 +57,7 @@ function maskAccountNumber(num: string): string {
 }
 
 export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
+  const { t } = useI18n()
   const [currentAccount, setCurrentAccount] = useState(account)
   const [editing, setEditing] = useState(false)
   const [verified, setVerified] = useState(Boolean(account?.verified))
@@ -74,6 +74,17 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
     setCurrentAccount(account)
     setVerified(Boolean(account?.verified))
   }, [account])
+
+  const payoutSchema = z.object({
+    bankBin: z.string().min(3, t("billing.payout.bankRequired")),
+    bankAccountNumber: z
+      .string()
+      .min(5, t("billing.payout.accountNumberRequired")),
+    bankAccountName: z
+      .string()
+      .min(2, t("billing.payout.accountNameRequired")),
+    bankName: z.string().min(2, t("billing.payout.bankNameRequired")),
+  })
 
   const {
     register,
@@ -196,14 +207,14 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
   const onSubmit = async (data: PayoutFormValues) => {
     clearError()
     if (!verified) {
-      toast.error("Please verify this bank account before saving.")
+      toast.error(t("billing.payout.verifyBeforeSave"))
       return
     }
 
     try {
       await savePayoutAccount(data).unwrap()
       await revalidateCacheTag("payout-account")
-      toast.success("Payout account saved!")
+      toast.success(t("billing.payout.saved"))
       setCurrentAccount({
         ...data,
         verified: true,
@@ -219,7 +230,7 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          Payout Account
+          {t("billing.payout.account")}
         </CardTitle>
         {!editing && (
           <Button
@@ -230,7 +241,7 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
             className="gap-1"
           >
             <Pencil className="size-3" />
-            Edit
+            {t("billing.payout.edit")}
           </Button>
         )}
       </CardHeader>
@@ -249,25 +260,25 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
                     className="gap-1 bg-emerald-600/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-400"
                   >
                     <BadgeCheck className="size-3" />
-                    Verified
+                    {t("billing.payout.verified")}
                   </Badge>
                 ) : (
                   <Badge variant="secondary" className="gap-1">
                     <ShieldAlert className="size-3" />
-                    Unverified
+                    {t("billing.payout.unverified")}
                   </Badge>
                 )}
               </div>
 
             <div className="grid gap-2 text-sm sm:grid-cols-2">
               <div>
-                  <p className="text-xs text-muted-foreground">Bank number</p>
+                  <p className="text-xs text-muted-foreground">{t("billing.payout.bankNumber")}</p>
                   <p className="font-mono font-medium tabular-nums">
                     {maskAccountNumber(currentAccount.bankAccountNumber)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Full Name</p>
+                  <p className="text-xs text-muted-foreground">{t("billing.payout.fullName")}</p>
                   <p className="font-medium">{currentAccount.bankAccountName}</p>
                 </div>
               </div>
@@ -276,14 +287,14 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
             <div className="flex flex-col items-center gap-2 py-8 text-center">
               <Building2 className="size-8 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground">
-                No payout account configured
+                {t("billing.payout.noAccount")}
               </p>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => setEditing(true)}
               >
-                Set Up Now
+                {t("billing.payout.setupNow")}
               </Button>
             </div>
           )
@@ -292,7 +303,7 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field>
-                <Label htmlFor="payout-bank">Bank</Label>
+                <Label htmlFor="payout-bank">{t("billing.payout.bank")}</Label>
                 <Select
                   value={bankBin}
                   onValueChange={handleBankChange}
@@ -301,7 +312,9 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
                   <SelectTrigger id="payout-bank" className="w-full">
                     <SelectValue
                       placeholder={
-                        isLoadingBanks ? "Loading banks" : "Choose bank"
+                        isLoadingBanks
+                          ? t("billing.payout.loadingBanks")
+                          : t("billing.payout.chooseBank")
                       }
                     />
                   </SelectTrigger>
@@ -321,10 +334,10 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
               </Field>
 
               <Field>
-                <Label htmlFor="payout-account-number">Bank number</Label>
+                <Label htmlFor="payout-account-number">{t("billing.payout.bankNumber")}</Label>
                 <Input
                   id="payout-account-number"
-                  placeholder="e.g. 1234567890"
+                  placeholder={t("billing.payout.accountNumberPlaceholder")}
                   {...register("bankAccountNumber")}
                 />
                 {errors.bankAccountNumber && (
@@ -337,13 +350,13 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
 
             <div className="grid gap-4">
               <Field>
-                <Label htmlFor="payout-account-name">Full Name</Label>
+                <Label htmlFor="payout-account-name">{t("billing.payout.fullName")}</Label>
                 <Input
                   id="payout-account-name"
                   placeholder={
                     isVerifying
-                      ? "Verifying account..."
-                      : "Auto-filled after verification"
+                      ? t("billing.payout.verifyingAccount")
+                      : t("billing.payout.autofillAfterVerification")
                   }
                   readOnly
                   className="bg-muted/50"
@@ -361,17 +374,17 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
               {isVerifying ? (
                 <>
                   <Loader2 className="size-3 animate-spin" />
-                  Verifying account
+                  {t("billing.payout.verifyingAccountShort")}
                 </>
               ) : verified ? (
                 <>
                   <BadgeCheck className="size-3 text-emerald-600" />
-                  Verified
+                  {t("billing.payout.verified")}
                 </>
               ) : bankBin && bankAccountNumber ? (
-                "Waiting for account verification"
+                t("billing.payout.waitingVerification")
               ) : (
-                "Choose a bank and enter bank number to verify"
+                t("billing.payout.chooseBankAndNumber")
               )}
             </div>
 
@@ -385,7 +398,7 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
                 {isSaving ? (
                   <Loader2 className="mr-1 size-3 animate-spin" />
                 ) : null}
-                Save
+                {t("common.save")}
               </Button>
               <Button
                 type="button"
@@ -396,7 +409,7 @@ export function PayoutAccountCard({ account }: PayoutAccountCardProps) {
                   clearError()
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </form>

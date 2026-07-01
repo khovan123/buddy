@@ -25,12 +25,14 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
+import { useI18n } from "@/i18n/language-provider"
 
 /* ------------------------------------------------------------------ */
 /*  Sales form + testimonial sidebar                                   */
 /* ------------------------------------------------------------------ */
 
 export function ContactSalesForm({ onBack }: { onBack: () => void }) {
+  const { t } = useI18n()
   const [submitted, setSubmitted] = useState(false)
 
   if (submitted) {
@@ -40,10 +42,9 @@ export function ContactSalesForm({ onBack }: { onBack: () => void }) {
           <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full bg-primary/10">
             <Send className="size-7 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold">Thank you!</h2>
+          <h2 className="text-2xl font-bold">{t("intro.contact.salesThanksTitle")}</h2>
           <p className="mt-3 text-muted-foreground">
-            We&apos;ve received your message and will get back to you within 1
-            business day.
+            {t("intro.contact.salesThanksDescription")}
           </p>
           <Button
             variant="outline"
@@ -51,7 +52,7 @@ export function ContactSalesForm({ onBack }: { onBack: () => void }) {
             onClick={onBack}
           >
             <ArrowLeft className="mr-2 size-4" />
-            Back to contact
+            {t("intro.contact.back")}
           </Button>
         </MotionHero>
       </div>
@@ -67,7 +68,7 @@ export function ContactSalesForm({ onBack }: { onBack: () => void }) {
           className="mb-8 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-          Back to contact
+          {t("intro.contact.back")}
         </button>
       </MotionHero>
 
@@ -79,10 +80,9 @@ export function ContactSalesForm({ onBack }: { onBack: () => void }) {
               <div className="mb-2 flex size-12 items-center justify-center rounded-xl bg-primary/10">
                 <Building2 className="size-6 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Contact sales</CardTitle>
+              <CardTitle className="text-2xl">{t("intro.contact.salesFormTitle")}</CardTitle>
               <CardDescription>
-                Contact sales to discover the value of Buddy for your
-                institution and explore our custom plans and pricing.
+                {t("intro.contact.salesFormDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -96,17 +96,17 @@ export function ContactSalesForm({ onBack }: { onBack: () => void }) {
               >
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="sales-first-name">First name</Label>
+                    <Label htmlFor="sales-first-name">{t("intro.contact.firstName")}</Label>
                     <Input id="sales-first-name" placeholder="John" required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="sales-last-name">Last name</Label>
+                    <Label htmlFor="sales-last-name">{t("intro.contact.lastName")}</Label>
                     <Input id="sales-last-name" placeholder="Doe" required />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sales-email">Work email</Label>
+                  <Label htmlFor="sales-email">{t("intro.contact.workEmail")}</Label>
                   <Input
                     id="sales-email"
                     type="email"
@@ -116,7 +116,7 @@ export function ContactSalesForm({ onBack }: { onBack: () => void }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sales-org">Organization</Label>
+                  <Label htmlFor="sales-org">{t("intro.contact.organization")}</Label>
                   <Input
                     id="sales-org"
                     placeholder="University / Company name"
@@ -125,40 +125,34 @@ export function ContactSalesForm({ onBack }: { onBack: () => void }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sales-role">Your role</Label>
+                  <Label htmlFor="sales-role">{t("intro.contact.yourRole")}</Label>
                   <Select>
                     <SelectTrigger id="sales-role">
-                      <SelectValue placeholder="Select a role" />
+                      <SelectValue placeholder={t("intro.contact.selectRole")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="professor">
-                        Professor / Instructor
-                      </SelectItem>
-                      <SelectItem value="admin">University Admin</SelectItem>
-                      <SelectItem value="department-head">
-                        Department Head
-                      </SelectItem>
-                      <SelectItem value="it">IT / Engineering</SelectItem>
-                      <SelectItem value="student-org">
-                        Student Organization
-                      </SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="professor">{t("intro.contact.roleProfessor")}</SelectItem>
+                      <SelectItem value="admin">{t("intro.contact.roleAdmin")}</SelectItem>
+                      <SelectItem value="department-head">{t("intro.contact.roleDepartmentHead")}</SelectItem>
+                      <SelectItem value="it">{t("intro.contact.roleIt")}</SelectItem>
+                      <SelectItem value="student-org">{t("intro.contact.roleStudentOrg")}</SelectItem>
+                      <SelectItem value="other">{t("intro.contact.roleOther")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sales-message">How can we help?</Label>
+                  <Label htmlFor="sales-message">{t("intro.contact.helpQuestion")}</Label>
                   <Textarea
                     id="sales-message"
-                    placeholder="Tell us about your needs, number of students, and what you're looking for..."
+                    placeholder={t("intro.contact.helpPlaceholder")}
                     rows={4}
                     required
                   />
                 </div>
 
                 <Button type="submit" size="lg" className="w-full rounded-full">
-                  Send message <ArrowRight className="ml-2 size-4" />
+                  {t("intro.contact.sendMessage")} <ArrowRight className="ml-2 size-4" />
                 </Button>
               </form>
             </CardContent>
@@ -194,13 +188,13 @@ export function ContactSalesForm({ onBack }: { onBack: () => void }) {
             <Card className="rounded-2xl border-border shadow-none">
               <CardContent className="space-y-3 pt-6">
                 <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                  What to expect
+                  {t("intro.contact.whatToExpect")}
                 </p>
                 {[
-                  "Personalized demo of the platform",
-                  "Custom pricing for your institution",
-                  "Technical integration guidance",
-                  "Dedicated onboarding support",
+                  t("intro.contact.expectDemo"),
+                  t("intro.contact.expectPricing"),
+                  t("intro.contact.expectIntegration"),
+                  t("intro.contact.expectOnboarding"),
                 ].map((item) => (
                   <div key={item} className="flex items-start gap-2">
                     <div className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />

@@ -34,7 +34,7 @@ export function ProfileHeroSection({
   const profileName = me?.profile?.nickname || me?.nickname || "Buddy"
   const bio =
     me?.profile?.bio ||
-    "Bridging the gap between theoretical human-computer interaction and practical product design. Currently pursuing a Ph.D. in Cognitive Psychology while mentoring 500+ students on Buddy. Resources focus on accessibility, ethical AI, and design systems that scale."
+    "Kết nối giữa kiến thức nền tảng và ứng dụng thực tế trong học tập số. Nội dung tập trung vào tư duy sản phẩm, khả năng tiếp cận, AI có trách nhiệm và các hệ thống thiết kế có thể mở rộng."
 
   const followers = stats?.followers ?? 0
   const totalResources = stats?.totalResources ?? 0
@@ -58,7 +58,7 @@ export function ProfileHeroSection({
               </div>
               {isAuthVerified(authVerification) ? (
                 <span className="text-2xs absolute right-2 bottom-2 rounded-full bg-primary px-2 py-1 font-bold text-primary-foreground">
-                  Verified
+                  Đã xác minh
                 </span>
               ) : null}
             </div>
@@ -71,20 +71,20 @@ export function ProfileHeroSection({
                 {profileName}
               </h1>
               <p className="font-semibold text-primary">
-                {me?.profile?.career?.name || "Career Not Set"}
+                {me?.profile?.career?.name || "Chưa cập nhật định hướng"}
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 md:pb-2">
-            <Button className="font-semibold">Follow Creator</Button>
-            <Button variant="secondary" size="icon" aria-label="Send mail">
+            <Button className="font-semibold">Theo dõi creator</Button>
+            <Button variant="secondary" size="icon" aria-label="Gửi email">
               <Mail className="size-4" />
             </Button>
-            <Button variant="ghost" size="icon" aria-label="Wallet">
+            <Button variant="ghost" size="icon" aria-label="Ví">
               <Wallet className="size-4" />
             </Button>
-            <Button variant="ghost" size="icon" aria-label="Notifications">
+            <Button variant="ghost" size="icon" aria-label="Thông báo">
               <Bell className="size-4" />
             </Button>
           </div>
@@ -94,7 +94,7 @@ export function ProfileHeroSection({
           <Card className="border-border/70">
             <CardContent className="space-y-5 p-6 md:p-8">
               <h3 className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
-                About the Creator
+                Giới thiệu creator
               </h3>
               <p className="text-base leading-relaxed whitespace-pre-line text-muted-foreground md:text-lg">
                 {bio}
@@ -111,7 +111,7 @@ export function ProfileHeroSection({
                   ))
                 ) : (
                   <span className="rounded-full bg-muted px-3 py-1.5 text-sm text-muted-foreground">
-                    No skills highlighted
+                    Chưa có kỹ năng nổi bật
                   </span>
                 )}
               </div>
@@ -121,7 +121,7 @@ export function ProfileHeroSection({
           <Card className="border-primary/15 bg-primary/5">
             <CardContent className="p-6 md:p-8">
               <h3 className="mb-6 text-xs font-bold tracking-widest text-primary uppercase">
-                Quick Stats
+                Chỉ số nhanh
               </h3>
               <div className="grid grid-cols-2 gap-6">
                 <div>
@@ -129,7 +129,7 @@ export function ProfileHeroSection({
                     {formatCompact(followers)}
                   </p>
                   <p className="text-3xs font-bold tracking-wider text-muted-foreground uppercase">
-                    Followers
+                    Người theo dõi
                   </p>
                 </div>
                 <div>
@@ -137,15 +137,15 @@ export function ProfileHeroSection({
                     {formatCompact(totalResources)}
                   </p>
                   <p className="text-3xs font-bold tracking-wider text-muted-foreground uppercase">
-                    Resources
+                    Tài liệu
                   </p>
                 </div>
                 <div>
                   <p className="text-2xl font-black text-primary">
-                    {avgRating > 0 ? `${avgRating.toFixed(1)}/5` : "N/A"}
+                    {avgRating > 0 ? `${avgRating.toFixed(1)}/5` : "Chưa có"}
                   </p>
                   <p className="text-3xs font-bold tracking-wider text-muted-foreground uppercase">
-                    Avg Rating{ratingCount > 0 ? ` (${ratingCount})` : ""}
+                    Điểm TB{ratingCount > 0 ? ` (${ratingCount})` : ""}
                   </p>
                 </div>
                 <div>
@@ -153,7 +153,7 @@ export function ProfileHeroSection({
                     {formatCompact(totalSales)}
                   </p>
                   <p className="text-3xs font-bold tracking-wider text-muted-foreground uppercase">
-                    Sales
+                    Lượt bán
                   </p>
                 </div>
               </div>

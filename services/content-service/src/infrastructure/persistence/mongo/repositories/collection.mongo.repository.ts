@@ -74,7 +74,10 @@ type CollectionWritePayload = {
 
 type CollectionSearchClause =
   | { title: { $regex: string; $options: string } }
-  | { description: { $regex: string; $options: string } };
+  | { description: { $regex: string; $options: string } }
+  | { hightlights: { $regex: string; $options: string } }
+  | { courseId: { $in: Types.ObjectId[] } }
+  | { majorId: { $in: Types.ObjectId[] } };
 
 /** Repository interface/implementation for  collection mongo data access. */
 @Injectable()
@@ -250,7 +253,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
   async findAvailableCollections(
     params: CollectionListQueryParams,
   ): Promise<CollectionQueryResult> {
-    const { page, limit, search, userId, type } = params;
+    const { page, limit, search, userId, courseId, type } = params;
     const safeLimit = Math.max(limit, 1);
     const skip = (page - 1) * safeLimit;
 
@@ -258,6 +261,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
       status: CollectionStatus;
       deletedAt: null;
       userId?: string;
+      courseId?: Types.ObjectId;
       type?: CollectionType;
       $or?: CollectionSearchClause[];
     } = {
@@ -269,16 +273,16 @@ export class CollectionMongoRepository implements ICollectionRepository {
       filter.userId = userId;
     }
 
+    if (courseId) {
+      filter.courseId = new Types.ObjectId(courseId);
+    }
+
     if (type) {
       filter.type = type;
     }
 
     if (search) {
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      filter.$or = [
-        { title: { $regex: escapedSearch, $options: 'i' } },
-        { description: { $regex: escapedSearch, $options: 'i' } },
-      ];
+      filter.$or = await this.buildSearchClauses(search);
     }
 
     const [rows, total] = await Promise.all([
@@ -333,11 +337,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
     }
 
     if (search) {
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      filter.$or = [
-        { title: { $regex: escapedSearch, $options: 'i' } },
-        { description: { $regex: escapedSearch, $options: 'i' } },
-      ];
+      filter.$or = await this.buildSearchClauses(search);
     }
 
     if (semester) {
@@ -510,6 +510,38 @@ export class CollectionMongoRepository implements ICollectionRepository {
   private normalizePrice(value: unknown): number {
     const price = typeof value === 'number' ? value : Number(value ?? 0);
     return Number.isFinite(price) && price > 0 ? price : 0;
+  }
+
+  private async buildSearchClauses(search: string): Promise<CollectionSearchClause[]> {
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = { $regex: escapedSearch, $options: 'i' } as const;
+    const clauses: CollectionSearchClause[] = [
+      { title: regex },
+      { description: regex },
+      { hightlights: regex },
+    ];
+
+    const CourseModel = this.collectionModel.db.model('Course');
+    const MajorModel = this.collectionModel.db.model('Major');
+
+    const [matchingCourses, matchingMajors] = await Promise.all([
+      CourseModel.find({ deletedAt: null, $or: [{ name: regex }, { code: regex }] }, { _id: 1 })
+        .lean<{ _id: Types.ObjectId }[]>()
+        .exec(),
+      MajorModel.find({ deletedAt: null, $or: [{ name: regex }, { code: regex }] }, { _id: 1 })
+        .lean<{ _id: Types.ObjectId }[]>()
+        .exec(),
+    ]);
+
+    if (matchingCourses.length > 0) {
+      clauses.push({ courseId: { $in: matchingCourses.map((course) => course._id) } });
+    }
+
+    if (matchingMajors.length > 0) {
+      clauses.push({ majorId: { $in: matchingMajors.map((major) => major._id) } });
+    }
+
+    return clauses;
   }
 
   private applyDiscount(originalPrice: number, discount: number): number {

@@ -125,9 +125,9 @@ export class CollectionController {
   @Version('1')
   @HttpCode(HttpStatus.OK)
   async getResourceCollections(@Query() query: QueryDto) {
-    const { page, limit, search, userId } = query;
+    const { page, limit, search, userId, courseId } = query;
     const result = await this.queryBus.execute(
-      new GetResourceCollectionsQuery(page, limit, search, userId),
+      new GetResourceCollectionsQuery(page, limit, search, userId, courseId),
     );
 
     return successResponse(result, 'Get resource collections successful', getCorrelationId());
@@ -141,9 +141,9 @@ export class CollectionController {
   @Version('1')
   @HttpCode(HttpStatus.OK)
   async getTutorialCollections(@Query() query: QueryDto) {
-    const { page, limit, search, userId } = query;
+    const { page, limit, search, userId, courseId } = query;
     const result = await this.queryBus.execute(
-      new GetTutorialCollectionsQuery(page, limit, search, userId),
+      new GetTutorialCollectionsQuery(page, limit, search, userId, courseId),
     );
 
     return successResponse(result, 'Get tutorial collections successful', getCorrelationId());

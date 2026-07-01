@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useI18n } from "@/i18n/language-provider"
 import { extractApiError } from "@/types/api"
 
 import { useTopUpWalletMutation } from "../services/billing-api"
@@ -64,12 +65,13 @@ export function TopUpDialog({
   onOpenChange,
   returnUrl,
 }: TopUpDialogProps) {
+  const { t } = useI18n()
   const [amount, setAmount] = useState("")
   const [topUp, { isLoading }] = useTopUpWalletMutation()
 
   const handleSubmit = async () => {
     if (!amount || Number(amount) <= 0) {
-      toast.error("Please enter a valid amount.")
+      toast.error(t("billing.topup.invalid"))
       return
     }
 
@@ -104,8 +106,8 @@ export function TopUpDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Deposit Wallet</DialogTitle>
-          <DialogDescription>Add funds to your wallet.</DialogDescription>
+          <DialogTitle>{t("billing.topup.title")}</DialogTitle>
+          <DialogDescription>{t("billing.topup.description")}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 py-2">
@@ -127,26 +129,26 @@ export function TopUpDialog({
 
           {/* Custom amount */}
           <div className="space-y-2">
-            <Label htmlFor="topup-custom-amount">Custom Amount (VND)</Label>
+            <Label htmlFor="topup-custom-amount">{t("billing.topup.customAmount")}</Label>
             <Input
               id="topup-custom-amount"
               type="number"
               min="1000"
-              placeholder="e.g. 75000"
+              placeholder={t("billing.topup.placeholder")}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
             {amount && Number(amount) > 0 && (
               <p className="text-xs text-muted-foreground">
-                You will deposit {formatVND(amount)}
+                {t("billing.topup.depositing", { amount: formatVND(amount) })}
               </p>
             )}
           </div>
 
           <div className="rounded-xl bg-muted/50 px-4 py-3 text-sm">
-            <p className="font-medium">Checkout</p>
+            <p className="font-medium">{t("billing.topup.checkout")}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              You will be redirected to the SEPAY payment page.
+              {t("billing.topup.checkoutDescription")}
             </p>
           </div>
         </div>
@@ -158,7 +160,7 @@ export function TopUpDialog({
             onClick={handleClose}
             disabled={isLoading}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             id="topup-submit-btn"
@@ -166,7 +168,7 @@ export function TopUpDialog({
             disabled={isLoading || !amount || Number(amount) <= 0}
           >
             {isLoading && <Loader2 className="mr-2 size-4 animate-spin" />}
-            Continue
+            {t("billing.topup.continue")}
           </Button>
         </DialogFooter>
       </DialogContent>

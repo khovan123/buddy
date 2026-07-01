@@ -24,6 +24,7 @@ import {
   usePurchaseMutation,
 } from "@/features/billing/services/billing-api"
 import { formatVND } from "@/features/billing/types/billing-types"
+import { useI18n } from "@/i18n/language-provider"
 import { extractApiError } from "@/types/api"
 
 interface PurchaseButtonProps {
@@ -40,13 +41,14 @@ interface PurchaseButtonProps {
 export function PurchaseButton({
   itemId,
   itemType,
-  label = "Buy Now",
-  freeLabel = "Learn now",
+  label,
+  freeLabel,
   className,
   price,
   trackingEventName,
   trackingPayload,
 }: PurchaseButtonProps) {
+  const { t } = useI18n()
   const router = useRouter()
   const hasResumed = useRef(false)
   const [quoteAmount, setQuoteAmount] = useState<string | null>(null)
@@ -122,7 +124,7 @@ export function PurchaseButton({
         itemType,
         idempotencyKey: crypto.randomUUID(),
       }).unwrap()
-      toast.success("Purchase completed. Your library is being updated.")
+      toast.success(t("billing.purchase.success"))
       setCheckoutOpen(false)
       router.push("/library")
       router.refresh()
@@ -150,21 +152,20 @@ export function PurchaseButton({
         disabled={isQuoting}
       >
         {isQuoting ? <Loader2 className="size-4 animate-spin" /> : null}
-        {price && price > 0 ? label : freeLabel}
+        {price && price > 0
+          ? label || t("billing.purchase.buyNow")
+          : freeLabel || t("billing.purchase.learnNow")}
       </Button>
 
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirm checkout</DialogTitle>
-            <DialogDescription>
-              The purchase is paid from your Buddy wallet and added to your
-              library after confirmation.
-            </DialogDescription>
+            <DialogTitle>{t("billing.purchase.confirmTitle")}</DialogTitle>
+            <DialogDescription>{t("billing.purchase.confirmDescription")}</DialogDescription>
           </DialogHeader>
           <div className="rounded-xl bg-muted/50 px-4 py-3">
             <p className="text-xs font-medium text-muted-foreground uppercase">
-              Total
+              {t("billing.purchase.total")}
             </p>
             <p className="mt-1 text-2xl font-bold">
               {formatVND(quoteAmount ?? "0")}
@@ -172,7 +173,7 @@ export function PurchaseButton({
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCheckoutOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={() => void handlePurchase()}
@@ -181,7 +182,7 @@ export function PurchaseButton({
               {isPurchasing ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : null}
-              Pay with wallet
+              {t("billing.purchase.payWithWallet")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -190,21 +191,18 @@ export function PurchaseButton({
       <Dialog open={insufficientOpen} onOpenChange={setInsufficientOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Top up your wallet</DialogTitle>
-            <DialogDescription>
-              Your wallet balance is insufficient for this checkout. Add funds
-              to continue the purchase.
-            </DialogDescription>
+            <DialogTitle>{t("billing.purchase.topUpTitle")}</DialogTitle>
+            <DialogDescription>{t("billing.purchase.topUpDescription")}</DialogDescription>
           </DialogHeader>
           <div className="flex items-center gap-3 rounded-xl bg-muted/50 px-4 py-3">
             <Wallet className="size-5 text-primary" />
             <span className="text-sm font-medium">
-              Required: {formatVND(quoteAmount ?? "0")}
+              {t("billing.purchase.required")}: {formatVND(quoteAmount ?? "0")}
             </span>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setInsufficientOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={() => {
@@ -212,7 +210,7 @@ export function PurchaseButton({
                 setTopUpOpen(true)
               }}
             >
-              Top up wallet
+              {t("billing.purchase.topUpWallet")}
             </Button>
           </DialogFooter>
         </DialogContent>

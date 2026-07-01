@@ -29,6 +29,7 @@ import {
   useUpdateMajorMutation,
 } from "@/features/content/services/content-api"
 import { Major, MajorStatus } from "@/features/content/types"
+import { useI18n } from "@/i18n/language-provider"
 
 const majorSchema = z.object({
   code: z.string().min(1, "Code is required"),
@@ -50,6 +51,7 @@ export default function MajorModal({
   onOpenChange,
   major,
 }: MajorModalProps) {
+  const { t } = useI18n()
   const isEditing = !!major
   const [createMajor, { isLoading: isCreating }] = useCreateMajorMutation()
   const [updateMajor, { isLoading: isUpdating }] = useUpdateMajorMutation()
@@ -74,14 +76,14 @@ export default function MajorModal({
     try {
       if (isEditing && major) {
         await updateMajor({ id: major.id, body: data }).unwrap()
-        toast.success("Major updated.")
+        toast.success(t("dashboard.majorModal.updated"))
       } else {
         await createMajor(data).unwrap()
-        toast.success("Major created.")
+        toast.success(t("dashboard.majorModal.created"))
       }
       onOpenChange(false)
     } catch (error) {
-      toast.error("We could not save this major.")
+      toast.error(t("dashboard.majorModal.saveError"))
     }
   }
 
@@ -91,17 +93,19 @@ export default function MajorModal({
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle>
-              {isEditing ? "Edit Major" : "Create Major"}
+              {isEditing
+                ? t("dashboard.majorModal.editTitle")
+                : t("dashboard.majorModal.createTitle")}
             </DialogTitle>
             <DialogDescription>
               {isEditing
-                ? "Modify the major details below."
-                : "Add a new major to the platform."}
+                ? t("dashboard.majorModal.editDescription")
+                : t("dashboard.majorModal.createDescription")}
             </DialogDescription>
           </DialogHeader>
           <FieldGroup className="py-4">
             <Field>
-              <FieldLabel htmlFor="code">Code</FieldLabel>
+              <FieldLabel htmlFor="code">{t("common.code")}</FieldLabel>
               <Input id="code" placeholder="e.g. SE" {...register("code")} />
               {errors.code && (
                 <p className="mt-1 text-sm text-destructive">
@@ -111,7 +115,7 @@ export default function MajorModal({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <FieldLabel htmlFor="name">{t("common.name")}</FieldLabel>
               <Input
                 id="name"
                 placeholder="Software Engineering"
@@ -125,7 +129,9 @@ export default function MajorModal({
             </Field>
 
             <Field>
-              <FieldLabel htmlFor="description">Description</FieldLabel>
+              <FieldLabel htmlFor="description">
+                {t("common.descriptionLabel")}
+              </FieldLabel>
               <Textarea
                 id="description"
                 rows={3}
@@ -140,7 +146,7 @@ export default function MajorModal({
 
             {isEditing && (
               <Field>
-                <FieldLabel>Status</FieldLabel>
+                <FieldLabel>{t("common.status")}</FieldLabel>
                 <Controller
                   name="status"
                   control={control}

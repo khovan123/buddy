@@ -1,10 +1,10 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 
-import { GraduationCap, Search, X } from "lucide-react"
+import { BookOpen, GraduationCap, Search, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -23,57 +23,81 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { Major } from "@/features/content/types"
-
-const SEMESTERS = [
-  { value: "all", label: "All Semesters" },
-  { value: "1", label: "Semester 1" },
-  { value: "2", label: "Semester 2" },
-  { value: "3", label: "Semester 3" },
-  { value: "4", label: "Semester 4" },
-  { value: "5", label: "Semester 5" },
-  { value: "6", label: "Semester 6" },
-] as const
-
-const PRICE_FILTERS = [
-  { value: "all", label: "All prices" },
-  { value: "free", label: "Free" },
-  { value: "paid", label: "Paid" },
-] as const
-
-const SORT_OPTIONS = [
-  { value: "newest", label: "Newest" },
-  { value: "popular", label: "Popular" },
-  { value: "rating", label: "Best rated" },
-] as const
-
-/** All-option sentinel used by the combobox (empty string clears the URL param). */
-const ALL_MAJORS_OPTION = { id: "", name: "All Majors" } as const
+import type { Course, Major } from "@/features/content/types"
+import { useI18n } from "@/i18n/language-provider"
 
 interface ExploreFilterBarProps {
   majors: Major[]
+  courses: Course[]
 }
 
-export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
+export function ExploreFilterBar({ majors, courses }: ExploreFilterBarProps) {
+  const { t } = useI18n()
+  const copy = {
+    semesters: [
+      { value: "all", label: t("explore.filter.allSemesters") },
+      { value: "1", label: t("explore.filter.semester1") },
+      { value: "2", label: t("explore.filter.semester2") },
+      { value: "3", label: t("explore.filter.semester3") },
+      { value: "4", label: t("explore.filter.semester4") },
+      { value: "5", label: t("explore.filter.semester5") },
+      { value: "6", label: t("explore.filter.semester6") },
+      { value: "7", label: t("explore.filter.semester7") },
+      { value: "8", label: t("explore.filter.semester8") },
+      { value: "9", label: t("explore.filter.semester9") },
+    ],
+    sortOptions: [
+      { value: "newest", label: t("explore.filter.newest") },
+      { value: "popular", label: t("explore.filter.popular") },
+      { value: "rating", label: t("explore.filter.topRated") },
+    ],
+    allMajors: t("explore.filter.allMajors"),
+    allCourses: t("explore.filter.allCourses"),
+    noMajors: t("explore.filter.noMajors"),
+    allContent: t("explore.filter.allContent"),
+    verified: t("explore.filter.verified"),
+    clear: t("explore.filter.clear"),
+    searchPlaceholder: t("explore.filter.searchPlaceholder"),
+  }
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
   const semester = searchParams.get("semester") ?? ""
   const majorId = searchParams.get("majorId") ?? ""
+  const courseId = searchParams.get("courseId") ?? ""
   const search = searchParams.get("search") ?? ""
-  const price = searchParams.get("price") ?? ""
   const verified = searchParams.get("verified") ?? ""
   const sort = searchParams.get("sort") ?? ""
 
-  /** Combobox needs a flat array including the "All" sentinel. */
-  const majorOptions = useMemo(() => [ALL_MAJORS_OPTION, ...majors], [majors])
+  const allMajorsOption = useMemo(() => ({ id: "", name: copy.allMajors }), [copy.allMajors])
+  const allCoursesOption = useMemo(
+    () => ({ id: "", name: copy.allCourses }),
+    [copy.allCourses]
+  )
+
+  const courseOptions = useMemo(() => {
+    const filteredCourses = courses.filter((course) => {
+      const matchesMajor = majorId
+        ? course.majorId === majorId || course.majorIds.includes(majorId)
+        : true
+      const matchesSemester = semester
+        ? course.semester === Number(semester)
+        : true
+
+      return matchesMajor && matchesSemester
+    })
+    return [allCoursesOption, ...filteredCourses]
+  }, [allCoursesOption, courses, majorId, semester])
 
   /** Local search text inside the combobox popover. */
   const [majorSearch, setMajorSearch] = useState("")
+  const searchDebounceRef = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null)
 
   const selectedMajorName =
-    majors.find((m) => m.id === majorId)?.name ?? "All Majors"
+    majors.find((m) => m.id === majorId)?.name ?? copy.allMajors
+  const selectedCourseName =
+    courseOptions.find((course) => course.id === courseId)?.name ?? copy.allCourses
 
   const updateParams = useCallback(
     (key: string, value: string) => {
@@ -94,6 +118,9 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
   const handleSearch = useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault()
+      if (searchDebounceRef.current) {
+        globalThis.clearTimeout(searchDebounceRef.current)
+      }
       const formData = new FormData(e.currentTarget)
       const value = (formData.get("search") as string) ?? ""
       updateParams("search", value.trim())
@@ -101,7 +128,8 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
     [updateParams]
   )
 
-  const hasFilters = semester || majorId || search || price || verified || sort
+  const hasFilters =
+    semester || majorId || courseId || search || verified || sort
 
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -110,19 +138,30 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
         {/* ── Semester Select ── */}
         <Select
           value={semester || "all"}
-          onValueChange={(val) =>
-            updateParams("semester", val === "all" ? "" : val)
-          }
+          onValueChange={(val) => {
+            const next = new URLSearchParams(searchParams.toString())
+            if (val === "all") {
+              next.delete("semester")
+            } else {
+              next.set("semester", val)
+            }
+            next.delete("courseId")
+            next.delete("page")
+            const qs = next.toString()
+            router.replace(`${pathname}${qs ? `?${qs}` : ""}`, {
+              scroll: false,
+            })
+          }}
         >
           <SelectTrigger
             size="sm"
             className="h-8 w-auto min-w-36 gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 text-xs font-medium shadow-xs backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-card/80 focus-visible:border-primary/40 focus-visible:bg-card/80"
           >
-            <SelectValue placeholder="All Semesters" />
+              <SelectValue placeholder={copy.semesters[0].label} />
           </SelectTrigger>
           <SelectContent position="popper" className="rounded-xl">
             <SelectGroup>
-              {SEMESTERS.map((s) => (
+              {copy.semesters.map((s) => (
                 <SelectItem
                   key={s.value}
                   value={s.value}
@@ -139,7 +178,18 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
         <Combobox
           value={majorId}
           onValueChange={(val) => {
-            updateParams("majorId", val ?? "")
+            const next = new URLSearchParams(searchParams.toString())
+            if (val) {
+              next.set("majorId", val)
+            } else {
+              next.delete("majorId")
+            }
+            next.delete("courseId")
+            next.delete("page")
+            const qs = next.toString()
+            router.replace(`${pathname}${qs ? `?${qs}` : ""}`, {
+              scroll: false,
+            })
             setMajorSearch("")
           }}
           inputValue={majorSearch}
@@ -161,14 +211,14 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
           <ComboboxContent className="rounded-xl">
             <ComboboxList>
               {(() => {
-                const filtered = majorOptions.filter((m) =>
+                const filtered = [allMajorsOption, ...majors].filter((m) =>
                   m.name.toLowerCase().includes(majorSearch.toLowerCase())
                 )
 
                 if (filtered.length === 0) {
                   return (
                     <div className="py-6 text-center text-sm text-muted-foreground">
-                      No majors found
+                      {copy.noMajors}
                     </div>
                   )
                 }
@@ -191,26 +241,29 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
         </Combobox>
 
         <Select
-          value={price || "all"}
+          value={courseId || "all"}
           onValueChange={(val) =>
-            updateParams("price", val === "all" ? "" : val)
+            updateParams("courseId", val === "all" ? "" : val)
           }
         >
           <SelectTrigger
             size="sm"
-            className="h-8 w-auto min-w-30 gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 text-xs font-medium shadow-xs backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-card/80 focus-visible:border-primary/40 focus-visible:bg-card/80"
+            className="h-8 w-auto min-w-44 gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 text-xs font-medium shadow-xs backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-card/80 focus-visible:border-primary/40 focus-visible:bg-card/80"
           >
-            <SelectValue placeholder="All prices" />
+            <div className="flex min-w-0 items-center gap-1.5">
+              <BookOpen className="size-3.5 shrink-0 text-muted-foreground/60" />
+              <span className="truncate">{selectedCourseName}</span>
+            </div>
           </SelectTrigger>
           <SelectContent position="popper" className="rounded-xl">
             <SelectGroup>
-              {PRICE_FILTERS.map((option) => (
+              {courseOptions.map((course) => (
                 <SelectItem
-                  key={option.value}
-                  value={option.value}
+                  key={course.id || "__all_courses__"}
+                  value={course.id || "all"}
                   className="rounded-lg text-xs"
                 >
-                  {option.label}
+                  {"code" in course ? `${course.code} · ${course.name}` : course.name}
                 </SelectItem>
               ))}
             </SelectGroup>
@@ -227,15 +280,15 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
             size="sm"
             className="h-8 w-auto min-w-34 gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 text-xs font-medium shadow-xs backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-card/80 focus-visible:border-primary/40 focus-visible:bg-card/80"
           >
-            <SelectValue placeholder="All items" />
+            <SelectValue placeholder={copy.allContent} />
           </SelectTrigger>
           <SelectContent position="popper" className="rounded-xl">
             <SelectGroup>
               <SelectItem value="all" className="rounded-lg text-xs">
-                All items
+                {copy.allContent}
               </SelectItem>
               <SelectItem value="true" className="rounded-lg text-xs">
-                Checked by Buddy
+                {copy.verified}
               </SelectItem>
             </SelectGroup>
           </SelectContent>
@@ -251,11 +304,11 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
             size="sm"
             className="h-8 w-auto min-w-32 gap-1.5 rounded-lg border border-border/60 bg-card/50 px-3 text-xs font-medium shadow-xs backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-card/80 focus-visible:border-primary/40 focus-visible:bg-card/80"
           >
-            <SelectValue placeholder="Newest" />
+            <SelectValue placeholder={copy.sortOptions[0].label} />
           </SelectTrigger>
           <SelectContent position="popper" className="rounded-xl">
             <SelectGroup>
-              {SORT_OPTIONS.map((option) => (
+              {copy.sortOptions.map((option) => (
                 <SelectItem
                   key={option.value}
                   value={option.value}
@@ -279,18 +332,31 @@ export function ExploreFilterBar({ majors }: ExploreFilterBarProps) {
             }}
           >
             <X className="size-3" />
-            Clear
+            {copy.clear}
           </Button>
         ) : null}
       </div>
 
       {/* ── Search (compact) ── */}
-      <form onSubmit={handleSearch} className="relative w-full sm:max-w-56">
+      <form
+        key={search}
+        onSubmit={handleSearch}
+        className="relative w-full sm:max-w-56"
+      >
         <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
         <Input
           name="search"
           defaultValue={search}
-          placeholder="Search by title or tag"
+          onChange={(e) => {
+            if (searchDebounceRef.current) {
+              globalThis.clearTimeout(searchDebounceRef.current)
+            }
+            const value = e.target.value
+            searchDebounceRef.current = globalThis.setTimeout(() => {
+              updateParams("search", value.trim())
+            }, 300)
+          }}
+          placeholder={copy.searchPlaceholder}
           className="h-8 rounded-lg border-border/60 bg-card/50 pl-8 text-xs shadow-xs backdrop-blur-sm placeholder:text-muted-foreground/50"
         />
       </form>

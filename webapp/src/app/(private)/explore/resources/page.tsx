@@ -12,6 +12,7 @@ import {
   getTopResources,
 } from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 
 
@@ -39,15 +40,14 @@ export default async function ExploreResourcesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const seoPromise = getSeoContent("explore-resources")
+  const { t } = await getServerTranslator()
   const params = await searchParams
   const semester = params.semester ? Number(params.semester) : undefined
   const majorId =
     typeof params.majorId === "string" ? params.majorId : undefined
+  const courseId =
+    typeof params.courseId === "string" ? params.courseId : undefined
   const search = typeof params.search === "string" ? params.search : undefined
-  const price =
-    params.price === "free" || params.price === "paid"
-      ? params.price
-      : undefined
   const verified = params.verified === "true" ? true : undefined
   const sort =
     params.sort === "popular" || params.sort === "rating"
@@ -61,8 +61,8 @@ export default async function ExploreResourcesPage({
       limit: 20,
       semester,
       majorId,
+      courseId,
       search,
-      price,
       verified,
       sort,
     }),
@@ -77,17 +77,17 @@ export default async function ExploreResourcesPage({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 1, name: t("nav.home"), item: siteUrl },
       {
         "@type": "ListItem",
         position: 2,
-        name: "Explore",
+        name: t("nav.explore"),
         item: `${siteUrl}/explore`,
       },
       {
         "@type": "ListItem",
         position: 3,
-        name: "Resources",
+        name: t("content.resources"),
         item: `${siteUrl}/explore/resources`,
       },
     ],
@@ -140,15 +140,15 @@ export default async function ExploreResourcesPage({
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold tracking-tight text-foreground">
-                Top Resources
+                {t("explore.list.topResources")}
               </h2>
               <p className="text-sm text-muted-foreground">
-                Featured recommendation for this week.
+                {t("explore.list.topResourcesDescription")}
               </p>
             </div>
             <Button variant="outline" asChild>
               <Link href="/explore/resources/collections">
-                View Collections
+                {t("explore.list.viewCollections")}
               </Link>
             </Button>
           </div>
@@ -168,21 +168,21 @@ export default async function ExploreResourcesPage({
         <div className="flex items-end justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-foreground">
-              All Resources
+              {t("explore.list.allResources")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Browse the rest of the collection below.
+              {t("explore.list.allResourcesDescription")}
             </p>
           </div>
           <p className="text-sm font-medium text-muted-foreground">
-            {result.meta.total} resources
+            {result.meta.total} {t("explore.list.resourceCount")}
           </p>
         </div>
 
         <ResourceLoadMoreGrid
           initialItems={resources}
           initialMeta={result.meta}
-          filters={{ semester, majorId, search, price, verified, sort }}
+          filters={{ semester, majorId, courseId, search, verified, sort }}
         />
       </section>
     </section>

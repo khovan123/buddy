@@ -11,6 +11,7 @@ export interface CollectionListQueryParams {
   limit: number;
   search?: string;
   userId?: string;
+  courseId?: string;
   type?: CollectionType;
 }
 

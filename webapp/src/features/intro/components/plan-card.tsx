@@ -17,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { formatVND } from "@/features/billing/types/billing-types"
 import type { PlanFeature } from "@/features/intro/services/intro.service"
 import { cn } from "@/lib/utils"
 
@@ -97,14 +98,14 @@ export function PlanCard({
                 exit={{ opacity: 0, y: 10 }}
                 className="text-4xl font-bold text-foreground"
               >
-                ${price}
+                {formatVND(price)}
               </motion.span>
             </AnimatePresence>
             <span className="text-muted-foreground">/ month</span>
           </div>
           {isPro && yearly && (
             <p className="mt-1 text-xs text-pricing-success">
-              Billed ${((proplan.yearlyPrice ?? 0) * 12).toFixed(0)}/year
+              Billed {formatVND((proplan.yearlyPrice ?? 0) * 12)}/year
             </p>
           )}
         </div>

@@ -3,6 +3,7 @@ import { toast } from "sonner"
 
 import { ConfirmDialog } from "@/components/molecules/confirm-dialog"
 import { useDeleteCourseMutation } from "@/features/content/services/content-api"
+import { useI18n } from "@/i18n/language-provider"
 
 interface DeleteCourseDialogProps {
   open: boolean
@@ -15,6 +16,7 @@ export default function DeleteCourseDialog({
   onOpenChange,
   id,
 }: DeleteCourseDialogProps) {
+  const { t } = useI18n()
   const [deleteCourse, { isLoading }] = useDeleteCourseMutation()
 
   const handleConfirm = async () => {
@@ -23,10 +25,10 @@ export default function DeleteCourseDialog({
     }
     try {
       await deleteCourse(id).unwrap()
-      toast.success("Course deleted.")
+      toast.success(t("dashboard.deleteCourse.success"))
       onOpenChange(false)
     } catch (error) {
-      toast.error("We could not delete this course.")
+      toast.error(t("dashboard.deleteCourse.error"))
     }
   }
 
@@ -35,9 +37,9 @@ export default function DeleteCourseDialog({
       open={open}
       onOpenChange={onOpenChange}
       variant="error"
-      title="Delete course?"
-      description="This action cannot be undone and may affect related tutorials and resources."
-      confirmLabel="Delete"
+      title={t("dashboard.deleteCourse.title")}
+      description={t("dashboard.deleteCourse.description")}
+      confirmLabel={t("dashboard.deleteCourse.confirm")}
       loading={isLoading}
       onConfirm={handleConfirm}
     />

@@ -26,12 +26,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { useI18n } from "@/i18n/language-provider"
 
 /* ------------------------------------------------------------------ */
 /*  Support ticket form + help sidebar                                 */
 /* ------------------------------------------------------------------ */
 
 export function ContactSupportForm({ onBack }: { onBack: () => void }) {
+  const { t } = useI18n()
   const [submitted, setSubmitted] = useState(false)
 
   if (submitted) {
@@ -41,10 +43,9 @@ export function ContactSupportForm({ onBack }: { onBack: () => void }) {
           <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full bg-primary/10">
             <Headphones className="size-7 text-primary" />
           </div>
-          <h2 className="text-2xl font-bold">Ticket submitted!</h2>
+          <h2 className="text-2xl font-bold">{t("intro.contact.ticketSubmitted")}</h2>
           <p className="mt-3 text-muted-foreground">
-            We&apos;ll review your request and respond as soon as possible.
-            Check your email for confirmation.
+            {t("intro.contact.ticketSubmittedDescription")}
           </p>
           <Button
             variant="outline"
@@ -52,7 +53,7 @@ export function ContactSupportForm({ onBack }: { onBack: () => void }) {
             onClick={onBack}
           >
             <ArrowLeft className="mr-2 size-4" />
-            Back to contact
+            {t("intro.contact.back")}
           </Button>
         </MotionHero>
       </div>
@@ -68,7 +69,7 @@ export function ContactSupportForm({ onBack }: { onBack: () => void }) {
           className="mb-8 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4" />
-          Back to contact
+          {t("intro.contact.back")}
         </button>
       </MotionHero>
 
@@ -80,16 +81,15 @@ export function ContactSupportForm({ onBack }: { onBack: () => void }) {
               <div className="mb-2 flex size-12 items-center justify-center rounded-xl bg-primary/10">
                 <Headphones className="size-6 text-primary" />
               </div>
-              <CardTitle className="text-2xl">Submit a ticket</CardTitle>
+              <CardTitle className="text-2xl">{t("intro.contact.supportFormTitle")}</CardTitle>
               <CardDescription>
-                Submit a ticket to our support team or email{" "}
+                {t("intro.contact.supportFormDescription").replace("support@buddy.edu", "").trim()}{" "}
                 <a
                   href="mailto:support@buddy.edu"
                   className="font-medium text-foreground underline underline-offset-2"
                 >
                   support@buddy.edu
-                </a>{" "}
-                directly.
+                </a>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -102,7 +102,7 @@ export function ContactSupportForm({ onBack }: { onBack: () => void }) {
                 }}
               >
                 <div className="space-y-2">
-                  <Label htmlFor="support-email">Email address</Label>
+                  <Label htmlFor="support-email">{t("intro.contact.emailAddress")}</Label>
                   <Input
                     id="support-email"
                     type="email"
@@ -112,46 +112,44 @@ export function ContactSupportForm({ onBack }: { onBack: () => void }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="support-category">Category</Label>
+                  <Label htmlFor="support-category">{t("intro.contact.category")}</Label>
                   <Select>
                     <SelectTrigger id="support-category">
-                      <SelectValue placeholder="Select a category" />
+                      <SelectValue placeholder={t("intro.contact.selectCategory")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="account">Account & Billing</SelectItem>
-                      <SelectItem value="content">Content Issues</SelectItem>
-                      <SelectItem value="technical">
-                        Technical Problem
-                      </SelectItem>
-                      <SelectItem value="creator">Creator Tools</SelectItem>
-                      <SelectItem value="report">Report Content</SelectItem>
-                      <SelectItem value="feature">Feature Request</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="account">{t("intro.contact.categoryAccountBilling")}</SelectItem>
+                      <SelectItem value="content">{t("intro.contact.categoryContentIssues")}</SelectItem>
+                      <SelectItem value="technical">{t("intro.contact.categoryTechnical")}</SelectItem>
+                      <SelectItem value="creator">{t("intro.contact.categoryCreatorTools")}</SelectItem>
+                      <SelectItem value="report">{t("intro.contact.categoryReportContent")}</SelectItem>
+                      <SelectItem value="feature">{t("intro.contact.categoryFeatureRequest")}</SelectItem>
+                      <SelectItem value="other">{t("intro.contact.roleOther")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="support-subject">Subject</Label>
+                  <Label htmlFor="support-subject">{t("intro.contact.subject")}</Label>
                   <Input
                     id="support-subject"
-                    placeholder="Brief summary of your issue"
+                    placeholder={t("intro.contact.subjectPlaceholder")}
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="support-description">Description</Label>
+                  <Label htmlFor="support-description">{t("intro.contact.descriptionLabel")}</Label>
                   <Textarea
                     id="support-description"
-                    placeholder="Please describe your issue in detail. Include steps to reproduce if applicable..."
+                    placeholder={t("intro.contact.descriptionPlaceholder")}
                     rows={5}
                     required
                   />
                 </div>
 
                 <Button type="submit" size="lg" className="w-full rounded-full">
-                  Submit ticket <Send className="ml-2 size-4" />
+                  {t("intro.contact.supportButton")} <Send className="ml-2 size-4" />
                 </Button>
               </form>
             </CardContent>
@@ -164,7 +162,7 @@ export function ContactSupportForm({ onBack }: { onBack: () => void }) {
             <Card className="rounded-2xl border-border shadow-none">
               <CardContent className="space-y-4 pt-6">
                 <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                  Quick help
+                  {t("intro.contact.quickHelp")}
                 </p>
 
                 <a
@@ -174,6 +172,7 @@ export function ContactSupportForm({ onBack }: { onBack: () => void }) {
                   <Mail className="size-5 text-primary" />
                   <div>
                     <p className="text-sm font-medium">Email support</p>
+                    <p className="text-sm font-medium">{t("intro.contact.emailSupport")}</p>
                     <p className="text-xs text-muted-foreground">
                       support@buddy.edu
                     </p>
@@ -186,9 +185,9 @@ export function ContactSupportForm({ onBack }: { onBack: () => void }) {
                 >
                   <MessageSquare className="size-5 text-primary" />
                   <div>
-                    <p className="text-sm font-medium">Discord community</p>
+                    <p className="text-sm font-medium">{t("intro.contact.discordCommunity")}</p>
                     <p className="text-xs text-muted-foreground">
-                      Get help from the community
+                      {t("intro.contact.communityHelp")}
                     </p>
                   </div>
                 </Link>
@@ -198,23 +197,23 @@ export function ContactSupportForm({ onBack }: { onBack: () => void }) {
             <Card className="rounded-2xl border-border shadow-none">
               <CardContent className="space-y-3 pt-6">
                 <p className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">
-                  Response time
+                  {t("intro.contact.responseTime")}
                 </p>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Free tier</span>
+                    <span className="text-muted-foreground">{t("intro.contact.freeTier")}</span>
                     <Badge variant="secondary" className="rounded-full text-xs">
                       48 hours
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Pro plan</span>
+                    <span className="text-muted-foreground">{t("intro.contact.proPlan")}</span>
                     <Badge variant="secondary" className="rounded-full text-xs">
                       24 hours
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Enterprise</span>
+                    <span className="text-muted-foreground">{t("intro.contact.enterprise")}</span>
                     <Badge variant="secondary" className="rounded-full text-xs">
                       4 hours
                     </Badge>

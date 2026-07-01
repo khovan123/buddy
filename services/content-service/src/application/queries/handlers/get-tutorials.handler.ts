@@ -22,7 +22,8 @@ export class GetTutorialsHandler implements IQueryHandler<GetTutorialsQuery> {
    * @param query - The query parameter
    */
   async execute(query: GetTutorialsQuery) {
-    const { page, limit, search, userId, semester, majorId, price, verified, sort } = query;
+    const { page, limit, search, userId, semester, majorId, courseId, price, verified, sort } =
+      query;
     const result = await this.tutorialRepository.findAvailableTutorials({
       page,
       limit,
@@ -30,6 +31,7 @@ export class GetTutorialsHandler implements IQueryHandler<GetTutorialsQuery> {
       userId,
       semester,
       majorId,
+      courseId,
       price,
       verified,
       sort,

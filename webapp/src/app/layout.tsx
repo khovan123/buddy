@@ -46,11 +46,11 @@ export const metadata: Metadata = {
   metadataBase: getMetadataBase(),
   applicationName: "Buddy",
   title: {
-    default: "Buddy | Learn, Share, Grow",
+    default: "Buddy | Học tập, chia sẻ, phát triển",
     template: "%s | Buddy",
   },
   description:
-    "Buddy connects students and creators through curated resources, tutorials, and collaborative learning paths.",
+    "Buddy kết nối người học và nhà sáng tạo qua tài liệu, bài học và lộ trình học tập được chọn lọc.",
   alternates: {
     canonical: "/",
   },
@@ -60,26 +60,26 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "vi_VN",
     siteName: "Buddy",
-    title: "Buddy | Learn, Share, Grow",
+    title: "Buddy | Học tập, chia sẻ, phát triển",
     description:
-      "Explore curated learning resources, tutorials, and creator-led collections on Buddy.",
+      "Khám phá tài liệu, bài học và bộ sưu tập do creator xây dựng trên Buddy.",
     url: "/",
     images: [
       {
         url: "/og-default.png",
         width: 1200,
         height: 630,
-        alt: "Buddy — Education Marketplace",
+        alt: "Buddy - Nền tảng học tập",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Buddy | Learn, Share, Grow",
+    title: "Buddy | Học tập, chia sẻ, phát triển",
     description:
-      "Explore curated learning resources, tutorials, and creator-led collections on Buddy.",
+      "Khám phá tài liệu, bài học và bộ sưu tập do creator xây dựng trên Buddy.",
     images: ["/og-default.png"],
   },
 }
@@ -97,7 +97,7 @@ export default function RootLayout({
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
     description:
-      "Buddy connects students and creators through curated resources, tutorials, and collaborative learning paths.",
+      "Buddy kết nối người học và nhà sáng tạo qua tài liệu, bài học và lộ trình học tập được chọn lọc.",
     foundingDate: "2026",
     founder: {
       "@type": "Person",
@@ -105,11 +105,11 @@ export default function RootLayout({
     },
     contactPoint: {
       "@type": "ContactPoint",
-      contactType: "customer support",
+      contactType: "hỗ trợ khách hàng",
       url: `${siteUrl}/contact`,
     },
     sameAs: [
-      // TODO: Add real social media profile URLs for AI entity recognition
+      // TODO: Thêm URL mạng xã hội thật để hệ thống nhận diện thực thể tốt hơn
       // "https://twitter.com/buddyedu",
       // "https://www.linkedin.com/company/buddyedu",
       // "https://www.youtube.com/@buddyedu",
@@ -130,7 +130,7 @@ export default function RootLayout({
 
   return (
     <html
-      lang="en"
+      lang="vi"
       suppressHydrationWarning
       className={cn(
         "antialiased",

@@ -31,16 +31,16 @@ export function ProfileCompleteBanner({
       <div className="mx-auto flex max-w-7xl items-center gap-3">
         <AlertTriangle className="size-4 shrink-0 text-destructive" />
         <p className="flex-1 text-sm text-foreground">
-          <strong>Profile incomplete</strong> — Please update your{" "}
-          {missing.map((field) => field.label).join(", ")} to get personalized
-          recommendations.
+          <strong>Hồ sơ chưa hoàn chỉnh</strong> - Vui lòng cập nhật{" "}
+          {missing.map((field) => field.label).join(", ")} để nhận gợi ý phù
+          hợp hơn.
         </p>
         <button
           type="button"
           onClick={onUpdateClick}
           className="shrink-0 rounded-md bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground transition-colors hover:opacity-90"
         >
-          Update Profile
+          Cập nhật hồ sơ
         </button>
       </div>
     </div>

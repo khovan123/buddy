@@ -22,7 +22,7 @@ export async function fetchMoreTutorials(
   limit: number,
   filters?: Pick<
     ContentListParams,
-    "semester" | "majorId" | "search" | "price" | "verified" | "sort"
+    "semester" | "majorId" | "courseId" | "search" | "verified" | "sort"
   >
 ): Promise<PaginatedResult<TutorialQueryItem>> {
   return getTutorials({ page, limit, ...filters })
@@ -33,7 +33,7 @@ export async function fetchMoreResources(
   limit: number,
   filters?: Pick<
     ContentListParams,
-    "semester" | "majorId" | "search" | "price" | "verified" | "sort"
+    "semester" | "majorId" | "courseId" | "search" | "verified" | "sort"
   >
 ): Promise<PaginatedResult<ResourceQueryItem>> {
   return getResources({ page, limit, ...filters })
@@ -41,14 +41,16 @@ export async function fetchMoreResources(
 
 export async function fetchMoreTutorialCollections(
   page: number,
-  limit: number
+  limit: number,
+  filters?: Pick<ContentListParams, "search" | "courseId">
 ): Promise<PaginatedResult<CollectionQueryItem>> {
-  return getTutorialCollections({ page, limit })
+  return getTutorialCollections({ page, limit, ...filters })
 }
 
 export async function fetchMoreResourceCollections(
   page: number,
-  limit: number
+  limit: number,
+  filters?: Pick<ContentListParams, "search" | "courseId">
 ): Promise<PaginatedResult<CollectionQueryItem>> {
-  return getResourceCollections({ page, limit })
+  return getResourceCollections({ page, limit, ...filters })
 }

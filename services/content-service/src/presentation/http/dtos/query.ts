@@ -62,6 +62,10 @@ export class QueryDto {
   majorId?: string;
 
   @IsOptional()
+  @IsMongoId()
+  courseId?: string;
+
+  @IsOptional()
   @IsIn(['free', 'paid'])
   price?: 'free' | 'paid';
 

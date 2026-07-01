@@ -15,6 +15,7 @@ import {
   useGetNotificationPreferencesQuery,
   useUpdateNotificationPreferencesMutation,
 } from "@/features/settings/services/settings-api"
+import { useI18n } from "@/i18n/language-provider"
 import { extractApiError } from "@/types/api"
 
 type NotificationKey =
@@ -26,49 +27,50 @@ type NotificationKey =
 
 const NOTIFICATION_GROUPS = [
   {
-    title: "Account",
+    title: "Tài khoản",
     icon: Bell,
     items: [
       {
         key: "productUpdates",
-        label: "Product updates",
+        label: "Cập nhật sản phẩm",
         description:
-          "Changes to Buddy features, plan limits, and workspace tools.",
+          "Thay đổi về tính năng Buddy, giới hạn gói và công cụ không gian làm việc.",
       },
       {
         key: "learningReminders",
-        label: "Learning reminders",
+        label: "Nhắc học tập",
         description:
-          "Useful nudges for unfinished resources and saved tutorials.",
+          "Các nhắc nhở hữu ích cho tài liệu chưa xem hết và bài học đã lưu.",
       },
     ],
   },
   {
-    title: "Billing",
+    title: "Thanh toán",
     icon: Wallet,
     items: [
       {
         key: "walletEvents",
-        label: "Wallet and payout events",
+        label: "Ví và nhận tiền",
         description:
-          "Deposits, withdrawals, failed payments, and payout status changes.",
+          "Nạp tiền, rút tiền, thanh toán thất bại và thay đổi trạng thái nhận tiền.",
       },
       {
         key: "creatorSales",
-        label: "Creator sales",
+        label: "Doanh số nhà sáng tạo",
         description:
-          "Sales, refunds, and revenue events for your creator account.",
+          "Các sự kiện bán hàng, hoàn tiền và doanh thu cho tài khoản creator của bạn.",
       },
     ],
   },
   {
-    title: "Digest",
+    title: "Tổng hợp",
     icon: Mail,
     items: [
       {
         key: "weeklyDigest",
-        label: "Weekly email digest",
-        description: "A short weekly summary of learning and creator activity.",
+        label: "Email tổng hợp hằng tuần",
+        description:
+          "Bản tóm tắt ngắn hằng tuần về hoạt động học tập và sáng tạo nội dung.",
       },
     ],
   },
@@ -76,6 +78,7 @@ const NOTIFICATION_GROUPS = [
 
 export function NotificationSettingsPanel() {
   const { data, isFetching } = useGetNotificationPreferencesQuery()
+  const { t } = useI18n()
 
   const settings = data?.data ?? DEFAULT_NOTIFICATION_PREFERENCES
 
@@ -84,6 +87,7 @@ export function NotificationSettingsPanel() {
       key={settings.updatedAt ?? "default"}
       initialSettings={settings}
       isFetching={isFetching}
+      savedLabel={t("settings.savedNotifications")}
     />
   )
 }
@@ -91,9 +95,11 @@ export function NotificationSettingsPanel() {
 function NotificationSettingsForm({
   initialSettings,
   isFetching,
+  savedLabel,
 }: {
   initialSettings: NotificationPreferences
   isFetching: boolean
+  savedLabel: string
 }) {
   const [settings, setSettings] =
     useState<NotificationPreferences>(initialSettings)
@@ -109,7 +115,7 @@ function NotificationSettingsForm({
       const { updatedAt, ...payload } = settings
       void updatedAt
       await updatePreferences(payload).unwrap()
-      toast.success("Notification preferences saved.")
+      toast.success(savedLabel)
     } catch (error) {
       toast.error(extractApiError(error))
     }
@@ -120,12 +126,12 @@ function NotificationSettingsForm({
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
           <Bell className="size-4" />
-          Delivery preferences
+          Tùy chọn nhận thông báo
         </div>
-        <h1 className="text-2xl font-semibold tracking-tight">Notifications</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Thông báo</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Choose which product, billing, and creator events should interrupt
-          your inbox. Security alerts always stay enabled.
+          Chọn những cập nhật về sản phẩm, thanh toán và hoạt động nhà sáng tạo
+          mà bạn muốn nhận. Cảnh báo bảo mật luôn được bật.
         </p>
       </div>
 
@@ -166,10 +172,10 @@ function NotificationSettingsForm({
             <div className="flex gap-3">
               <ShieldCheck className="mt-0.5 size-4 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">Security alerts</p>
+                <p className="text-sm font-medium">Cảnh báo bảo mật</p>
                 <FieldDescription>
-                  Login, password, and account protection emails are always
-                  sent.
+                  Email về đăng nhập, mật khẩu và bảo vệ tài khoản sẽ luôn được
+                  gửi.
                 </FieldDescription>
               </div>
             </div>
@@ -179,7 +185,7 @@ function NotificationSettingsForm({
               ) : (
                 <Save className="size-4" />
               )}
-              Save preferences
+              Lưu tùy chọn
             </Button>
           </CardContent>
         </Card>

@@ -6,9 +6,9 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { SettingsSidebar } from "@/features/settings"
 
 export const metadata: Metadata = {
-  title: "Settings",
+  title: "Cài đặt",
   description:
-    "Manage your profile, security, notifications, billing, and subscription settings.",
+    "Quản lý hồ sơ, bảo mật, thông báo, thanh toán và các thiết lập tài khoản.",
   robots: { index: false, follow: false },
 }
 

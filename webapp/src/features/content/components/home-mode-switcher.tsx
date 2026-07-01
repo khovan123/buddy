@@ -18,6 +18,7 @@ import {
 } from "@/components/molecules/tutorial-card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useI18n } from "@/i18n/language-provider"
 
 type HomeMode = "resources" | "tutorials"
 
@@ -34,22 +35,37 @@ export function HomeModeSwitcher({
   resources,
   tutorials,
 }: HomeModeSwitcherProps) {
+  const { t } = useI18n()
   const [mode, setMode] = useState<HomeMode>("resources")
 
-  const topCollectionsTitle =
-    mode === "resources"
-      ? "Top Resource Collections"
-      : "Top Tutorial Collections"
-  const topCollectionsDescription =
-    mode === "resources"
-      ? "Best performing curated resource packs across subjects."
-      : "Most popular guided tutorial paths for this week."
-
-  const trendingTitle = mode === "resources" ? "Top Resources" : "Top Tutorials"
-  const trendingDescription =
-    mode === "resources"
-      ? "Most downloaded materials this week across faculties."
-      : "Most watched tutorials this week across learning tracks."
+  const copy = {
+    topCollectionsTitle: {
+      resources: t("home.switcher.resourceCollectionsTitle"),
+      tutorials: t("home.switcher.tutorialCollectionsTitle"),
+    },
+    topCollectionsDescription: {
+      resources: t("home.switcher.resourceCollectionsDescription"),
+      tutorials: t("home.switcher.tutorialCollectionsDescription"),
+    },
+    trendingTitle: {
+      resources: t("home.switcher.resourceTitle"),
+      tutorials: t("home.switcher.tutorialTitle"),
+    },
+    trendingDescription: {
+      resources: t("home.switcher.resourceDescription"),
+      tutorials: t("home.switcher.tutorialDescription"),
+    },
+    overview: t("home.switcher.overview"),
+    overviewDescription: t("home.switcher.overviewDescription"),
+    resources: t("home.switcher.resources"),
+    tutorials: t("home.switcher.tutorials"),
+    exploreAll: t("home.switcher.exploreAll"),
+    showMore: t("home.switcher.showMore"),
+  }
+  const topCollectionsTitle = copy.topCollectionsTitle[mode]
+  const topCollectionsDescription = copy.topCollectionsDescription[mode]
+  const trendingTitle = copy.trendingTitle[mode]
+  const trendingDescription = copy.trendingDescription[mode]
 
   const collectionsHref =
     mode === "resources"
@@ -67,10 +83,10 @@ export function HomeModeSwitcher({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
             <h2 className="text-xl font-bold tracking-tight text-foreground uppercase">
-              Overview
+              {copy.overview}
             </h2>
             <p className="max-w-2xl text-sm text-muted-foreground">
-              Switch between resources and tutorials without leaving your page.
+              {copy.overviewDescription}
             </p>
           </div>
 
@@ -82,8 +98,8 @@ export function HomeModeSwitcher({
             className="w-full lg:w-auto"
           >
             <TabsList className="w-full justify-start bg-muted lg:w-auto">
-              <TabsTrigger value="resources">Resources</TabsTrigger>
-              <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
+              <TabsTrigger value="resources">{copy.resources}</TabsTrigger>
+              <TabsTrigger value="tutorials">{copy.tutorials}</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -100,7 +116,7 @@ export function HomeModeSwitcher({
             </p>
           </div>
           <Button asChild variant="ghost" size="sm">
-            <Link href={collectionsHref}>Explore all</Link>
+            <Link href={collectionsHref}>{copy.exploreAll}</Link>
           </Button>
         </div>
 
@@ -126,7 +142,7 @@ export function HomeModeSwitcher({
             </p>
           </div>
           <Button asChild variant="ghost" size="sm">
-            <Link href={contentHref}>Explore all</Link>
+            <Link href={contentHref}>{copy.exploreAll}</Link>
           </Button>
         </div>
 
@@ -142,7 +158,7 @@ export function HomeModeSwitcher({
 
         <div className="flex justify-center pt-2">
           <Button asChild variant="outline">
-            <Link href={contentHref}>Show More Results</Link>
+            <Link href={contentHref}>{copy.showMore}</Link>
           </Button>
         </div>
       </section>

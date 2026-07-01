@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { getLibraryResourceCollectionBySlug } from "@/features/content"
 import { getSeoContent } from "@/features/seo/services/seo-content"
+import { getServerTranslator } from "@/i18n/server"
 
 type PageParams = Promise<{ id: string }>
 
@@ -48,6 +49,7 @@ export default async function LibraryResourceCollectionDetailPage({
     params,
     getSeoContent("library-resources-collections-:id"),
   ])
+  const { t } = await getServerTranslator()
   const collection = await getLibraryResourceCollectionBySlug(id)
 
   if (!collection) {
@@ -62,7 +64,7 @@ export default async function LibraryResourceCollectionDetailPage({
         <LibraryBackButton
           variant="ghost"
           size="sm"
-          label="Back to Library"
+          label={t("library.back")}
           fallbackHref="/library"
           className="w-fit"
         />
@@ -75,10 +77,10 @@ export default async function LibraryResourceCollectionDetailPage({
                 className="gap-1 text-xs font-semibold tracking-wide uppercase"
               >
                 <FolderKanban className="size-3" />
-                Resource Collection
+                {t("library.collection.resourceBadge")}
               </Badge>
               <Badge variant="secondary" className="text-xs">
-                {resourceCount} {resourceCount === 1 ? "File" : "Files"}
+                {resourceCount} {t("library.collection.files")}
               </Badge>
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
@@ -91,7 +93,7 @@ export default async function LibraryResourceCollectionDetailPage({
 
           {collection.discount ? (
             <Badge variant="secondary" className="w-fit text-sm font-semibold">
-              {collection.discount}% OFF
+              {t("library.collection.save")} {collection.discount}%
             </Badge>
           ) : null}
         </div>
@@ -101,7 +103,7 @@ export default async function LibraryResourceCollectionDetailPage({
         <Card className="border-border/60 bg-card shadow-sm">
           <CardContent className="space-y-4 p-6">
             <p className="text-xs font-extrabold tracking-widest text-foreground/40 uppercase">
-              Highlights
+              {t("library.collection.highlights")}
             </p>
             <ul className="space-y-2">
               {collection.hightlights.map((h) => (
@@ -120,7 +122,7 @@ export default async function LibraryResourceCollectionDetailPage({
 
       <div>
         <p className="mb-4 text-xs font-extrabold tracking-widest text-foreground/40 uppercase">
-          Resources in this collection
+          {t("library.collection.resourcesInThisCollection")}
         </p>
         {resourceCount > 0 ? (
           <div className="grid auto-rows-fr items-stretch gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -135,7 +137,7 @@ export default async function LibraryResourceCollectionDetailPage({
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-foreground">
-                      Resource
+                      {t("library.collection.resourceItemLabel")}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {resourceId}
@@ -147,7 +149,7 @@ export default async function LibraryResourceCollectionDetailPage({
                     href={`/library/resources/${resourceId}`}
                     className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
                   >
-                    Open resource
+                    {t("library.collection.openResource")}
                     <ArrowRight className="size-3" />
                   </Link>
                 </CardFooter>
@@ -157,7 +159,7 @@ export default async function LibraryResourceCollectionDetailPage({
         ) : (
           <Card className="border-border/60 bg-card shadow-sm">
             <CardContent className="p-6 text-center text-sm text-muted-foreground">
-              No resources found in this collection.
+              {t("library.collection.emptyResources")}
             </CardContent>
           </Card>
         )}

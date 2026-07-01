@@ -24,7 +24,7 @@ export default async function ExploreLayout({
 }: {
   children: ReactNode
 }) {
-  const { majors } = await getContentMeta()
+  const { majors, courses } = await getContentMeta()
 
   return (
     <>
@@ -38,7 +38,7 @@ export default async function ExploreLayout({
           {/* Filter Bar */}
           <div className="rounded-xl border border-border/40 bg-card/30 px-4 py-3 backdrop-blur-md">
             <Suspense>
-              <ExploreFilterBar majors={majors} />
+              <ExploreFilterBar majors={majors} courses={courses} />
             </Suspense>
           </div>
         </div>
