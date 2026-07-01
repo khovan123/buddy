@@ -3,6 +3,7 @@
 
 import { cache } from "react"
 
+import { isDynamicServerError } from "next/dist/client/components/hooks-server-context"
 import { cookies } from "next/headers"
 
 import { getServerSession } from "next-auth"
@@ -16,7 +17,18 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route"
  * so multiple server components / service helpers that need the session
  * (e.g. layout.tsx + getMe()) only decode it once.
  */
-export const getCachedSession = cache(() => getServerSession(authOptions))
+export const getCachedSession = cache(async () => {
+  try {
+    return await getServerSession(authOptions)
+  } catch (error) {
+    if (isDynamicServerError(error)) {
+      throw error
+    }
+
+    console.error("Failed to resolve server session:", error)
+    return null
+  }
+})
 
 /**
  * Server-only session helper.
