@@ -42,9 +42,7 @@ describe('UpdateResourceHandler', () => {
       storageBrokerPublisher as never,
     );
 
-    await expect(handler.execute(command)).rejects.toThrow(
-      'Available resources cannot be edited',
-    );
+    await expect(handler.execute(command)).rejects.toThrow('Available resources cannot be edited');
     expect(resourceRepository.updateDetails).not.toHaveBeenCalled();
   });
 });

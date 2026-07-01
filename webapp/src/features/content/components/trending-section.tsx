@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 
 import { getTrending } from "@/features/content/services/content.service"
+
 import { TrendingSectionContent } from "./trending-section-content"
 
 interface Props {

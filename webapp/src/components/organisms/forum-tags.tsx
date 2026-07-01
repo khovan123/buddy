@@ -1,6 +1,7 @@
 "use client"
 
 import { Hash } from "lucide-react"
+
 import { useI18n } from "@/i18n/language-provider"
 
 type ForumTag = {

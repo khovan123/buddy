@@ -26,6 +26,13 @@ export function TutorialLoadMoreGrid({
   initialMeta,
   filters,
 }: Props) {
+  const gridKey = JSON.stringify({
+    filters: filters ?? null,
+    page: initialMeta.page,
+    total: initialMeta.total,
+    ids: initialItems.map((item) => item.id),
+  })
+
   const fetchMore = useCallback(
     async (page: number, limit: number) => {
       const result = await fetchMoreTutorials(page, limit, filters)
@@ -39,6 +46,7 @@ export function TutorialLoadMoreGrid({
 
   return (
     <LoadMoreGrid
+      key={gridKey}
       initialItems={initialItems}
       initialMeta={initialMeta}
       fetchMore={fetchMore}

@@ -29,9 +29,7 @@ describe('UpdateTutorialHandler', () => {
     };
     const handler = new UpdateTutorialHandler(tutorialRepository as never);
 
-    await expect(handler.execute(command)).rejects.toThrow(
-      'Available tutorials cannot be edited',
-    );
+    await expect(handler.execute(command)).rejects.toThrow('Available tutorials cannot be edited');
     expect(tutorialRepository.updateDetails).not.toHaveBeenCalled();
   });
 });

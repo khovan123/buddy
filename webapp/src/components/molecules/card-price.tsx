@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils"
 import { useI18n } from "@/i18n/language-provider"
+import { cn } from "@/lib/utils"
 
 export type CardPriceData = {
   originalPrice: string

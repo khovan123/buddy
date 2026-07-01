@@ -18,9 +18,9 @@ import {
   webPageJsonLd,
 } from "@/features/seo/components/json-ld"
 import { getSeoContent } from "@/features/seo/services/seo-content"
-import { getServerTranslator } from "@/i18n/server"
 import { ProfileSettingsCard } from "@/features/user/components/profile-settings-card"
 import { getCreatorStats, getMe } from "@/features/user/services/user.service"
+import { getServerTranslator } from "@/i18n/server"
 
 
 export async function generateMetadata(): Promise<Metadata> {
