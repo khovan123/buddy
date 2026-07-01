@@ -1,3 +1,5 @@
+"use client"
+
 import { ArrowRight, Building2, Headphones } from "lucide-react"
 
 import { MotionHero } from "@/components/atoms/motion-primitives"
