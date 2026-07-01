@@ -76,8 +76,8 @@ type CollectionSearchClause =
   | { title: { $regex: string; $options: string } }
   | { description: { $regex: string; $options: string } }
   | { hightlights: { $regex: string; $options: string } }
-  | { courseId: { $in: Types.ObjectId[] } }
-  | { majorId: { $in: Types.ObjectId[] } };
+  | { courseId: { $in: string[] } }
+  | { majorId: { $in: string[] } };
 
 /** Repository interface/implementation for  collection mongo data access. */
 @Injectable()
@@ -261,7 +261,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
       status: CollectionStatus;
       deletedAt: null;
       userId?: string;
-      courseId?: Types.ObjectId;
+      courseId?: string;
       type?: CollectionType;
       $or?: CollectionSearchClause[];
     } = {
@@ -274,7 +274,7 @@ export class CollectionMongoRepository implements ICollectionRepository {
     }
 
     if (courseId) {
-      filter.courseId = new Types.ObjectId(courseId);
+      filter.courseId = courseId;
     }
 
     if (type) {
@@ -534,11 +534,11 @@ export class CollectionMongoRepository implements ICollectionRepository {
     ]);
 
     if (matchingCourses.length > 0) {
-      clauses.push({ courseId: { $in: matchingCourses.map((course) => course._id) } });
+      clauses.push({ courseId: { $in: matchingCourses.map((course) => course._id.toString()) } });
     }
 
     if (matchingMajors.length > 0) {
-      clauses.push({ majorId: { $in: matchingMajors.map((major) => major._id) } });
+      clauses.push({ majorId: { $in: matchingMajors.map((major) => major._id.toString()) } });
     }
 
     return clauses;

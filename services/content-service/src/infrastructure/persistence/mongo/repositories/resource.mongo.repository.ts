@@ -88,8 +88,8 @@ type ResourceSearchClause =
   | { title: { $regex: string; $options: string } }
   | { summary: { $regex: string; $options: string } }
   | { hightlights: { $regex: string; $options: string } }
-  | { courseId: { $in: Types.ObjectId[] } }
-  | { majorId: { $in: Types.ObjectId[] } };
+  | { courseId: { $in: string[] } }
+  | { majorId: { $in: string[] } };
 
 /** Repository interface/implementation for  resource mongo data access. */
 @Injectable()
@@ -827,11 +827,11 @@ export class ResourceMongoRepository implements IResourceRepository {
     ]);
 
     if (matchingCourses.length > 0) {
-      clauses.push({ courseId: { $in: matchingCourses.map((course) => course._id) } });
+      clauses.push({ courseId: { $in: matchingCourses.map((course) => course._id.toString()) } });
     }
 
     if (matchingMajors.length > 0) {
-      clauses.push({ majorId: { $in: matchingMajors.map((major) => major._id) } });
+      clauses.push({ majorId: { $in: matchingMajors.map((major) => major._id.toString()) } });
     }
 
     return clauses;
