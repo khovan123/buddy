@@ -33,13 +33,38 @@ import { hydratePricingData } from "../utils/pricing-content.data"
 /* ------------------------------------------------------------------ */
 
 interface PricingContentProps {
-  data: PricingData
+  data: PricingData | null
 }
 
 export function PricingContent({ data: rawData }: PricingContentProps) {
-  const { creatorPlans, studentPlans, comparisonCategories, faqItems } =
-    hydratePricingData(rawData)
+  const hydrated = rawData ? hydratePricingData(rawData) : null
   const [yearly, setYearly] = useState(false)
+
+  if (!hydrated) {
+    return (
+      <div className="relative min-h-screen bg-pricing-surface text-foreground">
+        <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-6 py-24">
+          <Card className="w-full rounded-2xl border-border shadow-none">
+            <CardContent className="space-y-3 p-8 text-center">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                Pricing is temporarily unavailable
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                We could not load live subscription plans from billing service.
+                Please try again shortly.
+              </p>
+              <Button asChild className="mx-auto rounded-full">
+                <Link href="/sign-up">Create an account</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  const { creatorPlans, studentPlans, comparisonCategories, faqItems } =
+    hydrated
 
   return (
     <div className="relative min-h-screen bg-pricing-surface text-foreground">

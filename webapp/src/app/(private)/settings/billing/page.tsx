@@ -9,25 +9,29 @@ import {
   getTransactions,
   getWalletBalance,
 } from "@/features/billing"
+import { getServerTranslator } from "@/i18n/server"
 
 
 
 export default async function BillingPage() {
-  const [balance, transactions, payoutAccount, subscription, planCatalog] =
+  const [balance, transactions, payoutAccount, subscription, planCatalog, { t }] =
     await Promise.all([
       getWalletBalance(),
       getTransactions(1, 10),
       getPayoutAccount(),
       getSubscription(),
       getSubscriptionPlanCatalog(),
+      getServerTranslator(),
     ])
 
   return (
     <section className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Billing</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {t("billing.page.title")}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Manage your wallet, transactions, and subscription.
+          {t("billing.page.description")}
         </p>
       </div>
 

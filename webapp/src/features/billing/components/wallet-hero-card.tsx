@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useI18n } from "@/i18n/language-provider"
 
 import { useGetWalletBalanceQuery } from "../services/billing-api"
 import type { WalletBalance } from "../types/billing-types"
@@ -25,6 +26,7 @@ interface WalletHeroCardProps {
 }
 
 export function WalletHeroCard({ balance }: WalletHeroCardProps) {
+  const { t } = useI18n()
   const [topUpOpen, setTopUpOpen] = useState(false)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
   const { data, isFetching } = useGetWalletBalanceQuery()
@@ -44,7 +46,7 @@ export function WalletHeroCard({ balance }: WalletHeroCardProps) {
             <div className="flex items-center gap-2 text-white/70">
               <Wallet className="size-4" />
               <span className="text-xs font-medium uppercase tracking-widest">
-                Wallet Balance
+                {t("billing.wallet.balance")}
               </span>
             </div>
 
@@ -57,7 +59,10 @@ export function WalletHeroCard({ balance }: WalletHeroCardProps) {
             )}
 
             <p className="text-xs text-white/50">
-              {DISPLAY_CURRENCY} - {isFetching ? "Refreshing" : "Updated just now"}
+              {DISPLAY_CURRENCY} -{" "}
+              {isFetching
+                ? t("billing.wallet.refreshing")
+                : t("billing.wallet.updatedJustNow")}
             </p>
           </div>
 
@@ -69,7 +74,7 @@ export function WalletHeroCard({ balance }: WalletHeroCardProps) {
               onClick={() => setTopUpOpen(true)}
             >
               <ArrowDownToLine className="size-4" />
-              Deposit
+              {t("billing.wallet.deposit")}
             </Button>
             <Button
               id="settings-withdraw-btn"
@@ -78,7 +83,7 @@ export function WalletHeroCard({ balance }: WalletHeroCardProps) {
               onClick={() => setWithdrawOpen(true)}
             >
               <ArrowUpFromLine className="size-4" />
-              Withdraw
+              {t("billing.wallet.withdraw")}
             </Button>
           </div>
         </CardContent>

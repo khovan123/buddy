@@ -5,13 +5,14 @@ import { Crown, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PlanSelectorDialog } from "@/features/user/components/plan-selector-dialog"
+import { useI18n } from "@/i18n/language-provider"
 
 import type {
   Subscription,
   SubscriptionPlanCatalogItem,
   SubscriptionStatus,
 } from "../types/billing-types"
-import { PLAN_DISPLAY_NAMES } from "../types/billing-types"
+import { PLAN_DISPLAY_NAME_KEYS } from "../types/billing-types"
 
 interface SubscriptionCardProps {
   subscription: Subscription | null
@@ -20,11 +21,11 @@ interface SubscriptionCardProps {
 
 const STATUS_STYLES: Record<
   SubscriptionStatus,
-  { variant: "default" | "secondary" | "destructive"; label: string }
+  { variant: "default" | "secondary" | "destructive" }
 > = {
-  ACTIVE: { variant: "default", label: "Active" },
-  CANCELLED: { variant: "secondary", label: "Cancelled" },
-  EXPIRED: { variant: "destructive", label: "Expired" },
+  ACTIVE: { variant: "default" },
+  CANCELLED: { variant: "secondary" },
+  EXPIRED: { variant: "destructive" },
 }
 
 function formatDate(dateStr: string): string {
@@ -42,16 +43,25 @@ function formatStorage(bytes: number): string {
   return `${Math.round(bytes / (1024 * 1024))} MB`
 }
 
-function formatLimit(value: number): string {
-  return value === -1 ? "Unlimited" : String(value)
-}
-
 export function SubscriptionCard({
   subscription,
   planCatalog,
 }: SubscriptionCardProps) {
+  const { t } = useI18n()
   const isPro = subscription?.plan?.includes("PRO") ?? false
-  const statusConfig = subscription ? STATUS_STYLES[subscription.status] : null
+  const statusLabels: Record<SubscriptionStatus, string> = {
+    ACTIVE: t("billing.subscription.statusActive"),
+    CANCELLED: t("billing.subscription.statusCancelled"),
+    EXPIRED: t("billing.subscription.statusExpired"),
+  }
+  const statusConfig = subscription
+    ? {
+        ...STATUS_STYLES[subscription.status],
+        label: statusLabels[subscription.status],
+      }
+    : null
+  const formatLimit = (value: number) =>
+    value === -1 ? t("dashboard.planLimits.unlimited") : String(value)
   const limits = subscription
     ? planCatalog.find((plan) => plan.code === subscription.plan)?.limits
     : null
@@ -60,10 +70,14 @@ export function SubscriptionCard({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-xs font-bold tracking-widest text-muted-foreground uppercase">
-          Subscription
+          {t("billing.subscription.cardTitle")}
         </CardTitle>
         <PlanSelectorDialog
-          triggerText={subscription ? "Change plan" : "Choose plan"}
+          triggerText={
+            subscription
+              ? t("billing.subscription.changePlan")
+              : t("billing.subscription.choosePlan")
+          }
           triggerVariant={subscription && !isPro ? "default" : "outline"}
           triggerClassName="inline-flex font-semibold"
         />
@@ -90,7 +104,7 @@ export function SubscriptionCard({
 
               <div>
                 <p className="text-base font-semibold">
-                  {PLAN_DISPLAY_NAMES[subscription.plan]}
+                  {t(PLAN_DISPLAY_NAME_KEYS[subscription.plan] as never)}
                 </p>
                 <div className="flex items-center gap-2">
                   <Badge
@@ -100,7 +114,9 @@ export function SubscriptionCard({
                     {statusConfig!.label}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    Since {formatDate(subscription.startsAt)}
+                    {t("billing.subscription.since", {
+                      date: formatDate(subscription.startsAt),
+                    })}
                   </span>
                 </div>
               </div>
@@ -110,25 +126,33 @@ export function SubscriptionCard({
             {limits && (
               <div className="grid grid-cols-2 gap-3 rounded-xl bg-muted/50 p-3 text-xs">
                 <div>
-                  <p className="text-muted-foreground">Storage</p>
+                  <p className="text-muted-foreground">
+                    {t("billing.subscription.storage")}
+                  </p>
                   <p className="font-semibold">
                     {formatStorage(limits.storageBytes)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Resources</p>
+                  <p className="text-muted-foreground">
+                    {t("billing.subscription.resources")}
+                  </p>
                   <p className="font-semibold">
                     {formatLimit(limits.maxResources)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Tutorials</p>
+                  <p className="text-muted-foreground">
+                    {t("billing.subscription.tutorials")}
+                  </p>
                   <p className="font-semibold">
                     {formatLimit(limits.maxTutorials)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Collections</p>
+                  <p className="text-muted-foreground">
+                    {t("billing.subscription.collections")}
+                  </p>
                   <p className="font-semibold">
                     {formatLimit(limits.maxCollections)}
                   </p>
@@ -139,7 +163,9 @@ export function SubscriptionCard({
             {/* Expiry */}
             {subscription.expiresAt && (
               <p className="text-xs text-muted-foreground">
-                Expires on {formatDate(subscription.expiresAt)}
+                {t("billing.subscription.expiresOn", {
+                  date: formatDate(subscription.expiresAt),
+                })}
               </p>
             )}
           </div>
@@ -147,10 +173,10 @@ export function SubscriptionCard({
           <div className="flex flex-col items-center gap-2 py-8 text-center">
             <Sparkles className="size-8 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">
-              No active subscription
+              {t("billing.subscription.noActive")}
             </p>
             <PlanSelectorDialog
-              triggerText="Choose plan"
+              triggerText={t("billing.subscription.choosePlan")}
               triggerVariant="default"
               triggerClassName="inline-flex font-semibold"
             />

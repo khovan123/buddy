@@ -25,7 +25,7 @@ import {
   useGetSubscriptionQuery,
 } from "@/features/billing/services/billing-api"
 import {
-  PLAN_DISPLAY_NAMES,
+  PLAN_DISPLAY_NAME_KEYS,
   type SubscriptionPlan,
   type SubscriptionPricingData,
 } from "@/features/billing/types/billing-types"
@@ -34,6 +34,7 @@ import type {
   PlanFeature,
   PlanTier,
 } from "@/features/intro/services/intro.service"
+import { useI18n } from "@/i18n/language-provider"
 import { cn } from "@/lib/utils"
 import { extractApiError } from "@/types/api"
 
@@ -120,6 +121,7 @@ export function PlanSelectorDialog({
 }: PlanSelectorDialogProps = {}) {
   const router = useRouter()
   const { update: updateSession } = useSession()
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [selectedAudience, setSelectedAudience] =
     useState<PlanAudience>("student")
@@ -142,10 +144,10 @@ export function PlanSelectorDialog({
   const triggerLabel =
     triggerText ??
     (isFetching
-      ? "Plans"
+      ? t("billing.subscription.plans")
       : currentPlan
-        ? PLAN_DISPLAY_NAMES[currentPlan]
-        : "Choose plan")
+        ? t(PLAN_DISPLAY_NAME_KEYS[currentPlan] as never)
+        : t("billing.subscription.choosePlan"))
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && requiresPlanSelection) {
@@ -169,7 +171,11 @@ export function PlanSelectorDialog({
       await createSubscription({ plan }).unwrap()
       await waitForPlanSync(plan, updateSession)
       router.refresh()
-      toast.success(`${PLAN_DISPLAY_NAMES[plan]} is now active.`)
+      toast.success(
+        t("billing.subscription.planActivated", {
+          plan: t(PLAN_DISPLAY_NAME_KEYS[plan] as never),
+        })
+      )
       setOpen(false)
     } catch (error) {
       toast.error(extractApiError(error))
@@ -185,7 +191,7 @@ export function PlanSelectorDialog({
           variant={triggerVariant}
           size={triggerSize}
           className={triggerClassName}
-          aria-label="Choose subscription plan"
+          aria-label={t("billing.subscription.ariaChoosePlan")}
         >
           {isFetching ? <Loader2 className="size-3.5 animate-spin" /> : null}
           {triggerLabel}
@@ -193,11 +199,11 @@ export function PlanSelectorDialog({
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:max-w-6xl sm:p-6">
         <DialogHeader className="pr-10">
-          <DialogTitle>Subscription plan</DialogTitle>
+          <DialogTitle>{t("billing.subscription.dialogTitle")}</DialogTitle>
           <DialogDescription>
             {requiresPlanSelection
-              ? "Select a plan to continue."
-              : "Choose the plan used for content limits and search access."}
+              ? t("billing.subscription.dialogDescriptionRequired")
+              : t("billing.subscription.dialogDescription")}
           </DialogDescription>
         </DialogHeader>
 
@@ -210,7 +216,7 @@ export function PlanSelectorDialog({
             className="rounded-full"
           >
             <Users className="size-4" />
-            Student
+            {t("billing.subscription.student")}
           </Button>
           <Button
             type="button"
@@ -220,7 +226,7 @@ export function PlanSelectorDialog({
             className="rounded-full"
           >
             <Palette className="size-4" />
-            Creator
+            {t("billing.subscription.creator")}
           </Button>
         </div>
 
@@ -230,7 +236,7 @@ export function PlanSelectorDialog({
           </div>
         ) : planCards.length === 0 ? (
           <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
-            Subscription plans are unavailable right now.
+            {t("billing.subscription.unavailable")}
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
@@ -250,18 +256,19 @@ export function PlanSelectorDialog({
                   isPro={card.isPro}
                   yearly={false}
                   audienceIcon={card.audienceIcon}
+                  variant="compact"
                   className={cn(
-                    "min-w-0 rounded-xl",
+                    "min-w-0",
                     active && "ring-2 ring-primary/35"
                   )}
                   action={
                     <Button
                       type="button"
-                      size="lg"
+                      size="default"
                       disabled={disabled}
                       onClick={() => void handleSelectPlan(card.code)}
                       className={cn(
-                        "mb-6 w-full rounded-full",
+                        "mb-4 w-full rounded-full",
                         card.isPro
                           ? "bg-foreground text-background hover:bg-foreground/90"
                           : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -272,7 +279,9 @@ export function PlanSelectorDialog({
                       ) : active ? (
                         <Check className="size-4" />
                       ) : null}
-                      {active ? "Active plan" : card.plan.cta}
+                      {active
+                        ? t("billing.subscription.activePlan")
+                        : card.plan.cta}
                     </Button>
                   }
                 />

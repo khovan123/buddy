@@ -41,49 +41,54 @@ export default async function PricingPage() {
     getServerTranslator(),
   ])
 
+  const jsonLd = [
+    webPageJsonLd({
+      name: seo.title,
+      description: seo.description,
+      url: "/pricing",
+    }),
+    breadcrumbJsonLd([
+      { name: t("nav.home"), path: "/" },
+      { name: t("intro.nav.pricing"), path: "/pricing" },
+    ]),
+  ]
+
+  if (data) {
+    jsonLd.push(
+      productWithOffersJsonLd({
+        name: "Buddy Education Platform",
+        description: seo.description,
+        url: "/pricing",
+        offers: [
+          {
+            name: data.creatorPlans.free.label,
+            price: data.creatorPlans.free.price,
+            description: data.creatorPlans.free.description,
+          },
+          {
+            name: data.creatorPlans.pro.label,
+            price: data.creatorPlans.pro.price,
+            description: data.creatorPlans.pro.description,
+          },
+          {
+            name: data.studentPlans.free.label,
+            price: data.studentPlans.free.price,
+            description: data.studentPlans.free.description,
+          },
+          {
+            name: data.studentPlans.pro.label,
+            price: data.studentPlans.pro.price,
+            description: data.studentPlans.pro.description,
+          },
+        ],
+      }),
+      faqPageJsonLd(data.faqItems)
+    )
+  }
+
   return (
     <>
-      <JsonLdScript
-        data={[
-          webPageJsonLd({
-            name: seo.title,
-            description: seo.description,
-            url: "/pricing",
-          }),
-          productWithOffersJsonLd({
-            name: "Buddy Education Platform",
-            description: seo.description,
-            url: "/pricing",
-            offers: [
-              {
-                name: data.creatorPlans.free.label,
-                price: data.creatorPlans.free.price,
-                description: data.creatorPlans.free.description,
-              },
-              {
-                name: data.creatorPlans.pro.label,
-                price: data.creatorPlans.pro.price,
-                description: data.creatorPlans.pro.description,
-              },
-              {
-                name: data.studentPlans.free.label,
-                price: data.studentPlans.free.price,
-                description: data.studentPlans.free.description,
-              },
-              {
-                name: data.studentPlans.pro.label,
-                price: data.studentPlans.pro.price,
-                description: data.studentPlans.pro.description,
-              },
-            ],
-          }),
-          faqPageJsonLd(data.faqItems),
-          breadcrumbJsonLd([
-            { name: t("nav.home"), path: "/" },
-            { name: t("intro.nav.pricing"), path: "/pricing" },
-          ]),
-        ]}
-      />
+      <JsonLdScript data={jsonLd} />
       <PricingContent data={data} />
     </>
   )

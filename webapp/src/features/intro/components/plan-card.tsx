@@ -34,6 +34,8 @@ interface PlanTier {
   badge?: string
 }
 
+type PlanCardVariant = "default" | "compact"
+
 export function PlanCard({
   plan,
   features,
@@ -42,6 +44,7 @@ export function PlanCard({
   audienceIcon: AudienceIcon,
   action,
   className,
+  variant = "default",
 }: {
   plan: PlanTier
   features: PlanFeature[]
@@ -50,14 +53,17 @@ export function PlanCard({
   audienceIcon: typeof Palette
   action?: ReactNode
   className?: string
+  variant?: PlanCardVariant
 }) {
   const proplan = plan as PlanTier & { yearlyPrice: number; badge: string }
   const price = isPro && yearly ? proplan.yearlyPrice : plan.price
+  const isCompact = variant === "compact"
 
   return (
     <Card
       className={cn(
-        "relative min-w-96 gap-0 overflow-visible rounded-2xl border py-0 shadow-none transition-all duration-300",
+        "relative gap-0 overflow-visible border py-0 shadow-none transition-all duration-300",
+        isCompact ? "min-w-0 rounded-xl" : "min-w-96 rounded-2xl",
         isPro
           ? "border-pricing-accent/40 bg-linear-to-b from-pricing-accent-muted to-transparent shadow-lg shadow-pricing-accent/5"
           : "border-border bg-pricing-surface-alt",
@@ -66,29 +72,58 @@ export function PlanCard({
     >
       {isPro && proplan.badge && (
         <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
-          <Badge className="rounded-full bg-pricing-accent px-4 py-1 text-xs font-semibold text-pricing-accent-foreground">
+          <Badge
+            className={cn(
+              "rounded-full bg-pricing-accent font-semibold text-pricing-accent-foreground",
+              isCompact ? "px-3 py-1 text-[11px]" : "px-4 py-1 text-xs"
+            )}
+          >
             {proplan.badge}
           </Badge>
         </div>
       )}
 
-      <CardHeader className="rounded-none px-8 pt-8 pb-0">
+      <CardHeader
+        className={cn(
+          "rounded-none pb-0",
+          isCompact ? "px-5 pt-6" : "px-8 pt-8"
+        )}
+      >
         <div className="mb-1 flex items-center gap-2">
           {isPro ? (
-            <Crown className="size-5 text-pricing-accent" />
+            <Crown
+              className={cn(
+                "text-pricing-accent",
+                isCompact ? "size-4.5" : "size-5"
+              )}
+            />
           ) : (
-            <AudienceIcon className="size-5 text-muted-foreground" />
+            <AudienceIcon
+              className={cn(
+                "text-muted-foreground",
+                isCompact ? "size-4.5" : "size-5"
+              )}
+            />
           )}
-          <CardTitle className="text-lg font-semibold text-foreground">
+          <CardTitle
+            className={cn(
+              "font-semibold text-foreground",
+              isCompact ? "text-base" : "text-lg"
+            )}
+          >
             {plan.label}
           </CardTitle>
         </div>
-        <CardDescription>{plan.description}</CardDescription>
+        <CardDescription className={cn(isCompact && "text-xs")}>
+          {plan.description}
+        </CardDescription>
       </CardHeader>
 
-      <CardContent className="px-8 pt-6 pb-0">
+      <CardContent
+        className={cn(isCompact ? "px-5 pt-4 pb-0" : "px-8 pt-6 pb-0")}
+      >
         {/* Price */}
-        <div className="mb-6">
+        <div className={cn(isCompact ? "mb-4" : "mb-6")}>
           <div className="flex items-baseline gap-1">
             <AnimatePresence mode="wait">
               <motion.span
@@ -96,12 +131,22 @@ export function PlanCard({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
-                className="text-4xl font-bold text-foreground"
+                className={cn(
+                  "font-bold text-foreground",
+                  isCompact ? "text-2xl" : "text-4xl"
+                )}
               >
                 {formatVND(price)}
               </motion.span>
             </AnimatePresence>
-            <span className="text-muted-foreground">/ month</span>
+            <span
+              className={cn(
+                "text-muted-foreground",
+                isCompact ? "text-xs" : "text-sm"
+              )}
+            >
+              / month
+            </span>
           </div>
           {isPro && yearly && (
             <p className="mt-1 text-xs text-pricing-success">
@@ -113,9 +158,10 @@ export function PlanCard({
         {action ?? (
           <Button
             asChild
-            size="lg"
+            size={isCompact ? "default" : "lg"}
             className={cn(
-              "mb-6 w-full rounded-full",
+              "w-full rounded-full",
+              isCompact ? "mb-4" : "mb-6",
               isPro
                 ? "bg-foreground text-background hover:bg-foreground/90"
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
@@ -127,26 +173,49 @@ export function PlanCard({
           </Button>
         )}
 
-        <Separator className="mb-4" />
+        <Separator className={cn(isCompact ? "mb-3" : "mb-4")} />
 
         {/* Feature list */}
-        <div className="space-y-3 pb-8">
+        <div
+          className={cn(
+            "pb-8",
+            isCompact ? "max-h-56 space-y-2 overflow-y-auto pb-5 pr-1" : "space-y-3"
+          )}
+        >
           {features.map((feature) => {
             const value = isPro ? feature.pro : feature.free
             return (
               <div
                 key={feature.label}
-                className="flex items-center justify-between text-sm"
+                className={cn(
+                  "flex items-center justify-between",
+                  isCompact ? "text-xs" : "text-sm"
+                )}
               >
                 <span className="text-muted-foreground">{feature.label}</span>
                 {typeof value === "boolean" ? (
                   value ? (
-                    <Check className="size-4 text-pricing-success" />
+                    <Check
+                      className={cn(
+                        "text-pricing-success",
+                        isCompact ? "size-3.5" : "size-4"
+                      )}
+                    />
                   ) : (
-                    <Minus className="size-4 text-muted-foreground/30" />
+                    <Minus
+                      className={cn(
+                        "text-muted-foreground/30",
+                        isCompact ? "size-3.5" : "size-4"
+                      )}
+                    />
                   )
                 ) : (
-                  <span className="font-medium text-foreground/90">
+                  <span
+                    className={cn(
+                      "font-medium text-foreground/90",
+                      isCompact && "text-right"
+                    )}
+                  >
                     {value}
                   </span>
                 )}

@@ -147,11 +147,11 @@ export interface PlanLimits {
 
 export const DISPLAY_CURRENCY = "VND"
 
-export const PLAN_DISPLAY_NAMES: Record<SubscriptionPlan, string> = {
-  CREATOR_FREE: "Creator Free",
-  CREATOR_PRO: "Creator Pro",
-  STUDENT_FREE: "Student Free",
-  STUDENT_PRO: "Student Pro",
+export const PLAN_DISPLAY_NAME_KEYS: Record<SubscriptionPlan, string> = {
+  CREATOR_FREE: "billing.subscription.planCreatorFree",
+  CREATOR_PRO: "billing.subscription.planCreatorPro",
+  STUDENT_FREE: "billing.subscription.planStudentFree",
+  STUDENT_PRO: "billing.subscription.planStudentPro",
 }
 
 // ── Currency Formatting ──────────────────────────────────

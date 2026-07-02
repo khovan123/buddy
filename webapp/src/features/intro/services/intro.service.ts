@@ -346,212 +346,6 @@ const ABOUT_FALLBACK: AboutData = {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Pricing data fallback                                              */
-/* ------------------------------------------------------------------ */
-
-const PRICING_FALLBACK: PricingData = {
-  creatorPlans: {
-    title: "Creator",
-    description: "Build your audience and monetize your expertise.",
-    iconKey: "Palette",
-    free: {
-      price: 0,
-      label: "Free",
-      cta: "Start Creating",
-      description: "Get started with essential creator tools.",
-    },
-    pro: {
-      price: 9.99,
-      yearlyPrice: 7.99,
-      label: "Creator Pro",
-      cta: "Upgrade to Pro",
-      description: "Scale your content empire with unlimited power.",
-      badge: "Most Popular",
-    },
-    features: [
-      { label: "Storage", free: "500 MB", pro: "50 GB" },
-      { label: "Resources", free: "Up to 5", pro: "Unlimited" },
-      { label: "Tutorials", free: "Up to 3", pro: "Unlimited" },
-      { label: "Collections", free: "Up to 2", pro: "Unlimited" },
-      { label: "Analytics dashboard", free: true, pro: true },
-      { label: "Advanced analytics", free: false, pro: true },
-      { label: "Custom branding", free: false, pro: true },
-      { label: "Priority review", free: false, pro: true },
-      { label: "Discord support", free: false, pro: true },
-      { label: "Revenue share", free: "85%", pro: "92%" },
-    ],
-  },
-  studentPlans: {
-    title: "Student",
-    description: "Learn smarter with tools designed for students.",
-    iconKey: "Users",
-    free: {
-      price: 0,
-      label: "Free",
-      cta: "Start Learning",
-      description: "Access free resources and start your journey.",
-    },
-    pro: {
-      price: 4.99,
-      yearlyPrice: 3.99,
-      label: "Student Pro",
-      cta: "Upgrade to Pro",
-      description: "Unlock the full learning experience.",
-      badge: "Best Value",
-    },
-    features: [
-      { label: "Storage", free: "1 GB", pro: "25 GB" },
-      { label: "Data protection", free: false, pro: true },
-      { label: "Collection discount", free: "—", pro: "15% off" },
-      { label: "Content preview", free: "Standard", pro: "Extended" },
-      { label: "Auto-review content", free: false, pro: true },
-      { label: "Bookmark & organize", free: true, pro: true },
-      { label: "Offline access", free: false, pro: true },
-      { label: "Discord support", free: false, pro: true },
-      { label: "Early access", free: false, pro: true },
-      { label: "Ad-free experience", free: false, pro: true },
-    ],
-  },
-  comparisonCategories: [
-    {
-      category: "Storage & Limits",
-      rows: [
-        {
-          label: "Cloud storage",
-          creatorFree: "500 MB",
-          creatorPro: "50 GB",
-          studentFree: "1 GB",
-          studentPro: "25 GB",
-        },
-        {
-          label: "Resource uploads",
-          creatorFree: "5",
-          creatorPro: "Unlimited",
-          studentFree: "—",
-          studentPro: "—",
-        },
-        {
-          label: "Tutorial creation",
-          creatorFree: "3",
-          creatorPro: "Unlimited",
-          studentFree: "—",
-          studentPro: "—",
-        },
-        {
-          label: "Collection creation",
-          creatorFree: "2",
-          creatorPro: "Unlimited",
-          studentFree: "—",
-          studentPro: "—",
-        },
-      ],
-    },
-    {
-      category: "Content & Learning",
-      rows: [
-        {
-          label: "Content preview",
-          creatorFree: "Standard",
-          creatorPro: "Extended",
-          studentFree: "Standard",
-          studentPro: "Extended",
-        },
-        {
-          label: "Auto-review",
-          creatorFree: false,
-          creatorPro: true,
-          studentFree: false,
-          studentPro: true,
-        },
-        {
-          label: "Data protection",
-          creatorFree: false,
-          creatorPro: false,
-          studentFree: false,
-          studentPro: true,
-        },
-        {
-          label: "Collection discount",
-          creatorFree: "—",
-          creatorPro: "—",
-          studentFree: "—",
-          studentPro: "15% off",
-        },
-        {
-          label: "Offline access",
-          creatorFree: false,
-          creatorPro: true,
-          studentFree: false,
-          studentPro: true,
-        },
-      ],
-    },
-    {
-      category: "Support & Extras",
-      rows: [
-        {
-          label: "Discord support",
-          creatorFree: false,
-          creatorPro: true,
-          studentFree: false,
-          studentPro: true,
-        },
-        {
-          label: "Priority support",
-          creatorFree: false,
-          creatorPro: true,
-          studentFree: false,
-          studentPro: true,
-        },
-        {
-          label: "Early access features",
-          creatorFree: false,
-          creatorPro: true,
-          studentFree: false,
-          studentPro: true,
-        },
-        {
-          label: "Ad-free experience",
-          creatorFree: true,
-          creatorPro: true,
-          studentFree: false,
-          studentPro: true,
-        },
-        {
-          label: "Custom branding",
-          creatorFree: false,
-          creatorPro: true,
-          studentFree: "—",
-          studentPro: "—",
-        },
-      ],
-    },
-  ],
-  faqItems: [
-    {
-      q: "Can I switch between Creator and Student plans?",
-      a: "Yes! You can have both a Creator and Student subscription simultaneously, or switch between them at any time from your account settings.",
-    },
-    {
-      q: "What happens to my data if I downgrade?",
-      a: "Your content remains accessible but you won't be able to create new content beyond the free tier limits. Existing content is never deleted.",
-    },
-    {
-      q: "What does 'Data protection' mean for students?",
-      a: "With Student Pro, if a creator deletes their resource, tutorial, or collection that you've purchased, your copy is preserved and remains accessible in your library.",
-    },
-    {
-      q: "Is there a refund policy?",
-      a: "Yes, we offer a 14-day money-back guarantee on all Pro plans. No questions asked.",
-    },
-    {
-      q: "Do you offer discounts for groups or institutions?",
-      a: "Absolutely! Contact us for custom pricing for universities, study groups, and educational institutions.",
-    },
-  ],
-}
-
-/* ------------------------------------------------------------------ */
 /*  Service functions (async — ready for future API integration)       */
 /* ------------------------------------------------------------------ */
 
@@ -563,23 +357,19 @@ export async function getAboutData(): Promise<AboutData> {
   return ABOUT_FALLBACK
 }
 
-export async function getPricingData(): Promise<PricingData> {
+export async function getPricingData(): Promise<PricingData | null> {
   try {
     const response = await fetchApi("GET", "/billing/subscription/plans")
 
     if (!response.ok) {
-      return PRICING_FALLBACK
+      return null
     }
 
     const payload = (await response.json()) as ApiResponse<PricingData>
-    return payload.data ?? PRICING_FALLBACK
+    return payload.data ?? null
   } catch {
-    return PRICING_FALLBACK
+    return null
   }
-}
-
-export function getPricingFallbackData(): PricingData {
-  return PRICING_FALLBACK
 }
 
 /* ------------------------------------------------------------------ */
