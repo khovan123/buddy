@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { centsToMajorUnit } from "@/features/billing/types/billing-types"
+import { centsToMajorUnit } from "@/features/billing"
 import { PricingContent } from "@/features/intro/components/pricing-content"
 import { getPricingData } from "@/features/intro/services/intro.service"
 import {
