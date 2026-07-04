@@ -1,4 +1,4 @@
-import { UserRegisteredEvent } from '@libs/contracts';
+import { SubscriptionPlan, UserRegisteredEvent } from '@libs/contracts';
 import { BadRequestException, Inject, UnauthorizedException } from '@nestjs/common';
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { randomUUID as uuidv4 } from 'node:crypto';
@@ -65,6 +65,11 @@ export class VerifyOtpHandler implements ICommandHandler<VerifyOtpCommand> {
       await this.userRepository.update(user);
     }
 
+    const subscriptionPlan = await this.ensureDefaultSubscriptionPlan(
+      user.id,
+      user.subscriptionPlan,
+    );
+
     // 5. Clean up OTP
     await this.verificationTokenRepository.delete(email, 'EMAIL_VERIFICATION');
 
@@ -83,7 +88,7 @@ export class VerifyOtpHandler implements ICommandHandler<VerifyOtpCommand> {
 
     // 7. Generate tokens
     const { accessToken, refreshToken, refreshTokenHash, accessExpiresIn } =
-      await this.tokenService.generateTokenPair(user);
+      await this.tokenService.generateTokenPair(user, { subscriptionPlan });
 
     // 8. Persist refresh token
     await this.refreshTokenRepository.save({
@@ -103,11 +108,24 @@ export class VerifyOtpHandler implements ICommandHandler<VerifyOtpCommand> {
         nickname: user.nickname,
         role: user.roles[0] ?? 'user',
         roles: user.roles,
-        subscriptionPlan: user.subscriptionPlan,
+        subscriptionPlan,
       },
       accessToken,
       refreshToken,
       accessExpiresIn,
     };
+  }
+
+  private async ensureDefaultSubscriptionPlan(
+    userId: string,
+    subscriptionPlan: string | null,
+  ): Promise<string> {
+    if (subscriptionPlan) {
+      return subscriptionPlan;
+    }
+
+    await this.userRepository.updateSubscriptionPlan(userId, SubscriptionPlan.STUDENT_FREE);
+
+    return SubscriptionPlan.STUDENT_FREE;
   }
 }

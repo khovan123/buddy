@@ -37,12 +37,13 @@ export class TokenService implements ITokenService {
       type: 'access',
     };
     const planDetails = options.subscriptionPlanDetails;
+    const subscriptionPlan = options.subscriptionPlan ?? user.subscriptionPlan;
 
     if (planDetails) {
       payload.subscriptionPlan = planDetails.code;
       payload.subscriptionPlanDetails = planDetails;
-    } else if (user.subscriptionPlan) {
-      payload.subscriptionPlan = user.subscriptionPlan;
+    } else if (subscriptionPlan) {
+      payload.subscriptionPlan = subscriptionPlan;
     }
 
     const accessToken = await this.jwtService.signAsync(payload, {

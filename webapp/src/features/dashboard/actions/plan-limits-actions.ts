@@ -3,16 +3,16 @@
 import { revalidatePath } from "next/cache"
 
 import {
-  type PlanLimits,
+  type PlanSettings,
   type SubscriptionPlanCode,
   updateSubscriptionPlanLimits,
 } from "../services/plan-limits.service"
 
 export async function savePlanLimitsAction(
   code: SubscriptionPlanCode,
-  limits: PlanLimits
+  settings: PlanSettings
 ) {
-  const ok = await updateSubscriptionPlanLimits(code, limits)
+  const ok = await updateSubscriptionPlanLimits(code, settings)
 
   if (ok) {
     revalidatePath("/dashboard/plans")

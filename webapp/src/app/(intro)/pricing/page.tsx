@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 
+import { centsToMajorUnit } from "@/features/billing/types/billing-types"
 import { PricingContent } from "@/features/intro/components/pricing-content"
 import { getPricingData } from "@/features/intro/services/intro.service"
 import {
@@ -62,22 +63,26 @@ export default async function PricingPage() {
         offers: [
           {
             name: data.creatorPlans.free.label,
-            price: data.creatorPlans.free.price,
+            price: centsToMajorUnit(data.creatorPlans.free.priceInCents),
+            priceCurrency: data.creatorPlans.free.currency,
             description: data.creatorPlans.free.description,
           },
           {
             name: data.creatorPlans.pro.label,
-            price: data.creatorPlans.pro.price,
+            price: centsToMajorUnit(data.creatorPlans.pro.priceInCents),
+            priceCurrency: data.creatorPlans.pro.currency,
             description: data.creatorPlans.pro.description,
           },
           {
             name: data.studentPlans.free.label,
-            price: data.studentPlans.free.price,
+            price: centsToMajorUnit(data.studentPlans.free.priceInCents),
+            priceCurrency: data.studentPlans.free.currency,
             description: data.studentPlans.free.description,
           },
           {
             name: data.studentPlans.pro.label,
-            price: data.studentPlans.pro.price,
+            price: centsToMajorUnit(data.studentPlans.pro.priceInCents),
+            priceCurrency: data.studentPlans.pro.currency,
             description: data.studentPlans.pro.description,
           },
         ],

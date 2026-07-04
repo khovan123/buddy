@@ -20,6 +20,7 @@ export interface AccessTokenPayload {
 }
 
 export type GenerateTokenPairOptions = {
+  subscriptionPlan?: string | null;
   subscriptionPlanDetails?: SubscriptionPlanDetails | null;
 };
 

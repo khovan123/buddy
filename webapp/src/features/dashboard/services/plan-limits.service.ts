@@ -19,10 +19,22 @@ export type PlanLimits = {
   maxSearchResults: number
 }
 
+export type PlanPricing = {
+  monthlyPriceCents: number
+  yearlyMonthlyPriceCents?: number | null
+  currency: string
+}
+
+export type PlanSettings = {
+  limits: PlanLimits
+  pricing: PlanPricing
+}
+
 export type SubscriptionPlanCatalogItem = {
   code: SubscriptionPlanCode
   audience: "CREATOR" | "STUDENT"
   tier: string
+  pricing: PlanPricing
   limits: PlanLimits
   pbac: Record<string, unknown>
 }
@@ -62,14 +74,19 @@ export async function getSubscriptionPlanCatalog(): Promise<
 
 export async function updateSubscriptionPlanLimits(
   code: SubscriptionPlanCode,
-  limits: PlanLimits
+  settings: PlanSettings
 ): Promise<boolean> {
   try {
     const headers = await getAuthHeaders()
     const res = await fetchApi(
       "PUT",
       `/billing/subscription/plans/${code}/limits`,
-      limits,
+      {
+        ...settings.limits,
+        monthlyPriceCents: settings.pricing.monthlyPriceCents,
+        yearlyMonthlyPriceCents:
+          settings.pricing.yearlyMonthlyPriceCents ?? null,
+      },
       headers,
       false,
       { cache: "no-store" }

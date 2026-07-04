@@ -121,7 +121,10 @@ export class OAuthLoginHandler implements ICommandHandler<OAuthLoginCommand> {
 
     // 6. Generate tokens
     const { accessToken, refreshToken, refreshTokenHash, accessExpiresIn } =
-      await this.tokenService.generateTokenPair(user, { subscriptionPlanDetails });
+      await this.tokenService.generateTokenPair(user, {
+        subscriptionPlan,
+        subscriptionPlanDetails,
+      });
 
     // 7. Persist refresh token
     await this.refreshTokenRepository.save({

@@ -4,6 +4,16 @@ export class UpdateSubscriptionPlanLimitsDto {
   @IsOptional()
   @IsInt()
   @Min(0)
+  monthlyPriceCents?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  yearlyMonthlyPriceCents?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
   storageBytes?: number;
 
   @IsOptional()

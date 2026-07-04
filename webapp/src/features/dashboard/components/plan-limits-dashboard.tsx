@@ -21,6 +21,8 @@ import { useI18n } from "@/i18n/language-provider"
 import { savePlanLimitsAction } from "../actions/plan-limits-actions"
 import type {
   PlanLimits,
+  PlanPricing,
+  PlanSettings,
   SubscriptionPlanCatalogItem,
   SubscriptionPlanCode,
 } from "../services/plan-limits.service"
@@ -82,17 +84,36 @@ function getLimitedValue(value: number) {
   return value > 0 ? value : 1
 }
 
+function getInitialPlanSettings(
+  plans: SubscriptionPlanCatalogItem[]
+): Record<SubscriptionPlanCode, PlanSettings> {
+  return Object.fromEntries(
+    plans.map((plan) => [
+      plan.code,
+      {
+        limits: plan.limits,
+        pricing: plan.pricing ?? {
+          monthlyPriceCents: 0,
+          yearlyMonthlyPriceCents: null,
+          currency: "VND",
+        },
+      },
+    ])
+  ) as Record<SubscriptionPlanCode, PlanSettings>
+}
+
+function centsToInputValue(cents?: number | null) {
+  return cents === null || cents === undefined ? "" : String(cents / 100)
+}
+
+function inputValueToCents(value: string) {
+  return Math.max(0, Math.round((Number(value) || 0) * 100))
+}
+
 export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
   const { t } = useI18n()
 
-  const initialValues = useMemo(
-    () =>
-      Object.fromEntries(plans.map((plan) => [plan.code, plan.limits])) as Record<
-        SubscriptionPlanCode,
-        PlanLimits
-      >,
-    [plans]
-  )
+  const initialValues = useMemo(() => getInitialPlanSettings(plans), [plans])
   const [values, setValues] = useState(initialValues)
   const [savingCode, setSavingCode] = useState<SubscriptionPlanCode | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -106,7 +127,27 @@ export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
       ...current,
       [code]: {
         ...current[code],
-        [key]: value,
+        limits: {
+          ...current[code].limits,
+          [key]: value,
+        },
+      },
+    }))
+  }
+
+  const updatePricing = (
+    code: SubscriptionPlanCode,
+    key: Exclude<keyof PlanPricing, "currency">,
+    value: number | null
+  ) => {
+    setValues((current) => ({
+      ...current,
+      [code]: {
+        ...current[code],
+        pricing: {
+          ...current[code].pricing,
+          [key]: value,
+        },
       },
     }))
   }
@@ -152,7 +193,17 @@ export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
 
       <div className="grid gap-4 xl:grid-cols-2">
         {plans.map((plan) => {
-          const limits = values[plan.code] ?? plan.limits
+          const settings =
+            values[plan.code] ??
+            ({
+              limits: plan.limits,
+              pricing: plan.pricing ?? {
+                monthlyPriceCents: 0,
+                yearlyMonthlyPriceCents: null,
+                currency: "VND",
+              },
+            } satisfies PlanSettings)
+          const { limits, pricing } = settings
           const isSaving = isPending && savingCode === plan.code
           const storageOptions = getStorageOptions(limits.storageBytes)
 
@@ -181,6 +232,54 @@ export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor={`${plan.code}-price`}>
+                    {t("dashboard.planLimits.monthlyPrice")}
+                  </Label>
+                  <Input
+                    id={`${plan.code}-price`}
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={centsToInputValue(pricing.monthlyPriceCents)}
+                    onChange={(event) =>
+                      updatePricing(
+                        plan.code,
+                        "monthlyPriceCents",
+                        inputValueToCents(event.target.value)
+                      )
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("dashboard.planLimits.priceHint")}
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor={`${plan.code}-yearlyPrice`}>
+                    {t("dashboard.planLimits.yearlyMonthlyPrice")}
+                  </Label>
+                  <Input
+                    id={`${plan.code}-yearlyPrice`}
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={centsToInputValue(pricing.yearlyMonthlyPriceCents)}
+                    onChange={(event) =>
+                      updatePricing(
+                        plan.code,
+                        "yearlyMonthlyPriceCents",
+                        event.target.value === ""
+                          ? null
+                          : inputValueToCents(event.target.value)
+                      )
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t("dashboard.planLimits.yearlyMonthlyPriceHint")}
+                  </p>
+                </div>
+
                 <div className="space-y-1.5">
                   <Label htmlFor={`${plan.code}-storageBytes`}>
                     {t("dashboard.planLimits.storageBytes")}

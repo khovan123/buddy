@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { formatVND } from "@/features/billing/types/billing-types"
+import { formatCurrencyFromCents } from "@/features/billing/types/billing-types"
 import type { PlanFeature } from "@/features/intro/services/intro.service"
 import { cn } from "@/lib/utils"
 
@@ -26,11 +26,13 @@ import { cn } from "@/lib/utils"
 /* ------------------------------------------------------------------ */
 
 interface PlanTier {
-  price: number
+  monthlyPriceCents: number
+  priceInCents: number
+  currency: string
   label: string
   cta: string
   description: string
-  yearlyPrice?: number
+  yearlyMonthlyPriceCents?: number
   badge?: string
 }
 
@@ -55,8 +57,14 @@ export function PlanCard({
   className?: string
   variant?: PlanCardVariant
 }) {
-  const proplan = plan as PlanTier & { yearlyPrice: number; badge: string }
-  const price = isPro && yearly ? proplan.yearlyPrice : plan.price
+  const proplan = plan as PlanTier & {
+    yearlyMonthlyPriceCents: number
+    badge: string
+  }
+  const priceInCents =
+    isPro && yearly
+      ? proplan.yearlyMonthlyPriceCents
+      : plan.priceInCents ?? plan.monthlyPriceCents
   const isCompact = variant === "compact"
 
   return (
@@ -127,7 +135,7 @@ export function PlanCard({
           <div className="flex items-baseline gap-1">
             <AnimatePresence mode="wait">
               <motion.span
-                key={price}
+                key={priceInCents}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
@@ -136,7 +144,7 @@ export function PlanCard({
                   isCompact ? "text-2xl" : "text-4xl"
                 )}
               >
-                {formatVND(price)}
+                {formatCurrencyFromCents(priceInCents, plan.currency)}
               </motion.span>
             </AnimatePresence>
             <span
@@ -150,7 +158,12 @@ export function PlanCard({
           </div>
           {isPro && yearly && (
             <p className="mt-1 text-xs text-pricing-success">
-              Billed {formatVND((proplan.yearlyPrice ?? 0) * 12)}/year
+              Billed{" "}
+              {formatCurrencyFromCents(
+                (proplan.yearlyMonthlyPriceCents ?? 0) * 12,
+                plan.currency
+              )}
+              /year
             </p>
           )}
         </div>

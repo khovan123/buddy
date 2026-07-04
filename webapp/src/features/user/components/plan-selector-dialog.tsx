@@ -132,7 +132,7 @@ export function PlanSelectorDialog({
   const [createSubscription, { isLoading }] = useCreateSubscriptionMutation()
 
   const currentPlan = data?.data?.plan
-  const requiresPlanSelection =
+  const hasMissingSubscription =
     !isFetching && !subscriptionError && !currentPlan
   const currentAudience: PlanAudience = currentPlan?.startsWith("CREATOR")
     ? "creator"
@@ -150,10 +150,6 @@ export function PlanSelectorDialog({
         : t("billing.subscription.choosePlan"))
 
   const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen && requiresPlanSelection) {
-      return
-    }
-
     if (nextOpen) {
       setSelectedAudience(currentAudience)
     }
@@ -185,7 +181,7 @@ export function PlanSelectorDialog({
   }
 
   return (
-    <Dialog open={open || requiresPlanSelection} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           variant={triggerVariant}
@@ -201,7 +197,7 @@ export function PlanSelectorDialog({
         <DialogHeader className="pr-10">
           <DialogTitle>{t("billing.subscription.dialogTitle")}</DialogTitle>
           <DialogDescription>
-            {requiresPlanSelection
+            {hasMissingSubscription
               ? t("billing.subscription.dialogDescriptionRequired")
               : t("billing.subscription.dialogDescription")}
           </DialogDescription>

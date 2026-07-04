@@ -120,7 +120,10 @@ export class LoginUserHandler implements ICommandHandler<LoginUserCommand> {
 
     // 7. Generate tokens
     const { accessToken, refreshToken, refreshTokenHash, accessExpiresIn } =
-      await this.tokenService.generateTokenPair(user, { subscriptionPlanDetails });
+      await this.tokenService.generateTokenPair(user, {
+        subscriptionPlan,
+        subscriptionPlanDetails,
+      });
 
     // 8. Persist refresh token
     await this.refreshTokenRepository.save({

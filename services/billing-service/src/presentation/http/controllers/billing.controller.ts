@@ -625,12 +625,26 @@ export class BillingController {
         ...(dto.maxCollections === undefined ? {} : { maxCollections: dto.maxCollections }),
         ...(dto.canCreateContent === undefined ? {} : { canCreateContent: dto.canCreateContent }),
         ...(dto.maxSearchResults === undefined ? {} : { maxSearchResults: dto.maxSearchResults }),
+        ...(dto.monthlyPriceCents === undefined
+          ? {}
+          : { monthlyPriceCents: dto.monthlyPriceCents }),
+        ...(dto.yearlyMonthlyPriceCents === undefined
+          ? {}
+          : {
+              yearlyMonthlyPriceCents:
+                dto.yearlyMonthlyPriceCents === null ? null : dto.yearlyMonthlyPriceCents,
+            }),
       },
     });
 
     return successResponse(
       {
         code: result.code,
+        pricing: {
+          monthlyPriceCents: result.monthlyPriceCents,
+          yearlyMonthlyPriceCents: result.yearlyMonthlyPriceCents,
+          currency: result.currency,
+        },
         limits: {
           storageBytes: Number(result.storageBytes),
           maxResources: result.maxResources,
@@ -787,6 +801,11 @@ export class BillingController {
         code: row.code,
         audience: row.audience,
         tier: row.tier,
+        pricing: {
+          monthlyPriceCents: row.monthlyPriceCents,
+          yearlyMonthlyPriceCents: row.yearlyMonthlyPriceCents,
+          currency: row.currency,
+        },
         limits: {
           storageBytes: Number(row.storageBytes),
           maxResources: row.maxResources,
@@ -811,7 +830,7 @@ export class BillingController {
       free: this.toPlanTier(free),
       pro: {
         ...this.toPlanTier(pro),
-        yearlyPrice: this.centsToDollars(pro.yearlyMonthlyPriceCents ?? pro.monthlyPriceCents),
+        yearlyMonthlyPriceCents: pro.yearlyMonthlyPriceCents ?? pro.monthlyPriceCents,
         badge: pro.badge ?? '',
       },
       features: this.toFeaturePairs(free, pro),
@@ -820,13 +839,15 @@ export class BillingController {
 
   private toPlanTier(row: CatalogRow) {
     return {
-      price: this.centsToDollars(row.monthlyPriceCents),
+      monthlyPriceCents: row.monthlyPriceCents,
+      priceInCents: row.monthlyPriceCents,
+      currency: row.currency,
       label: row.label,
       cta: row.cta,
       description: row.description,
       ...(row.yearlyMonthlyPriceCents === null
         ? {}
-        : { yearlyPrice: this.centsToDollars(row.yearlyMonthlyPriceCents) }),
+        : { yearlyMonthlyPriceCents: row.yearlyMonthlyPriceCents }),
       ...(row.badge ? { badge: row.badge } : {}),
     };
   }
@@ -882,10 +903,6 @@ export class BillingController {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-  }
-
-  private centsToDollars(cents: number): number {
-    return cents / 100;
   }
 
   private assertAdmin(roles: string[]) {

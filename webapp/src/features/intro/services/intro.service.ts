@@ -110,11 +110,13 @@ export type PlanFeature = {
 }
 
 export type PlanTier = {
-  price: number
+  monthlyPriceCents: number
+  priceInCents: number
+  currency: string
   label: string
   cta: string
   description: string
-  yearlyPrice?: number
+  yearlyMonthlyPriceCents?: number
   badge?: string
 }
 
@@ -123,7 +125,7 @@ export type PlanGroup = {
   description: string
   iconKey: IconKey
   free: PlanTier
-  pro: PlanTier & { yearlyPrice: number; badge: string }
+  pro: PlanTier & { yearlyMonthlyPriceCents: number; badge: string }
   features: PlanFeature[]
 }
 

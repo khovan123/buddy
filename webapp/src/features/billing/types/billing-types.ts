@@ -85,11 +85,13 @@ export interface SubscriptionPlanFeature {
 }
 
 export interface SubscriptionPlanTier {
-  price: number
+  monthlyPriceCents: number
+  priceInCents: number
+  currency: string
   label: string
   cta: string
   description: string
-  yearlyPrice?: number
+  yearlyMonthlyPriceCents?: number
   badge?: string
 }
 
@@ -98,7 +100,7 @@ export interface SubscriptionPlanGroup {
   description: string
   iconKey: "Palette" | "Users"
   free: SubscriptionPlanTier
-  pro: SubscriptionPlanTier & { yearlyPrice: number; badge: string }
+  pro: SubscriptionPlanTier & { yearlyMonthlyPriceCents: number; badge: string }
   features: SubscriptionPlanFeature[]
 }
 
@@ -124,6 +126,11 @@ export interface SubscriptionPlanCatalogItem {
   code: SubscriptionPlan
   audience: "CREATOR" | "STUDENT"
   tier: "free" | "pro"
+  pricing: {
+    monthlyPriceCents: number
+    yearlyMonthlyPriceCents?: number | null
+    currency: string
+  }
   limits: PlanLimits
   pbac: Record<string, unknown>
 }
@@ -162,4 +169,27 @@ export function formatVND(cents: string | number): string {
     currency: DISPLAY_CURRENCY,
     maximumFractionDigits: 0,
   }).format(value)
+}
+
+export function formatCurrencyFromCents(
+  cents: string | number,
+  currency = DISPLAY_CURRENCY
+): string {
+  const value = typeof cents === "string" ? Number(cents) : cents
+  const normalizedCurrency = currency.toUpperCase()
+  const amount = value / 100
+
+  return new Intl.NumberFormat(
+    normalizedCurrency === "VND" ? "vi-VN" : "en-US",
+    {
+      style: "currency",
+      currency: normalizedCurrency,
+      maximumFractionDigits: normalizedCurrency === "VND" ? 0 : 2,
+    }
+  ).format(amount)
+}
+
+export function centsToMajorUnit(cents: string | number): number {
+  const value = typeof cents === "string" ? Number(cents) : cents
+  return value / 100
 }
