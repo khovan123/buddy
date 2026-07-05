@@ -20,7 +20,7 @@ import {
   getCurrencyFractionDigits,
   majorUnitToMinorUnits,
   minorUnitsToMajorUnit,
-} from "@/features/billing"
+} from "@/features/billing/types/billing-types"
 import { useI18n } from "@/i18n/language-provider"
 
 import { savePlanLimitsAction } from "../actions/plan-limits-actions"

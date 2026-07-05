@@ -17,7 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { formatCurrencyFromCents } from "@/features/billing"
+import { formatCurrencyFromCents } from "@/features/billing/types/billing-types"
 import type { PlanFeature } from "@/features/intro/services/intro.service"
 import { cn } from "@/lib/utils"
 
