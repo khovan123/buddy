@@ -162,11 +162,58 @@ export const PLAN_DISPLAY_NAME_KEYS: Record<SubscriptionPlan, string> = {
 }
 
 // ── Currency Formatting ──────────────────────────────────
+function normalizeCurrency(currency = DISPLAY_CURRENCY) {
+  return currency.trim().toUpperCase() || DISPLAY_CURRENCY
+}
+
+function localeForCurrency(currency: string) {
+  return currency === "VND" ? "vi-VN" : "en-US"
+}
+
+export function getCurrencyFractionDigits(currency = DISPLAY_CURRENCY): number {
+  const normalizedCurrency = normalizeCurrency(currency)
+
+  try {
+    const fractionDigits = new Intl.NumberFormat(localeForCurrency(normalizedCurrency), {
+      style: "currency",
+      currency: normalizedCurrency,
+    }).resolvedOptions().maximumFractionDigits
+    return fractionDigits ?? (normalizedCurrency === "VND" ? 0 : 2)
+  } catch {
+    return normalizedCurrency === "VND" ? 0 : 2
+  }
+}
+
+export function getCurrencyMinorUnitFactor(currency = DISPLAY_CURRENCY): number {
+  return 10 ** getCurrencyFractionDigits(currency)
+}
+
+export function minorUnitsToMajorUnit(
+  minorUnits: string | number,
+  currency = DISPLAY_CURRENCY
+): number {
+  const value =
+    typeof minorUnits === "string" ? Number(minorUnits) : minorUnits
+  return value / getCurrencyMinorUnitFactor(currency)
+}
+
+export function majorUnitToMinorUnits(
+  amount: string | number,
+  currency = DISPLAY_CURRENCY
+): number {
+  const value = typeof amount === "string" ? Number(amount) : amount
+  return Math.max(
+    0,
+    Math.round((Number.isFinite(value) ? value : 0) * getCurrencyMinorUnitFactor(currency))
+  )
+}
+
 export function formatVND(cents: string | number): string {
   const value = typeof cents === "string" ? Number(cents) : cents
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: DISPLAY_CURRENCY,
+    currencyDisplay: "code",
     maximumFractionDigits: 0,
   }).format(value)
 }
@@ -175,21 +222,25 @@ export function formatCurrencyFromCents(
   cents: string | number,
   currency = DISPLAY_CURRENCY
 ): string {
-  const value = typeof cents === "string" ? Number(cents) : cents
-  const normalizedCurrency = currency.toUpperCase()
-  const amount = value / 100
+  const normalizedCurrency = normalizeCurrency(currency)
+  const amount = minorUnitsToMajorUnit(cents, normalizedCurrency)
+  const fractionDigits = getCurrencyFractionDigits(normalizedCurrency)
 
   return new Intl.NumberFormat(
-    normalizedCurrency === "VND" ? "vi-VN" : "en-US",
+    localeForCurrency(normalizedCurrency),
     {
       style: "currency",
       currency: normalizedCurrency,
-      maximumFractionDigits: normalizedCurrency === "VND" ? 0 : 2,
+      currencyDisplay: "code",
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
     }
   ).format(amount)
 }
 
-export function centsToMajorUnit(cents: string | number): number {
-  const value = typeof cents === "string" ? Number(cents) : cents
-  return value / 100
+export function centsToMajorUnit(
+  cents: string | number,
+  currency = DISPLAY_CURRENCY
+): number {
+  return minorUnitsToMajorUnit(cents, currency)
 }

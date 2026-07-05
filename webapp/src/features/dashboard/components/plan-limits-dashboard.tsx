@@ -16,6 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import {
+  getCurrencyFractionDigits,
+  majorUnitToMinorUnits,
+  minorUnitsToMajorUnit,
+} from "@/features/billing"
 import { useI18n } from "@/i18n/language-provider"
 
 import { savePlanLimitsAction } from "../actions/plan-limits-actions"
@@ -102,12 +107,18 @@ function getInitialPlanSettings(
   ) as Record<SubscriptionPlanCode, PlanSettings>
 }
 
-function centsToInputValue(cents?: number | null) {
-  return cents === null || cents === undefined ? "" : String(cents / 100)
+function centsToInputValue(cents: number | null | undefined, currency: string) {
+  return cents === null || cents === undefined
+    ? ""
+    : String(minorUnitsToMajorUnit(cents, currency))
 }
 
-function inputValueToCents(value: string) {
-  return Math.max(0, Math.round((Number(value) || 0) * 100))
+function inputValueToCents(value: string, currency: string) {
+  return majorUnitToMinorUnits(value, currency)
+}
+
+function getPriceInputStep(currency: string) {
+  return getCurrencyFractionDigits(currency) === 0 ? "1" : "0.01"
 }
 
 export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
@@ -240,18 +251,23 @@ export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
                     id={`${plan.code}-price`}
                     type="number"
                     min={0}
-                    step="0.01"
-                    value={centsToInputValue(pricing.monthlyPriceCents)}
+                    step={getPriceInputStep(pricing.currency)}
+                    value={centsToInputValue(
+                      pricing.monthlyPriceCents,
+                      pricing.currency
+                    )}
                     onChange={(event) =>
                       updatePricing(
                         plan.code,
                         "monthlyPriceCents",
-                        inputValueToCents(event.target.value)
+                        inputValueToCents(event.target.value, pricing.currency)
                       )
                     }
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t("dashboard.planLimits.priceHint")}
+                    {t("dashboard.planLimits.priceHint", {
+                      currency: pricing.currency,
+                    })}
                   </p>
                 </div>
 
@@ -263,20 +279,28 @@ export function PlanLimitsDashboard({ plans }: PlanLimitsDashboardProps) {
                     id={`${plan.code}-yearlyPrice`}
                     type="number"
                     min={0}
-                    step="0.01"
-                    value={centsToInputValue(pricing.yearlyMonthlyPriceCents)}
+                    step={getPriceInputStep(pricing.currency)}
+                    value={centsToInputValue(
+                      pricing.yearlyMonthlyPriceCents,
+                      pricing.currency
+                    )}
                     onChange={(event) =>
                       updatePricing(
                         plan.code,
                         "yearlyMonthlyPriceCents",
                         event.target.value === ""
                           ? null
-                          : inputValueToCents(event.target.value)
+                          : inputValueToCents(
+                              event.target.value,
+                              pricing.currency
+                            )
                       )
                     }
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t("dashboard.planLimits.yearlyMonthlyPriceHint")}
+                    {t("dashboard.planLimits.yearlyMonthlyPriceHint", {
+                      currency: pricing.currency,
+                    })}
                   </p>
                 </div>
 

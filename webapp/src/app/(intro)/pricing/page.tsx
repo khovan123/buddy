@@ -63,25 +63,37 @@ export default async function PricingPage() {
         offers: [
           {
             name: data.creatorPlans.free.label,
-            price: centsToMajorUnit(data.creatorPlans.free.priceInCents),
+            price: centsToMajorUnit(
+              data.creatorPlans.free.priceInCents,
+              data.creatorPlans.free.currency
+            ),
             priceCurrency: data.creatorPlans.free.currency,
             description: data.creatorPlans.free.description,
           },
           {
             name: data.creatorPlans.pro.label,
-            price: centsToMajorUnit(data.creatorPlans.pro.priceInCents),
+            price: centsToMajorUnit(
+              data.creatorPlans.pro.priceInCents,
+              data.creatorPlans.pro.currency
+            ),
             priceCurrency: data.creatorPlans.pro.currency,
             description: data.creatorPlans.pro.description,
           },
           {
             name: data.studentPlans.free.label,
-            price: centsToMajorUnit(data.studentPlans.free.priceInCents),
+            price: centsToMajorUnit(
+              data.studentPlans.free.priceInCents,
+              data.studentPlans.free.currency
+            ),
             priceCurrency: data.studentPlans.free.currency,
             description: data.studentPlans.free.description,
           },
           {
             name: data.studentPlans.pro.label,
-            price: centsToMajorUnit(data.studentPlans.pro.priceInCents),
+            price: centsToMajorUnit(
+              data.studentPlans.pro.priceInCents,
+              data.studentPlans.pro.currency
+            ),
             priceCurrency: data.studentPlans.pro.currency,
             description: data.studentPlans.pro.description,
           },

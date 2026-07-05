@@ -578,9 +578,9 @@ export const translations = {
     "dashboard.planLimits.monthlyPrice": "Monthly price",
     "dashboard.planLimits.yearlyMonthlyPrice": "Yearly monthly price",
     "dashboard.planLimits.priceHint":
-      "The value shown on pricing cards. It is saved in cents internally.",
+      "Enter the display amount in {currency}. It is stored as the currency minor unit.",
     "dashboard.planLimits.yearlyMonthlyPriceHint":
-      "Optional monthly equivalent for annual billing. Leave blank to disable yearly pricing.",
+      "Optional monthly equivalent in {currency} for annual billing. Leave blank to disable yearly pricing.",
     "dashboard.planLimits.storageBytes": "Storage limit",
     "dashboard.planLimits.storageBytesHint":
       "Choose a user-friendly storage size. The system still saves the value in bytes.",
@@ -1670,9 +1670,9 @@ export const translations = {
     "dashboard.planLimits.monthlyPrice": "Giá hằng tháng",
     "dashboard.planLimits.yearlyMonthlyPrice": "Giá tháng khi trả theo năm",
     "dashboard.planLimits.priceHint":
-      "Giá hiển thị trên thẻ gói. Hệ thống lưu nội bộ theo cents.",
+      "Nhập số tiền hiển thị theo {currency}. Hệ thống lưu theo đơn vị nhỏ nhất của tiền tệ đó.",
     "dashboard.planLimits.yearlyMonthlyPriceHint":
-      "Giá tương đương mỗi tháng khi thanh toán năm. Để trống nếu không dùng giá năm.",
+      "Giá tương đương mỗi tháng theo {currency} khi thanh toán năm. Để trống nếu không dùng giá năm.",
     "dashboard.planLimits.storageBytes": "Dung lượng lưu trữ",
     "dashboard.planLimits.storageBytesHint":
       "Chọn mức dung lượng dễ đọc hơn. Hệ thống vẫn lưu giá trị theo byte.",
