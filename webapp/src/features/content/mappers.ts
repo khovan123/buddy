@@ -2,7 +2,7 @@ import type { CollectionCardData } from "@/components/molecules/collection-card"
 import type { ProfileItem } from "@/components/molecules/profile-card"
 import type { ResourceCardData } from "@/components/molecules/resource-card"
 import type { TutorialCardData } from "@/components/molecules/tutorial-card"
-import { formatVND } from "@/features/billing/types/billing-types"
+import { formatCompactVND } from "@/features/billing/types/billing-types"
 import type { LibraryAsset } from "@/features/library/components/library-asset-card"
 import { LibraryAssetKind } from "@/features/library/components/library-asset-card"
 
@@ -13,11 +13,6 @@ import type {
 } from "./types"
 
 // ── Card Mappers (ResourceCard / TutorialCard / CollectionCard) ──
-
-const vndFormat = new Intl.NumberFormat("vi-VN", {
-  style: "currency",
-  currency: "VND",
-})
 
 const compactFormat = new Intl.NumberFormat("en", {
   notation: "compact",
@@ -35,7 +30,7 @@ function formatViews(item: ViewCountSource) {
 }
 
 function formatPrice(price: number) {
-  return price === 0 ? "free" : vndFormat.format(price)
+  return price === 0 ? "free" : formatCompactVND(price)
 }
 
 function applyDiscount(price: number, discount: number) {
@@ -167,7 +162,7 @@ export function mapTutorialToProfileItem(
   return {
     title: item.title || "Untitled",
     description: item.description || "No description provided.",
-    price: item.price === 0 ? "free" : formatVND(item.price ?? 0),
+    price: item.price === 0 ? "free" : formatCompactVND(item.price ?? 0),
     rating: "5.0",
     reviews: "0",
     type: "Tutorial",
@@ -182,7 +177,7 @@ export function mapResourceToProfileItem(
   return {
     title: item.title || "Untitled",
     description: item.summary || "No description provided.",
-    price: item.price === 0 ? "free" : formatVND(item.price ?? 0),
+    price: item.price === 0 ? "free" : formatCompactVND(item.price ?? 0),
     rating: "5.0",
     reviews: "0",
     type: "Resource",

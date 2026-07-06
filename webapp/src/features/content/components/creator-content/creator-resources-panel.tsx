@@ -19,6 +19,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
+import { formatCompactVND } from "@/features/billing"
 import { useGetResourceUploadHistoryByIdQuery } from "@/features/content/services/content-api"
 import type {
   ContentResourceItem,
@@ -185,10 +186,7 @@ export function CreatorResourcesPanel({
                         >
                           {resource.price === 0
                             ? t("common.free")
-                            : new Intl.NumberFormat("vi-VN", {
-                                style: "currency",
-                                currency: "VND",
-                              }).format(resource.price)}
+                            : formatCompactVND(resource.price)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">

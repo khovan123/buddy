@@ -162,8 +162,8 @@ export const PLAN_DISPLAY_NAME_KEYS: Record<SubscriptionPlan, string> = {
 }
 
 // ── Currency Formatting ──────────────────────────────────
-function normalizeCurrency(currency = DISPLAY_CURRENCY) {
-  return currency.trim().toUpperCase() || DISPLAY_CURRENCY
+function normalizeCurrency(_currency = DISPLAY_CURRENCY) {
+  return DISPLAY_CURRENCY
 }
 
 function localeForCurrency(currency: string) {
@@ -208,14 +208,34 @@ export function majorUnitToMinorUnits(
   )
 }
 
-export function formatVND(cents: string | number): string {
-  const value = typeof cents === "string" ? Number(cents) : cents
+export function formatVND(amount: string | number): string {
+  const value = typeof amount === "string" ? Number(amount) : amount
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: DISPLAY_CURRENCY,
     currencyDisplay: "code",
     maximumFractionDigits: 0,
   }).format(value)
+}
+
+export function formatCompactVND(amount: string | number): string {
+  const value = typeof amount === "string" ? Number(amount) : amount
+  const safeValue = Number.isFinite(value) ? value : 0
+  const absoluteValue = Math.abs(safeValue)
+  const sign = safeValue < 0 ? "-" : ""
+  const formatter = new Intl.NumberFormat("vi-VN", {
+    maximumFractionDigits: 1,
+  })
+
+  if (absoluteValue >= 1_000_000) {
+    return `${sign}${formatter.format(absoluteValue / 1_000_000)} triệu ${DISPLAY_CURRENCY}`
+  }
+
+  if (absoluteValue >= 1_000) {
+    return `${sign}${formatter.format(absoluteValue / 1_000)} nghìn ${DISPLAY_CURRENCY}`
+  }
+
+  return formatVND(safeValue)
 }
 
 export function formatCurrencyFromCents(

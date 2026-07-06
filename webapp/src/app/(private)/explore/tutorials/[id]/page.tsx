@@ -32,7 +32,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Item, ItemContent, ItemMedia, ItemTitle } from "@/components/ui/item"
 import { Toggle } from "@/components/ui/toggle"
-import { PurchaseButton } from "@/features/billing"
+import { PurchaseButton, formatCompactVND } from "@/features/billing"
 import {
   getResourcePreview,
   getTutorialBySlug,
@@ -48,13 +48,8 @@ import { getCachedSession } from "@/lib/server-session"
 
 type PageParams = Promise<{ id: string }>
 
-const vndFormat = new Intl.NumberFormat("vi-VN", {
-  style: "currency",
-  currency: "VND",
-})
-
 function formatPrice(price: number) {
-  return price === 0 ? "free" : vndFormat.format(price)
+  return price === 0 ? "free" : formatCompactVND(price)
 }
 
 function applyDiscount(price: number, discount: number) {

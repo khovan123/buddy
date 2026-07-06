@@ -24,7 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
-import { PurchaseButton } from "@/features/billing"
+import { PurchaseButton, formatCompactVND } from "@/features/billing"
 import {
   getResourceCollectionBySlug,
   LearningPathOverview,
@@ -37,13 +37,8 @@ import { getServerTranslator } from "@/i18n/server"
 
 type PageParams = Promise<{ id: string }>
 
-const vndFormat = new Intl.NumberFormat("vi-VN", {
-  style: "currency",
-  currency: "VND",
-})
-
 function formatPrice(price: number) {
-  return price === 0 ? "free" : vndFormat.format(price)
+  return price === 0 ? "free" : formatCompactVND(price)
 }
 
 function applyDiscount(price: number, discount: number) {

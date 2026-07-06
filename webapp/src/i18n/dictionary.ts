@@ -578,7 +578,7 @@ export const translations = {
     "dashboard.planLimits.monthlyPrice": "Monthly price",
     "dashboard.planLimits.yearlyMonthlyPrice": "Yearly monthly price",
     "dashboard.planLimits.priceHint":
-      "Enter the display amount in {currency}. It is stored as the currency minor unit.",
+      "Enter the exact {currency} amount. For example, 99000 is stored and shown as 99,000 VND.",
     "dashboard.planLimits.yearlyMonthlyPriceHint":
       "Optional monthly equivalent in {currency} for annual billing. Leave blank to disable yearly pricing.",
     "dashboard.planLimits.storageBytes": "Storage limit",
@@ -1670,7 +1670,7 @@ export const translations = {
     "dashboard.planLimits.monthlyPrice": "Giá hằng tháng",
     "dashboard.planLimits.yearlyMonthlyPrice": "Giá tháng khi trả theo năm",
     "dashboard.planLimits.priceHint":
-      "Nhập số tiền hiển thị theo {currency}. Hệ thống lưu theo đơn vị nhỏ nhất của tiền tệ đó.",
+      "Nhập đúng số tiền {currency}. Ví dụ, 99000 sẽ được lưu và hiển thị là 99.000 VND.",
     "dashboard.planLimits.yearlyMonthlyPriceHint":
       "Giá tương đương mỗi tháng theo {currency} khi thanh toán năm. Để trống nếu không dùng giá năm.",
     "dashboard.planLimits.storageBytes": "Dung lượng lưu trữ",

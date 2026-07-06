@@ -20,6 +20,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
+import { formatCompactVND } from "@/features/billing"
 import { useGetTutorialUploadHistoryByIdQuery } from "@/features/content/services/content-api"
 import type {
   ContentTutorialItem,
@@ -193,10 +194,7 @@ export function CreatorTutorialsPanel({
                         >
                           {tutorial.price === 0
                             ? t("common.free")
-                            : new Intl.NumberFormat("vi-VN", {
-                                style: "currency",
-                                currency: "VND",
-                              }).format(tutorial.price)}
+                            : formatCompactVND(tutorial.price)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
