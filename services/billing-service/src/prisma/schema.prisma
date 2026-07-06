@@ -151,7 +151,7 @@ model SubscriptionPlanCatalog {
   cta                     String
   description             String
   badge                   String?
-  currency                String               @default("USD")
+  currency                String               @default("VND")
   monthlyPriceCents       Int                  @default(0) @map("monthly_price_cents")
   yearlyMonthlyPriceCents Int?                 @map("yearly_monthly_price_cents")
   storageBytes            BigInt               @default(0) @map("storage_bytes")

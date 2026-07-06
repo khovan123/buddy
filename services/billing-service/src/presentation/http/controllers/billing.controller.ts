@@ -1,6 +1,5 @@
 import { JwtAuthGuard, Public, getCorrelationId } from '@libs/common';
-import { SubscriptionPlan } from '@libs/contracts';
-import { successResponse } from '@libs/contracts';
+import { SubscriptionPlan, successResponse } from '@libs/contracts';
 import {
   Body,
   Controller,
@@ -33,16 +32,16 @@ import { GetSalesCountQuery } from '../../../application/queries/get-sales-count
 import { GetSubscriptionQuery } from '../../../application/queries/get-subscription.query';
 import { GetTransactionHistoryQuery } from '../../../application/queries/get-transaction-history.query';
 import { GetWalletBalanceQuery } from '../../../application/queries/get-wallet-balance.query';
-import { PAYOUT_GATEWAY, WALLET_REPOSITORY } from '../../../domain/repositories/tokens';
 import type { IPayoutGateway } from '../../../domain/repositories/payout-gateway.interface';
+import { PAYOUT_GATEWAY, WALLET_REPOSITORY } from '../../../domain/repositories/tokens';
 import type { IWalletRepository } from '../../../domain/repositories/wallet.repository.interface';
 import { ContentCatalogRpcPublisher } from '../../../infrastructure/messaging/publishers/content-catalog.rpc';
-import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import type { Prisma } from '../../../infrastructure/persistence/prisma/generated/client';
 import type {
   SubscriptionAudience as PrismaSubscriptionAudience,
   SubscriptionPlan as PrismaSubscriptionPlan,
 } from '../../../infrastructure/persistence/prisma/generated/enums';
+import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { CreateSubscriptionDto } from '../dtos/create-subscription.dto';
 import { SavePayoutAccountDto } from '../dtos/save-payout-account.dto';
 import { ProcessPurchaseDto, TopUpWalletDto } from '../dtos/top-up-wallet.dto';
@@ -894,7 +893,7 @@ export class BillingController {
       id: seed.code,
       code: seed.code,
       badge: seed.badge ?? null,
-      currency: 'USD',
+      currency: 'VND',
       yearlyMonthlyPriceCents: seed.yearlyMonthlyPriceCents ?? null,
       featureValues: seed.featureValues as Prisma.JsonValue,
       pbac: seed.pbac as Prisma.JsonValue,

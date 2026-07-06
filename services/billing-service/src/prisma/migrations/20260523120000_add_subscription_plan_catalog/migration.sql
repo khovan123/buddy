@@ -14,7 +14,7 @@ CREATE TABLE "subscription_plan_catalog" (
     "cta" TEXT NOT NULL,
     "description" TEXT NOT NULL,
     "badge" TEXT,
-    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "currency" TEXT NOT NULL DEFAULT 'VND',
     "monthly_price_cents" INTEGER NOT NULL DEFAULT 0,
     "yearly_monthly_price_cents" INTEGER,
     "storage_bytes" BIGINT NOT NULL DEFAULT 0,
