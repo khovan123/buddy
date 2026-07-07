@@ -19,7 +19,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
-import { formatCompactVND } from "@/features/billing"
+import { formatCompactVND } from "@/features/billing/types/billing-types"
 import { useGetResourceUploadHistoryByIdQuery } from "@/features/content/services/content-api"
 import type {
   ContentResourceItem,
