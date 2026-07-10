@@ -23,7 +23,11 @@ export function HeaderWalletPopover() {
   const [open, setOpen] = useState(false)
   const [depositOpen, setDepositOpen] = useState(false)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
-  const { data, isFetching } = useGetWalletBalanceQuery()
+  const { data, isFetching } = useGetWalletBalanceQuery(undefined, {
+    refetchOnFocus: true,
+    refetchOnMountOrArgChange: true,
+    refetchOnReconnect: true,
+  })
   const balance = data?.data
 
   return (

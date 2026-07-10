@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 
+import { useSearchParams } from "next/navigation"
+
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -27,9 +29,16 @@ interface WalletHeroCardProps {
 
 export function WalletHeroCard({ balance }: WalletHeroCardProps) {
   const { t } = useI18n()
+  const searchParams = useSearchParams()
   const [topUpOpen, setTopUpOpen] = useState(false)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
-  const { data, isFetching } = useGetWalletBalanceQuery()
+  const isTopUpReturn = searchParams.get("topup") === "success"
+  const { data, isFetching } = useGetWalletBalanceQuery(undefined, {
+    pollingInterval: isTopUpReturn ? 3_000 : 0,
+    refetchOnFocus: true,
+    refetchOnMountOrArgChange: true,
+    refetchOnReconnect: true,
+  })
   const currentBalance = data?.data ?? balance
 
   return (
