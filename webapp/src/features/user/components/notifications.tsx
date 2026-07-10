@@ -15,6 +15,7 @@ import {
   MessageCircle,
   ShoppingBag,
   Video,
+  Wallet,
 } from "lucide-react"
 import { useDispatch } from "react-redux"
 
@@ -370,12 +371,39 @@ export function Notifications() {
           tone: "info",
           updatedAt: item.templateData.createdAt ?? item.createdAt,
         }))
+    const walletNotifications: ModerationNotification[] = storedNotifications
+      .filter((item) => item.channel === "wallet")
+      .map((item) => {
+        const isTopUp = item.templateId === "wallet-topped-up"
+        const amount = formatVND(item.templateData.amount ?? "0")
+
+        return {
+          id: `wallet-${item._id}`,
+          href: "/settings/billing/transactions",
+          title:
+            item.subject ??
+            (isTopUp
+              ? t("notifications.message.walletToppedUp")
+              : t("notifications.message.withdrawCompleted")),
+          type: t("notifications.type.wallet"),
+          statusLabel: t("notifications.status.completed"),
+          description: isTopUp
+            ? t("notifications.message.walletToppedUp", { amount })
+            : t("notifications.message.withdrawCompleted", { amount }),
+          tone: "success",
+          updatedAt:
+            (isTopUp
+              ? item.templateData.toppedUpAt
+              : item.templateData.completedAt) ?? item.createdAt,
+        }
+      })
     const unreadStoredCount = storedNotifications.filter(
       (item) =>
         !item.readAt &&
         (item.channel === "purchase" ||
           item.channel === "content-moderation" ||
-          item.channel === "forum-mention")
+          item.channel === "forum-mention" ||
+          item.channel === "wallet")
     ).length
 
     const approvedFallback = [
@@ -399,6 +427,7 @@ export function Notifications() {
       ...moderationNotifications,
       ...forumMentionNotifications,
       ...purchaseNotifications,
+      ...walletNotifications,
       ...activeNotifications,
       ...approvedFallback,
     ]
@@ -539,9 +568,11 @@ export function Notifications() {
                   ? Video
                   : item.type === t("notifications.type.purchase")
                     ? ShoppingBag
-                    : item.type === t("notifications.type.forum")
+                  : item.type === t("notifications.type.forum")
                       ? MessageCircle
-                      : FileText
+                      : item.type === t("notifications.type.wallet")
+                        ? Wallet
+                        : FileText
               const StatusIcon =
                 item.tone === "success" ? CheckCircle2 : AlertTriangle
 

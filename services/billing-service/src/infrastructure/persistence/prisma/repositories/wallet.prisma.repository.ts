@@ -707,6 +707,7 @@ export class WalletPrismaRepository implements IWalletRepository {
 
     return {
       id: row.id,
+      userId: row.userId,
       type: row.type,
       status: row.status,
       provider: row.provider,

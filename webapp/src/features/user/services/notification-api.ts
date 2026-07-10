@@ -10,6 +10,11 @@ export interface UserNotification {
   templateId: string
   templateData: {
     amount?: string
+    transactionId?: string
+    walletId?: string
+    provider?: string
+    toppedUpAt?: string
+    completedAt?: string
     itemCount?: number
     purchaseId?: string
     contentId?: string

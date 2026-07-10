@@ -1,10 +1,34 @@
+import { shouldUseCloudRunAuth } from '@libs/common';
 import { HttpException, HttpStatus } from '@nestjs/common';
+import { GoogleAuth, IdTokenClient } from 'google-auth-library';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 type EventStreamProxyOptions = {
   label: string;
   upstreamUrl: string;
 };
+
+const googleAuth = new GoogleAuth();
+const idTokenClients = new Map<string, IdTokenClient>();
+
+async function getCloudRunAuthHeader(upstreamUrl: string): Promise<Record<string, string>> {
+  if (!shouldUseCloudRunAuth(upstreamUrl)) {
+    return {};
+  }
+
+  const audience = new URL(upstreamUrl).origin;
+  let client = idTokenClients.get(audience);
+  if (!client) {
+    client = await googleAuth.getIdTokenClient(audience);
+    idTokenClients.set(audience, client);
+  }
+
+  const headers = await client.getRequestHeaders();
+  const authorization =
+    headers.get('Authorization') ?? headers.get('authorization') ?? headers.get('AUTHORIZATION');
+
+  return authorization ? { 'X-Serverless-Authorization': authorization } : {};
+}
 
 export async function proxyEventStream(
   req: FastifyRequest,
@@ -17,10 +41,12 @@ export async function proxyEventStream(
 
   let response: Response;
   try {
+    const cloudRunAuthHeaders = await getCloudRunAuthHeader(options.upstreamUrl);
     response = await fetch(options.upstreamUrl, {
       method: 'GET',
       headers: {
         ...(req.headers.authorization ? { authorization: req.headers.authorization } : {}),
+        ...cloudRunAuthHeaders,
       },
       signal: controller.signal,
     });

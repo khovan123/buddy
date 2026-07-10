@@ -18,6 +18,7 @@ import {
   PurchaseCompletedEvent,
   RECOMMENDATION_ROUTINGKEYS,
   WalletToppedUpEvent,
+  WithdrawCompletedEvent,
   extractRmqPayload,
 } from '@libs/contracts';
 import { Inject, Injectable } from '@nestjs/common';
@@ -202,6 +203,54 @@ export class NotificationConsumer {
           amount: payload.amount,
           provider: payload.provider,
           toppedUpAt: payload.toppedUpAt,
+        },
+        correlationId: data.correlationId ?? payload.transactionId,
+      }),
+    );
+
+    this.notificationStream.publish(notification);
+  }
+
+  // ─── billing.withdraw.completed ──────────────────────────────────────────
+  @RabbitSubscribe({
+    exchange: EXCHANGES.BILLING,
+    routingKey: BILLING_ROUTINGKEYS.WITHDRAW_COMPLETED,
+    queue: QUEUES.NOTIFICATION_IN_APP_WITHDRAW_COMPLETED,
+    queueOptions: {
+      durable: true,
+      arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
+    },
+  })
+  async handleWithdrawCompleted(
+    data: EventEnvelope<WithdrawCompletedEvent['payload']>,
+  ): Promise<void | Nack> {
+    const payload = this.getPayload(data);
+
+    if (
+      !payload ||
+      !this.isNonEmptyString(payload.transactionId) ||
+      !this.isNonEmptyString(payload.userId) ||
+      !this.isNonEmptyString(payload.amount) ||
+      !this.isNonEmptyString(payload.provider) ||
+      !this.isValidDateString(payload.completedAt)
+    ) {
+      this.logger.warn(`Dropping malformed [${BILLING_ROUTINGKEYS.WITHDRAW_COMPLETED}] event`);
+      return new Nack(false);
+    }
+
+    const notification = await this.notificationRepository.save(
+      Notification.create({
+        userId: payload.userId,
+        type: 'in_app',
+        channel: 'wallet',
+        recipient: payload.userId,
+        subject: 'Withdrawal completed',
+        templateId: 'withdraw-completed',
+        templateData: {
+          transactionId: payload.transactionId,
+          amount: payload.amount,
+          provider: payload.provider,
+          completedAt: payload.completedAt,
         },
         correlationId: data.correlationId ?? payload.transactionId,
       }),

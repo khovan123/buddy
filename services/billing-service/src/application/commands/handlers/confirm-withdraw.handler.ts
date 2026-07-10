@@ -24,7 +24,7 @@ export class ConfirmWithdrawHandler implements ICommandHandler<ConfirmWithdrawCo
     const event = new WithdrawCompletedEvent(
       {
         transactionId: command.transactionId,
-        userId: (transaction.metadata?.userId as string) ?? '',
+        userId: transaction.userId,
         amount: transaction.amountInCents,
         provider: (transaction.provider as 'SEPAY' | 'BANK_TRANSFER') ?? 'BANK_TRANSFER',
         completedAt: new Date().toISOString(),

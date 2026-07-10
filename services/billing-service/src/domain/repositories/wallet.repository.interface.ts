@@ -122,6 +122,7 @@ export interface IWalletRepository {
 
 export type TransactionRecord = {
   id: string;
+  userId: string;
   type: string;
   status: string;
   provider: string | null;

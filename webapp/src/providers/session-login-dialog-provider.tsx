@@ -42,6 +42,8 @@ const DISABLED_EXACT_PATHS = new Set([
   "/sign-up",
   "/otp",
   "/onboarding",
+  "/forgot-password",
+  "/reset-password",
 ])
 
 function isDisabledPath(pathname: string) {
@@ -51,6 +53,9 @@ function isDisabledPath(pathname: string) {
     pathname.startsWith("/sign-up/") ||
     pathname.startsWith("/otp/") ||
     pathname.startsWith("/onboarding/") ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/forgot-password/") ||
+    pathname.startsWith("/reset-password/") ||
     (pathname.startsWith("/home") && !pathname.startsWith("/home/")) ||
     pathname.startsWith("/explore/")
   )
