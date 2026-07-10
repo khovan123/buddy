@@ -8,6 +8,7 @@ export type NotificationChannel =
   | 'generic'
   | 'alert'
   | 'purchase'
+  | 'wallet'
   | 'content-moderation'
   | 'forum-mention'
   | 'model-trained';

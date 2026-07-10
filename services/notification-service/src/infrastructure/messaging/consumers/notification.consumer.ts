@@ -17,6 +17,7 @@ import {
   INTERACTION_ROUTINGKEYS,
   PurchaseCompletedEvent,
   RECOMMENDATION_ROUTINGKEYS,
+  WalletToppedUpEvent,
   extractRmqPayload,
 } from '@libs/contracts';
 import { Inject, Injectable } from '@nestjs/common';
@@ -157,6 +158,56 @@ export class NotificationConsumer {
 
     this.notificationStream.publish(buyerNotification);
     this.notificationStream.publish(sellerNotification);
+  }
+
+  // ─── billing.wallet.topped_up ─────────────────────────────────────────────
+  @RabbitSubscribe({
+    exchange: EXCHANGES.BILLING,
+    routingKey: BILLING_ROUTINGKEYS.WALLET_TOPPED_UP,
+    queue: QUEUES.NOTIFICATION_IN_APP_WALLET_TOPPED_UP,
+    queueOptions: {
+      durable: true,
+      arguments: { 'x-dead-letter-exchange': EXCHANGES.DEAD_LETTER },
+    },
+  })
+  async handleWalletToppedUp(
+    data: EventEnvelope<WalletToppedUpEvent['payload']>,
+  ): Promise<void | Nack> {
+    const payload = this.getPayload(data);
+
+    if (
+      !payload ||
+      !this.isNonEmptyString(payload.transactionId) ||
+      !this.isNonEmptyString(payload.userId) ||
+      !this.isNonEmptyString(payload.walletId) ||
+      !this.isNonEmptyString(payload.amount) ||
+      !this.isNonEmptyString(payload.provider) ||
+      !this.isValidDateString(payload.toppedUpAt)
+    ) {
+      this.logger.warn(`Dropping malformed [${BILLING_ROUTINGKEYS.WALLET_TOPPED_UP}] event`);
+      return new Nack(false);
+    }
+
+    const notification = await this.notificationRepository.save(
+      Notification.create({
+        userId: payload.userId,
+        type: 'in_app',
+        channel: 'wallet',
+        recipient: payload.userId,
+        subject: 'Wallet topped up',
+        templateId: 'wallet-topped-up',
+        templateData: {
+          transactionId: payload.transactionId,
+          walletId: payload.walletId,
+          amount: payload.amount,
+          provider: payload.provider,
+          toppedUpAt: payload.toppedUpAt,
+        },
+        correlationId: data.correlationId ?? payload.transactionId,
+      }),
+    );
+
+    this.notificationStream.publish(notification);
   }
 
   // ─── content.moderation.completed ─────────────────────────────────────────

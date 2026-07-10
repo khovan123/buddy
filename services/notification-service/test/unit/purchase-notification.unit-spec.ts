@@ -7,6 +7,39 @@ process.env.SERVICE_NAME = 'notification-service-test';
 process.env.NODE_ENV = 'test';
 
 describe('NotificationConsumer purchase notifications', () => {
+  it('stores and streams an in-app notification when a wallet top-up completes', async () => {
+    const stream = { publish: jest.fn() };
+    const save = jest.fn(async (notification: Notification) => notification);
+    const consumer = new NotificationConsumer(
+      { execute: jest.fn() } as never,
+      { republishWithDelay: jest.fn() } as never,
+      stream as never,
+      { save } as never,
+    );
+
+    await consumer.handleWalletToppedUp({
+      correlationId: 'top-up-correlation',
+      payload: {
+        transactionId: 'transaction-1',
+        userId: 'user-1',
+        walletId: 'wallet-1',
+        amount: '100000',
+        provider: 'SEPAY',
+        toppedUpAt: new Date().toISOString(),
+      },
+    });
+
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        channel: 'wallet',
+        templateId: 'wallet-topped-up',
+        templateData: expect.objectContaining({ amount: '100000' }),
+      }),
+    );
+    expect(stream.publish).toHaveBeenCalledTimes(1);
+  });
+
   it('stores an in-app notification for both buyer and seller', async () => {
     const savedNotifications: Array<{
       userId: string;

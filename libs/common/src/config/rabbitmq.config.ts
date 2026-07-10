@@ -26,6 +26,7 @@ export const QUEUES = {
   NOTIFICATION_PUSH: 'notification.send.push',
   NOTIFICATION_IN_APP: 'notification.in_app',
   NOTIFICATION_IN_APP_PURCHASE_COMPLETED: 'notification.in_app.purchase_completed',
+  NOTIFICATION_IN_APP_WALLET_TOPPED_UP: 'notification.in_app.wallet_topped_up',
   NOTIFICATION_IN_APP_CONTENT_MODERATION: 'notification.in_app.content_moderation',
   NOTIFICATION_IN_APP_FORUM_MENTION: 'notification.in_app.forum_mention',
   NOTIFICATION_RETRY: 'notification.retry.delay',
