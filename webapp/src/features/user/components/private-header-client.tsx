@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react"
 
+import { useSession } from "next-auth/react"
+
 import type { NavigationItem } from "@/components/atoms/nav-dropdown-item"
+import { AuthNavigationActions } from "@/components/molecules/auth-navigation-actions"
 import { CreateContentCTA } from "@/components/molecules/create-content-cta"
 import { LanguageSwitcher } from "@/components/molecules/language-switcher"
 import { Navigation } from "@/components/organisms/navigation"
@@ -40,6 +43,8 @@ interface PrivateHeaderProps {
 export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false)
   const { t } = useI18n()
+  const { status: sessionStatus } = useSession()
+  const isSessionInvalid = sessionStatus === "unauthenticated"
 
   const openProfileDialog = () => setProfileDialogOpen(true)
   const isAdmin = isAdminAccess(accountFallback)
@@ -110,7 +115,9 @@ export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
 
   return (
     <>
-      <ProfileCompleteBanner user={user} onUpdateClick={openProfileDialog} />
+      {!isSessionInvalid ? (
+        <ProfileCompleteBanner user={user} onUpdateClick={openProfileDialog} />
+      ) : null}
 
       <Navigation
         brandLabel="Buddy"
@@ -118,25 +125,33 @@ export function PrivateHeader({ user, accountFallback }: PrivateHeaderProps) {
         containerClassName="max-w-7xl"
         rightSlot={
           <>
-            {!isAdmin && isCreator ? <CreateContentCTA /> : null}
-            {!isAdmin ? <PlanSelectorDialog /> : null}
-            {!isAdmin ? <HeaderWalletPopover /> : null}
+            {!isSessionInvalid && !isAdmin && isCreator ? (
+              <CreateContentCTA />
+            ) : null}
+            {!isSessionInvalid && !isAdmin ? <PlanSelectorDialog /> : null}
+            {!isSessionInvalid && !isAdmin ? <HeaderWalletPopover /> : null}
             <LanguageSwitcher compact />
-            <Notifications />
-            <UserMenuPopover
-              user={menuUser}
-              onEditProfile={openProfileDialog}
-            />
+            {!isSessionInvalid ? <Notifications /> : null}
+            {isSessionInvalid ? (
+              <AuthNavigationActions />
+            ) : (
+              <UserMenuPopover
+                user={menuUser}
+                onEditProfile={openProfileDialog}
+              />
+            )}
           </>
         }
       />
 
       {/* Profile update dialog – rendered once, shared across triggers */}
-      <ProfileUpdateDialog
-        user={user}
-        open={profileDialogOpen}
-        onOpenChange={setProfileDialogOpen}
-      />
+      {!isSessionInvalid ? (
+        <ProfileUpdateDialog
+          user={user}
+          open={profileDialogOpen}
+          onOpenChange={setProfileDialogOpen}
+        />
+      ) : null}
     </>
   )
 }

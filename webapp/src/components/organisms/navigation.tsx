@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation"
 
 import { useMotionValueEvent, useScroll } from "framer-motion"
 
+import { BrandLogo } from "@/components/atoms/brand-logo"
 import type {
   NavigationAction,
   NavigationItem,
@@ -90,9 +91,13 @@ export function Navigation({
       <div className="flex w-full items-center justify-between md:hidden">
         <Link
           href={brandHref}
-          className="text-lg font-bold tracking-tight text-foreground"
+          aria-label={brandLabel}
+          className="flex items-center"
         >
-          {brandLabel}
+          <BrandLogo
+            priority
+            className="size-9 rounded-md object-cover shadow-sm"
+          />
         </Link>
         <div className="flex items-center gap-2">
           {rightSlot}

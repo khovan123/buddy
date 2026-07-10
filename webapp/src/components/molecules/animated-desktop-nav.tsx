@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import { motion } from "framer-motion"
 
+import { BrandLogo } from "@/components/atoms/brand-logo"
 import {
   NavDropdownItem,
   type NavigationAction,
@@ -80,17 +81,20 @@ export function AnimatedDesktopNav({
       >
         <Link
           href={brandHref}
-          className="group mr-4 whitespace-nowrap text-foreground"
+          aria-label={brandLabel}
+          className="group mr-4 flex items-center whitespace-nowrap text-foreground"
         >
-          <motion.span
-            className="inline-block font-semibold tracking-tight"
-            animate={{ fontSize: "18px" }}
+          <motion.div
+            animate={{ width: 32, height: 32 }}
             transition={smoothTransition}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.98 }}
           >
-            {brandLabel}
-          </motion.span>
+            <BrandLogo
+              priority
+              className="size-full rounded-md object-cover shadow-sm"
+            />
+          </motion.div>
         </Link>
 
         <motion.div

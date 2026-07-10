@@ -4,6 +4,7 @@ import Link from "next/link"
 
 import { ArrowLeft, BookOpenCheck, Layers3, ShieldCheck } from "lucide-react"
 
+import { BrandLogo } from "@/components/atoms/brand-logo"
 import { EducationUniverse } from "@/components/atoms/education-universe"
 import { Badge } from "@/components/ui/badge"
 import { Item, ItemMedia, ItemTitle } from "@/components/ui/item"
@@ -20,8 +21,11 @@ export default async function AuthShell({ children }: AuthShellProps) {
         <div className="learning-grid absolute inset-0 opacity-40" />
         <div className="absolute inset-0 bg-linear-to-t from-[#07161d] via-[#07161d]/35 to-transparent" />
         <div className="absolute inset-x-10 top-10 flex items-center justify-between">
-          <Badge className="h-auto border-white/20 bg-white/12 px-4 py-1.5 text-xs font-bold tracking-[0.2em] text-white uppercase shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-md">
-            Buddy
+          <Badge className="h-auto border-white/20 bg-white/12 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)] backdrop-blur-md">
+            <BrandLogo
+              priority
+              className="size-8 rounded-sm object-cover"
+            />
           </Badge>
           <div className="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] backdrop-blur-md">
             <ShieldCheck className="size-3.5" />
