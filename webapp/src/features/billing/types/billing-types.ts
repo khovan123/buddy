@@ -210,32 +210,15 @@ export function majorUnitToMinorUnits(
 
 export function formatVND(amount: string | number): string {
   const value = typeof amount === "string" ? Number(amount) : amount
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: DISPLAY_CURRENCY,
-    currencyDisplay: "code",
+  const safeValue = Number.isFinite(value) ? value : 0
+
+  return `₫${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
-  }).format(value)
+  }).format(safeValue)}`
 }
 
 export function formatCompactVND(amount: string | number): string {
-  const value = typeof amount === "string" ? Number(amount) : amount
-  const safeValue = Number.isFinite(value) ? value : 0
-  const absoluteValue = Math.abs(safeValue)
-  const sign = safeValue < 0 ? "-" : ""
-  const formatter = new Intl.NumberFormat("vi-VN", {
-    maximumFractionDigits: 1,
-  })
-
-  if (absoluteValue >= 1_000_000) {
-    return `${sign}${formatter.format(absoluteValue / 1_000_000)} triệu ${DISPLAY_CURRENCY}`
-  }
-
-  if (absoluteValue >= 1_000) {
-    return `${sign}${formatter.format(absoluteValue / 1_000)} nghìn ${DISPLAY_CURRENCY}`
-  }
-
-  return formatVND(safeValue)
+  return formatVND(amount)
 }
 
 export function formatCurrencyFromCents(
@@ -245,6 +228,10 @@ export function formatCurrencyFromCents(
   const normalizedCurrency = normalizeCurrency(currency)
   const amount = minorUnitsToMajorUnit(cents, normalizedCurrency)
   const fractionDigits = getCurrencyFractionDigits(normalizedCurrency)
+
+  if (normalizedCurrency === DISPLAY_CURRENCY) {
+    return formatVND(amount)
+  }
 
   return new Intl.NumberFormat(
     localeForCurrency(normalizedCurrency),
