@@ -7,6 +7,7 @@ import {
   Briefcase,
   ChevronRight,
   GraduationCap,
+  LayoutDashboard,
   Settings,
   ShieldCheck,
   type LucideIcon,
@@ -44,11 +45,7 @@ interface NavItem {
 }
 
 export const navMain: NavItem[] = [
-  // {
-  //   title: "Overview",
-  //   url: "/dashboard",
-  //   icon: LayoutDashboard,
-  // },
+  { title: "Dashboard", url: "/dashboard/overview", icon: LayoutDashboard },
   {
     title: "Academic",
     url: "#",

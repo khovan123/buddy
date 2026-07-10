@@ -12,6 +12,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 import { AuthProxyController } from './presentation/http/controllers/auth-proxy.controller';
+import { AdminOverviewController } from './presentation/http/controllers/admin-overview.controller';
 import {
   BillingProxyController,
   BillingWebhookProxyController,
@@ -68,6 +69,7 @@ import { HttpProxyService } from './infrastructure/http/http-proxy.service';
     TerminusModule,
   ],
   controllers: [
+    AdminOverviewController,
     AuthProxyController,
     UserProxyController,
     GatewayHealthController,

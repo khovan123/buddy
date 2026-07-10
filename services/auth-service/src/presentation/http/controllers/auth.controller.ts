@@ -3,6 +3,7 @@ import { successResponse } from '@libs/contracts';
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Headers,
   HttpCode,
@@ -28,6 +29,7 @@ import { RegisterUserCommand } from '../../../application/commands/register-user
 import { ResendOtpCommand } from '../../../application/commands/resend-otp.command';
 import { ResetPasswordCommand } from '../../../application/commands/reset-password.command';
 import { VerifyOtpCommand } from '../../../application/commands/verify-otp.command';
+import { PrismaService } from '../../../infrastructure/persistence/prisma/prisma.service';
 import { GetMeQuery } from '../../../application/queries/get-me.query';
 import { GetUserVerificationQuery } from '../../../application/queries/get-user-verification.query';
 import { ChangePasswordDto } from '../dtos/change-password.dto';
@@ -46,7 +48,48 @@ export class AuthController {
   constructor(
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
+    private readonly prisma: PrismaService,
   ) {}
+
+  @Get('admin/overview/users')
+  @Version('1')
+  async getAdminUserOverview(@Req() req: FastifyRequest & { user: { roles?: string[] } }) {
+    this.assertAdmin(req.user?.roles ?? []);
+
+    const [total, creators, students] = await Promise.all([
+      this.prisma.client.user.count(),
+      this.prisma.client.user.count({
+        where: {
+          OR: [
+            { roles: { has: 'creator' } },
+            { roles: { has: 'CREATOR' } },
+            { subscriptionPlan: { startsWith: 'CREATOR' } },
+          ],
+        },
+      }),
+      this.prisma.client.user.count({
+        where: {
+          OR: [
+            { roles: { has: 'student' } },
+            { roles: { has: 'STUDENT' } },
+            { subscriptionPlan: { startsWith: 'STUDENT' } },
+          ],
+        },
+      }),
+    ]);
+
+    return successResponse(
+      { total, creators, students },
+      'Admin user overview retrieved',
+      getCorrelationId(),
+    );
+  }
+
+  private assertAdmin(roles: string[]) {
+    if (!roles.some((role) => role.trim().toUpperCase() === 'ADMIN')) {
+      throw new ForbiddenException('Admin role required');
+    }
+  }
 
   /**
    * Executes the register operation.

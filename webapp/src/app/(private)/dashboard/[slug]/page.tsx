@@ -4,9 +4,11 @@ import { notFound } from "next/navigation"
 
 import {
   ContentDashboardView,
+  AdminOverviewDashboard,
   ModerationSettingsDashboard,
   PlanLimitsDashboard,
   getModerationSettings,
+  getAdminOverview,
   getSubscriptionPlanCatalog,
 } from "@/features/dashboard"
 import { getSeoContent } from "@/features/seo/services/seo-content"
@@ -17,6 +19,7 @@ interface DashboardSlugPageProps {
 }
 
 const validSlugs = [
+  "overview",
   "majors",
   "courses",
   "careers",
@@ -87,7 +90,9 @@ export default async function DashboardSlugPage({
         // react-doctor-ignore
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      {slug === "plans" ? (
+      {slug === "overview" ? (
+        <AdminOverviewDashboard overview={await getAdminOverview()} />
+      ) : slug === "plans" ? (
         <PlanLimitsDashboard plans={await getSubscriptionPlanCatalog()} />
       ) : slug === "moderation" ? (
         <ModerationSettingsDashboard settings={await getModerationSettings()} />

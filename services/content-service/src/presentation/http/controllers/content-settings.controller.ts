@@ -14,6 +14,18 @@ import {
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { ContentSettingsService } from '../../../infrastructure/services/content-settings.service';
+import { InjectModel } from '@nestjs/mongoose';
+import type { Model } from 'mongoose';
+import {
+  Resource,
+  ResourceDocument,
+  ResourceStatus,
+} from '../../../infrastructure/persistence/mongo/schemas/resource.schema';
+import {
+  Tutorial,
+  TutorialDocument,
+  TutorialStatus,
+} from '../../../infrastructure/persistence/mongo/schemas/tutorial.schema';
 import { UpdateModerationSettingsDto } from '../dtos/update-moderation-settings.dto';
 
 type AuthenticatedRequest = FastifyRequest & {
@@ -26,7 +38,27 @@ type AuthenticatedRequest = FastifyRequest & {
 @Controller({ path: 'content-settings', version: '1' })
 @UseGuards(JwtAuthGuard)
 export class ContentSettingsController {
-  constructor(private readonly settings: ContentSettingsService) {}
+  constructor(
+    private readonly settings: ContentSettingsService,
+    @InjectModel(Resource.name) private readonly resources: Model<ResourceDocument>,
+    @InjectModel(Tutorial.name) private readonly tutorials: Model<TutorialDocument>,
+  ) {}
+
+  @Get('admin/overview/posts')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async getAdminPostOverview(@Req() req: AuthenticatedRequest) {
+    this.assertAdmin(req.user?.roles ?? []);
+    const [resources, tutorials] = await Promise.all([
+      this.resources.countDocuments({ status: { $ne: ResourceStatus.DELETED } }),
+      this.tutorials.countDocuments({ status: { $ne: TutorialStatus.DELETED } }),
+    ]);
+    return successResponse(
+      { total: resources + tutorials, resources, tutorials },
+      'Admin post overview retrieved',
+      getCorrelationId(),
+    );
+  }
 
   @Get('moderation')
   @Version('1')

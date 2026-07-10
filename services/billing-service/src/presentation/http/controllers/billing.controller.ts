@@ -421,6 +421,55 @@ export class BillingController {
     @Inject(PAYOUT_GATEWAY) private readonly payoutGateway: IPayoutGateway,
   ) {}
 
+  @Get('admin/overview')
+  @Version('1')
+  @HttpCode(HttpStatus.OK)
+  async getAdminOverview(@Req() req: FastifyRequest & { user: { roles?: string[] } }) {
+    this.assertAdmin(req.user?.roles ?? []);
+
+    const success = { status: 'SUCCESS' as const };
+    const [moneyIn, moneyOut, billingRevenue, creatorEarnings] = await Promise.all([
+      this.prisma.client.walletTransaction.aggregate({
+        where: { ...success, type: 'TOP_UP' },
+        _sum: { amountInCents: true },
+      }),
+      this.prisma.client.walletTransaction.aggregate({
+        where: { ...success, type: 'WITHDRAW' },
+        _sum: { amountInCents: true },
+      }),
+      this.prisma.client.walletTransaction.aggregate({
+        where: { ...success, type: 'PURCHASE_DEBIT' },
+        _sum: { amountInCents: true },
+      }),
+      this.prisma.client.walletTransaction.groupBy({
+        by: ['userId'],
+        where: { ...success, type: 'PURCHASE_CREDIT' },
+        _sum: { amountInCents: true },
+        orderBy: { _sum: { amountInCents: 'desc' } },
+        take: 10,
+      }),
+    ]);
+
+    return successResponse(
+      {
+        moneyInCents: (moneyIn._sum.amountInCents ?? 0n).toString(),
+        moneyOutCents: (moneyOut._sum.amountInCents ?? 0n).toString(),
+        billingRevenueCents: (billingRevenue._sum.amountInCents ?? 0n).toString(),
+        creatorLeaderboard: (
+          creatorEarnings as unknown as Array<{
+            userId: string;
+            _sum: { amountInCents: bigint | null };
+          }>
+        ).map((entry) => ({
+          userId: entry.userId,
+          earningsCents: (entry._sum.amountInCents ?? 0n).toString(),
+        })),
+      },
+      'Admin billing overview retrieved',
+      getCorrelationId(),
+    );
+  }
+
   /**
    * Executes the top up operation.
    *
