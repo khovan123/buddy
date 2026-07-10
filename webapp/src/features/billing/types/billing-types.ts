@@ -174,17 +174,22 @@ export function getCurrencyFractionDigits(currency = DISPLAY_CURRENCY): number {
   const normalizedCurrency = normalizeCurrency(currency)
 
   try {
-    const fractionDigits = new Intl.NumberFormat(localeForCurrency(normalizedCurrency), {
-      style: "currency",
-      currency: normalizedCurrency,
-    }).resolvedOptions().maximumFractionDigits
+    const fractionDigits = new Intl.NumberFormat(
+      localeForCurrency(normalizedCurrency),
+      {
+        style: "currency",
+        currency: normalizedCurrency,
+      }
+    ).resolvedOptions().maximumFractionDigits
     return fractionDigits ?? (normalizedCurrency === "VND" ? 0 : 2)
   } catch {
     return normalizedCurrency === "VND" ? 0 : 2
   }
 }
 
-export function getCurrencyMinorUnitFactor(currency = DISPLAY_CURRENCY): number {
+export function getCurrencyMinorUnitFactor(
+  currency = DISPLAY_CURRENCY
+): number {
   return 10 ** getCurrencyFractionDigits(currency)
 }
 
@@ -192,8 +197,7 @@ export function minorUnitsToMajorUnit(
   minorUnits: string | number,
   currency = DISPLAY_CURRENCY
 ): number {
-  const value =
-    typeof minorUnits === "string" ? Number(minorUnits) : minorUnits
+  const value = typeof minorUnits === "string" ? Number(minorUnits) : minorUnits
   return value / getCurrencyMinorUnitFactor(currency)
 }
 
@@ -204,7 +208,10 @@ export function majorUnitToMinorUnits(
   const value = typeof amount === "string" ? Number(amount) : amount
   return Math.max(
     0,
-    Math.round((Number.isFinite(value) ? value : 0) * getCurrencyMinorUnitFactor(currency))
+    Math.round(
+      (Number.isFinite(value) ? value : 0) *
+        getCurrencyMinorUnitFactor(currency)
+    )
   )
 }
 
@@ -212,9 +219,9 @@ export function formatVND(amount: string | number): string {
   const value = typeof amount === "string" ? Number(amount) : amount
   const safeValue = Number.isFinite(value) ? value : 0
 
-  return `₫${new Intl.NumberFormat("en-US", {
+  return `${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
-  }).format(safeValue)}`
+  }).format(safeValue)}₫`
 }
 
 export function formatCompactVND(amount: string | number): string {
@@ -233,16 +240,13 @@ export function formatCurrencyFromCents(
     return formatVND(amount)
   }
 
-  return new Intl.NumberFormat(
-    localeForCurrency(normalizedCurrency),
-    {
-      style: "currency",
-      currency: normalizedCurrency,
-      currencyDisplay: "code",
-      minimumFractionDigits: fractionDigits,
-      maximumFractionDigits: fractionDigits,
-    }
-  ).format(amount)
+  return new Intl.NumberFormat(localeForCurrency(normalizedCurrency), {
+    style: "currency",
+    currency: normalizedCurrency,
+    currencyDisplay: "code",
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(amount)
 }
 
 export function centsToMajorUnit(
