@@ -218,9 +218,6 @@ export function mapResourceCollectionToProfileItem(
 
 // ── LibraryAsset Mappers (library page) ─────────────────────
 
-const PLACEHOLDER_IMAGE =
-  "https://images.unsplash.com/photo-1515879218367-8466d910aaa4"
-
 export function mapResourceToLibraryAsset(
   item: ResourceQueryItem
 ): LibraryAsset {
@@ -230,7 +227,7 @@ export function mapResourceToLibraryAsset(
     description: item.summary || "No description",
     author: item.uploader?.nickname || item.userId,
     authorAvatar: item.uploader?.avatarUrl,
-    image: item?.thumbnailUrl || PLACEHOLDER_IMAGE,
+    image: item.thumbnailUrl ?? "",
     kind: LibraryAssetKind.Components,
     sourcePath: "",
   }
@@ -245,7 +242,7 @@ export function mapTutorialToLibraryAsset(
     description: item.description || "No description",
     author: item.uploader?.nickname || item.userId,
     authorAvatar: item.uploader?.avatarUrl,
-    image: item?.thumbnailUrl || PLACEHOLDER_IMAGE,
+    image: item.thumbnailUrl ?? "",
     kind: LibraryAssetKind.Tutorial,
     sourcePath: "",
   }
@@ -282,7 +279,7 @@ export function mapCollectionToLibraryCard(
     href: isResource
       ? `/library/resources/collections/${item.slug}`
       : `/library/tutorials/collections/${item.slug}`,
-    thumbnailUrl: item?.thumbnailUrl || PLACEHOLDER_IMAGE,
+    thumbnailUrl: item.thumbnailUrl,
     author: item.uploader
       ? { name: item.uploader.nickname, avatar: item.uploader.avatarUrl }
       : undefined,
