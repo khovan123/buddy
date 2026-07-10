@@ -679,6 +679,7 @@ export class WalletPrismaRepository implements IWalletRepository {
     return {
       data: rows.map((row) => ({
         id: row.id,
+        userId: row.userId,
         type: row.type,
         status: row.status,
         provider: row.provider,
