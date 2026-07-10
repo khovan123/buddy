@@ -115,7 +115,7 @@ export const billingApi = baseApi.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Subscription"],
+      invalidatesTags: ["Subscription", "Wallet", "Transaction"],
     }),
 
     topUpWallet: build.mutation<

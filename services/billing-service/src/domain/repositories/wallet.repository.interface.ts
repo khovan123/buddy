@@ -15,6 +15,13 @@ export type PurchaseTransferInput = {
   idempotencyKey?: string;
 };
 
+export type SubscriptionActivationInput = {
+  userId: string;
+  plan: string;
+  correlationId: string;
+  eventType: string;
+};
+
 /** Interface representing data constraints for  i wallet repository. */
 export interface IWalletRepository {
   getOrCreateWalletByUserId(userId: string): Promise<Wallet>;
@@ -100,6 +107,11 @@ export interface IWalletRepository {
 
   // ── Subscription ──────────────────────────────────────────────────
   findActiveSubscription(userId: string): Promise<SubscriptionRecord | null>;
+  activateSubscriptionWithWalletDebitAndInsertOutbox(input: SubscriptionActivationInput): Promise<{
+    subscription: SubscriptionRecord;
+    previousPlan: string | null;
+    amountInCents: string;
+  }>;
   upsertSubscription(input: {
     userId: string;
     plan: string;

@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 
 import { useSession } from "next-auth/react"
 
-import { Check, Loader2, Palette, Users } from "lucide-react"
+import { Check, Loader2, Palette, Users, Wallet } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -15,17 +15,21 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { TopUpDialog } from "@/features/billing/components/top-up-dialog"
 import {
   useCreateSubscriptionMutation,
   useGetSubscriptionPlansQuery,
   useGetSubscriptionQuery,
+  useGetWalletBalanceQuery,
 } from "@/features/billing/services/billing-api"
 import {
   PLAN_DISPLAY_NAME_KEYS,
+  formatVND,
   type SubscriptionPlan,
   type SubscriptionPricingData,
 } from "@/features/billing/types/billing-types"
@@ -99,6 +103,10 @@ function getPlanCards(
   ]
 }
 
+function getPlanPriceInCents(card: PlanCardOption): string {
+  return String(card.plan.priceInCents ?? card.plan.monthlyPriceCents ?? 0)
+}
+
 async function waitForPlanSync(
   plan: SubscriptionPlan,
   updateSession: ReturnType<typeof useSession>["update"]
@@ -126,9 +134,19 @@ export function PlanSelectorDialog({
   const [selectedAudience, setSelectedAudience] =
     useState<PlanAudience>("student")
   const [pendingPlan, setPendingPlan] = useState<SubscriptionPlan | null>(null)
-  const { data, error: subscriptionError, isFetching } = useGetSubscriptionQuery()
+  const [insufficientPlan, setInsufficientPlan] =
+    useState<PlanCardOption | null>(null)
+  const [insufficientOpen, setInsufficientOpen] = useState(false)
+  const [topUpOpen, setTopUpOpen] = useState(false)
+  const {
+    data,
+    error: subscriptionError,
+    isFetching,
+  } = useGetSubscriptionQuery()
   const { data: plansData, isFetching: isPlansFetching } =
     useGetSubscriptionPlansQuery()
+  const { refetch: refetchBalance, isFetching: isBalanceFetching } =
+    useGetWalletBalanceQuery()
   const [createSubscription, { isLoading }] = useCreateSubscriptionMutation()
 
   const currentPlan = data?.data?.plan
@@ -157,13 +175,27 @@ export function PlanSelectorDialog({
     setOpen(nextOpen)
   }
 
-  const handleSelectPlan = async (plan: SubscriptionPlan) => {
+  const handleSelectPlan = async (card: PlanCardOption) => {
+    const plan = card.code
+
     if (plan === currentPlan || isLoading) {
       return
     }
 
     try {
       setPendingPlan(plan)
+      const priceInCents = BigInt(getPlanPriceInCents(card))
+
+      if (priceInCents > BigInt(0)) {
+        const balanceResponse = await refetchBalance().unwrap()
+
+        if (BigInt(balanceResponse.data.balanceInCents) < priceInCents) {
+          setInsufficientPlan(card)
+          setInsufficientOpen(true)
+          return
+        }
+      }
+
       await createSubscription({ plan }).unwrap()
       await waitForPlanSync(plan, updateSession)
       router.refresh()
@@ -174,119 +206,173 @@ export function PlanSelectorDialog({
       )
       setOpen(false)
     } catch (error) {
-      toast.error(extractApiError(error))
+      const message = extractApiError(error)
+
+      if (message.toLowerCase().includes("insufficient wallet balance")) {
+        setInsufficientPlan(card)
+        setInsufficientOpen(true)
+        return
+      }
+
+      toast.error(message)
     } finally {
       setPendingPlan(null)
     }
   }
 
+  const insufficientAmount = insufficientPlan
+    ? getPlanPriceInCents(insufficientPlan)
+    : "0"
+  const topUpReturnUrl =
+    typeof globalThis.window === "undefined"
+      ? undefined
+      : `${globalThis.location.origin}${globalThis.location.pathname}`
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          variant={triggerVariant}
-          size={triggerSize}
-          className={triggerClassName}
-          aria-label={t("billing.subscription.ariaChoosePlan")}
-        >
-          {isFetching ? <Loader2 className="size-3.5 animate-spin" /> : null}
-          {triggerLabel}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:max-w-6xl sm:p-6">
-        <DialogHeader className="pr-10">
-          <DialogTitle>{t("billing.subscription.dialogTitle")}</DialogTitle>
-          <DialogDescription>
-            {hasMissingSubscription
-              ? t("billing.subscription.dialogDescriptionRequired")
-              : t("billing.subscription.dialogDescription")}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="grid grid-cols-2 rounded-full bg-secondary p-1 sm:w-fit">
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
           <Button
-            type="button"
-            variant={selectedAudience === "student" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setSelectedAudience("student")}
-            className="rounded-full"
+            variant={triggerVariant}
+            size={triggerSize}
+            className={triggerClassName}
+            aria-label={t("billing.subscription.ariaChoosePlan")}
           >
-            <Users className="size-4" />
-            {t("billing.subscription.student")}
+            {isFetching ? <Loader2 className="size-3.5 animate-spin" /> : null}
+            {triggerLabel}
           </Button>
-          <Button
-            type="button"
-            variant={selectedAudience === "creator" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setSelectedAudience("creator")}
-            className="rounded-full"
-          >
-            <Palette className="size-4" />
-            {t("billing.subscription.creator")}
-          </Button>
-        </div>
+        </DialogTrigger>
+        <DialogContent className="max-h-[90vh] overflow-y-auto p-4 sm:max-w-6xl sm:p-6">
+          <DialogHeader className="pr-10">
+            <DialogTitle>{t("billing.subscription.dialogTitle")}</DialogTitle>
+            <DialogDescription>
+              {hasMissingSubscription
+                ? t("billing.subscription.dialogDescriptionRequired")
+                : t("billing.subscription.dialogDescription")}
+            </DialogDescription>
+          </DialogHeader>
 
-        {isPlansFetching && planCards.length === 0 ? (
-          <div className="flex min-h-64 items-center justify-center text-muted-foreground">
-            <Loader2 className="size-5 animate-spin" />
+          <div className="grid grid-cols-2 rounded-full bg-secondary p-1 sm:w-fit">
+            <Button
+              type="button"
+              variant={selectedAudience === "student" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSelectedAudience("student")}
+              className="rounded-full"
+            >
+              <Users className="size-4" />
+              {t("billing.subscription.student")}
+            </Button>
+            <Button
+              type="button"
+              variant={selectedAudience === "creator" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setSelectedAudience("creator")}
+              className="rounded-full"
+            >
+              <Palette className="size-4" />
+              {t("billing.subscription.creator")}
+            </Button>
           </div>
-        ) : planCards.length === 0 ? (
-          <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
-            {t("billing.subscription.unavailable")}
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {visiblePlanCards.map((card) => {
-              const active = card.code === currentPlan
-              const submitting = pendingPlan === card.code
-              const disabled = active || isLoading
 
-              return (
-                <PlanCard
-                  key={card.code}
-                  plan={{
-                    ...card.plan,
-                    badge: active ? "Active" : card.plan.badge,
-                  }}
-                  features={card.features}
-                  isPro={card.isPro}
-                  yearly={false}
-                  audienceIcon={card.audienceIcon}
-                  variant="compact"
-                  className={cn(
-                    "min-w-0",
-                    active && "ring-2 ring-primary/35"
-                  )}
-                  action={
-                    <Button
-                      type="button"
-                      size="default"
-                      disabled={disabled}
-                      onClick={() => void handleSelectPlan(card.code)}
-                      className={cn(
-                        "mb-4 w-full rounded-full",
-                        card.isPro
-                          ? "bg-foreground text-background hover:bg-foreground/90"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      )}
-                    >
-                      {submitting ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : active ? (
-                        <Check className="size-4" />
-                      ) : null}
-                      {active
-                        ? t("billing.subscription.activePlan")
-                        : card.plan.cta}
-                    </Button>
-                  }
-                />
-              )
-            })}
+          {isPlansFetching && planCards.length === 0 ? (
+            <div className="flex min-h-64 items-center justify-center text-muted-foreground">
+              <Loader2 className="size-5 animate-spin" />
+            </div>
+          ) : planCards.length === 0 ? (
+            <div className="rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
+              {t("billing.subscription.unavailable")}
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {visiblePlanCards.map((card) => {
+                const active = card.code === currentPlan
+                const submitting = pendingPlan === card.code
+                const disabled = active || isLoading || isBalanceFetching
+
+                return (
+                  <PlanCard
+                    key={card.code}
+                    plan={{
+                      ...card.plan,
+                      badge: active ? "Active" : card.plan.badge,
+                    }}
+                    features={card.features}
+                    isPro={card.isPro}
+                    yearly={false}
+                    audienceIcon={card.audienceIcon}
+                    variant="compact"
+                    className={cn(
+                      "min-w-0",
+                      active && "ring-2 ring-primary/35"
+                    )}
+                    action={
+                      <Button
+                        type="button"
+                        size="default"
+                        disabled={disabled}
+                        onClick={() => void handleSelectPlan(card)}
+                        className={cn(
+                          "mb-4 w-full rounded-full",
+                          card.isPro
+                            ? "bg-foreground text-background hover:bg-foreground/90"
+                            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        )}
+                      >
+                        {submitting ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : active ? (
+                          <Check className="size-4" />
+                        ) : null}
+                        {active
+                          ? t("billing.subscription.activePlan")
+                          : card.plan.cta}
+                      </Button>
+                    }
+                  />
+                )
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={insufficientOpen} onOpenChange={setInsufficientOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("billing.purchase.topUpTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("billing.purchase.topUpDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-3 rounded-xl bg-muted/50 px-4 py-3">
+            <Wallet className="size-5 text-primary" />
+            <span className="text-sm font-medium">
+              {t("billing.purchase.required")}: {formatVND(insufficientAmount)}
+            </span>
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setInsufficientOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={() => {
+                setInsufficientOpen(false)
+                setTopUpOpen(true)
+              }}
+            >
+              {t("billing.purchase.topUpWallet")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <TopUpDialog
+        open={topUpOpen}
+        onOpenChange={setTopUpOpen}
+        returnUrl={topUpReturnUrl}
+      />
+    </>
   )
 }
 

@@ -110,6 +110,178 @@ describe('WalletPrismaRepository purchase ownership', () => {
     expect(eventEmitter.emit).toHaveBeenCalled();
   });
 
+  it('debits wallet and writes subscription outbox when activating a paid subscription', async () => {
+    const startsAt = new Date('2026-07-10T00:00:00.000Z');
+    const tx = {
+      subscription: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'subscription-1',
+          userId: 'user-1',
+          plan: 'STUDENT_FREE',
+          status: 'ACTIVE',
+          startsAt: new Date('2026-07-09T00:00:00.000Z'),
+          expiresAt: null,
+        }),
+        upsert: jest.fn().mockResolvedValue({
+          id: 'subscription-1',
+          userId: 'user-1',
+          plan: 'STUDENT_PRO',
+          status: 'ACTIVE',
+          startsAt,
+          expiresAt: null,
+        }),
+      },
+      subscriptionPlanCatalog: {
+        findUnique: jest.fn().mockResolvedValue({
+          code: 'STUDENT_PRO',
+          active: true,
+          monthlyPriceCents: 49000,
+          currency: 'VND',
+        }),
+      },
+      wallet: {
+        upsert: jest.fn().mockResolvedValue({
+          id: 'wallet-1',
+          balanceInCents: 100000n,
+        }),
+        update: jest.fn(),
+      },
+      walletTransaction: {
+        create: jest.fn(),
+      },
+      outbox: {
+        create: jest.fn(),
+      },
+    };
+    const prisma = {
+      client: {
+        $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+        ),
+      },
+    };
+    const eventEmitter = { emit: jest.fn() };
+    const repository = new WalletPrismaRepository(prisma as any, eventEmitter as any);
+
+    await expect(
+      repository.activateSubscriptionWithWalletDebitAndInsertOutbox({
+        userId: 'user-1',
+        plan: 'STUDENT_PRO',
+        correlationId: 'correlation-1',
+        eventType: 'BILLING_SUBSCRIPTION_CHANGED',
+      }),
+    ).resolves.toEqual({
+      subscription: {
+        id: 'subscription-1',
+        userId: 'user-1',
+        plan: 'STUDENT_PRO',
+        status: 'ACTIVE',
+        startsAt,
+        expiresAt: null,
+      },
+      previousPlan: 'STUDENT_FREE',
+      amountInCents: '49000',
+    });
+
+    expect(tx.wallet.update).toHaveBeenCalledWith({
+      where: { id: 'wallet-1' },
+      data: { balanceInCents: { decrement: 49000n } },
+    });
+    expect(tx.walletTransaction.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        walletId: 'wallet-1',
+        userId: 'user-1',
+        type: 'PURCHASE_DEBIT',
+        status: 'SUCCESS',
+        amountInCents: 49000n,
+        metadata: expect.objectContaining({
+          itemType: 'SUBSCRIPTION',
+          itemId: 'STUDENT_PRO',
+          previousPlan: 'STUDENT_FREE',
+        }),
+      }),
+    });
+    expect(tx.subscription.upsert).toHaveBeenCalledWith({
+      where: { userId: 'user-1' },
+      update: expect.objectContaining({
+        plan: 'STUDENT_PRO',
+        status: 'ACTIVE',
+        expiresAt: null,
+      }),
+      create: expect.objectContaining({
+        userId: 'user-1',
+        plan: 'STUDENT_PRO',
+        status: 'ACTIVE',
+      }),
+    });
+    expect(tx.outbox.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        correlationId: 'correlation-1',
+        type: 'BILLING_SUBSCRIPTION_CHANGED',
+        payload: expect.objectContaining({
+          userId: 'user-1',
+          plan: 'STUDENT_PRO',
+          previousPlan: 'STUDENT_FREE',
+        }),
+      }),
+    });
+    expect(eventEmitter.emit).toHaveBeenCalled();
+  });
+
+  it('blocks paid subscription activation when wallet balance is insufficient', async () => {
+    const tx = {
+      subscription: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        upsert: jest.fn(),
+      },
+      subscriptionPlanCatalog: {
+        findUnique: jest.fn().mockResolvedValue({
+          code: 'CREATOR_PRO',
+          active: true,
+          monthlyPriceCents: 99000,
+          currency: 'VND',
+        }),
+      },
+      wallet: {
+        upsert: jest.fn().mockResolvedValue({
+          id: 'wallet-1',
+          balanceInCents: 1000n,
+        }),
+        update: jest.fn(),
+      },
+      walletTransaction: {
+        create: jest.fn(),
+      },
+      outbox: {
+        create: jest.fn(),
+      },
+    };
+    const prisma = {
+      client: {
+        $transaction: jest.fn(async (callback: (client: typeof tx) => Promise<unknown>) =>
+          callback(tx),
+        ),
+      },
+    };
+    const eventEmitter = { emit: jest.fn() };
+    const repository = new WalletPrismaRepository(prisma as any, eventEmitter as any);
+
+    await expect(
+      repository.activateSubscriptionWithWalletDebitAndInsertOutbox({
+        userId: 'user-1',
+        plan: 'CREATOR_PRO',
+        correlationId: 'correlation-1',
+        eventType: 'BILLING_SUBSCRIPTION_CHANGED',
+      }),
+    ).rejects.toThrow('Insufficient wallet balance for this subscription');
+
+    expect(tx.wallet.update).not.toHaveBeenCalled();
+    expect(tx.walletTransaction.create).not.toHaveBeenCalled();
+    expect(tx.subscription.upsert).not.toHaveBeenCalled();
+    expect(tx.outbox.create).not.toHaveBeenCalled();
+    expect(eventEmitter.emit).not.toHaveBeenCalled();
+  });
+
   it('confirms a top-up by unique recent pending amount when webhook reference is not usable', async () => {
     const transaction = {
       id: 'transaction-1',

@@ -7,10 +7,12 @@ import { Wallet } from '../../../../domain/entities/wallet.entity';
 import {
   IWalletRepository,
   PurchaseTransferInput,
+  type SubscriptionActivationInput,
   type PayoutAccountRecord,
   type SubscriptionRecord,
 } from '../../../../domain/repositories/wallet.repository.interface';
 import type { Prisma } from '../generated/client';
+import type { SubscriptionPlan as PrismaSubscriptionPlan } from '../generated/enums';
 import { PrismaService } from '../prisma.service';
 
 /** Repository interface/implementation for  wallet prisma data access. */
@@ -788,14 +790,7 @@ export class WalletPrismaRepository implements IWalletRepository {
 
     if (!row) return null;
 
-    return {
-      id: row.id,
-      userId: row.userId,
-      plan: row.plan,
-      status: row.status,
-      startsAt: row.startsAt,
-      expiresAt: row.expiresAt,
-    };
+    return this.toSubscriptionRecord(row);
   }
 
   async upsertSubscription(input: {
@@ -806,19 +801,159 @@ export class WalletPrismaRepository implements IWalletRepository {
     const row = await this.prisma.client.subscription.upsert({
       where: { userId: input.userId },
       update: {
-        plan: input.plan as any,
+        plan: input.plan as PrismaSubscriptionPlan,
         status: 'ACTIVE',
         startsAt: new Date(),
         expiresAt: input.expiresAt ?? null,
       },
       create: {
         userId: input.userId,
-        plan: input.plan as any,
+        plan: input.plan as PrismaSubscriptionPlan,
         status: 'ACTIVE',
         expiresAt: input.expiresAt ?? null,
       },
     });
 
+    return this.toSubscriptionRecord(row);
+  }
+
+  async activateSubscriptionWithWalletDebitAndInsertOutbox(
+    input: SubscriptionActivationInput,
+  ): Promise<{
+    subscription: SubscriptionRecord;
+    previousPlan: string | null;
+    amountInCents: string;
+  }> {
+    const result = await this.prisma.client.$transaction(async (tx) => {
+      const existing = await tx.subscription.findUnique({
+        where: { userId: input.userId },
+      });
+      const previousPlan = existing?.status === 'ACTIVE' ? existing.plan : null;
+
+      if (previousPlan === input.plan && existing) {
+        return {
+          subscription: this.toSubscriptionRecord(existing),
+          previousPlan,
+          amountInCents: '0',
+        };
+      }
+
+      const plan = await tx.subscriptionPlanCatalog.findUnique({
+        where: { code: input.plan as PrismaSubscriptionPlan },
+      });
+
+      if (!plan || !plan.active) {
+        throw new BadRequestException('Subscription plan is unavailable');
+      }
+
+      const amountInCents = BigInt(plan.monthlyPriceCents);
+      const wallet = await tx.wallet.upsert({
+        where: { userId: input.userId },
+        update: {},
+        create: { userId: input.userId },
+      });
+
+      if (amountInCents > 0n && wallet.balanceInCents < amountInCents) {
+        throw new BadRequestException('Insufficient wallet balance for this subscription');
+      }
+
+      const changedAt = new Date();
+
+      if (amountInCents > 0n) {
+        await tx.wallet.update({
+          where: { id: wallet.id },
+          data: {
+            balanceInCents: {
+              decrement: amountInCents,
+            },
+          },
+        });
+
+        const transactionId = randomUUID();
+        await tx.walletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            userId: input.userId,
+            type: 'PURCHASE_DEBIT',
+            status: 'SUCCESS',
+            amountInCents,
+            currency: plan.currency,
+            externalRef: `${transactionId}-subscription`,
+            metadata: {
+              itemType: 'SUBSCRIPTION',
+              itemId: input.plan,
+              plan: input.plan,
+              previousPlan,
+              amountInCents: amountInCents.toString(),
+            } as Prisma.InputJsonValue,
+            confirmedAt: changedAt,
+          },
+        });
+      }
+
+      const row = await tx.subscription.upsert({
+        where: { userId: input.userId },
+        update: {
+          plan: input.plan as PrismaSubscriptionPlan,
+          status: 'ACTIVE',
+          startsAt: changedAt,
+          expiresAt: null,
+        },
+        create: {
+          userId: input.userId,
+          plan: input.plan as PrismaSubscriptionPlan,
+          status: 'ACTIVE',
+          expiresAt: null,
+        },
+      });
+
+      await tx.outbox.create({
+        data: {
+          correlationId: input.correlationId,
+          type: input.eventType,
+          payload: {
+            userId: input.userId,
+            plan: input.plan,
+            previousPlan,
+            changedAt: changedAt.toISOString(),
+          } as Prisma.InputJsonValue,
+          exchange: EXCHANGES.BILLING,
+          routingKey: input.eventType,
+          status: 'PENDING',
+          occurredAt: changedAt,
+          retryCount: 0,
+        },
+      });
+
+      return {
+        subscription: this.toSubscriptionRecord(row),
+        previousPlan,
+        amountInCents: amountInCents.toString(),
+      };
+    });
+
+    this.eventEmitter.emit(OUTBOX_EVENTS.FLUSHED, {
+      correlationId: input.correlationId,
+    });
+
+    return result;
+  }
+
+  async cancelSubscription(userId: string): Promise<void> {
+    await this.prisma.client.subscription.updateMany({
+      where: { userId, status: 'ACTIVE' },
+      data: { status: 'CANCELLED' },
+    });
+  }
+
+  private toSubscriptionRecord(row: {
+    id: string;
+    userId: string;
+    plan: string;
+    status: string;
+    startsAt: Date;
+    expiresAt: Date | null;
+  }): SubscriptionRecord {
     return {
       id: row.id,
       userId: row.userId,
@@ -827,12 +962,5 @@ export class WalletPrismaRepository implements IWalletRepository {
       startsAt: row.startsAt,
       expiresAt: row.expiresAt,
     };
-  }
-
-  async cancelSubscription(userId: string): Promise<void> {
-    await this.prisma.client.subscription.updateMany({
-      where: { userId, status: 'ACTIVE' },
-      data: { status: 'CANCELLED' },
-    });
   }
 }
