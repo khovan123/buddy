@@ -1,6 +1,6 @@
 import { JwtAuthGuard, getCorrelationId } from '@libs/common';
 import { successResponse } from '@libs/contracts';
-import { Controller, ForbiddenException, Get, UseGuards, Version } from '@nestjs/common';
+import { Controller, ForbiddenException, Get, Req, UseGuards, Version } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { ApiComposerService } from '../../../infrastructure/http/api-composer.service';
 
@@ -11,7 +11,7 @@ export class AdminOverviewController {
 
   @Get()
   @Version('1')
-  async getOverview(req: FastifyRequest & { user: { roles?: string[] } }) {
+  async getOverview(@Req() req: FastifyRequest & { user: { roles?: string[] } }) {
     if (!req.user?.roles?.some((role) => role.trim().toUpperCase() === 'ADMIN')) {
       throw new ForbiddenException('Admin role required');
     }
